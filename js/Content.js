@@ -1,5 +1,5 @@
 /*
- * Explorer.js - Scripts for the entire site
+ * Content.js - Scripts for content pages
  * ver 1.0 - 09 Dec 2024
  * Jim Fawcett
  */
@@ -10,41 +10,52 @@ function isDefined(elem) {
   }
   return true;
 }
- 
-function toggleLeftPanel() {
-  const leftPanel = document.getElementById('lpanel');
-  leftPanel.classList.toggle('hidden');
-}
 
+// let bottomMenu = new object;
+// bottomMenu.top = function() {
+//   <a href="#top"></a>
+// }
+ 
+// bottomMenu.bottom = function() {
+//   <a href="#bottom"></a>
+// }
+ 
 function toggleSections() {
-  postMsg("sections");
+  const secs = document.getElementById('sections');
+  secs.classList.toggle('hidden');
 }
 
 function togglePages() {
-  postMsg("pages");
+  // alert('in togglePages');
+  const pgs = document.getElementById('pages');
+  // alert(pgs);
+  pgs.classList.toggle('hidden');
+  // pgs.style.display = 'block';
 }
 
 /*-- Explorer requests change of iframe window location --*/
 function postMsg(msg) {
   /* msg should be 'sections' or 'exit' */
-  // alert("posting to iframe - " + msg);
   let ifrm = document.getElementById("pgframe");
   ifrm.contentWindow.postMessage(msg, '*');
 }
 /*-- iframe responds to Explorer link click --*/
 window.onmessage = function (e) {
-  // alert('into TOC msg handler');
-  // alert(e.data);
-  window.location.href = e.data;
+  if(e.data === 'sections') {
+    toggleSections();
+  }
+  else if(e.data === 'pages') {
+    togglePages();
+  }
 }
 
-function setbg(anchor) {
-  const collection = document.getElementsByClassName("clicked");
-  for(let i=0; i<collection.length; i++) {
-    collection[i].style.backgroundColor = 'var(--light)';
-  }
-  anchor.style.backgroundColor = '#ccc';
-}
+// function setbg(anchor) {
+//   const collection = document.getElementsByClassName("clicked");
+//   for(let i=0; i<collection.length; i++) {
+//     collection[i].style.backgroundColor = 'var(--light)';
+//   }
+//   anchor.style.backgroundColor = '#ccc';
+// }
 
 /*-- querystring processing, see footing for redirect processing -----
   https://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript
