@@ -24,6 +24,14 @@ function togglePages() {
   postMsg("pages");
 }
 
+function goNext() {
+  postMsg("next");
+}
+
+function goPrev() {
+  postMsg("prev");
+}
+
 /*-- Explorer requests change of iframe window location --*/
 function postMsg(msg) {
   /* msg should be 'sections' or 'exit' */

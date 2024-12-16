@@ -11,6 +11,23 @@ function isDefined(elem) {
   return true;
 }
 
+function blockParentScroll() {
+  let secs = document.getElementById('sections');
+  secs.addEventListener('mouseenter', () => {
+    document.body.style.overflow = 'hidden';  
+  });
+  secs.addEventListener('mouseleave', () => {
+    document.body.style.overflow = 'auto';  
+  });
+  let pgs = document.getElementById('pages');
+  pgs.addEventListener('mouseenter', () => {
+    document.body.style.overflow = 'hidden';  
+  });
+  pgs.addEventListener('mouseleave', () => {
+    document.body.style.overflow = 'auto';  
+  });
+}
+
 // let bottomMenu = new object;
 // bottomMenu.top = function() {
 //   <a href="#top"></a>
@@ -19,32 +36,53 @@ function isDefined(elem) {
 // bottomMenu.bottom = function() {
 //   <a href="#bottom"></a>
 // }
- 
+
 function toggleSections() {
   const secs = document.getElementById('sections');
   secs.classList.toggle('hidden');
 }
 
-function togglePages() {
-  // alert('in togglePages');
-  const pgs = document.getElementById('pages');
-  // alert(pgs);
-  pgs.classList.toggle('hidden');
-  // pgs.style.display = 'block';
+function hideSections() {
+  const secs = document.getElementById('sections');
+  secs.classList.add('hidden');
 }
 
-/*-- Explorer requests change of iframe window location --*/
+function togglePages() {
+  const pgs = document.getElementById('pages');
+  pgs.classList.toggle('hidden');
+}
+
+function hidePages() {
+  const pgs = document.getElementById('pages');
+  pgs.classList.add('hidden');
+}
+
+/*-- Explorer requests javascript execution --*/
 function postMsg(msg) {
-  /* msg should be 'sections' or 'exit' */
+  /* msg should be 'sections' or 'pages' */
   let ifrm = document.getElementById("pgframe");
   ifrm.contentWindow.postMessage(msg, '*');
 }
-/*-- iframe responds to Explorer link click --*/
+
 window.onmessage = function (e) {
+  let nxt = document.getElementById('next');
+  let prv = document.getElementById('prev');
+  if(e.data === 'next') {
+    nxt.click();
+    return;
+  }
+  else if (e.data === 'prev') {
+    prv.click();
+    return;
+  }
+  let pgs = document.getElementById('pages');
+  let scs = document.getElementById('sections');
   if(e.data === 'sections') {
+    pgs.classList.add('hidden');
     toggleSections();
   }
   else if(e.data === 'pages') {
+    scs.classList.add('hidden');
     togglePages();
   }
 }
