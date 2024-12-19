@@ -16,6 +16,14 @@ function toggleLeftPanel() {
   leftPanel.classList.toggle('hidden');
 }
 
+function toggleAbout() {
+  postMsg("about");
+}
+
+function toggleKeys() {
+  postMsg("keys");
+}
+
 function toggleSections() {
   postMsg("sections");
 }
@@ -34,16 +42,27 @@ function goPrev() {
 
 /*-- Explorer requests change of iframe window location --*/
 function postMsg(msg) {
-  /* msg should be 'sections' or 'exit' */
   // alert("posting to iframe - " + msg);
   let ifrm = document.getElementById("pgframe");
   ifrm.contentWindow.postMessage(msg, '*');
 }
 /*-- iframe responds to Explorer link click --*/
 window.onmessage = function (e) {
-  // alert('into TOC msg handler');
-  // alert(e.data);
-  window.location.href = e.data;
+  let fn = document.getElementById('filename');
+  fn.innerHTML = e.data + ":"; 
+  // alert(fn);
+}
+
+function buildBlogs() {
+  const blg = document.getElementById('blogs');
+  if(isDefined(scs)) {
+    scs.innerHTML =
+    "<div class='darkItem menuHeader' onclick='toggleSections()'>Blogs</div>\
+    <div class='menuBody'>\
+      <a href='Blog1.html'>Blog1</a>\
+      <div style='height:0.5em;'></div>\
+    </div>";
+  }
 }
 
 function setbg(anchor) {

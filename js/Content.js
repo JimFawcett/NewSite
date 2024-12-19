@@ -11,23 +11,6 @@ function isDefined(elem) {
   return true;
 }
 
-function blockParentScroll() {
-  let secs = document.getElementById('sections');
-  secs.addEventListener('mouseenter', () => {
-    document.body.style.overflow = 'hidden';  
-  });
-  secs.addEventListener('mouseleave', () => {
-    document.body.style.overflow = 'auto';  
-  });
-  let pgs = document.getElementById('pages');
-  pgs.addEventListener('mouseenter', () => {
-    document.body.style.overflow = 'hidden';  
-  });
-  pgs.addEventListener('mouseleave', () => {
-    document.body.style.overflow = 'auto';  
-  });
-}
-
 // let bottomMenu = new object;
 // bottomMenu.top = function() {
 //   <a href="#top"></a>
@@ -37,53 +20,90 @@ function blockParentScroll() {
 //   <a href="#bottom"></a>
 // }
 
-function toggleSections() {
-  const secs = document.getElementById('sections');
-  secs.classList.toggle('hidden');
+function postFileName() {
+  // alert('into postFN');
+  let url = window.location.href;
+  const parseUrl = new URL(url);
+  let fn = parseUrl.pathname.split('/').pop();
+  // alert(fn);
+  window.parent.postMessage(fn, '*');
+  // alert('outof postFM');
 }
 
-function hideSections() {
-  const secs = document.getElementById('sections');
-  secs.classList.add('hidden');
+function toggleButton(id) {
+  const btn = document.getElementById(id);
+  btn.classList.toggle('hidden');
 }
 
-function togglePages() {
-  const pgs = document.getElementById('pages');
-  pgs.classList.toggle('hidden');
+function hideButton(id) {
+  const btn = document.getElementById(id);
+  btn.classList.add('hidden');
 }
 
-function hidePages() {
-  const pgs = document.getElementById('pages');
-  pgs.classList.add('hidden');
+function goNext() {
+  let nxt = document.getElementById('next');
+  if(isDefined(nxt)) {
+    nxt.click();
+  }
+}
+
+function goPrev() {
+  let prv = document.getElementById('prev');
+  if(isDefined(prv)) {
+    prv.click();
+  }
 }
 
 /*-- Explorer requests javascript execution --*/
 function postMsg(msg) {
   /* msg should be 'sections' or 'pages' */
-  let ifrm = document.getElementById("pgframe");
-  ifrm.contentWindow.postMessage(msg, '*');
+  // let ifrm = document.getElementById("pgframe");
+  // ifrm.contentWindow.postMessage(msg, '*');
+  window.parent.postMessage(msg, '*');
 }
 
 window.onmessage = function (e) {
-  let nxt = document.getElementById('next');
-  let prv = document.getElementById('prev');
-  if(e.data === 'next') {
-    nxt.click();
-    return;
-  }
-  else if (e.data === 'prev') {
-    prv.click();
-    return;
-  }
-  let pgs = document.getElementById('pages');
-  let scs = document.getElementById('sections');
-  if(e.data === 'sections') {
-    pgs.classList.add('hidden');
-    toggleSections();
-  }
-  else if(e.data === 'pages') {
-    scs.classList.add('hidden');
-    togglePages();
+  switch (e.data) {
+    case 'about':
+      toggleButton('about');
+      break;
+    case 'keys':
+      toggleButton('keys');
+      break;
+    case 'next':
+      let nxt = document.getElementById('next');
+      if(isDefined(nxt)) {
+        nxt.click();
+      }
+      break;
+    case 'prev':
+      let prv = document.getElementById('prev');
+      if(isDefined(prv)) {
+        prv.click();
+      }
+      break;
+    case 'sections':
+      let pgs = document.getElementById('pages');
+      let scs = document.getElementById('sections');
+      if(isDefined(pgs)) {
+        hideButton('pages');
+      }
+      if(isDefined(scs)) {
+        toggleButton('sections');
+      }
+      break;
+    case 'pages':
+      let pgs2 = document.getElementById('pages');
+      let scs2 = document.getElementById('sections');
+      if(isDefined(scs2)) {
+        hideButton('sections');
+      }
+      if(isDefined(pgs2)) {
+        toggleButton('pages');
+      }
+      break;
+    default:
+
   }
 }
 
@@ -108,7 +128,7 @@ function getParameterByName(name, url = window.location.href) {
 }
   
   /*-- query string redirect processing --*/
-  function processQueryString() {
+function processQueryString() {
   var url = window.location.href;
   var src = getParameterByName("src", url);
   // alert(src);
@@ -120,4 +140,49 @@ function getParameterByName(name, url = window.location.href) {
       src = null;
     }
   }    
+}
+
+function clickButton(id) {
+  let btn = document.getElementById(id);
+  if(isDefined(btn)) {
+    btn.click();
+  }
+}
+
+function setKeys() {
+  document.addEventListener('keydown', function(event) {
+    if(event.key === 't' || event.key === 'T') {
+      window.location.href = '#top';
+    }
+    if(event.key === 'e' || event.key === 'E') {
+      window.location.href = '#bottom';
+    }
+    if(event.key === 'n' || event.key === 'N') {
+      clickButton('next');
+    }
+    if(event.key === 'p' || event.key === 'P') {
+      clickButton('prev');
+    }
+    if(event.key === 'r' || event.key === 'R') {
+      window.location.reload();
+    }
+    if(event.key === 'b' || event.key === 'B') {
+      history.go(-1);
+    }
+    if(event.key === 'f' || event.key === 'F') {
+      history.go(1);
+    }
+    if(event.key === 'a' || event.key === 'A') {
+      toggleButton('about');
+    }
+    if(event.key === 'k' || event.key === 'K') {
+      toggleButton('keys');
+    }
+    if(event.key === 's' || event.key === 'S') {
+      toggleButton('sections');
+    }
+    if(event.key === 'q' || event.key === 'Q') {
+      toggleButton('pages');
+    }
+  });
 }
