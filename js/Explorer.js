@@ -13,7 +13,9 @@ function isDefined(elem) {
  
 function toggleLeftPanel() {
   const leftPanel = document.getElementById('lpanel');
-  leftPanel.classList.toggle('hidden');
+  if(isDefined(leftPanel)) {
+    leftPanel.classList.toggle('hidden');
+  }
 }
 
 function toggleAbout() {
@@ -53,15 +55,69 @@ window.onmessage = function (e) {
   // alert(fn);
 }
 
+function toggleBlogs() {
+  const blg = document.getElementById('blogs');
+  if(isDefined(blg)) {
+    let hlp = document.getElementById('help');
+    if(isDefined(hlp)) {
+      hideHelp();
+    }
+    blg.classList.toggle('hidden');
+  }
+}
+
+function hideBlogs() {
+  const blg = document.getElementById('blogs');
+  if(isDefined(blg)) {
+    blg.classList.add('hidden');
+  }
+}
+
 function buildBlogs() {
   const blg = document.getElementById('blogs');
-  if(isDefined(scs)) {
-    scs.innerHTML =
-    "<div class='darkItem menuHeader' onclick='toggleSections()'>Blogs</div>\
+  if(isDefined(blg)) {
+    blg.innerHTML =
+    "<div class='darkItem menuHeader' onclick='hideBlogs()'>Blogs</div>\
     <div class='menuBody'>\
       <a href='Blog1.html'>Blog1</a>\
+      <a href='Blog1.html'>Blog2</a>\
       <div style='height:0.5em;'></div>\
     </div>";
+    blg.addEventListener('mouseleave', function(event) {
+      blg.classList.add('hidden')
+    });  
+  }
+}
+
+function toggleHelp() {
+  const hlp = document.getElementById('help');
+  if(isDefined(hlp)) {
+    const blg = document.getElementById('blogs');
+    hideBlogs();
+    hlp.classList.toggle('hidden');
+  }
+}
+
+function hideHelp() {
+  const hlp = document.getElementById('help');
+  if(isDefined(hlp)) {
+    hlp.classList.add('hidden');
+  }
+}
+
+function buildHelp() {
+  const hlp = document.getElementById('help');
+  if(isDefined(hlp)) {
+    hlp.innerHTML =
+    "<div class='darkItem menuHeader' onclick='hideHelp()'>Help</div>\
+    <div class='menuBody'>\
+      <a target='_blank' href='Help1.html'>Help1</a>\
+      <a target='_blank' href='Help1.html'>Help2</a>\
+      <div style='height:0.5em;'></div>\
+    </div>";
+    hlp.addEventListener('mouseleave', function(event) {
+      hlp.classList.add('hidden')
+    });
   }
 }
 
