@@ -90,8 +90,8 @@ function buildSections() {
     scs.innerHTML =
     "<div class='darkItem menuHeader' onclick='toggleSections()'>Sections</div>\
     <div class='menuBody'>\
-      <a href='#top'>top</a>\
-      <a href='#bottom'>bottom</a>\
+      <a onclick='window.scrollTo(0, 0)'>top</a>\
+      <a onclick='window.scrollTo(0, document.body.scrollHeight)'>bottom</a>\
       <div style='height:0.5em;'></div>\
     </div>";
   }
