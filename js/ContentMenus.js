@@ -84,20 +84,27 @@ function buildKeys() {
   }
 }
 
-function buildSections() {
-  const scs = document.getElementById('sections');
-  if(isDefined(scs)) {
-    scs.innerHTML =
-    "<div class='darkItem menuHeader' onclick='toggleSections()'>Sections</div>\
-    <div class='menuBody'>\
-      <a href='#top'>top</a>\
-      <a href='#bottom'>bottom</a>\
-      <div style='height:0.5em;'></div>\
-    </div>";
-  }
-}
+/*---------------------------------------------------------
+  sections menu built with html at end of each content page 
+*/
+// function buildSections() {
+//   const scs = document.getElementById('sections');
+//   if(isDefined(scs)) {
+//     scs.innerHTML =
+//     "<div class='darkItem menuHeader' onclick='toggleSections()'>Sections</div>\
+//     <div class='menuBody'>\
+//       <a href='#top'>top</a>\
+//       <a href='#bottom'>bottom</a>\
+//       <div style='height:0.5em;'></div>\
+//     </div>";
+//   }
+// }
 
-// this function is defined in a PagesXX.js file
+/*---------------------------------------------------------
+  pages menu is built with javascript in XXPages.js file 
+  which defines buildPages() function.
+*/
+// this function is defined in a XXPages.js file
 // function buildPages() {
 //   const pgs = document.getElementById('pages');
 //   if(isDefined(pgs)) {
@@ -113,7 +120,7 @@ function buildSections() {
 function buildBottomMenu() {
   buildKeys();
   setKeys();
-  buildSections();
+  // sections menu built in html at content file end
   buildPages();
 }
 
