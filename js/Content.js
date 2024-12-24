@@ -92,16 +92,33 @@ window.onmessage = function (e) {
         toggleButton('sections');
       }
       break;
-    case 'pages':
-      let pgs2 = document.getElementById('pages');
-      let scs2 = document.getElementById('sections');
-      if(isDefined(scs2)) {
-        hideButton('sections');
-      }
-      if(isDefined(pgs2)) {
-        toggleButton('pages');
-      }
-      break;
+      case 'pages':
+        let pgs2 = document.getElementById('pages');
+        let scs2 = document.getElementById('sections');
+        if(isDefined(scs2)) {
+          hideButton('sections');
+        }
+        if(isDefined(pgs2)) {
+          toggleButton('pages');
+        }
+        break;
+      case 'blogs':
+        alert('blogs');
+        let blgs = document.getElementById('blogs');
+        if(isDefined(blgs)) {
+          alert(blgs);
+          toggleButton('blogs');
+        }
+        break;
+      case 'help':
+        alert('help');
+        let hlp = document.getElementById('help');
+        if(isDefined(hlp)) {
+          alert(hlp)
+          toggleButton('help');
+        }
+        break;
+                  
     default:
 
   }

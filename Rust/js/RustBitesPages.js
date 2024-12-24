@@ -10,7 +10,8 @@ function buildPages() {
     pgs.innerHTML =
     "<div class='darkItem menuHeader' onclick='togglePages()'>Thread Pages</div>\
     <div class='menuBody'>\
-      <a href='PagePrototype.html'>Page Prototype</a>\
+      <a href='RustBites_Intro.html'>Introduction</a>\
+      <a href='RustBites_Starting.html'>Starting</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
