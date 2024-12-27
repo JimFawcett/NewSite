@@ -102,23 +102,6 @@ window.onmessage = function (e) {
           toggleButton('pages');
         }
         break;
-      case 'blogs':
-        alert('blogs');
-        let blgs = document.getElementById('blogs');
-        if(isDefined(blgs)) {
-          alert(blgs);
-          toggleButton('blogs');
-        }
-        break;
-      case 'help':
-        alert('help');
-        let hlp = document.getElementById('help');
-        if(isDefined(hlp)) {
-          alert(hlp)
-          toggleButton('help');
-        }
-        break;
-                  
     default:
 
   }
@@ -215,4 +198,26 @@ function closeQuickStatus() {
     //det.removeAttribute('open');
     let dummy = true;
   }
+}
+
+function toggleShow(id, width) {
+  let showit = document.getElementById(id);
+  if (showit) {
+    if (showit.style.display === 'none') {
+      showit.style.display = 'block';
+      showit.firstElementChild.style.width = width + "px";
+    }
+    else {
+      let d3 = showit.style.width;
+      showit.firstElementChild.style.width = width + "px";
+      showit.style.display = 'None';
+      // location.reload();
+    }
+  }
+  else {
+    //alert('showit not defined');
+  }
+}
+function bigger(img) {
+  img.style.width = (img.clientWidth * 1.25) + "px";
 }

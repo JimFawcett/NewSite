@@ -60,16 +60,16 @@ function buildHelp() {
     hlp.innerHTML =
     "<div class='darkItem menuHeader' onclick='hideHelp()'>Help</div>\
     <div class='menuBody'>\
-      <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_VSCode.html'>VS Code</a>\
-      <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_Cargo.html'>Rust Cargo</a>\
-      <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_CMake.html'>CMake</a>\
-      <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_DotNet.html'>DotNet</a>\
-      <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_Git.html'>Git</a>\
-      <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_GitHub.html'>GitHub</a>\
-      <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_PowerShell.html'>PowerShell</a>\
-      <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_RegEx.html'>RegEx</a>\
-      <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_ChatGPT.html'>ChatGPT</a>\
-      <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_SiteNav.html'>SiteNav</a>\
+      <a target='_blank' href='Explore.html?src=Help_VSCode.html'>VS Code</a>\
+      <a target='_blank' href='Explore.html?src=Help_Cargo.html'>Rust Cargo</a>\
+      <a target='_blank' href='Explore.html?src=Help_CMake.html'>CMake</a>\
+      <a target='_blank' href='Explore.html?src=Help_DotNet.html'>DotNet</a>\
+      <a target='_blank' href='Explore.html?src=Help_Git.html'>Git</a>\
+      <a target='_blank' href='Explore.html?src=Help_GitHub.html'>GitHub</a>\
+      <a target='_blank' href='Explore.html?src=Help_PowerShell.html'>PowerShell</a>\
+      <a target='_blank' href='Explore.html?src=Help_RegEx.html'>RegEx</a>\
+      <a target='_blank' href='Explore.html?src=Help_ChatGPT.html'>ChatGPT</a>\
+      <a target='_blank' href='Explore.html?src=Help_SiteNav.html'>SiteNav</a>\
       <div style='height:1.0em;'></div>\
     </div>";
     hlp.addEventListener('mouseleave', function(event) {
