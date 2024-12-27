@@ -11,10 +11,43 @@ function isDefined(elem) {
   return true;
 }
  
+function iframeTransition() {
+  const iframe = document.getElementById('pgframe');
+  if(isDefined(iframe)) {
+    iframe.addEventListener('load', () => {
+      setTimeout(() => {
+        iframe.classList.add('loaded');
+      }, 10);
+    });
+  }
+}
+
+function resetIframeTransition() {
+  const iframe = document.getElementById('pgframe');
+  if(isDefined(iframe)) {
+    iframe.addEventListener('beforeunload', () => {
+      alert('beforeunload');
+      iframe.classList.remove('loaded');
+    })
+  }
+}
+
+function handleIframeTransition() {
+  iframeTransition();
+  resetIframeTransition();
+}
+
 function toggleLeftPanel() {
   const leftPanel = document.getElementById('lpanel');
   if(isDefined(leftPanel)) {
     leftPanel.classList.toggle('hidden');
+  }
+}
+
+function closeLeftPanel() {
+  const leftPanel = document.getElementById('lpanel');
+  if(isDefined(leftPanel)) {
+    leftPanel.classList.add('hidden');
   }
 }
 
