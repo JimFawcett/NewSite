@@ -28,8 +28,8 @@ function buildBlogs() {
     blg.innerHTML =
     "<div class='darkItem menuHeader' onclick='hideBlogs()'>Blogs</div>\
     <div class='menuBody'>\
-      <a href='Blog1.html'>Blog1</a>\
-      <a href='Blog1.html'>Blog2</a>\
+      <a class='undef' href='javascript:;'>Comm Compare</a>\
+      <a class='undef' href='javascript:;'>Rust Safety</a>\
       <div style='height:0.5em;'></div>\
     </div>";
     blg.addEventListener('mouseleave', function(event) {
