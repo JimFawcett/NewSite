@@ -70,6 +70,8 @@ function buildHelp() {
       <a target='_self' href='../ExploreCode.html?src=Help_RegEx.html'>RegEx</a>\
       <a target='_self' href='../ExploreCode.html?src=Help_ChatGPT.html'>ChatGPT</a>\
       <a target='_self' href='../ExploreCode.html?src=Help_SiteNav.html'>SiteNav</a>\
+      <a class='undef' target='_self' href='javascript:;'>Compiler Explorer</a>\
+      <a class='undef' target='_self' href='javascript:;'>Explorer Tips</a>\
       <div style='height:1.0em;'></div>\
     </div>";
     hlp.addEventListener('mouseleave', function(event) {
