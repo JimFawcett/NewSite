@@ -25,10 +25,12 @@ function hideBlogs() {
 function buildBlogs() {
   const blg = document.getElementById('blogs');
   if(isDefined(blg)) {
+    // alert('in buildBlogs');
     blg.innerHTML =
     "<div class='darkItem menuHeader' onclick='hideBlogs()'>Blogs</div>\
     <div class='menuBody'>\
-      <a class='undef' href='javascript:;'>Comm Compare</a>\
+      <a href='Explore.html?src=Blogs/Blog_Prototype.html'>Blog_Prototype</a>\
+      <a href='Explore.html?src=Blogs/Blog_CommCompare.html'>Comm Compare</a>\
       <a class='undef' href='javascript:;'>Rust Safety</a>\
       <div style='height:0.5em;'></div>\
     </div>";

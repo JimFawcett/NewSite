@@ -28,6 +28,7 @@ function buildBlogs() {
     blg.innerHTML =
     "<div class='darkItem menuHeader' onclick='hideBlogs()'>Blogs</div>\
     <div class='menuBody'>\
+      <a href='Blogs/Blog_Prototype.html;'>Blog_Prototype</a>\
       <a class='undef' href='javascript:;'>Comm Compare</a>\
       <a class='undef' href='javascript:;'>Rust Safety</a>\
       <div style='height:0.5em;'></div>\
