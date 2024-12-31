@@ -83,6 +83,13 @@ function toggleHelp() {
   postMsg("help");
 }
 
+function closeExps() {
+  const expls = document.getElementById('explorers');
+  if(isDefined(expls)) {
+    // alert('in closeExps()');
+    expls.open = false;
+  }
+}
 /*-- Explorer requests change of iframe window location --*/
 function postMsg(msg) {
   // alert("posting to iframe - " + msg);
