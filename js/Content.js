@@ -233,6 +233,7 @@ function clickButton(id) {
 
 function setKeys() {
   document.addEventListener('keydown', function(event) {
+    // alert(event.key);
     if(event.key === 't' || event.key === 'T') {
       window.location.href = '#top';
     }
