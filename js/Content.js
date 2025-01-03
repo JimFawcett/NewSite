@@ -73,6 +73,9 @@ function postMsg(msg) {
 
 window.onmessage = function (e) {
   switch (e.data) {
+    case 'compare':
+      toggleCompare();
+      break;
     case 'about':
       toggleButton('about');
       break;
@@ -266,6 +269,9 @@ function setKeys() {
     }
     if(event.key === 'q' || event.key === 'Q') {
       toggleButton('pages');
+    }
+    if(event.key === 'c' || event.key === 'C') {
+      toggleCompare();
     }
   });
 }

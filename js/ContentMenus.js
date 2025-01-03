@@ -11,6 +11,17 @@ function isDefined(elem) {
   return true;
 }
 
+function toggleCompare() {
+  let cmp = document.getElementById('compare');
+  if(isDefined(cmp)) {
+    cmp.classList.toggle('hidden');
+    let scs = document.getElementById('sections');
+    if(isDefined(scs)) {
+      scs.classList.remove('hidden');
+    }
+  }
+}
+
 function toggleAbout() {
   let abt = document.getElementById('about');
   if(isDefined(abt)) {
@@ -79,6 +90,9 @@ function buildKeys() {
       </tr>\
       <tr>\
         <td class='center clickable'><a onclick='togglePages()'>Q</a></td><td>Toggle Pages</td>\
+      </tr>\
+      <tr>\
+        <td class='center clickable'><a onclick='toggleCompare()'>C</a></td><td>Toggle Compare</td>\
       </tr>\
     </table>";
   }

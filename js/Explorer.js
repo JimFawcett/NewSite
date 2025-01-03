@@ -51,6 +51,10 @@ function closeLeftPanel() {
   }
 }
 
+function toggleCompare() {
+  postMsg("compare");
+}
+
 function toggleAbout() {
   postMsg("about");
 }
