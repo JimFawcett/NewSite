@@ -10,6 +10,7 @@ function buildPages() {
     pgs.innerHTML =
     "<div class='darkItem menuHeader' onclick='togglePages()'>Rust Bites Pages</div>\
     <div class='menuBody'>\
+      <a href='RustHome.html'>Track Summary</a>\
       <a href='RustBites_Intro.html'>Introduction</a>\
       <a href='RustBites_HelloRust.html'>Hello World</a>\
       <a href='RustBites_Data.html'>Data</a>\

@@ -11,6 +11,14 @@ function isDefined(elem) {
   return true;
 }
 
+function isHidden(id) {
+  const element = document.getElementById(id);
+  if(isDefined(element)) {
+    return element.classList.contains('hidden');
+  }
+  return false;
+}
+
 // let bottomMenu = new object;
 // bottomMenu.top = function() {
 //   <a href="#top"></a>
@@ -21,13 +29,10 @@ function isDefined(elem) {
 // }
 
 function postFileName() {
-  // alert('into postFN');
   let url = window.location.href;
   const parseUrl = new URL(url);
   let fn = parseUrl.pathname.split('/').pop();
-  // alert(fn);
   window.parent.postMessage(fn, '*');
-  // alert('outof postFM');
 }
 
 function toggleButton(id) {
@@ -38,6 +43,11 @@ function toggleButton(id) {
 function hideButton(id) {
   const btn = document.getElementById(id);
   btn.classList.add('hidden');
+}
+
+function showButton(id) {
+  const btn = document.getElementById(id);
+  btn.classList.remove('hidden');
 }
 
 function goNext() {
@@ -95,13 +105,15 @@ window.onmessage = function (e) {
       }
       break;
     case 'sections':
+      console.log('in content msg loop');
       let pgs = document.getElementById('pages');
       let scs = document.getElementById('sections');
       if(isDefined(pgs)) {
         hideButton('pages');
       }
       if(isDefined(scs)) {
-        toggleButton('sections');
+        //toggleButton('sections');
+        toggleSections();
       }
       break;
     case 'pages':
@@ -191,7 +203,10 @@ window.onmessage = function (e) {
 
   }
 }
-
+/*---------------------------------------------------------
+  set background-color for link in list and remove
+  for last clicked link
+*/
 // function setbg(anchor) {
 //   const collection = document.getElementsByClassName("clicked");
 //   for(let i=0; i<collection.length; i++) {
@@ -200,19 +215,11 @@ window.onmessage = function (e) {
 //   anchor.style.backgroundColor = '#ccc';
 // }
 
-/*-- querystring processing, see footing for redirect processing -----
+/*---------------------------------------------------------
+  querystring processing passed to Explorers on load
+  to specify iframe target
   https://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript
 */
-function getParameterByName(name, url = window.location.href) {
-  name = name.replace(/[\[\]]/g, '\\$&');
-  var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
-  results = regex.exec(url);
-  if (!results) return null;
-  if (!results[2]) return '';
-  return decodeURIComponent(results[2].replace(/\+/g, ' '));
-}
-  
-  /*-- query string redirect processing --*/
 function processQueryString() {
   var url = window.location.href;
   var src = getParameterByName("src", url);
@@ -227,13 +234,29 @@ function processQueryString() {
   }    
 }
 
+function getParameterByName(name, url = window.location.href) {
+  name = name.replace(/[\[\]]/g, '\\$&');
+  var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+  results = regex.exec(url);
+  if (!results) return null;
+  if (!results[2]) return '';
+  return decodeURIComponent(results[2].replace(/\+/g, ' '));
+}
+  
+  /*-- query string redirect processing --*/
+/*---------------------------------------------------------
+  programmed button click given element id
+*/
 function clickButton(id) {
   let btn = document.getElementById(id);
   if(isDefined(btn)) {
     btn.click();
   }
 }
-
+/*---------------------------------------------------------
+  listen for key strokes and respond with programmed
+  actions
+*/
 function setKeys() {
   document.addEventListener('keydown', function(event) {
     // alert(event.key);
@@ -275,7 +298,9 @@ function setKeys() {
     }
   });
 }
-
+/*---------------------------------------------------------
+  close quickStatus element on mouseout etc
+*/
 function closeQuickStatus() {
   let qstat = document.getElementsByClassName("quickStatus");
   if (qstat) {
@@ -283,12 +308,12 @@ function closeQuickStatus() {
       let det = item.parentElement;
       det.removeAttribute('open');
     }
-    //let det = qstat[0].parentElement;
-    //det.removeAttribute('open');
-    let dummy = true;
   }
 }
-
+/*---------------------------------------------------------
+  toggle show dropdown, e.g., [ show ... ] shows hidden
+  child element.
+*/
 function toggleShow(id, width) {
   let showit = document.getElementById(id);
   if (showit) {
