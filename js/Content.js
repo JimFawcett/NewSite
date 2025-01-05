@@ -75,7 +75,6 @@ function dirName() {
 
 /*-- Explorer requests javascript execution --*/
 function postMsg(msg) {
-  /* msg should be 'sections' or 'pages' */
   // let ifrm = document.getElementById("pgframe");
   // ifrm.contentWindow.postMessage(msg, '*');
   window.parent.postMessage(msg, '*');
