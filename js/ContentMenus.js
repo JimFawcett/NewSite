@@ -10,17 +10,28 @@ function isDefined(elem) {
   }
   return true;
 }
-
-function toggleCompare() {
-  let cmp = document.getElementById('compare');
-  if(isDefined(cmp)) {
-    cmp.classList.toggle('hidden');
-    let scs = document.getElementById('sections');
-    if(isDefined(scs)) {
-      scs.classList.remove('hidden');
-    }
+/*---------------------------------------------------------
+  Cookies are used to keep session data for managing
+  display of page and section lists
+*/
+function setCookie(name, value, days) {
+  let expires = "";
+  if (days) {
+    const date = new Date();
+    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000)); // Convert days to milliseconds
+    expires = "; expires=" + date.toUTCString();
   }
+  document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/";
 }
+function getCookie(key) {
+  const cookies = document.cookie.split("; ");
+  for (let cookie of cookies) {
+    const [trialKey, value] = cookie.split("=");
+    if(trialKey === key) return value;
+  }
+  return null;
+}
+
 
 function toggleAbout() {
   let abt = document.getElementById('about');
@@ -43,12 +54,71 @@ function togglePages() {
   }
 }
 
+function showSections() {
+  showButton('sections');
+  setCookie('sections', 'true');
+}
+function hideSections() {
+  hideButton('sections');
+  setCookie('sections','false');
+}
 function toggleSections() {
-  let scs = document.getElementById('sections');
-  if(isDefined(scs)) {
-    scs.classList.toggle('hidden');
+  console.log('in toggle sections');
+  toggleButton('sections');
+  if (isHidden('sections')) {
+    setCookie('sections', 'false');
+  } else {
+    setCookie('sections', 'true');
   }
 }
+/*---------------------------------------------------------
+  manage site session variables with cookies
+  - used to make pages and sections list state
+    persistant across page loading
+*/
+function setSections() {
+  console.log('set sections');
+  let state = getCookie('sections');
+  console.log('state: ' + state);
+  switch(state) {
+    case null:
+      setCookie('sections', 'false');
+      console.log('cookie value: ' + getCookie('sections'));
+      break;
+    case 'true':
+      toggleSections();
+      console.log('cookie value: ' + getCookie('sections'));
+      break;
+    case 'false':
+      console.log('cookie value: ' + getCookie('sections'));
+    default:
+  }
+}
+// function toggleSections() {
+//   let scs = document.getElementById('sections');
+//   if(isDefined(scs)) {
+//     scs.classList.toggle('hidden');
+//   }
+// }
+
+function hideCompare() {
+  let cmp = document.getElementById('compare');
+  if(isDefined(cmp)) {
+    cmp.classList.add('hidden');
+  }
+}
+
+function toggleCompare() {
+  let cmp = document.getElementById('compare');
+  if(isDefined(cmp)) {
+    cmp.classList.toggle('hidden');
+    let scs = document.getElementById('sections');
+    if(isDefined(scs)) {
+      scs.classList.remove('hidden');
+    }
+  }
+}
+
 
 function buildKeys() {
   const keys = document.getElementById('keys');
