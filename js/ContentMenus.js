@@ -114,7 +114,8 @@ function toggleCompare() {
     cmp.classList.toggle('hidden');
     let scs = document.getElementById('sections');
     if(isDefined(scs)) {
-      scs.classList.remove('hidden');
+      showSections();
+      // scs.classList.remove('hidden');
     }
   }
 }
