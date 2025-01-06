@@ -1,6 +1,6 @@
-/*---------------------------------------------------------
+/*
  * Content.js - Scripts for content pages
- * ver 1.0 - 06 Jan 2025
+ * ver 1.0 - 09 Dec 2024
  * Jim Fawcett
  */
 
@@ -73,29 +73,18 @@ function dirName() {
   return path.split('/').pop();
 }
 
-/*---------------------------------------------------------
-  Pages embedded in an Explorer's iframe communicate 
-  to the Explorer by posting a message with this 
-  function.
-  - usually used to send back its filename so Explorer
-    can put the name in its footer when page loads.
-*/
+/*-- Explorer requests javascript execution --*/
 function postMsg(msg) {
   // let ifrm = document.getElementById("pgframe");
   // ifrm.contentWindow.postMessage(msg, '*');
   window.parent.postMessage(msg, '*');
 }
-/*---------------------------------------------------------
-  Message handler
-  - Explorers post an event name, e.g., name of button
-    action.  
-  - Page embedded in iframe receives those messages
-    here and generates an approprate action, often
-    displaying a menu or form.
-*/
+
 window.onmessage = function (e) {
-  console.log('in msg loop: msg = ' + e.data);
   switch (e.data) {
+    case 'compare':
+      toggleCompare();
+      break;
     case 'about':
       toggleButton('about');
       break;
@@ -114,31 +103,29 @@ window.onmessage = function (e) {
         prv.click();
       }
       break;
-      case 'compare':
-        hideElement('pages');
-        toggleCompare();
-        break;
-      case 'sections':
-        let pgs = document.getElementById('pages');
-        let scs = document.getElementById('sections');
-        if(isDefined(pgs)) {
-          hideElement('pages');
-        }
-        if(isDefined(scs)) {
-          //toggleButton('sections');
-          toggleElement('sections');
-        }
-        break;
-      case 'pages':
-        let pgs2 = document.getElementById('pages');
-        let scs2 = document.getElementById('sections');
-        if(isDefined(scs2)) {
-          hideElement('sections');
-        }
-        if(isDefined(pgs2)) {
-          toggleElement('pages');
-        }
-        break;
+    case 'sections':
+      console.log('in content msg loop');
+      let pgs = document.getElementById('pages');
+      let scs = document.getElementById('sections');
+      if(isDefined(pgs)) {
+        hideButton('pages');
+      }
+      if(isDefined(scs)) {
+        //toggleButton('sections');
+        toggleSections();
+      }
+      break;
+    case 'pages':
+      let pgs2 = document.getElementById('pages');
+      let scs2 = document.getElementById('sections');
+      if(isDefined(scs2)) {
+        hideSections();
+        // hideButton('sections');
+      }
+      if(isDefined(pgs2)) {
+        toggleButton('pages');
+      }
+      break;
     /* Explorer cases require files in NewSite or an immediate child */
     case 'Explore':
       if(dirName() === "NewSite") {
@@ -256,6 +243,7 @@ function getParameterByName(name, url = window.location.href) {
   return decodeURIComponent(results[2].replace(/\+/g, ' '));
 }
   
+  /*-- query string redirect processing --*/
 /*---------------------------------------------------------
   programmed button click given element id
 */
