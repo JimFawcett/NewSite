@@ -1,6 +1,6 @@
 /*
- * ContentMenus.js - Scripts for content menus
- * ver 1.0 - 06 Jan 2025
+ * ExplrMenus.js - Scripts for content pages
+ * ver 1.0 - 09 Dec 2024
  * Jim Fawcett
  */
 /*---------------------------------------------------------
@@ -12,13 +12,11 @@
 //   }
 //   return true;
 // }
-
 /*---------------------------------------------------------
   Cookies are used to keep session data for managing
   display of page and section lists
 */
 function setCookie(name, value, days) {
-  console.log('setcookie: ' + name + '=' + value);
   let expires = "";
   if (days) {
     const date = new Date();
@@ -28,7 +26,6 @@ function setCookie(name, value, days) {
   document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/";
 }
 function getCookie(key) {
-  console.log('getcookie: ' + key);
   const cookies = document.cookie.split("; ");
   for (let cookie of cookies) {
     const [trialKey, value] = cookie.split("=");
@@ -36,67 +33,29 @@ function getCookie(key) {
   }
   return null;
 }
-/*---------------------------------------------------------
-  Toggle about popup when using About button on bottom menu
-  - not persistent, disappears on refresh
-*/
+
+
 function toggleAbout() {
   let abt = document.getElementById('about');
   if(isDefined(abt)) {
     abt.classList.toggle('hidden');
   }
 }
-/*---------------------------------------------------------
-  Toggle keys popup when using Keys button on bottom menu
-  - not persistent, disappears on refresh
-*/
+
 function toggleKeys() {
   let keys = document.getElementById('keys');
   if(isDefined(keys)) {
     keys.classList.toggle('hidden');
   }
 }
-/*---------------------------------------------------------
-  Compare functions show/hide code compare menu
-  - persistent, does not disappear on refresh
-*/
-function hideCompare() {
-  let cmp = document.getElementById('compare');
-  if(isDefined(cmp)) {
-    hideElement('compare');
-    // cmp.classList.add('hidden');
-  }
-}
-function toggleCompare() {
-  let cmp = document.getElementById('compare');
-  if(isDefined(cmp)) {
-    toggleElement('compare');
-    // cmp.classList.toggle('hidden');
-    let scs = document.getElementById('sections');
-    if(isDefined(scs)) {
-      showElement('sections');
-      // scs.classList.remove('hidden');
-    }
-  }
-}
-/*---------------------------------------------------------
-  Toggle Pages popup when using Keys button on bottom menu
-  - persistent, does not disappear on refresh
-*/
+
 function togglePages() {
-  // console.log('in togglePages()');
-  toggleButton('pages');
-  if (isHidden('pages')) {
-    setCookie('pages', 'false');
-  } else {
-    setCookie('pages', 'true');
+  let pgs = document.getElementById('pages');
+  if(isDefined(pgs)) {
+    pgs.classList.toggle('hidden');
   }
 }
-/*---------------------------------------------------------
-  The Sections functions record hidden state in 
-  cookie with 'sections' key
-  - actions are persistent, do not revert on refresh
-*/
+
 function showSections() {
   showButton('sections');
   setCookie('sections', 'true');
@@ -106,7 +65,7 @@ function hideSections() {
   setCookie('sections','false');
 }
 function toggleSections() {
-  // console.log('in toggle sections');
+  console.log('in toggle sections');
   toggleButton('sections');
   if (isHidden('sections')) {
     setCookie('sections', 'false');
@@ -114,23 +73,16 @@ function toggleSections() {
     setCookie('sections', 'true');
   }
 }
-/*---------------------------------------------------------
-  The Element functions are the most general, accepting
-  an element id for action.
-  - persistent, actions do not revert on refresh
-*/
 function showElement(id) {
-  console.log('in showElement: id = ' + id);
   showButton(id);
   setCookie(id, 'true');
 }
 function hideElement(id) {
-  console.log('in hideElement: id = ' + id);
   hideButton(id);
   setCookie(id,'false');
 }
 function toggleElement(id) {
-  console.log('in toggleElement: id = ' + id);
+  console.log('in toggle sections');
   toggleButton(id);
   if (isHidden(id)) {
     setCookie(id, 'false');
@@ -140,37 +92,77 @@ function toggleElement(id) {
 }
 /*---------------------------------------------------------
   manage site session variables with cookies
-  - used to make compare, pages and sections list state
+  - used to make pages and sections list state
     persistant across page loading
 */
 function setElements(id) {
-  console.log('in setElements: id = ' + id);
+  console.log('set ' + id);
   let state = getCookie(id);
   console.log('state: ' + state);
   switch(state) {
     case null:
       setCookie(id, 'false');
-      // console.log('id: ' + id)
-      // console.log('cookie value: ' + getCookie(id));
+      console.log('id: ' + id)
+      console.log('cookie value: ' + getCookie(id));
       break;
     case 'true':
       toggleElement(id);
-      // console.log('cookie value: ' + getCookie(id));
+      console.log('cookie value: ' + getCookie(id));
       break;
     case 'false':
-      // console.log('cookie value: ' + getCookie(id));
+      console.log('cookie value: ' + getCookie(id));
     default:
   }
 }
 /*---------------------------------------------------------
-  loader method collects load actions for all persistent
-  elements
+  manage site session variables with cookies
+  - used to make pages and sections list state
+    persistant across page loading
 */
-function setPersistantElements() {
-  setElements('sections');
-  setElements('pages');
-  setElements('compare');
+function setSections() {
+  console.log('set sections');
+  let state = getCookie('sections');
+  console.log('state: ' + state);
+  switch(state) {
+    case null:
+      setCookie('sections', 'false');
+      console.log('cookie value: ' + getCookie('sections'));
+      break;
+    case 'true':
+      toggleSections();
+      console.log('cookie value: ' + getCookie('sections'));
+      break;
+    case 'false':
+      console.log('cookie value: ' + getCookie('sections'));
+    default:
+  }
 }
+// function toggleSections() {
+//   let scs = document.getElementById('sections');
+//   if(isDefined(scs)) {
+//     scs.classList.toggle('hidden');
+//   }
+// }
+
+function hideCompare() {
+  let cmp = document.getElementById('compare');
+  if(isDefined(cmp)) {
+    cmp.classList.add('hidden');
+  }
+}
+
+function toggleCompare() {
+  let cmp = document.getElementById('compare');
+  if(isDefined(cmp)) {
+    cmp.classList.toggle('hidden');
+    let scs = document.getElementById('sections');
+    if(isDefined(scs)) {
+      showSections();
+      // scs.classList.remove('hidden');
+    }
+  }
+}
+
 
 function buildKeys() {
   const keys = document.getElementById('keys');

@@ -8,7 +8,7 @@ function buildPages() {
   const pgs = document.getElementById('pages');
   if(isDefined(pgs)) {
     pgs.innerHTML =
-    "<div class='darkItem menuHeader' onclick='togglePages()'>Thread Pages</div>\
+    "<div class='darkItem menuHeader' onclick='togglePages()'>Site Pages</div>\
     <div class='menuBody'>\
       <a href='SiteHome.html'>Site Home</a>\
       <a href='SiteMap.html'>Site Map</a>\
