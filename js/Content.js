@@ -37,17 +37,23 @@ function postFileName() {
 
 function toggleButton(id) {
   const btn = document.getElementById(id);
-  btn.classList.toggle('hidden');
+  if(isDefined(btn)) {
+    btn.classList.toggle('hidden');
+  }
 }
 
 function hideButton(id) {
   const btn = document.getElementById(id);
-  btn.classList.add('hidden');
+  if(isDefined(btn)) {
+    btn.classList.add('hidden');
+  }
 }
 
 function showButton(id) {
   const btn = document.getElementById(id);
-  btn.classList.remove('hidden');
+  if(isDefined(btn)) {
+    btn.classList.remove('hidden');
+  }
 }
 
 function goNext() {
