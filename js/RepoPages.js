@@ -9,9 +9,9 @@ function buildPages() {
   if(isDefined(pgs)) {
     pgs.innerHTML =
     "<div class='darkItem menuHeader' onclick='togglePages()'>Thread Pages</div>\
-    <div class='menuBody'>\
-      <a href='RustRepos.html'>Rust Repos</a>\
-        <a class='undef' href='javascript:;'>C++ Repos</a>\
+      <div class='menuBody'>\
+        <a href='../Rust/RustRepos.html'>Rust Repos</a>\
+        <a href='../Cpp/CppRepos.html'>C++ Repos</a>\
         <a class='undef' href='javascript:;'>C# Repos</a>\
         <a class='undef' href='javascript:;'>Python Repos</a>\
         <a class='undef' href='javascript:;'>WebDev Repos</a>\
