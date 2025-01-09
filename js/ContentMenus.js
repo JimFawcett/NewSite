@@ -64,23 +64,20 @@ function hideCompare() {
   let cmp = document.getElementById('compare');
   if(isDefined(cmp)) {
     hideElement('compare');
-    // cmp.classList.add('hidden');
   }
 }
 function toggleCompare() {
   let cmp = document.getElementById('compare');
   if(isDefined(cmp)) {
     toggleElement('compare');
-    // cmp.classList.toggle('hidden');
     let scs = document.getElementById('sections');
     if(isDefined(scs)) {
       showElement('sections');
-      // scs.classList.remove('hidden');
     }
   }
 }
 /*---------------------------------------------------------
-  Toggle Pages popup when using Keys button on bottom menu
+  Toggle Pages popup when using Page's button on bottom menu
   - persistent, does not disappear on refresh
 */
 function togglePages() {
@@ -171,7 +168,9 @@ function setPersistantElements() {
   setElements('pages');
   setElements('compare');
 }
-
+/*---------------------------------------------------------
+  Creates HTML for keys list
+*/
 function buildKeys() {
   const keys = document.getElementById('keys');
   if(isDefined(keys)) {
@@ -190,7 +189,10 @@ function buildKeys() {
         <td class='center clickable'><a onclick='goNext()'>N;</a></td><td>Next</td>\
       </tr>\
       <tr>\
-        <td class='center clickable'><a onclick='goPrev()'>P</a></td><td>Prev</td>\
+        <td class='center clickable'><a onclick='goPrev()'>P;</a></td><td>Prev</td>\
+      </tr>\
+      <tr>\
+        <td class='center clickable'><a onclick='goHome()'>H</a></td><td>Home</td>\
       </tr>\
       <tr>\
         <td class='center clickable'><a onclick='location.reload()'>R</a></td><td>Reload</td>\
