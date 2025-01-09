@@ -65,6 +65,7 @@ function buildHelp() {
       <a target='_self' href='ExploreCode.html?src=Help_VSCode.html'>VS Code</a>\
       <a target='_self' href='ExploreCode.html?src=Help_Cargo.html'>Rust Cargo</a>\
       <a target='_self' href='ExploreCode.html?src=Help_CMake.html'>CMake</a>\
+      <a class='undef' target='_self' href='javascript:;'>MSBuild</a>\
       <a target='_self' href='ExploreCode.html?src=Help_DotNet.html'>DotNet</a>\
       <a target='_self' href='ExploreCode.html?src=Help_Git.html'>Git</a>\
       <a target='_self' href='ExploreCode.html?src=Help_GitHub.html'>GitHub</a>\
