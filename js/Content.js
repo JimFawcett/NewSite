@@ -27,49 +27,96 @@ function isHidden(id) {
 // bottomMenu.bottom = function() {
 //   <a href="#bottom"></a>
 // }
-
+/*---------------------------------------------------------
+  Post iframe content filename back to parent to be
+  included in its footer 
+*/
 function postFileName() {
   let url = window.location.href;
   const parseUrl = new URL(url);
   let fn = parseUrl.pathname.split('/').pop();
   window.parent.postMessage(fn, '*');
 }
-
+/*---------------------------------------------------------
+  temporarily toggle element's hidden state
+  - does not toggle persistance cookie 
+*/
 function toggleButton(id) {
   const btn = document.getElementById(id);
   if(isDefined(btn)) {
     btn.classList.toggle('hidden');
   }
 }
-
+/*---------------------------------------------------------
+  temporarily set element's hidden state to true
+  - does not change persistance cookie 
+*/
 function hideButton(id) {
   const btn = document.getElementById(id);
   if(isDefined(btn)) {
     btn.classList.add('hidden');
   }
 }
-
+/*---------------------------------------------------------
+  temporarily set element's hidden state to false
+  - does not change persistance cookie 
+*/
 function showButton(id) {
   const btn = document.getElementById(id);
   if(isDefined(btn)) {
     btn.classList.remove('hidden');
   }
 }
-
+/*---------------------------------------------------------
+  set element's hidden state to true
+  - also sets its persistance cookie 
+*/
+function closeMenues() {
+  hideElement('about');
+  hideElement('keys');
+  hideElement('sections');
+  hideElement('pages');
+  hideElement('compare');
+}
+/*---------------------------------------------------------
+  Redirect to Next page in thread
+  - based on url of page's next element
+*/
 function goNext() {
   let nxt = document.getElementById('next');
   if(isDefined(nxt)) {
     nxt.click();
   }
 }
-
+/*---------------------------------------------------------
+  Redirect to Prev page in thread
+  - based on url of page's prev element
+*/
 function goPrev() {
   let prv = document.getElementById('prev');
   if(isDefined(prv)) {
     prv.click();
   }
 }
-
+/*---------------------------------------------------------
+  Redirect to Home page, e.g., SiteHome.html
+  - expects all pages to be in either NewSite dir
+    or one of its immediate subdirectories
+*/
+function goHome() {
+  let url = "Explore.html?src=SiteHome.html";
+  if(dirName() === 'NewSite') {
+    window.parent.location = url;
+  }
+  else {
+    window.parent.location = "../" + url;
+  }
+}
+/*---------------------------------------------------------
+  parse the last directory name from current location
+  - used to pass filename from iframe content to parent
+  - also used to compute target path in goHome()
+*/
 function dirName() {
   let path = window.location.href;
   path = path.replace(/^file:\/\//i, "");
@@ -290,6 +337,9 @@ function setKeys() {
     if(event.key === 'p' || event.key === 'P') {
       clickButton('prev');
     }
+    if(event.key === 'h' || event.key === 'H') {
+      goHome();
+    }
     if(event.key === 'r' || event.key === 'R') {
       window.location.reload();
     }
@@ -314,6 +364,8 @@ function setKeys() {
     if(event.key === 'c' || event.key === 'C') {
       toggleCompare();
     }
+    if(event.key === "Escape")
+      closeMenues();
   });
 }
 /*---------------------------------------------------------
