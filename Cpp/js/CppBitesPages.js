@@ -10,6 +10,7 @@ function buildPages() {
     pgs.innerHTML =
     "<div class='darkItem menuHeader' onclick='togglePages()'>C++ Bites Pages</div>\
     <div class='menuBody'>\
+      <a href='CppHome.html'>Track Summary</a>\
       <a href='CppBites_Intro.html'>Introduction</a>\
       <a href='CppBites_Hello.html'>Hello</a>\
       <a href='CppBites_Data.html'>Data</a>\
