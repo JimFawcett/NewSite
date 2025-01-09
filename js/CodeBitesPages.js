@@ -8,9 +8,9 @@ function buildPages() {
   const pgs = document.getElementById('pages');
   if(isDefined(pgs)) {
     pgs.innerHTML =
-    "<div class='darkItem menuHeader' onclick='togglePages()'>SWDev Bites Pages</div>\
+    "<div class='darkItem menuHeader' onclick='togglePages()'>Code Bites Pages</div>\
     <div class='menuBody'>\
-      <a href='SWDevHome.html'>Track Summary</a>\
+      <a href='CodeHome.html'>Track Summary</a>\
       <a class='undef' href='javascript:;'>Introduction</a>\
       <a class='undef' href='javascript:;'>more</a>\
       </div>\

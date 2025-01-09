@@ -94,6 +94,14 @@ function closeExps() {
     expls.open = false;
   }
 }
+
+function closeTBs() {
+  const expls = document.getElementById('toolboxes');
+  if(isDefined(expls)) {
+    // alert('in closeExps()');
+    expls.open = false;
+  }
+}
 /*-- Explorer requests change of iframe window location --*/
 function postMsg(msg) {
   // alert("posting to iframe - " + msg);
