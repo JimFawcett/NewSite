@@ -31,6 +31,7 @@ function buildBlogs() {
     <div class='menuBody'>\
       <a href='Explore.html?src=Blogs/Blog_Prototype.html'>Blog_Prototype</a>\
       <a href='Explore.html?src=Blogs/Blog_CommCompare.html'>Comm Compare</a>\
+      <a href='Explore.html?src=Blogs/Blog.html'>First Things</a>\
       <a class='undef' href='javascript:;'>Rust Safety</a>\
       <div style='height:0.5em;'></div>\
     </div>";
@@ -74,6 +75,9 @@ function buildHelp() {
       <a target='_self' href='ExploreCode.html?src=Help_ChatGPT.html'>ChatGPT</a>\
       <a class='undef' target='_self' href='javascript:;'>Compiler Explorer</a>\
       <a target='_self' href='Explore.html?src=Help_SiteNav.html'>SiteNav</a>\
+      <div style='height:0.5rem;'></div>\
+      <a target='_blank' href='https://jimfawcett.github.io/'>Old Site</a>\
+      <a target='_blank' href='https://ecs.syr.edu/faculty/fawcett'>SU Site</a>\
       <div style='height:1.0em;'></div>\
     </div>";
     hlp.addEventListener('mouseleave', function(event) {
