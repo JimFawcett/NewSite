@@ -11,12 +11,14 @@ function buildPages() {
     "<div class='darkItem menuHeader' onclick='togglePages()'>Site Pages</div>\
     <div class='menuBody'>\
       <a href='SiteHome.html'>Site Home</a>\
-      <a href='SiteMap.html'>Site Map</a>\
-      <a href='SiteDemo.html'>Site Demo</a>\
-      <a href='SiteDesign.html'>Site Design</a>\
-      <a class='undef' href='javascript:;'>Repositories</a>\
-      <a href='SiteReferences.html'>References</a>\
-      <a class='undef' href='javascript:;'>Site Changes</a>\
+      <a href='Rust/RustHome.html'>Rust</a>\
+      <a href='Cpp/CppHome.html'>C++</a>\
+      <a href='CSharp/CSharpHome.html'>C#</a>\
+      <a href='Python/PythonHome.html'>Python</a>\
+      <a href='WebDev/WebDevHome.html'>WebDev</a>\
+      <a href='SWDev/SWDevHome.html'>SWDev</a>\
+      <a href='Basics/BasicsHome.html'>Basics</a>\
+      <a href='CodeHome.html'>Code</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
