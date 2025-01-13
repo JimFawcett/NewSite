@@ -10,7 +10,7 @@ function buildPages() {
     pgs.innerHTML =
     "<div class='darkItem menuHeader' onclick='togglePages()'>Site Pages</div>\
     <div class='menuBody'>\
-      <a href='../SiteHome.html'>Site Home</a>\
+      <a href='../Site/SiteHome.html'>Site Home</a>\
       <a href='../Rust/RustHome.html'>Rust</a>\
       <a href='../Cpp/CppHome.html'>C++</a>\
       <a href='../CSharp/CSharpHome.html'>C#</a>\
@@ -18,7 +18,7 @@ function buildPages() {
       <a href='../WebDev/WebDevHome.html'>WebDev</a>\
       <a href='../SWDev/SWDevHome.html'>SWDev</a>\
       <a href='../Basics/BasicsHome.html'>Basics</a>\
-      <a href='../CodeHome.html'>Code</a>\
+      <a href='../Site/CodeHome.html'>Code</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
