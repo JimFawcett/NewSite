@@ -77,6 +77,9 @@ function closeMenues() {
   hideElement('sections');
   hideElement('pages');
   hideElement('compare');
+  hideElement('blogs');
+  hideElement('help');
+  hideElement('res');
 }
 /*---------------------------------------------------------
   Redirect to Next page in thread
