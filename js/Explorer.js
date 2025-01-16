@@ -192,9 +192,12 @@ window.onmessage = function (e) {
 function setbg(anchor) {
   const collection = document.getElementsByClassName("clicked");
   for(let i=0; i<collection.length; i++) {
-    collection[i].style.backgroundColor = 'var(--light)';
+    collection[i].style.backgroundColor = 'var(--dark)';
+    collection[i].style.opacity = '1.0';
   }
-  anchor.style.backgroundColor = '#ccc';
+  anchor.style.opacity = '0.5';
+  anchor.style.color = 'var(--light)';
+  anchor.backgroundColor = '#ccc';
 }
 
 /*-- querystring processing, see footing for redirect processing -----
