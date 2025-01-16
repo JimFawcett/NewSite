@@ -4,12 +4,29 @@
  * Jim Fawcett
  */
 
+function getLeft(id) {
+  
+}
+function moveLeft(id) {
+  const element = document.getElementById(id);
+  if(isDefined(element)) {
+    const currentLeft = parseFloat(getComputedStyle(element).left) || 0;
+    const remSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const moveBy = 5 * remSize;
+    element.style.left = `${currentLeft - moveBy}px`;  
+  }
+}
+
 function toggleBlogs() {
+  console.log("in toggleBlogs()");
   const blg = document.getElementById('blogs');
+  console.log(blg);
   if(isDefined(blg)) {
     hideHelp();
     hideRes();
+    // moveLeft('blogs');
     blg.classList.toggle('hidden');
+    console.log(blg);
   }
 }
 
@@ -105,11 +122,16 @@ function buildRes() {
     res.innerHTML =
     "<div class='darkItem menuHeader' onclick='hideRes()'>Resources</div>\
     <div class='menuBody'>\
+      <div class='category'>-online execution-</div>\
       <a target='_blank' href='https://godbolt.org'>Compiler Explorer</a>\
       <a target='_blank' href='https://play.rust-lang.org'>Rust Playground</a>\
       <a target='_blank' href='https://dotnetfiddle.net'>dotnet fiddle</a>\
       <a target='_blank' href='https://python-fiddle.com'>Python fiddle</a>\
       <a target='_blank' href='https://runjs.app/play'>runjs</a>\
+      <div class='category'>-presentations-</div>\
+      <a target='_blank' href='https://jimfawcett.github.io/ChatGPT.html'>ChatGPT Demo</a>\
+      <a target='_blank' href='https://jimfawcett.github.io/personalComputerSecurity.html'>Computer Security</a>\
+      <div class='category'>-neighborhoods-</div>\
       <a target='_blank' href='https://jimfawcett.github.io/'>Old Site</a>\
       <a target='_blank' href='https://ecs.syr.edu/faculty/fawcett'>SU Site</a>\
       <div style='height:1.0em;'></div>\
