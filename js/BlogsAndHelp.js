@@ -128,6 +128,14 @@ function buildRes() {
       <a target='_blank' href='https://dotnetfiddle.net'>dotnet fiddle</a>\
       <a target='_blank' href='https://python-fiddle.com'>Python fiddle</a>\
       <a target='_blank' href='https://runjs.app/play'>runjs</a>\
+      <div class='category'>-Tests-</div>\
+      <a target='_self' href='../Tests/FigureSizer/ImageSizer.html'>ImageSizer</a>\
+      <a target='_self' href='../Tests/GridExplorer/PrototypeExplore.html'>GridExplorer</a>\
+      <a target='_self' href='../Tests/ImageSizer/ImageSizer.html'>ImageSizer</a>\
+      <a target='_self' href='../Tests/link-navigator/linkNav.html'>linkNav</a>\
+      <a target='_self' href='../Tests/PopUpWindow/PopUp.html'>PopUpWindow</a>\
+      <a target='_self' href='../Tests/PositionElements/PosElem.html'>PositionElements</a>\
+      <a target='_self' href='../Tests/scrollingMenus/ScrollingMenus.html'>ScrollingMenus</a>\
       <div class='category'>-presentations-</div>\
       <a target='_blank' href='https://jimfawcett.github.io/ChatGPT.html'>ChatGPT Demo</a>\
       <a target='_blank' href='https://jimfawcett.github.io/personalComputerSecurity.html'>Computer Security</a>\
