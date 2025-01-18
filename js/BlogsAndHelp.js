@@ -79,16 +79,16 @@ function buildHelp() {
     hlp.innerHTML =
     "<div class='darkItem menuHeader' onclick='hideHelp()'>Help</div>\
     <div class='menuBody'>\
-      <a target='_self' href='../Site/ExploreCode.html?src=../Help/Help_VSCode.html'>VS Code</a>\
-      <a target='_self' href='../Site/ExploreCode.html?src=../Help/Help_Cargo.html'>Rust Cargo</a>\
-      <a target='_self' href='../Site/ExploreCode.html?src=../Help/Help_CMake.html'>CMake</a>\
+      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_VSCode.html'>VS Code</a>\
+      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_Cargo.html'>Rust Cargo</a>\
+      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_CMake.html'>CMake</a>\
       <a class='undef' target='_self' href='javascript:;'>MSBuild</a>\
-      <a target='_self' href='../Site/ExploreCode.html?src=../Help/Help_DotNet.html'>DotNet</a>\
-      <a target='_self' href='../Site/ExploreCode.html?src=../Help/Help_Git.html'>Git</a>\
-      <a target='_self' href='../Site/ExploreCode.html?src=../Help/Help_GitHub.html'>GitHub</a>\
-      <a target='_self' href='../Site/ExploreCode.html?src=../Help/Help_PowerShell.html'>PowerShell</a>\
-      <a target='_self' href='../Site/ExploreCode.html?src=../Help/Help_RegEx.html'>RegEx</a>\
-      <a target='_self' href='../Site/ExploreCode.html?src=../Help/Help_ChatGPT.html'>ChatGPT</a>\
+      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_DotNet.html'>DotNet</a>\
+      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_Git.html'>Git</a>\
+      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_GitHub.html'>GitHub</a>\
+      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_PowerShell.html'>PowerShell</a>\
+      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_RegEx.html'>RegEx</a>\
+      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_ChatGPT.html'>ChatGPT</a>\
       <a class='undef' target='_self' href='javascript:;'>Compiler Explorer</a>\
       <a target='_self' href='../Site/Explore.html?src=../Help/Help_SiteNav.html'>SiteNav</a>\
       <div style='height:1.0em;'></div>\
@@ -129,13 +129,13 @@ function buildRes() {
       <a target='_blank' href='https://python-fiddle.com'>Python fiddle</a>\
       <a target='_blank' href='https://runjs.app/play'>runjs</a>\
       <div class='category'>-Tests-</div>\
-      <a target='_self' href='../Tests/FigureSizer/ImageSizer.html'>ImageSizer</a>\
       <a target='_self' href='../Tests/GridExplorer/PrototypeExplore.html'>GridExplorer</a>\
       <a target='_self' href='../Tests/ImageSizer/ImageSizer.html'>ImageSizer</a>\
       <a target='_self' href='../Tests/link-navigator/linkNav.html'>linkNav</a>\
       <a target='_self' href='../Tests/PopUpWindow/PopUp.html'>PopUpWindow</a>\
       <a target='_self' href='../Tests/PositionElements/PosElem.html'>PositionElements</a>\
       <a target='_self' href='../Tests/scrollingMenus/ScrollingMenus.html'>ScrollingMenus</a>\
+      <a target='_self' href='../Tests/Clickables/Clickables.html'>Clickables</a>\
       <div class='category'>-presentations-</div>\
       <a target='_blank' href='https://jimfawcett.github.io/ChatGPT.html'>ChatGPT Demo</a>\
       <a target='_blank' href='https://jimfawcett.github.io/personalComputerSecurity.html'>Computer Security</a>\
