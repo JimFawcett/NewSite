@@ -189,21 +189,22 @@ window.onmessage = function (e) {
 //   }
 // }
 
-function setbg(clkable) {
+function setbg(anchor) {
+  const parent = anchor.parentElement;
   const collection = document.getElementsByClassName("clickable");
-  for(let i = 0; i < collection.length; i++) {
-    collection[i].style.backgroundColor = 'var(--dark)';
-    let link = collection[i].querySelector('a');
-    if (link) {
-      link.style.setProperty('color', 'var(--light)', 'important');
-    }
+  for(let i=0; i<collection.length; i++) {
+    // collection[i].style.opacity = '1.0';
+    // collection[i].parentElement.style.backgroundColor = 'var(--dark)';
+    collection[i].parentElement.style.backgroundColor = 'var(--clickbg)';
+    collection[i].style.color = 'var(--light)';
   }
-  clkable.style.backgroundColor = 'var(--clickbg)';
-  let anchor = clkable.querySelector('a');
-  if (anchor) {
-    anchor.style.setProperty('color', 'var(--clickclr)', 'important');
-  }
+  parent.style.backgroundColor = 'var(--light)';
+  anchor.style.color = 'var(--dark)';
+  // anchor.style.opacity = '0.5';
+  // anchor.backgroundColor = '#ccc';
+  let dummy = null;
 }
+
 /*-- querystring processing, see footing for redirect processing -----
   https://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript
 */

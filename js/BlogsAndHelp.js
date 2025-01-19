@@ -130,7 +130,7 @@ function buildRes() {
       <a target='_blank' href='https://runjs.app/play'>runjs</a>\
       <div class='category'>-Tests-</div>\
       <a target='_self' href='../Tests/GridExplorer/PrototypeExplore.html'>GridExplorer</a>\
-      <a target='_self' href='../Tests/ImageSizer/ImageSizer.html'>ImageSizer</a>\
+      <a target='_self' href='../Tests/FigureSizer/ImageSizer.html'>FigureSizer</a>\
       <a target='_self' href='../Tests/link-navigator/linkNav.html'>linkNav</a>\
       <a target='_self' href='../Tests/PopUpWindow/PopUp.html'>PopUpWindow</a>\
       <a target='_self' href='../Tests/PositionElements/PosElem.html'>PositionElements</a>\
