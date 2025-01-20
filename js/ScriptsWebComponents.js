@@ -21,8 +21,8 @@ class HideablePhotoSizerBlock extends HTMLElement {
                 }
                 #wrapper {
                   width:min-content;
-                  padding: var(--wrapperPadding); //10px;
-                  margin: var(--margin);  //20px;
+                  padding: var(--wrapperPadding); //10px
+                  margin: var(--margin);  //20px
                   background-color: var(--background-color);
                   color: var(--color);
                   box-shadow: var(--box-shadow);
@@ -45,7 +45,7 @@ class HideablePhotoSizerBlock extends HTMLElement {
                 #caption {
                   text-align:center;
                   padding-bottom:10px;
-                  padding: var(--captionPadding); //0px 0px 10px 0px;
+                  padding: var(--captionPadding); //0px 0px 10px 0px
                   background-color:white;
                 }
                 img {
@@ -139,8 +139,8 @@ class PhotoSizerBlock extends HTMLElement {
                 }
                 #wrapper {
                   width:min-content;
-                  padding: var(--wrapperPadding); //10px;
-                  margin: var(--margin);  //20px;
+                  padding: var(--wrapperPadding); //10px
+                  margin: var(--margin);  //20px
                   background-color: var(--background-color);
                   color: var(--color);
                   box-shadow: var(--box-shadow);
@@ -157,7 +157,7 @@ class PhotoSizerBlock extends HTMLElement {
                 #caption {
                   text-align:center;
                   padding-bottom:10px;
-                  padding: var(--captionPadding); //0px 0px 10px 0px;
+                  padding: var(--captionPadding); //0px 0px 10px 0px
                   background-color:white;
                 }
                 img {

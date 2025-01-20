@@ -367,8 +367,10 @@ function setKeys() {
     if(event.key === 'c' || event.key === 'C') {
       toggleCompare();
     }
-    if(event.key === "Escape")
+    if(event.key === "Escape") {
       closeMenues();
+      postMsg('esc');
+    }
   });
 }
 /*---------------------------------------------------------
