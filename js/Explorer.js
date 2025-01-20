@@ -190,15 +190,23 @@ window.onmessage = function (e) {
 // }
 
 function setbg(anchor) {
-  const collection = document.getElementsByClassName("clicked");
-  for(let i=0; i<collection.length; i++) {
-    collection[i].style.backgroundColor = 'var(--dark)';
-    collection[i].style.opacity = '1.0';
+  const collection = document.getElementsByClassName("clickable");
+  for(let i = 0; i < collection.length; i++) {
+    collection[i].style.color = 'var(--unclickclr)';
   }
-  anchor.style.opacity = '0.5';
-  anchor.style.color = 'var(--light)';
-  anchor.backgroundColor = '#ccc';
+  anchor.style.color = 'var(--clickclr)';
 }
+
+// function setbg(anchor) {
+//   const collection = document.getElementsByClassName("clicked");
+//   for(let i=0; i<collection.length; i++) {
+//     collection[i].style.backgroundColor = 'var(--dark)';
+//     collection[i].style.opacity = '1.0';
+//   }
+//   anchor.style.opacity = '0.5';
+//   anchor.style.color = 'var(--light)';
+//   anchor.backgroundColor = '#ccc';
+// }
 
 /*-- querystring processing, see footing for redirect processing -----
   https://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript
