@@ -135,7 +135,7 @@ function buildRes() {
       <a target='_self' href='../Tests/PopUpWindow/PopUp.html'>PopUpWindow</a>\
       <a target='_self' href='../Tests/PositionElements/PosElem.html'>PositionElements</a>\
       <a target='_self' href='../Tests/scrollingMenus/ScrollingMenus.html'>ScrollingMenus</a>\
-      <a target='_self' href='../Tests/Clickables/Clickables.html'>Clickables</a>\
+      <a target='_self' href='../Tests/Clickables/Clickables2.html'>Clickables2</a>\
       <div class='category'>-presentations-</div>\
       <a target='_blank' href='https://jimfawcett.github.io/ChatGPT.html'>ChatGPT Demo</a>\
       <a target='_blank' href='https://jimfawcett.github.io/personalComputerSecurity.html'>Computer Security</a>\
