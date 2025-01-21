@@ -25,7 +25,8 @@ function toggleBlogs() {
     hideHelp();
     hideRes();
     // moveLeft('blogs');
-    blg.classList.toggle('hidden');
+    // blg.classList.toggle('hidden');
+    toggleElement('blogs');
     console.log(blg);
   }
 }
@@ -33,7 +34,8 @@ function toggleBlogs() {
 function hideBlogs() {
   const blg = document.getElementById('blogs');
   if(isDefined(blg)) {
-    blg.classList.add('hidden');
+    // blg.classList.add('hidden');
+    hideElement('blogs');
   }
 }
 
@@ -50,9 +52,9 @@ function buildBlogs() {
       <a class='undef' href='javascript:;'>Rust Safety</a>\
       <div style='height:0.5em;'></div>\
     </div>";
-    blg.addEventListener('mouseleave', function(event) {
-      blg.classList.add('hidden')
-    });  
+    // blg.addEventListener('mouseleave', function(event) {
+    //   blg.classList.add('hidden')
+    // });  
   }
 }
 
@@ -62,14 +64,16 @@ function toggleHelp() {
     // const blg = document.getElementById('blogs');
     hideBlogs();
     hideRes();
-    hlp.classList.toggle('hidden');
+    // hlp.classList.toggle('hidden');
+    toggleElement('help');
   }
 }
 
 function hideHelp() {
   const hlp = document.getElementById('help');
   if(isDefined(hlp)) {
-    hlp.classList.add('hidden');
+    // hlp.classList.add('hidden');
+    hideElement('help');
   }
 }
 
@@ -93,9 +97,9 @@ function buildHelp() {
       <a target='_self' href='../Site/Explore.html?src=../Help/Help_SiteNav.html'>SiteNav</a>\
       <div style='height:1.0em;'></div>\
     </div>";
-    hlp.addEventListener('mouseleave', function(event) {
-      hlp.classList.add('hidden')
-    });
+    // hlp.addEventListener('mouseleave', function(event) {
+    //   hlp.classList.add('hidden')
+    // });
   }
 }
 
@@ -105,14 +109,16 @@ function toggleRes() {
   if(isDefined(res)) {
     hideBlogs();
     hideHelp();
-    res.classList.toggle('hidden');
+    // res.classList.toggle('hidden');
+    toggleElement('res');
   }
 }
 
 function hideRes() {
   const res = document.getElementById('res');
   if(isDefined(res)) {
-    res.classList.add('hidden');
+    // res.classList.add('hidden');
+    hideElement('res');
   }
 }
 
@@ -144,8 +150,8 @@ function buildRes() {
       <a target='_blank' href='https://ecs.syr.edu/faculty/fawcett'>SU Site</a>\
       <div style='height:1.0em;'></div>\
     </div>";
-    res.addEventListener('mouseleave', function(event) {
-      res.classList.add('hidden')
-    });
+    // res.addEventListener('mouseleave', function(event) {
+    //   res.classList.add('hidden')
+    // });
   }
 }

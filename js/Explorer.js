@@ -117,6 +117,9 @@ window.onmessage = function (e) {
       hideElement('help');
       hideElement('res');
       break;
+    case 'clear':
+      /* do nothing */
+      break;
     default:
       console.log('filename');
       let fn = document.getElementById('filename');

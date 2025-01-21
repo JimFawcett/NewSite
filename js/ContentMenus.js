@@ -167,6 +167,9 @@ function setPersistantElements() {
   setElements('sections');
   setElements('pages');
   setElements('compare');
+  setElements('blogs');
+  setElements('help');
+  setElements('res');
 }
 /*---------------------------------------------------------
   Creates HTML for keys list
