@@ -80,6 +80,8 @@ function closeMenues() {
   hideElement('blogs');
   hideElement('help');
   hideElement('res');
+  postMsg('esc');
+  postMsg('clear');
 }
 /*---------------------------------------------------------
   Redirect to Next page in thread
@@ -194,6 +196,9 @@ window.onmessage = function (e) {
         if(isDefined(pgs2)) {
           toggleElement('pages');
         }
+        break;
+      case 'clear':
+        closeMenues();
         break;
     /* Explorer cases require files in NewSite or an immediate child */
     case 'Explore':
@@ -369,7 +374,6 @@ function setKeys() {
     }
     if(event.key === "Escape") {
       closeMenues();
-      postMsg('esc');
     }
   });
 }
