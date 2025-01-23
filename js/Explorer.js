@@ -17,7 +17,7 @@ function iframeTransition() {
     iframe.addEventListener('load', () => {
       setTimeout(() => {
         iframe.classList.add('loaded');
-      }, 10);
+      }, 20);
     });
   }
 }
@@ -237,7 +237,6 @@ function getParameterByName(name, url = window.location.href) {
   function processQueryString() {
   var url = window.location.href;
   var src = getParameterByName("src", url);
-  // alert(src);
   if (isDefined(src)) { 
     /*-- redirect to specified page --*/
     let pf = document.getElementById("pgframe");

@@ -128,26 +128,46 @@ function buildRes() {
     res.innerHTML =
     "<div class='darkItem menuHeader' onclick='hideRes()'>Resources</div>\
     <div class='menuBody'>\
+      <div class='category'>-documents-</div>\
+      <details style='margin-left:0.5rem;'>\
+        <summary>ChatGPT Topics</summary>\
+        <a href='../documents/ChatGPT_Cookies.pdf'>Cookies</a>\
+        <a href='../documents/ChatGPT_LocalStorage.pdf'>LocalStorage</a>\
+        <a href='../documents/ChatGPT_Messaging.pdf'>Messaging</a>\
+        <a href='../documents/ChatGPT_ParsePath.pdf'>ParsePath</a>\
+        <a href='../documents/ChatGPT_PathRawVsURL.pdf'>PathRawVsURL</a>\
+        <a href='../documents/ChatGPT_https.pdf'>https</a>\
+        <div style='height:0.75rem;'></div>\
+      </details>\
       <div class='category'>-online execution-</div>\
       <a target='_blank' href='https://godbolt.org'>Compiler Explorer</a>\
       <a target='_blank' href='https://play.rust-lang.org'>Rust Playground</a>\
       <a target='_blank' href='https://dotnetfiddle.net'>dotnet fiddle</a>\
       <a target='_blank' href='https://python-fiddle.com'>Python fiddle</a>\
       <a target='_blank' href='https://runjs.app/play'>runjs</a>\
+      <div style='height:0.25rem;'></div>\
       <div class='category'>-Tests-</div>\
-      <a target='_self' href='../Tests/GridExplorer/PrototypeExplore.html'>GridExplorer</a>\
-      <a target='_self' href='../Tests/FigureSizer/ImageSizer.html'>FigureSizer</a>\
-      <a target='_self' href='../Tests/link-navigator/linkNav.html'>linkNav</a>\
-      <a target='_self' href='../Tests/PopUpWindow/PopUp.html'>PopUpWindow</a>\
-      <a target='_self' href='../Tests/PositionElements/PosElem.html'>PositionElements</a>\
-      <a target='_self' href='../Tests/scrollingMenus/ScrollingMenus.html'>ScrollingMenus</a>\
-      <a target='_self' href='../Tests/Clickables/Clickables2.html'>Clickables2</a>\
+      <details style='margin-left:0.5rem;'>\
+        <summary>Web Tech</summary>\
+        <a target='_self' href='../Tests/GridExplorer/PrototypeExplore.html'>GridExplorer</a>\
+        <a target='_self' href='../Tests/FigureSizer/ImageSizer.html'>FigureSizer</a>\
+        <a target='_self' href='../Tests/link-navigator/linkNav.html'>linkNav</a>\
+        <a target='_self' href='../Tests/PopUpWindow/PopUp.html'>PopUpWindow</a>\
+        <a target='_self' href='../Tests/PositionElements/PosElem.html'>PositionElements</a>\
+        <a target='_self' href='../Tests/scrollingMenus/ScrollingMenus.html'>ScrollingMenus</a>\
+        <a target='_self' href='../Tests/Clickables/Clickables2.html'>Clickables2</a>\
+        <a target='_self' href='../Tests/DataMgr/DataMgr.html'>DataManager</a>\
+        <div style='height:0.25rem;'></div>\
+      </details>\
+      <div style='height:0.25rem;'></div>\
       <div class='category'>-presentations-</div>\
       <a target='_blank' href='https://jimfawcett.github.io/ChatGPT.html'>ChatGPT Demo</a>\
       <a target='_blank' href='https://jimfawcett.github.io/personalComputerSecurity.html'>Computer Security</a>\
+      <div style='height:0.25rem;'></div>\
       <div class='category'>-neighborhoods-</div>\
       <a target='_blank' href='https://jimfawcett.github.io/'>Old Site</a>\
       <a target='_blank' href='https://ecs.syr.edu/faculty/fawcett'>SU Site</a>\
+      <a target='_blank' href='https://github.com/mwcorley79'>MWCorely Site</a>\
       <div style='height:1.0em;'></div>\
     </div>";
     // res.addEventListener('mouseleave', function(event) {
