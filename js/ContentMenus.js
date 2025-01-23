@@ -18,21 +18,27 @@
   display of page and section lists
 */
 function setCookie(name, value, days) {
-  console.log('setcookie: ' + name + '=' + value);
+  console.log('setcookie: ' + name + '=' + value + ", " + days);
   let expires = "";
   if (days) {
     const date = new Date();
     date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000)); // Convert days to milliseconds
     expires = "; expires=" + date.toUTCString();
   }
-  document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/";
+  // const samesite = "; SameSite=Strict"; Secure;
+  const samesite = "; SameSite=Lax";
+  document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(value) + expires + samesite + "; path=/";
 }
 function getCookie(key) {
-  console.log('getcookie: ' + key);
+  let cookieStr = 'getcookie: ' + key + ' = ';
   const cookies = document.cookie.split("; ");
   for (let cookie of cookies) {
     const [trialKey, value] = cookie.split("=");
-    if(trialKey === key) return value;
+    if(trialKey === key) {
+      console.log(cookieStr + value);      
+      return value;
+    }
+    console.log(cookieStr + 'no value');      
   }
   return null;
 }
@@ -84,9 +90,9 @@ function togglePages() {
   // console.log('in togglePages()');
   toggleButton('pages');
   if (isHidden('pages')) {
-    setCookie('pages', 'false');
+    setCookie('pages', 'false', 1);
   } else {
-    setCookie('pages', 'true');
+    setCookie('pages', 'true', 1);
   }
 }
 /*---------------------------------------------------------
@@ -96,19 +102,19 @@ function togglePages() {
 */
 function showSections() {
   showButton('sections');
-  setCookie('sections', 'true');
+  setCookie('sections', 'true', 1);
 }
 function hideSections() {
   hideButton('sections');
-  setCookie('sections','false');
+  setCookie('sections','false', 1);
 }
 function toggleSections() {
   // console.log('in toggle sections');
   toggleButton('sections');
   if (isHidden('sections')) {
-    setCookie('sections', 'false');
+    setCookie('sections', 'false', 1);
   } else {
-    setCookie('sections', 'true');
+    setCookie('sections', 'true', 1);
   }
 }
 /*---------------------------------------------------------
@@ -119,20 +125,20 @@ function toggleSections() {
 function showElement(id) {
   console.log('in showElement: id = ' + id);
   showButton(id);
-  setCookie(id, 'true');
+  setCookie(id, 'true', 1);
 }
 function hideElement(id) {
   console.log('in hideElement: id = ' + id);
   hideButton(id);
-  setCookie(id,'false');
+  setCookie(id,'false', 1);
 }
 function toggleElement(id) {
   console.log('in toggleElement: id = ' + id);
   toggleButton(id);
   if (isHidden(id)) {
-    setCookie(id, 'false');
+    setCookie(id, 'false', 1);
   } else {
-    setCookie(id, 'true');
+    setCookie(id, 'true', 1);
   }
 }
 /*---------------------------------------------------------
@@ -146,15 +152,18 @@ function setElements(id) {
   console.log('state: ' + state);
   switch(state) {
     case null:
-      setCookie(id, 'false');
+      setCookie(id, 'false', 1);
+      hideButton(id);
       // console.log('id: ' + id)
       // console.log('cookie value: ' + getCookie(id));
       break;
     case 'true':
-      toggleElement(id);
+      showButton(id);
+//      toggleElement(id); // changed 1/20
       // console.log('cookie value: ' + getCookie(id));
       break;
     case 'false':
+      hideButton(id);  //added 1/20
       // console.log('cookie value: ' + getCookie(id));
     default:
   }
