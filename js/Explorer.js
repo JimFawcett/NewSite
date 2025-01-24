@@ -79,18 +79,17 @@ function goPrev() {
   postMsg("prev");
 }
 
-function toggleBlogs() {
-  postMsg("blogs");
-}
+// function toggleBlogs() {
+//   postMsg("blogs");
+// }
 
-function toggleHelp() {
-  postMsg("help");
-}
+// function toggleHelp() {
+//   postMsg("help");
+// }
 
 function closeExps() {
   const expls = document.getElementById('explorers');
   if(isDefined(expls)) {
-    // alert('in closeExps()');
     expls.open = false;
   }
 }
@@ -98,13 +97,11 @@ function closeExps() {
 function closeTBs() {
   const expls = document.getElementById('toolboxes');
   if(isDefined(expls)) {
-    // alert('in closeExps()');
     expls.open = false;
   }
 }
 /*-- Explorer requests change of iframe window location --*/
 function postMsg(msg) {
-  // alert("posting to iframe - " + msg);
   let ifrm = document.getElementById("pgframe");
   ifrm.contentWindow.postMessage(msg, '*');
 }
@@ -124,83 +121,8 @@ window.onmessage = function (e) {
       console.log('filename');
       let fn = document.getElementById('filename');
       fn.innerHTML = e.data + ":"; 
-      // alert(fn);
   }
 }
-
-// function toggleBlogs() {
-//   const blg = document.getElementById('blogs');
-//   if(isDefined(blg)) {
-//     let hlp = document.getElementById('help');
-//     if(isDefined(hlp)) {
-//       hideHelp();
-//     }
-//     blg.classList.toggle('hidden');
-//   }
-// }
-
-// function hideBlogs() {
-//   const blg = document.getElementById('blogs');
-//   if(isDefined(blg)) {
-//     blg.classList.add('hidden');
-//   }
-// }
-
-// function buildBlogs() {
-//   const blg = document.getElementById('blogs');
-//   if(isDefined(blg)) {
-//     blg.innerHTML =
-//     "<div class='darkItem menuHeader' onclick='hideBlogs()'>Blogs</div>\
-//     <div class='menuBody'>\
-//       <a href='Blog1.html'>Blog1</a>\
-//       <a href='Blog1.html'>Blog2</a>\
-//       <div style='height:0.5em;'></div>\
-//     </div>";
-//     blg.addEventListener('mouseleave', function(event) {
-//       blg.classList.add('hidden')
-//     });  
-//   }
-// }
-
-// function toggleHelp() {
-//   const hlp = document.getElementById('help');
-//   if(isDefined(hlp)) {
-//     const blg = document.getElementById('blogs');
-//     hideBlogs();
-//     hlp.classList.toggle('hidden');
-//   }
-// }
-
-// function hideHelp() {
-//   const hlp = document.getElementById('help');
-//   if(isDefined(hlp)) {
-//     hlp.classList.add('hidden');
-//   }
-// }
-
-// function buildHelp() {
-//   const hlp = document.getElementById('help');
-//   if(isDefined(hlp)) {
-//     hlp.innerHTML =
-//     "<div class='darkItem menuHeader' onclick='hideHelp()'>Help</div>\
-//     <div class='menuBody'>\
-//       <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_VSCode.html'>VS Code</a>\
-//       <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_Cargo.html'>Rust Cargo</a>\
-//       <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_CMake.html'>CMake</a>\
-//       <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_DotNet.html'>DotNet</a>\
-//       <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_Git.html'>Git</a>\
-//       <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_GitHub.html'>GitHub</a>\
-//       <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_PowerShell.html'>PowerShell</a>\
-//       <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_RegEx.html'>RegEx</a>\
-//       <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_ChatGPT.html'>ChatGPT</a>\
-//       <a target='_blank' href='../Rust/ExploreRust.html?src=../Help_SiteNav.html'>SiteNav</a>\
-//       <div style='height:1.0em;'></div>\
-//     </div>";
-//     hlp.addEventListener('mouseleave', function(event) {
-//       hlp.classList.add('hidden')
-//     });
-//   }
-// }
 
 function setbg(anchor) {
   const collection = document.getElementsByClassName("clickable");
@@ -209,17 +131,6 @@ function setbg(anchor) {
   }
   anchor.style.color = 'var(--clickclr)';
 }
-
-// function setbg(anchor) {
-//   const collection = document.getElementsByClassName("clicked");
-//   for(let i=0; i<collection.length; i++) {
-//     collection[i].style.backgroundColor = 'var(--dark)';
-//     collection[i].style.opacity = '1.0';
-//   }
-//   anchor.style.opacity = '0.5';
-//   anchor.style.color = 'var(--light)';
-//   anchor.backgroundColor = '#ccc';
-// }
 
 /*-- querystring processing, see footing for redirect processing -----
   https://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript

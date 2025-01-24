@@ -3,31 +3,19 @@
  * ver 1.0 - 19 Dec 2024
  * Jim Fawcett
  */
-function align(ida, idp) {
-  const posp = document.getElementById(idp);
-  const anch = document.getElementById(ida);
-  const rect = anch.getBoundingClientRect();
-  posp.style.position = 'absolute';
-  const leftPosition = rect.left - posp.offsetWidth;
-  posp.style.left = leftPosition + window.scrollX + 'px';
-  posp.style.top = rect.bottom + window.scrollY + 'px';
-  posp.style.right = 'auto';
-  posp.style.bottom = 'auto';
-  console.log("align pos top & right: " + posp.style.top + ", " + posp.style.left);
-}
 
-function getLeft(id) {
+// function getLeft(id) {
   
-}
-function moveLeft(id) {
-  const element = document.getElementById(id);
-  if(isDefined(element)) {
-    const currentLeft = parseFloat(getComputedStyle(element).left) || 0;
-    const remSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
-    const moveBy = 5 * remSize;
-    element.style.left = `${currentLeft - moveBy}px`;  
-  }
-}
+// }
+// function moveLeft(id) {
+//   const element = document.getElementById(id);
+//   if(isDefined(element)) {
+//     const currentLeft = parseFloat(getComputedStyle(element).left) || 0;
+//     const remSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+//     const moveBy = 5 * remSize;
+//     element.style.left = `${currentLeft - moveBy}px`;  
+//   }
+// }
 
 function toggleBlogs() {
   console.log("in toggleBlogs()");
@@ -36,25 +24,35 @@ function toggleBlogs() {
   if(isDefined(blg)) {
     hideHelp();
     hideRes();
-    // moveLeft('blogs');
-    // blg.classList.toggle('hidden');
     toggleElement('blogs');
-    console.log(blg);
+    align('mblogs', 'blogs');
   }
 }
 
 function hideBlogs() {
   const blg = document.getElementById('blogs');
   if(isDefined(blg)) {
-    // blg.classList.add('hidden');
     hideElement('blogs');
+  }
+}
+
+function showBlogs() {
+  const blg = document.getElementById('blogs');
+  if(isDefined(blg)) {
+    showElement('blogs');
+  }
+}
+
+function initBlogs() {
+  const blg = document.getElementById('blogs');
+  if(isDefined(blg)) {
+    align('mblogs', 'blogs');
   }
 }
 
 function buildBlogs() {
   const blg = document.getElementById('blogs');
   if(isDefined(blg)) {
-    // alert('in buildBlogs');
     blg.innerHTML =
     "<div class='darkItem menuHeader' onclick='hideBlogs()'>Blogs</div>\
     <div class='menuBody'>\
@@ -64,7 +62,6 @@ function buildBlogs() {
       <a class='undef' href='javascript:;'>Rust Safety</a>\
       <div style='height:0.5em;'></div>\
     </div>";
-    align('mblogs', 'blogs');
     // blg.addEventListener('mouseleave', function(event) {
     //   blg.classList.add('hidden')
     // });  
@@ -74,19 +71,31 @@ function buildBlogs() {
 function toggleHelp() {
   const hlp = document.getElementById('help');
   if(isDefined(hlp)) {
-    // const blg = document.getElementById('blogs');
     hideBlogs();
     hideRes();
-    // hlp.classList.toggle('hidden');
     toggleElement('help');
+    align('mhelp', 'help');
   }
 }
 
 function hideHelp() {
   const hlp = document.getElementById('help');
   if(isDefined(hlp)) {
-    // hlp.classList.add('hidden');
     hideElement('help');
+  }
+}
+
+function showHelp() {
+  const hlp = document.getElementById('help');
+  if(isDefined(hlp)) {
+    showElement('help');
+  }
+}
+
+function initHelp() {
+  const hlp = document.getElementById('help');
+  if(isDefined(hlp)) {
+    align('mhelp', 'help');
   }
 }
 
@@ -110,7 +119,6 @@ function buildHelp() {
       <a target='rpanel' href='../Help/Help_SiteNav.html'>SiteNav</a>\
       <div style='height:1.0em;'></div>\
     </div>";
-    align('mhelp', 'help');
     // hlp.addEventListener('mouseleave', function(event) {
     //   hlp.classList.add('hidden')
     // });
@@ -123,16 +131,29 @@ function toggleRes() {
   if(isDefined(res)) {
     hideBlogs();
     hideHelp();
-    // res.classList.toggle('hidden');
     toggleElement('res');
+    align('mres', 'res');
   }
 }
 
 function hideRes() {
   const res = document.getElementById('res');
   if(isDefined(res)) {
-    // res.classList.add('hidden');
     hideElement('res');
+  }
+}
+
+function showRes() {
+  const res = document.getElementById('res');
+  if(isDefined(res)) {
+    showElement('res');
+  }
+}
+
+function initRes() {
+  const res = document.getElementById('res');
+  if(isDefined(res)) {
+    align('mres', 'res');
   }
 }
 
@@ -187,6 +208,5 @@ function buildRes() {
     // res.addEventListener('mouseleave', function(event) {
     //   res.classList.add('hidden')
     // });
-    align('mres', 'res');
   }
 }
