@@ -3,6 +3,18 @@
  * ver 1.0 - 19 Dec 2024
  * Jim Fawcett
  */
+function align(ida, idp) {
+  const posp = document.getElementById(idp);
+  const anch = document.getElementById(ida);
+  const rect = anch.getBoundingClientRect();
+  posp.style.position = 'absolute';
+  const leftPosition = rect.left - posp.offsetWidth;
+  posp.style.left = leftPosition + window.scrollX + 'px';
+  posp.style.top = rect.bottom + window.scrollY + 'px';
+  posp.style.right = 'auto';
+  posp.style.bottom = 'auto';
+  console.log("align pos top & right: " + posp.style.top + ", " + posp.style.left);
+}
 
 function getLeft(id) {
   
@@ -52,6 +64,7 @@ function buildBlogs() {
       <a class='undef' href='javascript:;'>Rust Safety</a>\
       <div style='height:0.5em;'></div>\
     </div>";
+    align('mblogs', 'blogs');
     // blg.addEventListener('mouseleave', function(event) {
     //   blg.classList.add('hidden')
     // });  
@@ -97,6 +110,7 @@ function buildHelp() {
       <a target='rpanel' href='../Help/Help_SiteNav.html'>SiteNav</a>\
       <div style='height:1.0em;'></div>\
     </div>";
+    align('mhelp', 'help');
     // hlp.addEventListener('mouseleave', function(event) {
     //   hlp.classList.add('hidden')
     // });
@@ -173,5 +187,6 @@ function buildRes() {
     // res.addEventListener('mouseleave', function(event) {
     //   res.classList.add('hidden')
     // });
+    align('mres', 'res');
   }
 }
