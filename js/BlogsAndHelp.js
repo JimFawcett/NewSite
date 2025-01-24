@@ -83,18 +83,18 @@ function buildHelp() {
     hlp.innerHTML =
     "<div class='darkItem menuHeader' onclick='hideHelp()'>Help</div>\
     <div class='menuBody'>\
-      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_VSCode.html'>VS Code</a>\
-      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_Cargo.html'>Rust Cargo</a>\
-      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_CMake.html'>CMake</a>\
+      <a target='rpanel' href='../Help/Help_VSCode.html'>VS Code</a>\
+      <a target='rpanel' href='../Help/Help_Cargo.html'>Rust Cargo</a>\
+      <a target='rpanel' href='../Help/Help_CMake.html'>CMake</a>\
       <a class='undef' target='_self' href='javascript:;'>MSBuild</a>\
-      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_DotNet.html'>DotNet</a>\
-      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_Git.html'>Git</a>\
-      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_GitHub.html'>GitHub</a>\
-      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_PowerShell.html'>PowerShell</a>\
-      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_RegEx.html'>RegEx</a>\
-      <a target='_self' href='../Code/ExploreCode.html?src=../Help/Help_ChatGPT.html'>ChatGPT</a>\
+      <a target='rpanel' href='../Help/Help_DotNet.html'>DotNet</a>\
+      <a target='rpanel' href='../Help/Help_Git.html'>Git</a>\
+      <a target='rpanel' href='../Help/Help_GitHub.html'>GitHub</a>\
+      <a target='rpanel' href='../Help/Help_PowerShell.html'>PowerShell</a>\
+      <a target='rpanel' href='../Help/Help_RegEx.html'>RegEx</a>\
+      <a target='rpanel' href='../Help/Help_ChatGPT.html'>ChatGPT</a>\
       <a class='undef' target='_self' href='javascript:;'>Compiler Explorer</a>\
-      <a target='_self' href='../Site/Explore.html?src=../Help/Help_SiteNav.html'>SiteNav</a>\
+      <a target='rpanel' href='../Help/Help_SiteNav.html'>SiteNav</a>\
       <div style='height:1.0em;'></div>\
     </div>";
     // hlp.addEventListener('mouseleave', function(event) {
