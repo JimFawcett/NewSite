@@ -52,6 +52,9 @@ function closeLeftPanel() {
 }
 
 function toggleCompare() {
+  hideBlogs();
+  hideHelp();
+  hideRes();
   postMsg("compare");
 }
 
