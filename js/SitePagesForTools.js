@@ -8,7 +8,7 @@ function buildPages() {
   const pgs = document.getElementById('pages');
   if(isDefined(pgs)) {
     pgs.innerHTML =
-    "<div class='darkItem menuHeader' onclick='togglePages()'>Site Pages</div>\
+    "<div class='darkItem menuHeader' onclick='togglePages()'>Track Pages</div>\
     <div class='menuBody'>\
       <a href='../Site/SiteHome.html'>Site Home</a>\
       <a href='../Rust/RustHome.html'>Rust</a>\
