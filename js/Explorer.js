@@ -51,6 +51,29 @@ function closeLeftPanel() {
   }
 }
 
+function replaceLastSrc(filename) {
+  const currentUrl = window.location.href;
+
+  // Find the last occurrence of 'src=' followed by any filename
+  const regex = /src=[^&?#]+$/;
+
+  // Replace the last match with the new filename
+  const updatedUrl = currentUrl.replace(regex, `src=${filename}`);
+  return updatedUrl;
+}
+
+let gFile;
+function compare(fromlang, tolang) {
+  postMsg('clear');
+  const currentUrl = window.location.href;
+  const modifiedUrl = replaceLastSrc(gFile);
+  const regex = new RegExp(fromlang, 'g'); // 'g' flag for global replacement
+  const updatedUrl = modifiedUrl.replace(regex, tolang);
+  postMsg("sections");
+  window.location.href = updatedUrl;
+  // console.log(`Updated URL: ${updatedUrl}`);
+}
+
 function toggleCompare() {
   hideBlogs();
   hideHelp();
@@ -124,6 +147,7 @@ window.onmessage = function (e) {
       console.log('filename');
       let fn = document.getElementById('filename');
       fn.innerHTML = e.data + ":"; 
+      gFile = e.data;
   }
 }
 
