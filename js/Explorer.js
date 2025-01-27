@@ -64,14 +64,44 @@ function replaceLastSrc(filename) {
 
 let gFile;
 function compare(fromlang, tolang) {
-  postMsg('clear');
   const currentUrl = window.location.href;
   const modifiedUrl = replaceLastSrc(gFile);
   const regex = new RegExp(fromlang, 'g'); // 'g' flag for global replacement
   const updatedUrl = modifiedUrl.replace(regex, tolang);
+  // const fileExists = checkUrl(updatedUrl);
+  // if(!fileExists) {
+  //   return;
+  // }
+  postMsg('clear');
   postMsg("sections");
   window.location.href = updatedUrl;
   // console.log(`Updated URL: ${updatedUrl}`);
+}
+
+function checkUrl(url) {
+  const iframe = document.getElementById('pgframe');
+  // const iframe = document.createElement('iframe');
+  // iframe.style.display = 'none'; // Hide the iframe
+
+  // Handle successful loading
+  iframe.onload = function () {
+    alert('frame load succeeded');
+    console.log(`File loaded successfully: ${url}`);
+    // iframe.style.display = 'block'; // Show iframe after successful load
+    return true;
+  };
+
+  // Handle loading errors
+  iframe.onerror = function () {
+    alert('frame load failed');
+    console.error(`Failed to load file: ${url}. Reloading fallback: ${fallbackUrl}`);
+    return false;
+    // iframe.src = fallbackUrl; // Reload the original or fallback file
+    // iframe.style.display = 'block'; // Show the iframe with the fallback
+  };
+
+  iframe.src = url; // Attempt to load the file
+  // document.body.appendChild(iframe); // Add the iframe to the page
 }
 
 function toggleCompare() {
