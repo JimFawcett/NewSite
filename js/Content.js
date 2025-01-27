@@ -124,11 +124,14 @@ function goHome() {
 */
 function dirName() {
   let path = window.location.href;
+  alert(path);
   path = path.replace(/^file:\/\//i, "");
   if (path.split('/').pop().includes('.')) {
     path = path.substring(0, path.lastIndexOf('/'));
   }
+  alert(path);
   return path.split('/').pop();
+  // return path;
 }
 
 /*---------------------------------------------------------
