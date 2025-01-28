@@ -10,16 +10,31 @@
   <link rel="stylesheet" href="../css/reset.css" />
   <link rel="stylesheet" href="../css/Explorer.css" />
   <link rel="stylesheet" href="../css/ThemeRust.css" />
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
   <script src="../js/Explorer.js"></script>
   <script src="../js/BlogsAndHelp.js"></script>
   <script>
+    function loadInDataManager() {
+      const loc = window.location;
+      const top = window.top.location;
+      if(loc === top) {
+        window.location = "../DataMgr2.html?src=" + loc;
+      }
+    }
     function load() {
-      console.log('Explorer load() entered')
+      loadInDataManager();
       processQueryString();
       buildBlogs();
       buildHelp();
       buildRes();
+      setPersistantElements();
     }
+    window.addEventListener('pageshow', (event) => {
+      initBlogs();
+      initHelp();
+      initRes();
+    });
   </script>
 </head>
 <body onload="load()">
@@ -34,9 +49,9 @@
     <button class="topMenuButton" onclick="window.location.href='../SWDev/ExploreSWDev.html?src=SWDevHome.html'">SWDev</button>
     <button class="topMenuButton" onclick="window.location.href='../Basics/ExploreBasics.html?src=BasicsHome.html'">Basics</button>
     <button class="topMenuButton" onclick="window.location.href='../Code/ExploreCode.html?src=CodeHome.html'">Code</button>
-    <button class="topMenuButton" onclick="toggleBlogs()">Blogs</button>
-    <button class="topMenuButton" onclick="toggleHelp()">Help</button>
-    <button class="topMenuButton" onclick="toggleRes()">Resrcs</button>
+    <button id="mblogs" class="topMenuButton" onclick="toggleBlogs()">Blogs</button>
+    <button id="mhelp" class="topMenuButton" onclick="toggleHelp()">Help</button>
+    <button id="mres" class="topMenuButton" onclick="toggleRes()">Resrcs</button>
   </div>
   
   <div id="blogs" class="hidden"></div>
@@ -46,28 +61,28 @@
   <div id="frame">
     <div id="lpanel">
       <div id="nav">
-        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel_rust" href="RustHome.html">Rust Home</a></clkwrap>
-        <!-- <a class="clicked" onclick="setbg(this)" target="rpanel_rust" href="RustHome.html">Rust Home</a> -->
+        <div style="height:1.25em;"></div>
+        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="RustHome.html">Rust Home</a></clkwrap>
         <a class="unclickable undef" target="_self" href="javascript:;">Story</a>
-        <!-- <a class="clicked undef" onclick="setbg(this)" target="rpanel_rust" href="javascript:;">Story</a> -->
-        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel_rust" href="RustBites_Intro.html">Bites</a></clkwrap>
-        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel_rust" href="RustRepos.html">Repositories</a></clkwrap>
-        <!-- <a class="clicked" onclick="setbg(this)" target="rpanel_rust" href="RustBites_Intro.html">Bites</a>
-        <a class="clicked" onclick="setbg(this)" target="rpanel_rust" href="RustRepos.html">Repositories</a> -->
+        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="RustBites_Intro.html">Bites</a></clkwrap>
+        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="RustRepos.html">Repositories</a></clkwrap>
         <a class="unclickable undef" target="_self" href="javascript:;">Recent Changes</a>
         <a class="unclickable undef" target="_self" href="javascript:;">References</a>
-        <!-- <a class="clicked undef" onclick="setbg(this)" target="rpanel_rust" href="javascript:;">References</a>
-        <a class="clicked undef" onclick="setbg(this)" target="rpanel_rust" href="javascript:;">Recent Changes</a> -->
+        <div style="height:1.25em;"></div>
+        <details open>
+          <summary>Compare Code</summary>
+          <div style="margin-left:1rem;">
+            <clkwrap><a class="clickable" target="rpanel" onclick="compare('Rust', 'Cpp')">compare C++</a></clkwrap>
+            <clkwrap><a class="clickable" target="rpanel" onclick="compare('Rust', 'CSharp')">compare C#</a></clkwrap>
+            <clkwrap><a class="clickable" target="rpanel" onclick="compare('Rust', 'Python')">compare Python</a></clkwrap>
+          </div>
+        </details>
         <div style="height:1.25em;"></div>
         <clkwrap><a class="clickable" onclick="setbg(this)" target="_blank" href="https://play.rust-lang.org/?version=stable&mode=release&edition=2021&gist=c22538f1477faacf07614c56b4c78318">Rust Playground</a></clkwrap>
-        <!-- <a class="clicked" onclick="setbg(this)" target="_blank" href="https://play.rust-lang.org/?version=stable&mode=release&edition=2021&gist=c22538f1477faacf07614c56b4c78318">Rust Playground</a> -->
         <div style="margin-left:0.5rem;">
           <clkwrap><a class="clickable" onclick="setbg(this)" target="_blank" href="https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=4b5377459156bb0d491694630d11da1c">Point Type</a></clkwrap>
           <clkwrap><a class="clickable" onclick="setbg(this)" target="_blank" href="https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=e41f33b89b939afa8476aa84981e4345">Arg Passing</a></clkwrap>
           <clkwrap><a class="clickable" onclick="setbg(this)" target="_blank" href="https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=5ae97f90a0c82dd7ff79c3091417d3aa">Iter Colls</a></clkwrap>
-          <!-- <a class="clicked" onclick="setbg(this)" target="_blank" href="https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=4b5377459156bb0d491694630d11da1c">Point Type</a>
-          <a class="clicked" onclick="setbg(this)" target="_blank" href="https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=e41f33b89b939afa8476aa84981e4345">Arg Passing</a>
-          <a class="clicked" onclick="setbg(this)" target="_blank" href="https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=5ae97f90a0c82dd7ff79c3091417d3aa">Iter Colls</a> -->
         </div>
         <!-- <details id="explorers">
           <summary>Explorers&nbsp;</summary>
@@ -95,7 +110,7 @@
       </div>
     </div>
     <div id="rpanel">
-      <iframe id="pgframe" style="height:100%; width:100%; border:1px solid var(--dark);" src="PagePrototype.html" name="rpanel_rust"></iframe>
+      <iframe id="pgframe" style="height:100%; width:100%; border:1px solid var(--dark);" src="RustHome.html" name="rpanel"></iframe>
     </div>
   </div>
   <div id="bottomMenu">
@@ -108,10 +123,13 @@
     </button> -->
     <div class="rightGroup">
       <div id="filename" style="border:none;"></div>
-      <button class="bottomMenuButton" style="margin-right:0.0em; width:auto;" onclick="toggleCompare()">
+      <!-- <button class="bottomMenuButton" style="margin-right:0.0em; width:auto;" onclick="toggleCompare()">
         Toggle compare
-      </button>
+      </button> -->
       <div class="buttonSpacer"></div>
+      <button class="bottomMenuButton" onclick="closeMenues()">
+        clear
+      </button>
       <button class="bottomMenuButton" onclick="toggleAbout()">
         About
       </button>

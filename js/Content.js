@@ -36,6 +36,7 @@ function postFileName() {
   const parseUrl = new URL(url);
   let fn = parseUrl.pathname.split('/').pop();
   window.parent.postMessage(fn, '*');
+  postMsg('loaded');
 }
 /*---------------------------------------------------------
   temporarily toggle element's hidden state
