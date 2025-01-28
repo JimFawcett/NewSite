@@ -184,14 +184,15 @@ function buildRes() {
       <div class='category'>-Tests-</div>\
       <details style='margin-left:0.5rem;'>\
         <summary>Web Tech</summary>\
-        <a target='_self' href='../Tests/GridExplorer/PrototypeExplore.html'>GridExplorer</a>\
-        <a target='_self' href='../Tests/FigureSizer/ImageSizer.html'>FigureSizer</a>\
-        <a target='_self' href='../Tests/link-navigator/linkNav.html'>linkNav</a>\
-        <a target='_self' href='../Tests/PopUpWindow/PopUp.html'>PopUpWindow</a>\
-        <a target='_self' href='../Tests/PositionElements/PosElem.html'>PositionElements</a>\
-        <a target='_self' href='../Tests/scrollingMenus/ScrollingMenus.html'>ScrollingMenus</a>\
-        <a target='_self' href='../Tests/Clickables/Clickables2.html'>Clickables2</a>\
-        <a target='_self' href='../Tests/DataMgr/DataMgr.html'>DataManager</a>\
+        <a target='rpanel' href='../Tests/GridExplorer/PrototypeExplore.html'>GridExplorer</a>\
+        <a target='rpanel' href='../Tests/FigureSizer/ImageSizer.html'>FigureSizer</a>\
+        <a target='rpanel' href='../Tests/link-navigator/linkNav.html'>linkNav</a>\
+        <a target='rpanel' href='../Tests/PopUpWindow/PopUp.html'>PopUpWindow</a>\
+        <a target='rpanel' href='../Tests/positionElements/PosElem.html'>PositionElements</a>\
+        <a target='rpanel' href='../Tests/scrollingMenus/ScrollingMenus.html'>ScrollingMenus</a>\
+        <a target='rpanel' href='../Tests/Clickables/Clickables2.html'>Clickables2</a>\
+        <a target='rpanel' href='../Tests/DataMgr/DataMgr.html'>DataManager</a>\
+        <a target='rpanel' href='../Tests/Colors/Colors.html'>Colors</a>\
         <div style='height:0.25rem;'></div>\
       </details>\
       <div style='height:0.25rem;'></div>\
