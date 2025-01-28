@@ -219,6 +219,7 @@ function setPersistantElements() {
   setElements('blogs');
   setElements('help');
   setElements('res');
+  // postMsg('loaded');
   // align('mblogs', 'blogs');
   // align('mhelp', 'help');
   // align('mres', 'res');

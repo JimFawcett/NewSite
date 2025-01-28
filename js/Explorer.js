@@ -173,6 +173,10 @@ window.onmessage = function (e) {
     case 'clear':
       /* do nothing */
       break;
+    case 'loaded':
+      window.parent.postMessage('loaded', '*');
+      console.log('Explorer posted message to PageHost');
+      break;
     default:
       console.log('filename');
       let fn = document.getElementById('filename');
