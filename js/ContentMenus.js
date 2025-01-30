@@ -141,6 +141,63 @@ function toggleElement(id) {
     setCookie(id, 'true', 1);
   }
 }
+
+function toggleTransitionElement(id) {
+  console.log('in toggleTransitionElement');
+  const element = document.getElementById(id);
+  if (element) {
+    if (element.classList.contains('hidden')) {
+      element.classList.remove('hidden');
+      element.classList.add('visible');
+    } else {
+      element.classList.remove('visible');
+      element.classList.add('hidden');
+    }
+  } else {
+    console.warn(`Element with ID ${id} not found.`);
+  }
+}
+
+
+  // console.log('in toggleTransitionElement: id = ' + id);
+  
+  // toggleButton(id);
+  // const element = document.getElementById(id);
+  // if (element) {
+  //   // Set initial transition properties
+  //   element.style.transition = "opacity 0.5s ease-in-out, transform 0.5s ease-in-out";
+
+  //   // Check current visibility and toggle
+  //   if (window.getComputedStyle(element).opacity === "0") {
+  //     element.style.opacity = "1";
+  //     element.style.transform = "translateY(0)";
+  //   } else {
+  //     element.style.opacity = "0";
+  //     element.style.transform = "translateY(-10px)";
+  //   }
+  // } else {
+  //   console.warn(`Element with ID ${id} not found.`);
+  // }
+
+  // const element = document.getElementById(id);
+  // if (element) {
+  //   element.style.transition = "opacity 0.5s ease-in-out, transform 0.5s ease-in-out";
+  //   if (isHidden(id)) {
+  //     element.style.opacity = "0";
+  //     element.style.transform = "translateY(0)";
+  //     // element.style.opacity = "1";
+  //     // element.style.transform = "translateY(-10px)";
+  //     setCookie(id, 'false', 1)
+  //   } else {
+  //     // element.style.opacity = "0";
+  //     // element.style.transform = "translateY(0)";
+  //     element.style.opacity = "1";
+  //     element.style.transform = "translateY(-10px)";
+  //     setCookie(id, 'true', 1);
+  //   }
+  // }
+// }
+
 /*---------------------------------------------------------
   manage site session variables with cookies
   - used to make compare, pages and sections list state
@@ -219,6 +276,7 @@ function setPersistantElements() {
   setElements('blogs');
   setElements('help');
   setElements('res');
+  setElements('lpanel');
   // postMsg('loaded');
   // align('mblogs', 'blogs');
   // align('mhelp', 'help');
