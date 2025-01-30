@@ -191,8 +191,9 @@ function buildRes() {
         <a target='rpanel' href='../Tests/positionElements/PosElem.html'>PositionElements</a>\
         <a target='rpanel' href='../Tests/scrollingMenus/ScrollingMenus.html'>ScrollingMenus</a>\
         <a target='rpanel' href='../Tests/Clickables/Clickables2.html'>Clickables2</a>\
-        <a target='rpanel' href='../Tests/DataMgr/DataMgr.html'>DataManager</a>\
+        <a target='rpanel' href='../Tests/DataMgr/DataMgr2.html'>DataManager</a>\
         <a target='rpanel' href='../Tests/Colors/Colors.html'>Colors</a>\
+        <a target='rpanel' href='../Tests/PanelTransitions/PanelTransitions.html'>PanelTransitions</a>\
         <div style='height:0.25rem;'></div>\
       </details>\
       <div style='height:0.25rem;'></div>\
