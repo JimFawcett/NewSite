@@ -184,16 +184,16 @@ function buildRes() {
       <div class='category'>-Tests-</div>\
       <details style='margin-left:0.5rem;'>\
         <summary>Web Tech</summary>\
-        <a target='rpanel' href='../Tests/GridExplorer/PrototypeExplore.html'>GridExplorer</a>\
-        <a target='rpanel' href='../Tests/FigureSizer/ImageSizer.html'>FigureSizer</a>\
-        <a target='rpanel' href='../Tests/link-navigator/linkNav.html'>linkNav</a>\
-        <a target='rpanel' href='../Tests/PopUpWindow/PopUp.html'>PopUpWindow</a>\
-        <a target='rpanel' href='../Tests/positionElements/PosElem.html'>PositionElements</a>\
-        <a target='rpanel' href='../Tests/scrollingMenus/ScrollingMenus.html'>ScrollingMenus</a>\
-        <a target='rpanel' href='../Tests/Clickables/Clickables2.html'>Clickables2</a>\
-        <a target='rpanel' href='../Tests/DataMgr/DataMgr2.html'>DataManager</a>\
-        <a target='rpanel' href='../Tests/Colors/Colors.html'>Colors</a>\
-        <a target='rpanel' href='../Tests/PanelTransitions/PanelTransitions.html'>PanelTransitions</a>\
+        <a target='_top' href='../Tests/GridExplorer/PrototypeExplore.html'>GridExplorer</a>\
+        <a target='_top' href='../Tests/FigureSizer/ImageSizer.html'>FigureSizer</a>\
+        <a target='_top' href='../Tests/link-navigator/linkNav.html'>linkNav</a>\
+        <a target='_top' href='../Tests/PopUpWindow/PopUp.html'>PopUpWindow</a>\
+        <a target='_top' href='../Tests/positionElements/PosElem.html'>PositionElements</a>\
+        <a target='_top' href='../Tests/scrollingMenus/ScrollingMenus.html'>ScrollingMenus</a>\
+        <a target='_top' href='../Tests/Clickables/Clickables2.html'>Clickables2</a>\
+        <a target='_top' href='../Tests/DataMgr/DataMgr2.html'>DataManager</a>\
+        <a target='_top' href='../Tests/Colors/Colors.html'>Colors</a>\
+        <a target='_top' href='../Tests/PanelTransitions/PanelTransitions.html'>PanelTransitions</a>\
         <div style='height:0.25rem;'></div>\
       </details>\
       <div style='height:0.25rem;'></div>\
