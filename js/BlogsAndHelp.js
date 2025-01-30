@@ -174,16 +174,22 @@ function buildRes() {
         <a href='../documents/ChatGPT_https.pdf'>https</a>\
         <div style='height:0.75rem;'></div>\
       </details>\
-      <div class='category'>-online execution-</div>\
-      <a target='_blank' href='https://godbolt.org'>Compiler Explorer</a>\
-      <a target='_blank' href='https://play.rust-lang.org'>Rust Playground</a>\
-      <a target='_blank' href='https://dotnetfiddle.net'>dotnet fiddle</a>\
-      <a target='_blank' href='https://python-fiddle.com'>Python fiddle</a>\
-      <a target='_blank' href='https://runjs.app/play'>runjs</a>\
+      <div class='category'>-coding tools-</div>\
+      <details style='margin-left:0.5rem;'>\
+        <summary>online execution</summary>\
+        <a target='_blank' href='https://godbolt.org'>Compiler Explorer</a>\
+        <a target='_blank' href='https://play.rust-lang.org'>Rust Playground</a>\
+        <a target='_blank' href='https://dotnetfiddle.net'>dotnet fiddle</a>\
+        <a target='_blank' href='https://python-fiddle.com'>Python fiddle</a>\
+        <a target='_blank' href='https://runjs.app/play'>runjs</a>\
+        <div style='height:0.25rem;'></div>\
+      </details>\
+      <a target='_blank' href='https://www.w3docs.com/'>w3docs</a>\
+      <a target='_blank' href='https://www.rgbtohex.net/'>Dan's Tools</a>\
       <div style='height:0.25rem;'></div>\
       <div class='category'>-Tests-</div>\
       <details style='margin-left:0.5rem;'>\
-        <summary>Web Tech</summary>\
+        <summary>Web Tech Tests</summary>\
         <a target='_top' href='../Tests/GridExplorer/PrototypeExplore.html'>GridExplorer</a>\
         <a target='_top' href='../Tests/FigureSizer/ImageSizer.html'>FigureSizer</a>\
         <a target='_top' href='../Tests/link-navigator/linkNav.html'>linkNav</a>\
