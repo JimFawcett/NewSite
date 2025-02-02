@@ -10,7 +10,7 @@ function buildPages() {
     pgs.innerHTML =
     "<div class='darkItem menuHeader' onclick='togglePages()'>Blog Pages</div>\
     <div class='menuBody'>\
-      <a href='Blog_Prototype.html'>Blog Prototype</a>\
+      <a href='Blog.html'>First Things</a>\
       <a href='Blog_CommCompare.html'>Comm Compare</a>\
       </div>\
     <div style='height:0.5em;'></div>";

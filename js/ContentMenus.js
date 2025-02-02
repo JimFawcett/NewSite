@@ -309,7 +309,7 @@ function buildKeys() {
         <td class='center clickable'><a onclick='goHome()'>H</a></td><td>Home</td>\
       </tr>\
       <tr>\
-        <td class='center clickable'><a onclick='location.reload()'>R</a></td><td>Reload</td>\
+        <td class='center clickable'><a onclick='window.location.reload()'>R</a></td><td>Reload</td>\
       </tr>\
       <tr>\
         <td class='center clickable'><a onclick='history.go(-1)'>B</a></td><td>Back</td>\
