@@ -201,6 +201,7 @@ function buildRes() {
         <a target='_top' href='../Tests/Colors/Colors.html'>Colors</a>\
         <a target='_top' href='../Tests/PanelTransitionsWithOverlay/PanelTransitionsWOverlay.html'>PanelTransitions</a>\
         <a target='_top' href='../Tests/PassingObjectMsgs/ObjectMessages.html'>ObjectMessages</a>\
+        <a target='_top' href='../Tests/Viewer/Viewer.html'>Viewer</a>\
         <div style='height:0.25rem;'></div>\
       </details>\
       <div style='height:0.25rem;'></div>\
