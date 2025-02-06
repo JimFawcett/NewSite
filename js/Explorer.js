@@ -283,7 +283,7 @@ window.onmessage = function (e) {
     default:
       console.log('filename');
       let fn = document.getElementById('filename');
-      fn.innerHTML = e.data + ":"; 
+      fn.innerHTML = e.data; 
       gFile = e.data;
   }
 }

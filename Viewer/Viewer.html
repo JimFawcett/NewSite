@@ -29,6 +29,7 @@
       padding:1rem 2rem;
       background-color: #777;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 22px;
       user-select: none;
     }
 
@@ -36,23 +37,23 @@
       display:flex;
       flex-direction: row;
       position:absolute;
-      top:0.25rem;
+      top:0.0rem;
       right:0.25rem;
-      height:calc(100vh - 0.5rem);
-      width:calc(100vw - 0.5rem);
-      border:none;
+      height:calc(100vh - 0.0rem);
+      width:calc(100vw - 0.25rem);
+      border:2px solid red;
     }
 
     #lpanel {
       display:flex;
       flex-direction: column;
-      width: 50%;
+      width: calc(50% - 0.1rem);
       height:100%;
       border:none;
     }
 
     #cpanel {
-      width:0.5rem;
+      width:0.2rem;
     }
 
     #rpanel {
@@ -100,28 +101,43 @@
       border-left: none;
       /* pointer-events: none; */
     }
+    button {
+      border:none;
+      cursor:pointer;
+    }
   </style>
   <script>
     function leftBigger() {
+      undoFullLeft();
       const cnt = document.getElementById('container');
       const width = parseFloat(window.getComputedStyle(cnt).width);
+      console.log('computed width: ' + width);
+      const cwidth = cnt.style.width;
+      console.log('cnt.style.widt: ' + cwidth);
       console.log('cnt width: ' + width);
       const inc = 0.1 * width;
       console.log('inc: ' + inc);
       const lpanel = document.getElementById('lpanel');
       let lpanelWidth = parseFloat(window.getComputedStyle(lpanel).width);
       console.log('lpanel width before: ' + lpanelWidth);
-      if(lpanelWidth < width - inc - 5) {
+      if(lpanel.style.width < width - inc) {
+        // lpanel.style.flex = "none";
         lpanel.style.width = `${lpanelWidth + inc}px`;
       } else {
-        // lpanel.style.width = `${width - 0.25 * inc}px`;
+        console.log('last Wider');
+        doFullLeft();
+        // let rpanel = document.getElementById('rpanel');
+        // rpanel.style.diplay = "none";
+        // lpanel.style.width = `${width - 0.2*22}px`;
       }
+      // lpanel.style.flex = "1";
       lpanelWidth = parseFloat(window.getComputedStyle(lpanel).width);
       console.log('lpanel width after: ' + lpanelWidth);
     }
   </script>
   <script>
     function leftSmaller() {
+      undoFullLeft();
       const cnt = document.getElementById('container');
       const width = parseFloat(window.getComputedStyle(cnt).width);
       console.log('cnt width: ' + width);
@@ -133,49 +149,100 @@
       if(lpanelWidth > inc + 5) {
         lpanel.style.width = `${lpanelWidth - inc}px`;
       } else {
-        // lpanel.style.width = `${0.25 * inc}px`;
+        lpanel.style.width = `${0.0}px`;
       }
       lpanelWidth = parseFloat(window.getComputedStyle(lpanel).width);
       console.log('lpanel width after: ' + lpanelWidth);
     }
     function doCenter() {
+      undoFullLeft();
       let lpanel = document.getElementById('lpanel');
-      lpanel.style.width = "50%";
+      lpanel.style.width = "calc(50% - 0.1rem)";
       console.log('centered');
-      leftBigger();
+      // leftBigger();
     }
-    document.getElementById("center").addEventListener("click", (event) => {
-        console.log('click event on center button');
-        doCenter();
-        event.stopPropagation(); // Stops bubbling up to the parent
-    });
+    // function doCenterleft() {
+    //   let lpanel = document.getElementById('lpanel');
+    //   lpanel.style.width = "50%";
+    //   console.log('centered');
+    //   // leftSmaller();
+    //   // return false;
+    // }
+    function doFullRight() {
+      undoFullLeft();
+      let lpanel = document.getElementById('lpanel');
+      lpanel.style.width = "0%";
+      console.log('full screen');
+      // leftBigger();
+    }
+    // function doFullLeft() {
+    //   console.log('full screen');
+    //   const cnt = document.getElementById('container');
+    //   const width = parseFloat(window.getComputedStyle(cnt).width);
+    //   console.log('container width: ' + width);
+    //   let lpanel = document.getElementById('lpanel');
+    //   lpanel.style.width = `${width}px`;
+    //   console.log('lpanel.style.width: ' + lpanel.style.width);
+    //   console.log('window.innerWidth: ' + window.innerWidth);
+    //   // leftBigger();
+    // }
+    let originalFlex;
+
+    function doFullLeft() {
+      console.log('doFullLeft()');
+      const lpanel = document.getElementById('lpanel');
+      const rpanel = document.getElementById('rpanel');
+      lpanel.style.flex = "1";
+      rpanel.style.display = "none";
+    }
+    function undoFullLeft() {
+      const lpanel = document.getElementById('lpanel');
+      const rpanel = document.getElementById('rpanel');
+      lpanel.style.flex = originalFlex;
+      rpanel.style.display = "flex";
+    }
+    // document.getElementById("cpanel").addEventListener("click", (event) => {
+    //     console.log('click event on center button');
+    //     doCenter();
+    //     event.stopPropagation(); // Stops bubbling up to the parent
+    // });
   </script>
 </head>
 <body>
   <div id="container">
-    <div id="lpanel" onclick="leftBigger()">
+    <div id="lpanel">
       <div id="lheader">
         <!-- <button style="border:none;">wider</button> -->
         <spacer-cell>&nbsp;</spacer-cell>
-        <button style="border:none;" onclick="window.location.href='../Site/Explore.html'">Site</button>
+        <button style="border:none; cursor: pointer;" onclick="window.location.href='../Site/Explore.html'">Exit to Site</button>
+        <spacer-cell style="float:left";>&nbsp;</spacer-cell>
+        <button style="float:left; border:none;" onclick="doFullLeft()">One Page</button>
         <spacer-cell>&nbsp;</spacer-cell>
-        <button style="border:none;">Wider</button>
+        <button id="center" style="float:left; border:none;" onclick="doCenter()">Center</button>
+        <spacer-cell>&nbsp;</spacer-cell>
+        <button style="border:none;" onclick="leftBigger()">Wider</button>
         <spacer-cell>&nbsp;</spacer-cell>
       </div>
-      <iframe id="left-frame" src="../Site/Explore.html" name="lpanel"></iframe>
+      <iframe id="left-frame" src="../Site/Explore.html"></iframe>
     </div>
     <div id="cpanel"></div>
-    <div id="rpanel" onclick="leftSmaller()">
+    <div id="rpanel">
       <div id="rheader">
         <spacer-cell>&nbsp;</spacer-cell>
-        <button style="float:left; border:none;">wider</button>
+        <button style="float:left; border:none;" onclick="leftSmaller()">Wider</button>
         <spacer-cell>&nbsp;</spacer-cell>
-        <button id="center" style="float:left; border:none;" onclick="doCenter()">center</button>
+        <button id="center" style="float:left; border:none;" onclick="doCenter()">Center</button>
+        <spacer-cell style="float:left";>&nbsp;</spacer-cell>
+        <button style="float:left; border:none;" onclick="doFullRight()">One Page</button>
         <spacer-cell style="float:left";>&nbsp;</spacer-cell>
         <!-- <div>address</div> -->
       </div>
-      <iframe id="right-frame" src="../Site/Explore.html" name="rpanel"></iframe>
+      <iframe id="right-frame" src="../Site/Explore.html" name="lpanel"></iframe>
     </div>
   </div>
+  <script>
+    originalFlex = document.getElementById('lpanel').style.flex;
+    console.log('originalFlex: ' + originalFlex);
+  </script>
 </body>
 </html>

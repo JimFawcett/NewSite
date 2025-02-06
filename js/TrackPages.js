@@ -17,7 +17,7 @@ function buildPages() {
       <a href='WebDev/WebDevHome.html'>WebDev</a>\
       <a href='SWDev/SWDevHome.html'>SWDev</a>\
       <a href='Basics/BasicsHome.html'>Rust</a>\
-      <a href='CodeHome.html'>Code</a>\
+      // <a href='CodeHome.html'>Code</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
