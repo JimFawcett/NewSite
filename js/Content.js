@@ -33,10 +33,19 @@ function isHidden(id) {
 */
 function postFileName() {
   let url = window.location.href;
+  // alert(url);
+  setCookie('url', url, 10);
   const parseUrl = new URL(url);
   let fn = parseUrl.pathname.split('/').pop();
   window.parent.postMessage(fn, '*');
   postMsg('loaded');
+}
+function getUrl() {
+  let url = getCookie('url');
+  if(url === null || url === false) {
+    url = "../Site/Explore.html";
+  }
+  return url;
 }
 /*---------------------------------------------------------
   temporarily toggle element's hidden state
