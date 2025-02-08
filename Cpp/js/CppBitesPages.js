@@ -10,7 +10,6 @@ function buildPages() {
     pgs.innerHTML =
     "<div class='darkItem menuHeader' onclick='togglePages()'>C++ Bites Pages</div>\
     <div class='menuBody'>\
-      <a href='CppHome.html'>Track Summary</a>\
       <a href='CppBites_Intro.html'>Introduction</a>\
       <a href='CppBites_Hello.html'>Hello</a>\
       <a href='CppBites_Data.html'>Data</a>\
@@ -18,7 +17,8 @@ function buildPages() {
       <a class='undef' href='javascript:;'>Generics</a>\
       <a class='undef' href='javascript:;'>Iteration</a>\
       <a href='CppBites_STR.html'>STR</a>\
-      <a href='CppBites_Summary.html'>Summary</a>\
+      <hr style='margin: 0.5rem 0rem 0.25rem 0rem'>\
+      <a href='CppHome.html'>Track Summary</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
