@@ -2,43 +2,65 @@ class ImageViewer extends HTMLElement {
   constructor() {
       super();
       this.attachShadow({ mode: 'open' });
-      this.scaleFactor = 1;
 
-      this.titleText = this.getAttribute('title') || 'Image Viewer';
-      this.imgSrc = this.getAttribute('src') || '';
-      this.imgWidth = parseInt(this.getAttribute('width')) || 200;
-      this.imgHeight = parseInt(this.getAttribute('height')) || 200;
+      // Get attributes
+      this.imgSrc = this.getAttribute('img-src') || '';
+      this.imgWidth = this.getAttribute('img-width') || '400';
+      this.bgColor = this.getAttribute('bg-color') || 'white';
 
+      // Create shadow DOM structure
       this.shadowRoot.innerHTML = `
-          <div class="viewer">
-              <div class="title">${this.titleText}</div>
-              <img class="image" src="${this.imgSrc}" width="${this.imgWidth}" height="${this.imgHeight}">
+          <style>
+              :host {
+                  display: flex;
+                  flex-direction: column;
+                  border: 2px solid black;
+                  padding: 6px 10px 10px 10px;
+                  user-select: none;
+                  width: min-content;
+                  box-shadow: 5px 5px 5px #999;
+                  background-color: ${this.bgColor};
+              }
+
+              .title {
+                  display: flex;
+                  font-family: "Comic Sans MS", cursive, sans-serif;
+                  font-weight: bold;
+                  cursor: pointer;
+                  max-width: 100%;
+                  margin-bottom: 12px;
+                  line-height: 1.0rem;
+                  flex-wrap: wrap;
+                  word-wrap: break-word;
+                  overflow-wrap: break-word;
+                  white-space: wrap;
+              }
+
+              .image {
+                  display: block;
+                  flex: 0 0 auto;
+                  cursor: pointer;
+                  transition: transform 0.2s ease-in-out;
+              }
+          </style>
+
+          <div class="title" part="title"><slot></slot></div>
+          <div class="image">
+              <img id="img" src="${this.imgSrc}" width="${this.imgWidth}">
           </div>
       `;
 
-      this.viewerElement = this.shadowRoot.querySelector('.viewer');
-      this.imageElement = this.shadowRoot.querySelector('.image');
+      // Event listeners
       this.titleElement = this.shadowRoot.querySelector('.title');
-      
-      this.viewerElement.addEventListener('click', () => this.enlargeViewer());
-      this.titleElement.addEventListener('click', (event) => {
-          event.stopPropagation(); // Prevent conflicting clicks
-          this.shrinkViewer();
-      });
+      this.imageElement = this.shadowRoot.querySelector('#img');
+
+      this.titleElement.addEventListener('click', () => this.resizeImage(1 / 1.2));
+      this.imageElement.addEventListener('click', () => this.resizeImage(1.2));
   }
 
-  enlargeViewer() {
-      this.scaleFactor *= 1.2;
-      this.updateSize();
-  }
-
-  shrinkViewer() {
-      this.scaleFactor /= 1.2;
-      this.updateSize();
-  }
-
-  updateSize() {
-      this.viewerElement.style.transform = `scale(${this.scaleFactor})`;
+  resizeImage(scaleFactor) {
+      let currentWidth = parseFloat(window.getComputedStyle(this.imageElement).width);
+      this.imageElement.style.width = `${currentWidth * scaleFactor}px`;
   }
 }
 
