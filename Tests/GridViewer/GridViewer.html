@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resizable Panels with Draggable Separator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 5px 1fr; /* Two panels and a divider */
+            width: 80vw;
+            height: 60vh;
+            border: 2px solid #333;
+            gap: 0px;
+        }
+
+        .panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            transition: width 0.1s ease;
+        }
+
+        .panel1 {
+            background-color: steelblue;
+        }
+
+        .panel2 {
+            background-color: tomato;
+        }
+
+        .divider {
+            width: 5px;
+            cursor: ew-resize;
+            background-color: gray;
+            transition: background-color 0.2s;
+        }
+
+        .divider:hover {
+            background-color: darkgray;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="panel panel1">Panel 1</div>
+        <div class="divider"></div>
+        <div class="panel panel2">Panel 2</div>
+    </div>
+
+    <script>
+        const container = document.querySelector('.container');
+        const panel1 = document.querySelector('.panel1');
+        const panel2 = document.querySelector('.panel2');
+        const divider = document.querySelector('.divider');
+
+        let isDragging = false;
+
+        divider.addEventListener('mousedown', (event) => {
+            isDragging = true;
+            document.body.style.cursor = 'ew-resize';
+        });
+
+        document.addEventListener('mousemove', (event) => {
+            if (!isDragging) return;
+
+            let containerRect = container.getBoundingClientRect();
+            let offsetX = event.clientX - containerRect.left;
+
+            // Ensure panel1 doesn't get too small or too large
+            let minWidth = 50; // Minimum panel width in pixels
+            let maxWidth = containerRect.width - minWidth;
+
+            if (offsetX > minWidth && offsetX < maxWidth) {
+                let panel1Width = (offsetX / containerRect.width) * 100;
+                let panel2Width = 100 - panel1Width;
+                container.style.gridTemplateColumns = `${panel1Width}% 5px ${panel2Width}%`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            document.body.style.cursor = 'default';
+        });
+
+    </script>
+
+</body>
+</html>
