@@ -1,1 +1,1 @@
-C:\github\JimFawcett\NewSite\code\rust\basics\target\debug\Basics.exe: C:\github\JimFawcett\NewSite\code\rust\basics\src\main.rs
+C:\github\JimFawcett\NewSite\Code\Rust\Basics\target\debug\Basics.exe: C:\github\JimFawcett\NewSite\Code\Rust\Basics\src\main.rs
