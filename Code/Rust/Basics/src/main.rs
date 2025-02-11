@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![allow(clippy::approx_constant)]
 
 use std::fmt::*;
 
@@ -137,8 +138,10 @@ let arr1:[i32; 3] = [1, 2, 3];
 use std::collections::*;
 
 fn libtypes() {
-  show_note("std::lib collection types");
   
+  show_note("std::lib collection types");
+  nl();
+
   /* basic String operations */
   show_op("String");
   let s1:String = "this is a string".to_string();
@@ -245,9 +248,11 @@ fn usertypes() {
   show_note("user-defined types");
   nl();
   show_op("Demo");
+
   #[derive(Debug, Clone)]
   pub struct Demo {
-    name:String,
+    /* pub name provides direct access to data */
+    pub name:String,
   }
   impl Demo {
     /* create instance */
@@ -260,11 +265,11 @@ fn usertypes() {
     pub fn init(self, st:&str) -> Self {
       Demo { name: st.to_string() }
     }
-    /* retrieve name */
+    /* retrieve name, uses method instead of direct access*/
     pub fn get(&self) -> String {
       self.name.clone()
     }
-    /* modify name */
+    /* modify name, uses method instead of direct access */
     pub fn set(&mut self, st:&str) {
       self.name = st.to_string();
     }
@@ -274,6 +279,7 @@ fn usertypes() {
   let mut d = Demo::new().init("Joe");
   show_type(&d, "d");
 
+  /* access through methods doesn't need public data */
   show_op("d.set(\"Frank\")");
   d.set("Frank");
   outln(&d, "d");
@@ -281,6 +287,15 @@ fn usertypes() {
   show_op("let name = d.get()");
   let name = d.get();
   outln(&name, "name");
+
+  /* direct access to public data */
+  show_op("let d_name = d.name;");
+  let d_name = d.name;
+  outln(&d_name, "d_name");
+
+  show_op("let d.name = Alexa;");
+  d.name = "Alexa".to_string();
+  outln(&d, "d");
 
   nl();
 }
@@ -316,7 +331,7 @@ pub fn out<T:Debug>(t: &T, name: &str) {
 }
 
 pub fn outln<T:Debug>(t: &T, name: &str) {
-  print!("  {name} = {t:?}\n");
+  println!("  {name} = {t:?}");
 }
 
 pub fn outln_type<T:Debug>(t: &T, name: &str) {
@@ -325,5 +340,5 @@ pub fn outln_type<T:Debug>(t: &T, name: &str) {
 }
 
 pub fn nl() {
-  print!("\n");
+  println!();
 }
