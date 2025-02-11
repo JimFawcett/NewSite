@@ -1,3 +1,6 @@
+/*-----------------------------------------------
+  Demonstrate Basic Rust values and operations
+*/
 #![allow(dead_code)]
 #![allow(clippy::approx_constant)]
 
@@ -11,7 +14,7 @@ fn main() {
 }
 /*-- demo primitives --------------------------------------
   Demonstrate primitive types, e.g.:
-    - integers, floats, arrays, &strs, structs
+    - booleans, integers, floats, arrays, &strs, structs
     - type declarations and inference
 */
 fn primitives() {
@@ -28,7 +31,13 @@ fn primitives() {
 
   nl();
   show_op("integers");
-/*---------------------------------------*/
+/*-----------------------------------------------
+  i8, i16, i32, i64, i128, isize - signed
+  u8, u16, u32, u64, u128, usize - unsigned
+  literals:
+  42 decimal, 0x2A hex, 0o52 octal, 
+  0b10101 binary, b'A' byte
+-----------------------------------------------*/
   let i = 42u8;     /* typed literal */
   show_type(&i, "i");
 
@@ -49,7 +58,18 @@ fn primitives() {
 
   nl();
   show_op("floating point numbers");
-/*---------------------------------------*/  
+/*-----------------------------------------
+  types: f32, f64
+  special values: 
+    NAN, INFINITY, NEG_INFINITY
+  operations:
+    +, -, *, /
+  functions:
+    floor(), ceil(), round(), sin(),
+    abs(), sqrt(), powf(), exp(), ln(),
+    sin(), cos(), tan(), log()
+
+-----------------------------------------*/  
   let d:f32 = 3.1415927;
   show_type(&d, "d");
 
@@ -62,19 +82,60 @@ fn primitives() {
 
   let div2 = (d as f64)/e;
   outln_type(&div2, "(d as f64)/e");
+  nl();
+  let f1 = 2.5f64;
+  outln_type(&f1, "f1");
+  let f2: f64 = f1.powf(2.0);
+  outln_type(&f2, "f1.powf(2.0)");
 
   nl();
   show_op("literal strings");
-  /* 
-    the &str type represents const literal strings 
-    placed in static memory 
-  */
+  /*---------------------------------------------
+    &str type represents a reference to const 
+    literal strings placed in static memory 
+  ---------------------------------------------*/
   let ls = "a literal string"; /* reference to literal string */
   show_type(&ls, "ls");
 
   nl();
+  show_op("enumerations");
+  /*---------------------------------------------
+    std enumerations:
+      Option { Some(v), None, }
+      Result { Ok(result), Err(error), }
+      Duration { secs: u64, nanos: u32, }
+  */
+  let ie = Some(42);
+  let ne: Option<i32> = None;
+  let demo = ne;
+
+  /* handle both cases */
+  match demo {
+    Some(value) => outln(&value, "value"),
+    None => outln(&demo, "demo")
+  }
+  /* handle has value case, ignore no value case */
+  if let Some(value) = ie {
+    outln(&value, "value");
+  }
+
+  /* custom enumeration */
+  #[derive(Debug)]
+  enum Trip {
+    Planning,
+    Going,
+    Arrived,
+    Coming,
+    Done,
+  }
+
+  let trip_status = Trip::Planning;
+  outln(&trip_status, "trip_status");
+
+
+  nl();
   show_op("arrays of primitives");
-/*---------------------------------------*/  
+/*---------------------------------------------*/  
 let arr1:[i32; 3] = [1, 2, 3];
   show_type(&arr1, "arr1");
 
@@ -86,11 +147,11 @@ let arr1:[i32; 3] = [1, 2, 3];
 
   nl();
   show_op("structs");
-  /* define type Demo */
+/*---------------------------------------------*/  
   #[derive(Debug)]
   struct Demo { i:i32, d:f64, c:char }
   
-  /* use type Demo */
+  /* use Demo */
   let mut s1 = Demo { i:1, d:2.5, c:'z'};
   show_type(&s1, "s1"); 
 
@@ -110,7 +171,8 @@ let arr1:[i32; 3] = [1, 2, 3];
 
   nl();
   show_op("mutating operations");
-  let mut arr4 = arr3;
+/*---------------------------------------*/  
+let mut arr4 = arr3;
   arr4[1] = -2.5;
   show_type(&arr4, "arr4");
 
@@ -138,7 +200,7 @@ let arr1:[i32; 3] = [1, 2, 3];
 use std::collections::*;
 
 fn libtypes() {
-  
+
   show_note("std::lib collection types");
   nl();
 
