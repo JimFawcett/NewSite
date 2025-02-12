@@ -12,7 +12,7 @@ class CodeViewer extends HTMLElement {
               display: flex;
               flex-direction: column;
               border: 2px solid black;
-              padding: 6px 10px 10px 10px;
+              padding: 6px 6px 0px 6px;
               user-select: none;
               width: min-content;
               box-shadow: 5px 5px 5px #999;
@@ -26,6 +26,7 @@ class CodeViewer extends HTMLElement {
               cursor: pointer;
               max-width: 100%;
               margin-bottom: 4px;
+              padding:0rem 0.5rem;
               line-height: 1.0rem;
               flex-wrap: wrap;
               word-wrap: break-word;
