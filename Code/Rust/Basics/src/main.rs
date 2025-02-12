@@ -18,6 +18,7 @@ fn main() {
     - type declarations and inference
 */
 fn primitives() {
+
   show_note("primitive types");
   
   nl();
@@ -202,10 +203,10 @@ use std::collections::*;
 fn libtypes() {
 
   show_note("std::lib collection types");
-  nl();
 
-  /* basic String operations */
+  nl();
   show_op("String");
+/*---------------------------------------*/  
   let s1:String = "this is a string".to_string();
   show_type(&s1, "s1");
 
@@ -228,8 +229,8 @@ fn libtypes() {
   outln(&s3, "s3");
 
   nl();
-  /* vectors */
   show_op("Vec<T>");
+/*---------------------------------------*/  
   let mut v1:Vec<i32> = vec![1, 2, 3];
   show_type(&v1, "v1");
   
@@ -254,6 +255,7 @@ fn libtypes() {
 
   nl();
   show_op("VecDeque<T>");
+/*---------------------------------------*/  
   let mut vd1 = VecDeque::<f64>::new();
   vd1.extend([1.0, 1.5, 2.0]);
   show_type(&vd1, "vd1");
@@ -268,6 +270,7 @@ fn libtypes() {
 
   nl();
   show_op("HashMap<K, V>");
+/*---------------------------------------*/  
   let mut hm1 = HashMap::<&str, i32>::new();
   hm1.extend(
     [
@@ -302,14 +305,14 @@ fn libtypes() {
   };
 
 }
-/*-- show_type --------------------------------------------
-  Shows compiler recognized type and data value
-*/
+
 fn usertypes() {
 
   show_note("user-defined types");
+
   nl();
   show_op("Demo");
+/*---------------------------------------*/  
 
   #[derive(Debug, Clone)]
   pub struct Demo {
@@ -387,7 +390,9 @@ pub fn show_note(note: &str) {
 pub fn show_op(opt: &str) {
   println!("--- {opt} ---");
 }
-
+/*---------------------------------------------------------
+  functions compress output expressions
+*/
 pub fn out<T:Debug>(t: &T, name: &str) {
   print!("  {name} = {t:?}");
 }
