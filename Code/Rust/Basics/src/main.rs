@@ -36,6 +36,11 @@ fn integrals() {
   show_type(&b2, "b2");
 
   nl();
+  let g = || println!("  value is true");
+  b1.then(g);  // prints because b1 is true
+  b2.then(g);  // does nothing because b2 is false
+
+  nl();
   show_op("bytes");
 /*-----------------------------------------
   bytes in Rust are just u8 integers
@@ -66,13 +71,17 @@ fn integrals() {
   
   nl();
   /* types must match exactly or be cast */
- 
+  show_op("casting");
   let sum1 = i as i32 + j;
   outln_type(&sum1, "i as i32 + j");
 
   let sum2 = i + j as u8;
   outln_type(&sum2, "i + j as u8");
 
+  nl();
+  show_op("std values");
+  println!("  i32::MIN: {}", i32::MIN);
+  println!("  i32::MAX: {}", i32::MAX);
 }
 
 fn floats() {
@@ -234,222 +243,6 @@ fn structs() {
     show_type(&s1, "s1");  
 }
 
-/*-- demo primitives --------------------------------------
-  Demonstrate primitive types, e.g.:
-    - booleans, integers, floats, arrays, &strs, structs
-    - type declarations and inference
-*/
-fn primitives() {
-
-//   show_note("primitive types");
-  
-//   nl();
-//   show_op("boolean");
-// /*---------------------------------------*/
-//   let b1 = true;
-//   show_type(&b1, "b1");
-
-//   let b2 = false;
-//   show_type(&b2, "b2");
-
-//   nl();
-//   show_op("integers");
-// /*-----------------------------------------------
-//   i8, i16, i32, i64, i128, isize - signed
-//   u8, u16, u32, u64, u128, usize - unsigned
-//   literals:
-//   42 decimal, 0x2A hex, 0o52 octal, 
-//   0b10101 binary, b'A' byte
-// -----------------------------------------------*/
-//   let i = 42u8;     /* typed literal */
-//   show_type(&i, "i");
-
-//   let j:i32 = 42;       /* typed variable */
-//   show_type(&j, "j");
-
-//   let k = 42;      /* inferred type */
-//   show_type(&k, "k");
-  
-//   nl();
-//   /* types must match exactly or be cast */
- 
-//   let sum1 = i as i32 + j;
-//   outln_type(&sum1, "i as i32 + j");
-
-//   let sum2 = i + j as u8;
-//   outln_type(&sum2, "i + j as u8");
-
-  // nl();
-//   show_op("floating point numbers");
-// /*-----------------------------------------
-//   types: f32, f64
-//   special values: 
-//     NAN, INFINITY, NEG_INFINITY
-//   operations:
-//     +, -, *, /
-//   functions:
-//     floor(), ceil(), round(), sin(),
-//     abs(), sqrt(), powf(), exp(), ln(),
-//     sin(), cos(), tan(), log()
-
-// -----------------------------------------*/  
-//   let d:f32 = 3.1415927;
-//   show_type(&d, "d");
-
-//   let e:f64 = 3.1415927;
-//   show_type(&e, "e");
-
-//   nl();
-//   let div1 = d/(e as f32);
-//   outln(&div1, "d/(e as f32)");
-
-//   let div2 = (d as f64)/e;
-//   outln_type(&div2, "(d as f64)/e");
-//   nl();
-//   let f1 = 2.5f64;
-//   outln_type(&f1, "f1");
-//   let f2: f64 = f1.powf(2.0);
-//   outln_type(&f2, "f1.powf(2.0)");
-
-  // nl();
-  // show_op("literal strings");
-  // /*---------------------------------------------
-  //   &str type represents a reference to const 
-  //   literal strings placed in static memory 
-  // ---------------------------------------------*/
-  // let ls = "a literal string"; /* reference to literal string */
-  // show_type(&ls, "ls");
-
-  // nl();
-  // show_op("references");
-  // /*---------------------------------------------
-  //   - &t is a const pointer to the value t:T
-  //   - &mut t is a reference to a value that may
-  //     be mutated.
-  //   - Rust does not allow shared mutation using
-  //     references. More on that later.
-  // */
-  // let mut arr:[i32; 4] = [1, 2, 3, 4];
-  // outln_type(&arr, "arr");
-
-  // show_op("let val = arr[1]");
-  // let val = arr[1];
-  // outln(&val, "val");
-
-  // /* take mutable reference */
-  // show_op("let r1 = &mut arr");
-  // let r1 = &mut arr;
-  // outln_type(r1, "r1");
-
-  // show_op("r1[1] = -2");
-  // r1[1] = -2;
-  // outln(r1, "r1");
-
-  // /* take immutable reference */
-  // show_op("let r2 = &arr");
-  // let r2 = &arr;
-  // outln(r2, "r2");
-  // outln(&r2[1], "r2[1]");
-  // /*
-  //   statement below fails to compile:
-  //     outln(r1, "r1");
-  //   not allowed because mutable reference must have 
-  //   exclusive access.
-  // */
-
-  // nl();
-  // show_op("enumerations");
-  // /*---------------------------------------------
-  //   std enumerations:
-  //     Option { Some(v), None, }
-  //     Result { Ok(result), Err(error), }
-  //     Duration { secs: u64, nanos: u32, }
-  // */
-  // let ie = Some(42);
-  // let ne: Option<i32> = None;
-  // let demo = ne;
-
-  // /* handle both cases */
-  // match demo {
-  //   Some(value) => outln(&value, "value"),
-  //   None => outln(&demo, "demo")
-  // }
-  // /* handle has value case, ignore no value case */
-  // if let Some(value) = ie {
-  //   outln(&value, "value");
-  // }
-
-  // /* custom enumeration */
-  // #[derive(Debug)]
-  // enum Trip {
-  //   Planning,
-  //   Going,
-  //   Arrived,
-  //   Coming,
-  //   Done,
-  // }
-
-  // let trip_status = Trip::Planning;
-  // outln(&trip_status, "trip_status");
-
-
-//   nl();
-//   show_op("arrays of primitives");
-// /*---------------------------------------------*/  
-// let arr1:[i32; 3] = [1, 2, 3];
-//   show_type(&arr1, "arr1");
-
-//   let arr2 = [1i64, 2, 3];
-//   show_type(&arr2, "arr2");
-
-//   let arr3 = [1.0, 2.0, 3.0];
-//   show_type(&arr3, "arr3");
-
-//   nl();
-//   show_op("structs");
-// /*---------------------------------------------*/  
-//   #[derive(Debug)]
-//   struct Demo { i:i32, d:f64, c:char }
-  
-//   /* use Demo */
-//   let mut s1 = Demo { i:1, d:2.5, c:'z'};
-//   show_type(&s1, "s1"); 
-
-//   s1.d = -2.5;  /* access element by name */
-//   show_op("s1.d = -2.5");
-//   show_type(&s1, "s1");
-
-//   nl();
-//   show_op("tuples");
-// /*---------------------------------------*/  
-//   let mut tup = (42, 3.1415927, [1, 2, 3]);
-//   show_type(&tup, "tup");
-//   show_op("tup.1 = 1.2");
-//   tup.1 = 1.2;  /* access element by position */
-//   show_type(&tup, "tup");
-
-
-//   nl();
-//   show_op("mutating operations");
-// /*---------------------------------------*/  
-// let mut arr4 = arr3;
-//   arr4[1] = -2.5;
-//   show_type(&arr4, "arr4");
-
-//   let ref4 = &mut arr4;
-//   ref4[0] = -0.5;
-//   show_type(&ref4, "ref4");
-
-//   arr4[2] = 6.5;
-//   show_type(&arr4, "arr4");
-
-/*--------------------------------------------- 
-  next operation fails to compile since
-  its target has mutated
-*/
-// let second = ref4[1];
-
-}
 /*-- demo collections -------------------------------------
   Demonstrate std::lib collection types, e.g.:
     - String, Vec<T>, VecDeque<T>, HashMap<K, V>
