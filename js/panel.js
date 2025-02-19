@@ -15,11 +15,11 @@ panel.toggleLeftPanel = function() {
   if (this.isLPanelOpen) {
     this.rpanel.classList.add("expanded"); // Expand smoothly
     setCookie('rpanel', false, 2);
-    console.log("closing panel");
+    console.info("closing panel");
   } else {
     this.rpanel.classList.remove("expanded"); // Shrink smoothly
     setCookie('rpanel', true, 2);
-    console.log("opening panel");
+    console.info("opening panel");
   }
 
   this.isLPanelOpen = !this.isLPanelOpen;
@@ -29,14 +29,14 @@ panel.closePanel = function closePanel() {
   this.isLPanelOpen = false;
   this.rpanel.classList.add("expanded");
   setCookie('rpanel', false, 2);
-  console.log("closing panel");
+  console.info("closing panel");
 }
 
 panel.openPanel = function openPanel() {
   this.isLPanelOpen = true;
   this.rpanel.classList.remove("expanded");
   setCookie('rpanel', true, 2);
-  console.log("opening panel");
+  console.info("opening panel");
 }
 
 panel.setPanel = function setPanel() {
@@ -45,7 +45,7 @@ panel.setPanel = function setPanel() {
     setCookie('rpanel', false, 2);
     state = "false";
   }
-  console.log('in setPanel: cookie value = ' + state);
+  console.info('in setPanel: cookie value = ' + state);
   if(state === 'true') {
     // closePanel();
   } else {
@@ -57,7 +57,7 @@ panel.setPanel = function setPanel() {
   display of page and section lists
 */
 function setCookie(name, value, days) {
-  console.log('setcookie: ' + name + '=' + value + ", " + days);
+  console.info('setcookie: ' + name + '=' + value + ", " + days);
   let expires = "";
   if (days) {
     const date = new Date();
@@ -74,10 +74,10 @@ function getCookie(key) {
   for (let cookie of cookies) {
     const [trialKey, value] = cookie.split("=");
     if(trialKey === key) {
-      console.log(cookieStr + value);      
+      console.info(cookieStr + value);      
       return value;
     }
-    console.log(cookieStr + 'no value');      
+    console.info(cookieStr + 'no value');      
   }
   return null;
 }
