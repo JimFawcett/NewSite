@@ -18,7 +18,7 @@
   display of page and section lists
 */
 function setCookie(name, value, days) {
-  console.log('setcookie: ' + name + '=' + value + ", " + days);
+  console.info('setcookie: ' + name + '=' + value + ", " + days);
   let expires = "";
   if (days) {
     const date = new Date();
@@ -35,10 +35,10 @@ function getCookie(key) {
   for (let cookie of cookies) {
     const [trialKey, value] = cookie.split("=");
     if(trialKey === key) {
-      console.log(cookieStr + value);      
+      console.info(cookieStr + value);      
       return value;
     }
-    console.log(cookieStr + 'no value');      
+    console.info(cookieStr + 'no value');      
   }
   return null;
 }
@@ -87,7 +87,7 @@ function toggleCompare() {
   - persistent, does not disappear on refresh
 */
 function togglePages() {
-  // console.log('in togglePages()');
+  // console.info('in togglePages()');
   toggleButton('pages');
   if (isHidden('pages')) {
     setCookie('pages', 'false', 1);
@@ -109,7 +109,7 @@ function hideSections() {
   setCookie('sections','false', 1);
 }
 function toggleSections() {
-  // console.log('in toggle sections');
+  // console.info('in toggle sections');
   toggleButton('sections');
   if (isHidden('sections')) {
     setCookie('sections', 'false', 1);
@@ -123,17 +123,17 @@ function toggleSections() {
   - persistent, actions do not revert on refresh
 */
 function showElement(id) {
-  console.log('in showElement: id = ' + id);
+  console.info('in showElement: id = ' + id);
   showButton(id);
   setCookie(id, 'true', 1);
 }
 function hideElement(id) {
-  console.log('in hideElement: id = ' + id);
+  console.info('in hideElement: id = ' + id);
   hideButton(id);
   setCookie(id,'false', 1);
 }
 function toggleElement(id) {
-  console.log('in toggleElement: id = ' + id);
+  console.info('in toggleElement: id = ' + id);
   toggleButton(id);
   if (isHidden(id)) {
     setCookie(id, 'false', 1);
@@ -143,7 +143,7 @@ function toggleElement(id) {
 }
 
 function toggleTransitionElement(id) {
-  console.log('in toggleTransitionElement');
+  console.info('in toggleTransitionElement');
   const element = document.getElementById(id);
   if (element) {
     if (element.classList.contains('hidden')) {
@@ -204,24 +204,24 @@ function toggleTransitionElement(id) {
     persistant across page loading
 */
 function setElements(id) {
-  console.log('in setElements: id = ' + id);
+  console.info('in setElements: id = ' + id);
   let state = getCookie(id);
-  console.log('state: ' + state);
+  console.info('state: ' + state);
   switch(state) {
     case null:
       setCookie(id, 'false', 1);
       hideButton(id);
-      // console.log('id: ' + id)
-      // console.log('cookie value: ' + getCookie(id));
+      // console.info('id: ' + id)
+      // console.info('cookie value: ' + getCookie(id));
       break;
     case 'true':
       showButton(id);
       // toggleElement(id); // changed 1/20
-      // console.log('cookie value: ' + getCookie(id));
+      // console.info('cookie value: ' + getCookie(id));
       break;
     case 'false':
       hideButton(id);  //added 1/20
-      // console.log('cookie value: ' + getCookie(id));
+      // console.info('cookie value: ' + getCookie(id));
     default:
   }
 }
@@ -243,7 +243,7 @@ function align(ida, idp) {
   const arect = anch.getBoundingClientRect();
   const prect = posp.getBoundingClientRect();
   const leftPosition = arect.left - posp.offsetWidth;
-  console.log(
+  console.info(
     "align parts: leftPosition = " + leftPosition +
     ", anch.style.width = " + arect.width +
     ", window.scrollX = " + window.scrollX
@@ -255,15 +255,15 @@ function align(ida, idp) {
   let pwidth = pcstyle.width;
   pwidth = parseFloat(pwidth);
   pwidth = prect.width;
-  console.log("awidth: " + awidth);
-  console.log("pwidth: " + pwidth);
+  console.info("awidth: " + awidth);
+  console.info("pwidth: " + pwidth);
   posp.style.left = arect.left - pwidth + window.scrollX + 'px';
   posp.style.left = leftPosition + window.scrollX + 'px';
   // posp.style.left = leftPosition - width + window.scrollX + 'px';
   posp.style.top = arect.bottom + window.scrollY + 'px';
   posp.style.right = 'auto';
   posp.style.bottom = 'auto';
-  console.log("align pos top & right: " + posp.style.top + ", " + posp.style.left);
+  console.info("align pos top & right: " + posp.style.top + ", " + posp.style.left);
 }
 /*---------------------------------------------------------
   loader method collects load actions for all persistent
