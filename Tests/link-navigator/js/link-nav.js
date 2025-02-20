@@ -13,6 +13,7 @@ class LinkNavigator {
       this.index = 0; // Start with no selection
       this.highlightCurrent();
       this.setupEventListeners();
+      console.log('finished construction of LinkNavigator');
   }
 
   // Remove highlighting from all links
@@ -123,6 +124,6 @@ class LinkNavigator {
 
 // Initialize the navigator after the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  window.linkNavigator = new LinkNavigator('#link-container');
+  // window.linkNavigator = new LinkNavigator('#link-container');
   window.sectionNavigator = new LinkNavigator('#sections');
 });
