@@ -38,8 +38,8 @@ function getCookie(key) {
       console.info(cookieStr + value);      
       return value;
     }
-    console.info(cookieStr + 'no value');      
   }
+  console.info(cookieStr + 'no value');      
   return null;
 }
 /*---------------------------------------------------------
