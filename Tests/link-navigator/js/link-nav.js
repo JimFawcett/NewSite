@@ -13,6 +13,7 @@ class LinkNavigator {
       this.index = 0; // Start with no selection
       this.highlightCurrent();
       this.setupEventListeners();
+      // this.init();
       console.log('finished construction of LinkNavigator');
   }
 
@@ -94,9 +95,9 @@ class LinkNavigator {
   init() {
     const iframe = document.getElementById('ifrm');
     if (iframe) {
-        iframe.src = "test_init.html"; // Manually set iframe src
+        iframe.src = "test1.html"; // Manually set iframe src
     } else {
-        window.open("test_init.html", link.target); // Fallback
+        window.open("test1.html", link.target); // Fallback
     }
   }
 
@@ -124,6 +125,16 @@ class LinkNavigator {
 
 // Initialize the navigator after the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  // window.linkNavigator = new LinkNavigator('#link-container');
-  window.sectionNavigator = new LinkNavigator('#sections');
+  const linkcnt = document.getElementById('link-container');
+  if(linkcnt) {
+    window.linkNavigator = new LinkNavigator('#link-container');
+  }
+  const sections = document.getElementById('sections');
+  if(sections) {
+    window.sectionNavigator = new LinkNavigator('#sections');
+  }
+  const pages = document.getElementById('pages');
+  if(pages) {
+    window.pageNavigator = new LinkNavigator('#pages');
+  }
 });
