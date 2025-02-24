@@ -11,7 +11,7 @@ function buildPages() {
     "<div class='darkItem menuHeader' onclick='togglePages()'>C++ Bites Pages</div>\
     <div class='menuBody'>\
       <a href='CppBites_Intro.html'>Introduction</a>\
-      <a href='CppBites_Hello.html'>Hello</a>\
+      <a href='CppBites_HelloCpp.html'>Hello</a>\
       <a href='CppBites_Data.html'>Data</a>\
       <a class='undef' href='javascript:;'>Objects</a>\
       <a class='undef' href='javascript:;'>Generics</a>\
