@@ -6,67 +6,41 @@
     - step to next or prev link
     - execute link when selected 
 */
-/*---------------------------------------------------------
-  Cookies are used to keep session data for managing
-  display of page and section lists
-*/
-function setCookie(name, value, days) {
-  console.info('setcookie: ' + name + '=' + value + ", " + days);
-  let expires = "";
-  if (days) {
-    const date = new Date();
-    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000)); // Convert days to milliseconds
-    expires = "; expires=" + date.toUTCString();
-  }
-  // const samesite = "; SameSite=Strict"; Secure;
-  const samesite = "; SameSite=Lax";
-  document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(value) + expires + samesite + "; path=/";
-}
-function getCookie(key) {
-  let cookieStr = 'getcookie: ' + key + ' = ';
-  const cookies = document.cookie.split("; ");
-  for (let cookie of cookies) {
-    const [trialKey, value] = cookie.split("=");
-    if(trialKey === key) {
-      console.info(cookieStr + value);      
-      return value;
-    }
-  }
-  console.info(cookieStr + 'no value');      
-  return null;
-}
-// function makeMsgLN(key, value) {
-//   let msg = new Object();
-//   msg.key = key;
-//   msg.value = value;
-//   console.info("link-nav makeMsg: " + key + ", " + value);
-//   return msg;
+// /*---------------------------------------------------------
+//   Cookies are used to keep session data for managing
+//   display of page and section lists
+// */
+// function setCookie(name, value, days) {
+//   console.info('setcookie: ' + name + '=' + value + ", " + days);
+//   let expires = "";
+//   if (days) {
+//     const date = new Date();
+//     date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000)); // Convert days to milliseconds
+//     expires = "; expires=" + date.toUTCString();
+//   }
+//   // const samesite = "; SameSite=Strict"; Secure;
+//   const samesite = "; SameSite=Lax";
+//   document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(value) + expires + samesite + "; path=/";
 // }
-// function postMsgLN(msg) {
-//   window.parent.postMessage(msg);
-//   console.info('posting msg from link-nav');
+// function getCookie(key) {
+//   let cookieStr = 'getcookie: ' + key + ' = ';
+//   const cookies = document.cookie.split("; ");
+//   for (let cookie of cookies) {
+//     const [trialKey, value] = cookie.split("=");
+//     if(trialKey === key) {
+//       console.info(cookieStr + value);      
+//       return value;
+//     }
+//   }
+//   console.info(cookieStr + 'no value');      
+//   return null;
 // }
-// window.addEventListener("message", function (event) {
-//   // Security check: verify origin if needed
-//   // if (event.origin !== "https://your-trusted-domain.com") return;
-
-//   console.info("link-nav Received message:", event.data);
-//   // event.data will be "Hello from sender!"
-// });    
-
 class LinkNavigator {
   constructor(containerSelector) {
       this.container = document.querySelector(containerSelector);
       this.links = this.container.querySelectorAll("a");
       this.key = containerSelector + "LN";
-      let index = getCookie('index');
-      if(index === "null") {
-        this.index = 0;
-      } else {
-        this.index = parseInt(index, 10);
-      }
-      setCookie('index', index);
-      // this.index = 0; // Start with no selection
+      this.index = 0; // Start with no selection
       // this.index = getCookie(this.key);
       // if(this.index === null || this.index === false) {
       //   this.index = 0;
@@ -149,8 +123,6 @@ class LinkNavigator {
       if (this.index >= 0 && this.index < this.links.length) {
           const link = this.links[this.index];
           console.log(`Executing: ${link.href}`);
-          // postMsgLN(makeMsgLN('index', this.index));
-          setCookie('index', this.index, 10);
           link.click();
           // const iframe = document.getElementById('ifrm');
           // if (iframe) {
