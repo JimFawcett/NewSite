@@ -192,7 +192,7 @@ function buildRes() {
         <summary>Web Tech Tests</summary>\
         <a target='_top' href='../Tests/GridExplorer/PrototypeExplore.html'>GridExplorer</a>\
         <a target='_top' href='../Tests/FigureSizer/ImageSizer.html'>FigureSizer</a>\
-        <a target='_top' href='../Tests/link-navigator/linkNav.html'>linkNav</a>\
+        <a target='_top' href='../Tests/link-navigator/linkNavigator.html'>linkNavigator</a>\
         <a target='_top' href='../Tests/PopUpWindow/PopUp.html'>PopUpWindow</a>\
         <a target='_top' href='../Tests/positionElements/PosElem.html'>PositionElements</a>\
         <a target='_top' href='../Tests/scrollingMenus/ScrollingMenus.html'>ScrollingMenus</a>\
