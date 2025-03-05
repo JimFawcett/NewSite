@@ -179,7 +179,7 @@ function buildRes() {
         <summary>Web Tech Tests</summary>\
         <a target='_top' href='../Tests/GridExplorer/PrototypeExplore.html'>GridExplorer</a>\
         <a target='_top' href='../Tests/FigureSizer/ImageSizer.html'>FigureSizer</a>\
-        <a target='_top' href='../Tests/link-navigator/LinkNavigator.html'>linkNavigator</a>\
+        <a target='_top' href='../Tests/link-navigator/LinkNavigator.html'>LinkNavigator</a>\
         <a target='_top' href='../Tests/PopUpWindow/PopUp.html'>PopUpWindow</a>\
         <a target='_top' href='../Tests/positionElements/PosElem.html'>PositionElements</a>\
         <a target='_top' href='../Tests/scrollingMenus/ScrollingMenus.html'>ScrollingMenus</a>\
