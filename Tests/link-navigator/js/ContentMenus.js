@@ -14,35 +14,6 @@
 // }
 
 /*---------------------------------------------------------
-  Cookies are used to keep session data for managing
-  display of page and section lists
-*/
-function setCookie(name, value, days) {
-  console.info('setcookie: ' + name + '=' + value + ", " + days);
-  let expires = "";
-  if (days) {
-    const date = new Date();
-    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000)); // Convert days to milliseconds
-    expires = "; expires=" + date.toUTCString();
-  }
-  // const samesite = "; SameSite=Strict"; Secure;
-  const samesite = "; SameSite=Lax";
-  document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(value) + expires + samesite + "; path=/";
-}
-function getCookie(key) {
-  let cookieStr = 'getcookie: ' + key + ' = ';
-  const cookies = document.cookie.split("; ");
-  for (let cookie of cookies) {
-    const [trialKey, value] = cookie.split("=");
-    if(trialKey === key) {
-      console.info(cookieStr + value);      
-      return value;
-    }
-  }
-  console.info(cookieStr + 'no value');      
-  return null;
-}
-/*---------------------------------------------------------
   Toggle about popup when using About button on bottom menu
   - not persistent, disappears on refresh
 */
