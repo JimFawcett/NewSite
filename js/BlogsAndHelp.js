@@ -4,19 +4,6 @@
  * Jim Fawcett
  */
 
-// function getLeft(id) {
-  
-// }
-// function moveLeft(id) {
-//   const element = document.getElementById(id);
-//   if(isDefined(element)) {
-//     const currentLeft = parseFloat(getComputedStyle(element).left) || 0;
-//     const remSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
-//     const moveBy = 5 * remSize;
-//     element.style.left = `${currentLeft - moveBy}px`;  
-//   }
-// }
-
 function toggleBlogs() {
   console.log("in toggleBlogs()");
   const blg = document.getElementById('blogs');
@@ -192,7 +179,7 @@ function buildRes() {
         <summary>Web Tech Tests</summary>\
         <a target='_top' href='../Tests/GridExplorer/PrototypeExplore.html'>GridExplorer</a>\
         <a target='_top' href='../Tests/FigureSizer/ImageSizer.html'>FigureSizer</a>\
-        <a target='_top' href='../Tests/link-navigator/linkNavigator.html'>linkNavigator</a>\
+        <a target='_top' href='../Tests/link-navigator/LinkNavigator.html'>linkNavigator</a>\
         <a target='_top' href='../Tests/PopUpWindow/PopUp.html'>PopUpWindow</a>\
         <a target='_top' href='../Tests/positionElements/PosElem.html'>PositionElements</a>\
         <a target='_top' href='../Tests/scrollingMenus/ScrollingMenus.html'>ScrollingMenus</a>\
