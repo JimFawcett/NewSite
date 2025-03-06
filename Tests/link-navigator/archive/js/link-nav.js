@@ -162,6 +162,7 @@ class LinkNavigator {
 
 // Initialize the navigator after the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+  alert('link-nav addlisteners');
   const linkcnt = document.getElementById('link-container');
   if(linkcnt) {
     window.linkNavigator = new LinkNavigator('#link-container');

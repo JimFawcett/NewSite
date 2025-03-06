@@ -92,6 +92,9 @@ function toggleSections() {
   The Element functions are the most general, accepting
   an element id for action.
   - persistent, actions do not revert on refresh
+  ---------------------------------------------------------
+    showElement(id) and hideElement(id) need updates
+    in toggleElement(id)
 */
 function showElement(id) {
   console.info('in showElement: id = ' + id);
@@ -103,13 +106,22 @@ function hideElement(id) {
   hideButton(id);
   setCookie(id,'false', 1);
 }
+// function toggleElement(id) {
+//   console.info('in toggleElement: id = ' + id);
+//   toggleButton(id);
+//   if (isHidden(id)) {
+//     setCookie(id, 'false', 1);
+//   } else {
+//     setCookie(id, 'true', 1);
+//   }
+// }
 function toggleElement(id) {
-  console.info('in toggleElement: id = ' + id);
-  toggleButton(id);
-  if (isHidden(id)) {
-    setCookie(id, 'false', 1);
+  const elem = document.getElementById(id);
+  elem.classList.toggle('hidden');
+  if(elem.classList.contains('hidden')) {
+    setCookie(id, false, 10);
   } else {
-    setCookie(id, 'true', 1);
+    setCookie(id, true, 10);
   }
 }
 
