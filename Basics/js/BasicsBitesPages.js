@@ -10,12 +10,12 @@ function buildPages() {
     pgs.innerHTML =
     "<div class='darkItem menuHeader' onclick='togglePages()'>Basics Track Pages</div>\
     <div class='menuBody'>\
-      <a href='BasicsHome.html'>Track Summary</a>\
-      <a class='undef' href='javascript:;'>Introduction</a>\
-      <a class='undef' href='javascript:;'>Platform</a>\
+      <a href='Basic_Platform.html'>Platform</a>\
       <a class='undef' href='javascript:;'>Platform memory</a>\
       <a class='undef' href='javascript:;'>many more</a>\
-      </div>\
+      <hr style='margin:0.5rem 0rem;'>\
+      <a href='BasicsHome.html'>Basics Track Summary</a>\
+    </div>\
     <div style='height:0.5em;'></div>";
   }
 }
