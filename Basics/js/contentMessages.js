@@ -39,26 +39,39 @@ window.onmessage = function (event) {
         setCookie('pages', false, 10);
       }
       break;
-      case 'about':
-        let abt = document.getElementById('about');
-        if(abt.classList.contains('hidden')) {
-          abt.classList.remove('hidden');
-        } else {
-          abt.classList.add('hidden');
-        }
-        break;
-        case 'about':
 
-      case 'keys':
-        let kys = document.getElementById('keys');
-        if(kys.classList.contains('hidden')) {
-          kys.classList.remove('hidden');
-        } else {
-          kys.classList.add('hidden');
-        }
-        break;
-  
-      default:
+    case 'clear':
+      closeMenus();
+      break;
+
+    // case 'controls':
+    //   let cnt = document.getElementById('controls');
+    //   if(cnt.classList.contains('hidden')) {
+    //     cnt.classList.remove('hidden');
+    //   } else {
+    //     cnt.classList.add('hidden');
+    //   }
+    //   break;
+
+    case 'about':
+      let abt = document.getElementById('about');
+      if(abt.classList.contains('hidden')) {
+        abt.classList.remove('hidden');
+      } else {
+        abt.classList.add('hidden');
+      }
+      break;
+
+    case 'keys':
+      let kys = document.getElementById('keys');
+      if(kys.classList.contains('hidden')) {
+        kys.classList.remove('hidden');
+      } else {
+        kys.classList.add('hidden');
+      }
+      break;
+
+    default:
       console.log('no match for message data');
   }
 };
