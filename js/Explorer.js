@@ -215,27 +215,28 @@ function toggleCompare() {
 }
 
 function toggleAbout() {
-  postMsg("about");
+  postMsg(makeMsg('about', null));
+  // postMsg("about");
 }
 
 function toggleKeys() {
-  postMsg("keys");
+  postMsg(makeMsg('keys', null));
 }
 
 function toggleSections() {
-  postMsg("sections");
+  postMsg(makeMsg('sections', null));
 }
 
 function togglePages() {
-  postMsg("pages");
+  postMsg(makeMsg('pages', null));
 }
 
 function goNext() {
-  postMsg("next");
+  postMsg(makeMsg('next', null));
 }
 
 function goPrev() {
-  postMsg("prev");
+  postMsg(makeMsg('prev', null));
 }
 
 // function toggleBlogs() {

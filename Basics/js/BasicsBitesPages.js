@@ -7,15 +7,13 @@
 function buildPages() {
   const pgs = document.getElementById('pages');
   if(isDefined(pgs)) {
-    pgs.innerHTML =
-    "<div class='darkItem menuHeader' onclick='togglePages()'>Basics Track Pages</div>\
-    <div class='menuBody'>\
-      <a href='Basic_Platform.html'>Platform</a>\
-      <a class='undef' href='javascript:;'>Platform memory</a>\
-      <a class='undef' href='javascript:;'>many more</a>\
-      <hr style='margin:0.5rem 0rem;'>\
-      <a href='BasicsHome.html'>Basics Track Summary</a>\
-    </div>\
-    <div style='height:0.5em;'></div>";
+    // pgs.innerHTML =
+    // "<div class='darkItem listheader' onclick='togglePages()'>Basics Track Pages</div>\
+    // <div class='menuBody'>\
+    //   <a href='Basics_Platform.html'>Platform</a>\
+    //   <a href='Basics_Memory.html'>Platform memory</a>\
+    //   <a class='undef' href='javascript:;'>many more</a>\
+    // </div>\
+    // <div style='height:0.5em;'></div>";
   }
 }
