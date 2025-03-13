@@ -16,3 +16,26 @@ window.addEventListener("message", function (event) {
   console.info("Controller Received message:", event.data);
   // event.data will be "Hello from sender!"
 });
+
+function isDefined(elem) {
+  if (typeof elem === 'undefined' || elem === null || elem === undefined) {
+    return false;
+  }
+  return true;
+}
+
+function clearMenus() {
+  let blgs = document.getElementById('blogs');
+  if(isDefined(blgs)) {
+    blgs.classList.add('hidden');
+  }
+  let hlp = document.getElementById('help');
+  if(isDefined(hlp)) {
+    hlp.classList.add('hidden');
+  }
+  let rcs = document.getElementById('res');
+  if(isDefined(rcs)) {
+    rcs.classList.add('hidden');
+  }
+  postMsg(makeMsg('clear', null));
+}

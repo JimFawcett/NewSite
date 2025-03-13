@@ -12,7 +12,24 @@
 //   }
 //   return true;
 // }
-
+function closeMenus() {
+  let abt = document.getElementById('about');
+  if(isDefined(abt)) {
+    abt.classList.add('hidden');
+  }
+  let kys = document.getElementById('keys');
+  if(isDefined(kys)) {
+    kys.classList.add('hidden');
+  }
+  let secs = document.getElementById('sections');
+  if(isDefined(secs)) {
+    secs.classList.add('hidden');
+  }
+  let pgs = document.getElementById('pages');
+  if(isDefined(pgs)) {
+    pgs.classList.add('hidden');
+  }
+}
 /*---------------------------------------------------------
   Toggle about popup when using About button on bottom menu
   - not persistent, disappears on refresh
@@ -209,6 +226,7 @@ function setPersistantElements() {
   setElements('help');
   setElements('res');
   setElements('lpanel');
+  setElements('controls');
   // postMsg('loaded');
   // align('mblogs', 'blogs');
   // align('mhelp', 'help');
@@ -275,6 +293,6 @@ function buildBottomMenu() {
   buildKeys();
   setKeys();
   // sections menu built in html at content file end
-  buildPages();
+  // buildPages();  needs to be at end of content file
 }
 
