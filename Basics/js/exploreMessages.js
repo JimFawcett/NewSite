@@ -2,6 +2,7 @@ function postMsg(msg) {
   let iframe = document.getElementById('pgframe');
   iframe.contentWindow.postMessage(msg, '*');
   console.log('posting msg: ' + msg);
+  hideInfoMsgs();
 }
 function makeMsg(key, value) {
   let msg = new Object();
@@ -24,6 +25,18 @@ function isDefined(elem) {
   return true;
 }
 
+function hideInfoMsgs() {
+  // alert('in hideInfoMsgs()');
+  let tpi = document.getElementById('top-menu-info');
+  if(isDefined(tpi)) {
+    tpi.classList.add('hidden');
+  }
+  let bpi = document.getElementById('bottom-menu-info');
+  if(isDefined(bpi)) {
+    bpi.classList.add('hidden');
+  }
+}
+
 function clearMenus() {
   let blgs = document.getElementById('blogs');
   if(isDefined(blgs)) {
@@ -36,6 +49,14 @@ function clearMenus() {
   let rcs = document.getElementById('res');
   if(isDefined(rcs)) {
     rcs.classList.add('hidden');
+  }
+  let tpi = document.getElementById('top-menu-info');
+  if(isDefined(tpi)) {
+    tpi.classList.add('hidden');
+  }
+  let bpi = document.getElementById('bottom-menu-info');
+  if(isDefined(bpi)) {
+    bpi.classList.add('hidden');
   }
   postMsg(makeMsg('clear', null));
 }
