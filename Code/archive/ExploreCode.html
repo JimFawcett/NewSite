@@ -9,12 +9,15 @@
   <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
   <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
   <link rel="stylesheet" href="../css/reset.css" />
-  <link rel="stylesheet" href="../css/Explorer.css" />
-  <link rel="stylesheet" href="../css/ThemeCode.css" />
-  <script src="../js/Content.js"></script>
+  <link rel="stylesheet" href="css/CodeExplorer.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <script src="js/CodeContent.js"></script>
   <script src="../js/ContentMenus.js"></script>
-  <script src="../js/Explorer.js"></script>
+  <!-- <script src="../js/Explorer.js"></script> -->
   <script src="../js/BlogsAndHelp.js"></script>
+  <script src="../js/panel.js"></script>
+  <script src="js/ExploreCodeMsg.js"></script>
+  <script src="js/CodeViewer.js" defer></script>
   <script>
     function loadInDataManager() {
       const loc = window.location;
@@ -31,6 +34,8 @@
       buildHelp();
       buildRes();
       setPersistantElements();
+      panel.setPanel();
+      highLightSelect('both');
       // handleIframeTransition();
     }
     window.addEventListener('pageshow', (event) => {
@@ -39,19 +44,99 @@
       initRes();
     });
   </script>
+  <style>
+    #left-content-panel {
+      /* border: 2px solid red; */
+      flex-basis: 50%;
+
+    }
+    #right-content-panel {
+      /* border: 4px green; */
+      flex: 1;
+    }
+    #rpanel {
+      /* border: 4px solid black; */
+    }
+    .underline {
+      text-decoration: underline;
+    }
+  </style>
+  <!-- <script defer>
+    function makeLeftBigger() {
+      setbg(this);
+      view.leftBigger();
+    }
+
+    let selector = "left";
+    let leftPanel = document.getElementById("lpgframe");
+    let rightPanel = document.getElementById("rpgframe");
+    function selectLeft() {
+      selector = "left";
+      // document.querySelectorAll("#topMenu a").forEach(link => {
+      //   link.target = "l-panel";
+      // });      
+    }
+    function selectRight() {
+      selector = "right";
+      // document.querySelectorAll("#topMenu a").forEach(link => {
+      //   link.target = "r-panel";
+      // });      
+    }
+    function selectBoth() {
+      selector = "both";
+    }
+    function loadPanels(url) {
+      if(selector === "left") {
+        leftPanel.src = url;
+      } else
+      if(selector === "right") {
+        rightPanel.src = url;
+      } else
+      {
+        leftPanel.src = url;
+        rightpanel.src = url;
+      }
+    }
+  </script> -->
+  <script>
+    function viewLeftBigger(elem) {
+      setbg(elem)
+      view.leftBigger();
+    }
+    function viewRightBigger(elem) {
+      setbg(elem);
+      view.leftSmaller();
+    }
+    function viewCenter(elem) {
+      setbg(elem);
+      view.doCenter();
+    }
+    function viewAllLeft(elem) {
+      setbg(elem);
+      view.doFullLeft();
+    }
+    function viewAllRight(elem) {
+      setbg(elem);
+      view.doFullRight();
+    }
+    function highLightSelect(id) {
+      let selectElem = document.getElementById(id);
+      setbg(selectElem);
+    }
+  </script>
 </head>
 <body onload="load()">
   <div id="topMenu">
     <div style="width:10rem; padding:0.15rem 1rem 0.5rem 1rem; font-size:1.1 rem"><strong style="white-space: nowrap;">Code Explorer</strong></div>
     <button class="topMenuButton" onclick="window.location.href='../Site/Explore.html?src=SiteHome.html'">Site</button>
-    <button class="topMenuButton" onclick="window.location.href='../Rust/ExploreRust.html?src=RustHome.html'">Rust</button>
-    <button class="topMenuButton" onclick="window.location.href='../Cpp/ExploreCpp.html?src=CppHome.html'">C++</button>
-    <button class="topMenuButton" onclick="window.location.href='../CSharp/ExploreCSharp.html?src=CSharpHome.html'">C#</button>
-    <button class="topMenuButton" onclick="window.location.href='../Python/ExplorePython.html?src=PythonHome.html'">Python</button>
-    <button class="topMenuButton" onclick="window.location.href='../WebDev/ExploreWebDev.html?src=WebDevHome.html'">WebDev</button>
-    <button class="topMenuButton" onclick="window.location.href='../SWDev/ExploreSWDev.html?src=SWDevHome.html'">SWDev</button>
-    <button class="topMenuButton" onclick="window.location.href='../Basics/ExploreBasics.html?src=BasicsHome.html'">Basics</button>
-    <button class="topMenuButton" onclick="window.location.href='../Code/ExploreCode.html?src=CodeHome.html'">Code</button>
+    <a class="topMenuButton underline" onclick="loadPanels('../Rust/RustHome.html')">Rust</a>
+    <a class="topMenuButton underline" onclick="loadPanels('../Cpp/CppHome.html')">C++</a>
+    <a class="topMenuButton underline" onclick="loadPanels('../CSharp/CSharpHome.html')">C#</a>
+    <a class="topMenuButton underline" onclick="loadPanels('../Python/PythonHome.html')">Python</a>
+    <a class="topMenuButton underline" onclick="loadPanels('../WebDev/WebDevHome.html')">WebDev</a>
+    <a class="topMenuButton underline" onclick="loadPanels('../SWDev/SWDevHome.html')">SWDev</a>
+    <a class="topMenuButton underline" onclick="loadPanels('../Basics/BasicsHome.html')">Basics</a>
+    <a class="topMenuButton" onclick="loadPanels('../Code/CodeHome.html')">Code</a>
     <button id="mblogs" class="topMenuButton" onclick="toggleBlogs()">Blogs</button>
     <button id="mhelp" class="topMenuButton" onclick="toggleHelp()">Help</button>
     <button id="mres" class="topMenuButton" onclick="toggleRes()">Resrcs</button>
@@ -68,19 +153,21 @@
         <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="CodeHome.html">Code Home</a></clkwrap>
         <div style="height: 0.75rem;"></div>
         <details id="code-help">
-          <summary>Help</summary>
-          <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="../Help/Help_VSCode.html">VS Code</a></clkwrap>
-          <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="../Help/Help_Cargo.html">Cargo</a></clkwrap>
-          <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="../Help/Help_CMake.html">CMake</a></clkwrap>
-          <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="../Help/Help_DotNet.html">DotNet</a></clkwrap>
-          <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="../Help/Help_Git.html">Git</a></clkwrap>
-          <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="../Help/Help_GitHub.html">GitHub</a></clkwrap>
-          <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="../Help/Help_PowerShell.html">PowerShell</a></clkwrap>
-          <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="../Help/Help_RegEx.html">RegEx</a></clkwrap>
-          <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="../Help/Help_ChatGPT.html">ChatGPT</a></clkwrap>
-          <a style="margin-left:0.5rem;" class="unclickable undef" target="_self" href="javascript:;">Cmplr Explr</a>
-          <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="../Help/Help_SiteNav.html">Site Nav</a></clkwrap>
-          <div style="height:1.25rem;"></div>
+          <summary>page controls</summary>
+          <clkwrap><a class="clickable" target="rpanel" onclick="viewLeftBigger(this)">left bigger</a></clkwrap>
+          <clkwrap><a class="clickable" onclick="viewRightBigger(this)" target="rpanel">right bigger</a></clkwrap>
+          <clkwrap><a class="clickable" onclick="viewCenter(this)" target="rpanel">center</a></clkwrap>
+          <clkwrap><a class="clickable" onclick="viewAllLeft(this)" target="rpanel">all left</a></clkwrap>
+          <clkwrap><a class="clickable" onclick="viewAllRight(this)" target="rpanel">all right</a></clkwrap>
+          <div style="height:0.25rem;"></div>
+        </details>
+        <div style="height: 0.75rem;"></div>
+        <details id="code-repros" open>
+          <summary>Select Code</summary>
+          <clkwrap><a id="left" class="clickable" onclick="selectLeft(this)">left panel</a></clkwrap>
+          <clkwrap><a id="right" class="clickable" onclick="selectRight(this)">right panel</a></clkwrap>
+          <clkwrap><a id="both" class="clickable" onclick="selectBoth(this)">both panels</a></clkwrap>
+          <div style="height:0.25rem;"></div>
         </details>
         <div style="height: 0.75rem;"></div>
         <details id="code-repros" open>
@@ -91,7 +178,7 @@
           <a style="margin-left:0.5rem;" class="unclickable undef" target="_self" href="javascript:;">Python Repos</a>
           <a style="margin-left:0.5rem;" class="unclickable undef" target="_self" href="javascript:;">WebDev Repos</a>
           <a style="margin-left:0.5rem;" class="unclickable undef" target="_self" href="javascript:;">Other Repos</a>
-          <div style="height:0.75rem;"></div>
+          <div style="height:0.25rem;"></div>
         </details>
         <div style="height:0.75rem;"></div>
         <a class="unclickable undef" target="_self" href="javascript:;">Repositories</a>
@@ -134,13 +221,22 @@
       </div>
     </div>
     <div id="rpanel">
-      <iframe id="pgframe" style="height:100%; width:100%; border:1px solid var(--dark);" src="CodeHome.html" name="rpanel"></iframe>
+      <div id="left-content-panel">
+        <iframe id="lpgframe" style="height:100%; width:100%; border:1px solid var(--dark);" src="CodeHome.html" name="l-panel"></iframe>
+      </div>
+      <div id="center-content-panel"></div>
+      <div id="right-content-panel">
+        <iframe id="rpgframe" style="height:100%; width:100%; border:1px solid var(--dark);" src="CodeHome.html" name="r-panel"></iframe>
+      </div>
     </div>
   </div>
   <div id="bottomMenu">
-    <button id="toggle-btn" class="bottomMenuButton" style="margin-left:0.0em; width:10rem;" onclick="toggleElement('lpanel')">
+    <button id="toggle-btn" class="bottomMenuButton" style="margin-left:0.0em; width:10rem;" onclick="panel.toggleLeftPanel()">
       Toggle explorer panel
     </button>
+    <!-- <button id="toggle-btn" class="bottomMenuButton" style="margin-left:0.0em; width:10rem;" onclick="toggleElement('lpanel')">
+      Toggle explorer panel
+    </button> -->
     <div class="rightGroup">
       <div id="filename" style="border:none;"></div>
       <!-- <button class="bottomMenuButton" style="margin-left:0.0em; width:auto;" onclick="toggleCompare()">
@@ -178,6 +274,49 @@
   <script>
     /* this call has to be here, not in onload processing */
     handleIframeTransition();
+  </script>
+  <script>
+    panel.rpanel = document.getElementById("rpanel");
+  </script>
+  <script defer>
+    function makeLeftBigger() {
+      setbg(this);
+      view.leftBigger();
+    }
+
+    let selector = "both";
+    let leftPanel = document.getElementById("lpgframe");
+    let rightPanel = document.getElementById("rpgframe");
+    function selectLeft(elem) {
+      setbg(elem);
+      selector = "left";
+      // document.querySelectorAll("#topMenu a").forEach(link => {
+      //   link.target = "l-panel";
+      // });      
+    }
+    function selectRight(elem) {
+      setbg(elem);
+      selector = "right";
+      // document.querySelectorAll("#topMenu a").forEach(link => {
+      //   link.target = "r-panel";
+      // });      
+    }
+    function selectBoth(elem) {
+      setbg(elem);
+      selector = "both";
+    }
+    function loadPanels(url) {
+      if(selector === "left") {
+        leftPanel.src = url;
+        return;
+      }
+      if(selector === "right") {
+        rightPanel.src = url;
+        return;
+      }
+      leftPanel.src = url;
+      rightPanel.src = url;
+    }
   </script>
 </body>
 </html>
