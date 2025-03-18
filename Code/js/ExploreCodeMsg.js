@@ -52,6 +52,18 @@ function handleIframeTransition() {
   resetIframeTransition();
 }
 
+function hideInfoMsgs() {
+  // alert('in hideInfoMsgs()');
+  let tpi = document.getElementById('top-menu-info');
+  if(isDefined(tpi)) {
+    tpi.classList.add('hidden');
+  }
+  let bpi = document.getElementById('bottom-menu-info');
+  if(isDefined(bpi)) {
+    bpi.classList.add('hidden');
+  }
+}
+
 // document.addEventListener("DOMContentLoaded", function () {
 //   const lpanel = document.getElementById("lpanel");
 // });
@@ -275,6 +287,12 @@ function closeTBs() {
   }
 }
 /*-- Explorer requests change of iframe window location --*/
+function makeMsg(key, value) {
+  let msg = new Object();
+  msg.key = key;
+  msg.value = value;
+  return msg;
+}
 function postMsg(msg) {
   let lifrm = document.getElementById("lpgframe");
   lifrm.contentWindow.postMessage(msg, '*');
@@ -283,7 +301,7 @@ function postMsg(msg) {
 }
 /*-- iframe responds to Explorer link click --*/
 window.onmessage = function (e) {
-  switch (e.data) {
+  switch (e.data.key) {
     case 'esc':
       console.log('esc key');
       hideElement('blogs');
