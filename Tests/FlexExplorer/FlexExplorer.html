@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Two Panel Layout with Adjustable Panels</title>
+  <style>
+    /* Reset margins and ensure borders/padding are included in width calculations */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+    }
+    /* Fixed container spanning the viewport */
+    .fixed-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw; /* Alternatively, use 100% if preferred */
+      height: 100vh;
+      display: flex;
+      overflow: hidden; /* Prevent overflow */
+    }
+    /* Panel styling */
+    .panel {
+      overflow: auto;
+      transition: flex-basis 0.3s ease;
+      /* Prevent panels from exceeding the container */
+      max-width: 100%;
+    }
+    /* Initial left panel width: 40% of container */
+    #left-panel {
+      flex: 0 0 40%;
+      background: #f0f0f0;
+      border:4px solid red;
+    }
+    /* Right panel fills remaining space */
+    #right-panel {
+      flex: 1;
+      background: #fff;
+      border:4px solid green;
+    }
+    /* Controls at bottom-left */
+    .controls {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div class="fixed-container">
+    <div id="left-panel" class="panel">
+      Left Panel Content
+    </div>
+    <div id="right-panel" class="panel">
+      Right Panel Content
+    </div>
+  </div>
+
+  <div class="controls">
+    <button onclick="makeLeftBigger()">Make Left Panel Bigger</button>
+    <button onclick="makeLeftSmaller()">Make Left Panel Smaller</button>
+    <button onclick="occupyLeftPanel()">Occupy Left Panel</button>
+    <button onclick="occupyRightPanel()">Occupy Right Panel</button>
+  </div>
+
+  <script>
+    // Increase left panel's width by a fixed increment
+    function makeLeftBigger() {
+      const leftPanel = document.getElementById('left-panel');
+      const container = document.querySelector('.fixed-container');
+      const rightPanel = document.getElementById('right-panel');
+      
+      // Ensure both panels are visible
+      leftPanel.style.display = 'block';
+      rightPanel.style.display = 'block';
+      
+      // Use offsetWidth to include borders if any
+      const currentWidth = leftPanel.offsetWidth;
+      const containerWidth = container.clientWidth;
+      const increment = 50; // fixed increment in pixels
+      
+      let newWidth = currentWidth + increment;
+      
+      // If new width is within one increment of the container's width,
+      // let the left panel occupy the full container.
+      if (containerWidth - newWidth <= increment) {
+        occupyLeftPanel();
+        return;
+      }
+      
+      leftPanel.style.flex = "none"; // Disable flex adjustments
+      leftPanel.style.flexBasis = `${newWidth}px`;
+    }
+    
+    // Decrease left panel's width by a fixed increment
+    function makeLeftSmaller() {
+      const leftPanel = document.getElementById('left-panel');
+      const container = document.querySelector('.fixed-container');
+      const rightPanel = document.getElementById('right-panel');
+      
+      // Ensure both panels are visible
+      leftPanel.style.display = 'block';
+      rightPanel.style.display = 'block';
+      
+      const currentWidth = leftPanel.offsetWidth;
+      const decrement = 50; // fixed decrement in pixels
+      
+      let newWidth = currentWidth - decrement;
+      
+      // If new width is 50px or less, let the right panel occupy the full container.
+      if (newWidth <= decrement) {
+        occupyRightPanel();
+        return;
+      }
+      
+      leftPanel.style.flex = "none";
+      leftPanel.style.flexBasis = `${newWidth}px`;
+    }
+    
+    // Make the left panel occupy the entire container without overflow
+    function occupyLeftPanel() {
+      const leftPanel = document.getElementById('left-panel');
+      const container = document.querySelector('.fixed-container');
+      const rightPanel = document.getElementById('right-panel');
+      
+      leftPanel.style.flex = "none";
+      // Use container's clientWidth (or offsetWidth if borders are present)
+      leftPanel.style.flexBasis = `${container.clientWidth}px`;
+      
+      // Hide the right panel so no overflow occurs
+      rightPanel.style.display = 'none';
+    }
+    
+    // Make the right panel occupy the entire container without overflow
+    function occupyRightPanel() {
+      const rightPanel = document.getElementById('right-panel');
+      const container = document.querySelector('.fixed-container');
+      const leftPanel = document.getElementById('left-panel');
+      
+      rightPanel.style.flex = "none";
+      rightPanel.style.flexBasis = `${container.clientWidth}px`;
+      
+      // Hide the left panel so no overflow occurs
+      leftPanel.style.display = 'none';
+    }
+  </script>
+</body>
+</html>
