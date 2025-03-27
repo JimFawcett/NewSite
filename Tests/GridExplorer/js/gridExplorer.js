@@ -6,23 +6,23 @@ function updateGridColumns(leftWidthPx) {
   container.style.gridTemplateColumns = leftWidthPx + 'px ' + rightWidthPx + 'px';
 }
 
-const Controls = Object.freeze(
-  {
-    MLL: 0,
-    MRL: 1,
-    CNT: 2,
-    ALP: 3,
-    ARP: 4,
-    SPW: 5,
-    TGP: 6
-  }
-);
+// const Controls = Object.freeze(
+//   {
+//     MLL: 0,
+//     MRL: 1,
+//     CNT: 2,
+//     ALP: 3,
+//     ARP: 4,
+//     SPW: 5,
+//     TGP: 6
+//   }
+// );
 
-let state = Controls.CNT;
+let RightPanelWidth = null;
 
 // Increase left panel's width by 100px
 function makeLeftLarger() {
-  state = Controls.MLL;
+  // state = Controls.MLL;
   const container = document.getElementById('panel-container');
   const leftPanel = document.getElementById('leftPanel');
   const rightPanel = document.getElementById('rightPanel');
@@ -47,7 +47,7 @@ function makeLeftLarger() {
 // Increase right panel's width by 100px.
 // Since the grid has two columns, increasing the right panel is done by reducing the left panel's width.
 function makeRightLarger() {
-  state = Controls.MRL;
+  // state = Controls.MRL;
   const container = document.getElementById('panel-container');
   const leftPanel = document.getElementById('leftPanel');
   const rightPanel = document.getElementById('rightPanel');
@@ -72,7 +72,7 @@ function makeRightLarger() {
 }
 
 function occupyLeftPanel() {
-  state = Controls.ALP;
+  // state = Controls.ALP;
   const container = document.getElementById('panel-container');
   const leftPanel = document.getElementById('leftPanel');
   const rightPanel = document.getElementById('rightPanel');
@@ -82,7 +82,7 @@ function occupyLeftPanel() {
 }
 
 function occupyRightPanel() {
-  state = Controls.ARP;
+  // state = Controls.ARP;
   const container = document.getElementById('panel-container');
   const leftPanel = document.getElementById('leftPanel');
   const rightPanel = document.getElementById('rightPanel');
@@ -91,18 +91,45 @@ function occupyRightPanel() {
   container.style.gridTemplateColumns = 0 + 'px ' + containerWidth + 'px';
 }
 function centerPanels() {
-  state = Controls.CNT;
+  // state = Controls.CNT;
   const container = document.getElementById('panel-container');
   let panelWidth = container.clientWidth / 2;
   container.style.gridTemplateColumns = panelWidth + 'px ' + panelWidth + 'px';
 }
-function setRightPanelWidth(fracWidth) {
-  state = Controls.SPW;
+function selectRightPanelWidth() {
+  console.debug('--- selectRightPanelWidth ---');
+  console.debug('before select Right panel width: ' + RightPanelWidth);
+  const rightPanel = document.getElementById('rightPanel');
+  RightPanelWidth = rightPanel.clientWidth;
+  console.debug('after select Right panel width: ' + RightPanelWidth);
+}
+function setRightPanelWidth() {
+  console.debug('--- setRightPanelWidth ---')
+  const container = document.getElementById('panel-container');
+  if(RightPanelWidth === null) {
+    RightPanelWidth = container.clientWidth / 2;
+  }
+  console.debug('before set Right panel width: ' + RightPanelWidth);
+  let LtPanel = document.getElementById(leftPanel);
+  let RtPanel = document.getElementById(rightPanel);
+  let LeftPanelWidth = container.clientWidth - RightPanelWidth;
+
+  if (LeftPanelWidth < 0.10 * container.clientWidth) {
+    occupyRightPanel();
+  }
+  else if (RightPanelWidth < 0.10 * container.clientWidth) {
+    occupyLeftPanel();
+  }
+  else {
+    container.style.gridTemplateColumns = LeftPanelWidth + 'px ' + RightPanelWidth + 'px';
+  }
+}  
+function presetRightPanelWidth(fracWidth) {
   const container = document.getElementById('panel-container');
   let RtPanelWidth = container.clientWidth * fracWidth;
   let LtPanelWidth = container.clientWidth * (1 - fracWidth);
   container.style.gridTemplateColumns = LtPanelWidth + 'px ' + RtPanelWidth + 'px';
-}
+}  
 
 function togglePanel() {
   // const controls = document.getElementById('controls');
