@@ -198,6 +198,7 @@ function buildRes() {
       <div style='height:0.25rem;'></div>\
       <div class='category'>-neighborhoods-</div>\
       <a target='_blank' href='../../JimFawcett.github.io/index.html'>Old Site</a>\
+      <a target='_blank' href='../GridExplorer/GridExplorer.html'>GridExplorer</a>\
       <a target='_blank' href='https://ecs.syr.edu/faculty/fawcett'>SU Site</a>\
       <a target='_blank' href='https://github.com/mwcorley79'>MWCorely Site</a>\
       <div style='height:1.0em;'></div>\
