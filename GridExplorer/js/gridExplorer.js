@@ -1,22 +1,12 @@
 // Helper: update the grid columns based on a left-panel width (in pixels)
 function updateGridColumns(leftWidthPx) {
+  const iframe = document.getElementById('lpgframe');
   const container = document.getElementById('panel-container');
   const containerWidth = container.clientWidth;
   const rightWidthPx = containerWidth - leftWidthPx;
   container.style.gridTemplateColumns = leftWidthPx + 'px ' + rightWidthPx + 'px';
+  iframe.style.width = leftWidthPx + 'px';
 }
-
-// const Controls = Object.freeze(
-//   {
-//     MLL: 0,
-//     MRL: 1,
-//     CNT: 2,
-//     ALP: 3,
-//     ARP: 4,
-//     SPW: 5,
-//     TGP: 6
-//   }
-// );
 
 let RightPanelWidth = null;
 
@@ -40,8 +30,24 @@ function makeLeftLarger() {
     occupyLeftPanel();
     return;
   }
-  
+  // let newLeftWidth = containerWidth - newRightWidth;
   updateGridColumns(newLeftWidth);
+
+
+  // iframe.contentWindow.dispatchEvent(new Event("resize"));
+
+  // updateGridColumns(newLeftWidth);
+  // const iframe = document.getElementById('lpgframe');
+  // try {
+  //   const doc = iframe.contentDocument || iframe.contentWindow.document;
+  //   doc.body.style.display = "none";
+  //   // Let it breathe for a moment
+  //   setTimeout(() => {
+  //     doc.body.style.display = "";
+  //   }, 0);
+  // } catch (e) {
+  //   console.warn("Could not access iframe content for reflow", e);
+  // }
 }
 
 // Increase right panel's width by 100px.
@@ -79,6 +85,8 @@ function occupyLeftPanel() {
   
   let containerWidth = container.clientWidth;
   container.style.gridTemplateColumns = containerWidth + 'px ' + 0 + 'px';
+  const iframe = document.getElementById('lpgframe');
+  iframe.style.width = containerWidth + 'px';  
 }
 
 function occupyRightPanel() {
@@ -95,6 +103,8 @@ function centerPanels() {
   const container = document.getElementById('panel-container');
   let panelWidth = container.clientWidth / 2;
   container.style.gridTemplateColumns = panelWidth + 'px ' + panelWidth + 'px';
+  const iframe = document.getElementById('lpgframe');
+  iframe.style.width = panelWidth + 'px';  
 }
 function selectRightPanelWidth() {
   console.debug('--- selectRightPanelWidth ---');
@@ -123,12 +133,16 @@ function setRightPanelWidth() {
   else {
     container.style.gridTemplateColumns = LeftPanelWidth + 'px ' + RightPanelWidth + 'px';
   }
+  const iframe = document.getElementById('lpgframe');
+  iframe.style.width = LeftPanelWidth + 'px';  
 }  
 function presetRightPanelWidth(fracWidth) {
   const container = document.getElementById('panel-container');
   let RtPanelWidth = container.clientWidth * fracWidth;
   let LtPanelWidth = container.clientWidth * (1 - fracWidth);
   container.style.gridTemplateColumns = LtPanelWidth + 'px ' + RtPanelWidth + 'px';
+  const iframe = document.getElementById('lpgframe');
+  iframe.style.width = LtPanelWidth + 'px';  
 }  
 
 function togglePanel() {
