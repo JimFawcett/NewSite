@@ -178,6 +178,12 @@ fn arrays() {
   
     let arr3 = [1.0, 2.0, 3.0];
     show_type(&arr3, "arr3");
+
+    let mut arr4:[f64; 5] = [0.0; 5];
+    arr4[0] = 0.5;
+    arr4[1] = 1.0;
+    arr4[4] = -0.5;
+    show_type(&arr4, "arr4");
 }
 fn references() {
     show_note("references");
