@@ -156,6 +156,12 @@ function postMsg(msg) {
   // ifrm.contentWindow.postMessage(msg, '*');
   window.parent.postMessage(msg, '*');
 }
+function makeMsg(key, value) {
+  let msg = new Object();
+  msg.key = key;
+  msg.value = value;
+  return msg;
+}
 /*---------------------------------------------------------
   Message handler
   - Explorers post an event name, e.g., name of button

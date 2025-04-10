@@ -266,7 +266,7 @@ function postMsg(msg) {
 }
 /*-- iframe responds to Explorer link click --*/
 window.onmessage = function (e) {
-  switch (e.data) {
+  switch (e.data.key) {
     case 'esc':
       console.log('esc key');
       hideElement('blogs');

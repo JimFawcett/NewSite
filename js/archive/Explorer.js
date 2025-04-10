@@ -41,7 +41,33 @@ function handleIframeTransition() {
 //   const lpanel = document.getElementById("lpanel");
 // });
 
+// function togglePanel() {
+//   toggleElement('lpanel');
+// }
 function togglePanel() {
+  const lpanel = document.getElementById("lpanel");
+  if (lpanel.classList.contains("visible")) {
+    lpanel.classList.remove("visible");
+    lpanel.style.opacity = "0";
+    lpanel.style.transform = "translateX(-100%)";
+    setTimeout(() => {
+      lpanel.classList.add("hidden");
+      setCookie('lpanel', 'false', 1);
+      lpanel.style.display = "none";
+    }, 300); // Matches the transition duration
+  } else {
+    lpanel.style.display = "block";
+    setTimeout(() => {
+      lpanel.classList.remove("hidden");
+      setCookie('lpanel', 'true', 1);
+      lpanel.style.opacity = "1";
+      lpanel.style.transform = "translateX(0)";
+      lpanel.classList.add("visible");
+    }, 10); // Small delay to allow transition
+  }
+}
+
+function togglePanel_paused() {
   const lpanel = document.getElementById("lpanel");
   if (lpanel.classList.contains("visible")) {
     lpanel.classList.remove("visible");
@@ -189,27 +215,28 @@ function toggleCompare() {
 }
 
 function toggleAbout() {
-  postMsg("about");
+  postMsg(makeMsg('about', null));
+  // postMsg("about");
 }
 
 function toggleKeys() {
-  postMsg("keys");
+  postMsg(makeMsg('keys', null));
 }
 
 function toggleSections() {
-  postMsg("sections");
+  postMsg(makeMsg('sections', null));
 }
 
 function togglePages() {
-  postMsg("pages");
+  postMsg(makeMsg('pages', null));
 }
 
 function goNext() {
-  postMsg("next");
+  postMsg(makeMsg('next', null));
 }
 
 function goPrev() {
-  postMsg("prev");
+  postMsg(makeMsg('prev', null));
 }
 
 // function toggleBlogs() {
@@ -257,7 +284,7 @@ window.onmessage = function (e) {
     default:
       console.log('filename');
       let fn = document.getElementById('filename');
-      fn.innerHTML = e.data + ":"; 
+      fn.innerHTML = e.data; 
       gFile = e.data;
   }
 }
