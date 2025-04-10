@@ -1,6 +1,6 @@
-/*
+/*---------------------------------------------------------
  * Content.js - Scripts for content pages
- * ver 1.0 - 09 Dec 2024
+ * ver 1.0 - 06 Jan 2025
  * Jim Fawcett
  */
 
@@ -27,64 +27,152 @@ function isHidden(id) {
 // bottomMenu.bottom = function() {
 //   <a href="#bottom"></a>
 // }
-
+/*---------------------------------------------------------
+  Post iframe content filename back to parent to be
+  included in its footer 
+*/
 function postFileName() {
   let url = window.location.href;
+  // alert(url);
+  setCookie('url', url, 10);
   const parseUrl = new URL(url);
   let fn = parseUrl.pathname.split('/').pop();
   window.parent.postMessage(fn, '*');
+  postMsg('loaded');
 }
-
+function getUrl() {
+  let url = getCookie('url');
+  if(url === null || url === false) {
+    url = "../Site/Explore.html";
+  }
+  return url;
+}
+/*---------------------------------------------------------
+  temporarily toggle element's hidden state
+  - does not toggle persistance cookie 
+*/
 function toggleButton(id) {
   const btn = document.getElementById(id);
-  btn.classList.toggle('hidden');
+  if(isDefined(btn)) {
+    btn.classList.toggle('hidden');
+  }
 }
-
+/*---------------------------------------------------------
+  temporarily set element's hidden state to true
+  - does not change persistance cookie 
+*/
 function hideButton(id) {
   const btn = document.getElementById(id);
-  btn.classList.add('hidden');
+  if(isDefined(btn)) {
+    btn.classList.add('hidden');
+  }
 }
-
+/*---------------------------------------------------------
+  temporarily set element's hidden state to false
+  - does not change persistance cookie 
+*/
 function showButton(id) {
   const btn = document.getElementById(id);
-  btn.classList.remove('hidden');
+  if(isDefined(btn)) {
+    btn.classList.remove('hidden');
+  }
 }
-
+/*---------------------------------------------------------
+  set element's hidden state to true
+  - also sets its persistance cookie 
+*/
+function closeMenues() {
+  hideElement('about');
+  hideElement('keys');
+  hideElement('sections');
+  hideElement('pages');
+  hideElement('compare');
+  hideElement('blogs');
+  hideElement('help');
+  hideElement('res');
+  postMsg('esc');
+  postMsg('clear');
+}
+/*---------------------------------------------------------
+  Redirect to Next page in thread
+  - based on url of page's next element
+*/
 function goNext() {
   let nxt = document.getElementById('next');
   if(isDefined(nxt)) {
     nxt.click();
   }
 }
-
+/*---------------------------------------------------------
+  Redirect to Prev page in thread
+  - based on url of page's prev element
+*/
 function goPrev() {
   let prv = document.getElementById('prev');
   if(isDefined(prv)) {
     prv.click();
   }
 }
-
+/*---------------------------------------------------------
+  Redirect to Home page, e.g., SiteHome.html
+  - expects all pages to be in either NewSite dir
+    or one of its immediate subdirectories
+*/
+function goHome() {
+  let url = "Explore.html?src=SiteHome.html";
+  if(dirName() === 'NewSite') {
+    window.parent.location = url;
+  }
+  else {
+    window.parent.location = "../" + url;
+  }
+}
+/*---------------------------------------------------------
+  parse the last directory name from current location
+  - used to pass filename from iframe content to parent
+  - also used to compute target path in goHome()
+*/
 function dirName() {
   let path = window.location.href;
+  alert(path);
   path = path.replace(/^file:\/\//i, "");
   if (path.split('/').pop().includes('.')) {
     path = path.substring(0, path.lastIndexOf('/'));
   }
+  alert(path);
   return path.split('/').pop();
+  // return path;
 }
 
-/*-- Explorer requests javascript execution --*/
+/*---------------------------------------------------------
+  Pages embedded in an Explorer's iframe communicate 
+  to the Explorer by posting a message with this 
+  function.
+  - usually used to send back its filename so Explorer
+    can put the name in its footer when page loads.
+*/
 function postMsg(msg) {
   // let ifrm = document.getElementById("pgframe");
   // ifrm.contentWindow.postMessage(msg, '*');
   window.parent.postMessage(msg, '*');
 }
-
+function makeMsg(key, value) {
+  let msg = new Object();
+  msg.key = key;
+  msg.value = value;
+  return msg;
+}
+/*---------------------------------------------------------
+  Message handler
+  - Explorers post an event name, e.g., name of button
+    action.  
+  - Page embedded in iframe receives those messages
+    here and generates an approprate action, often
+    displaying a menu or form.
+*/
 window.onmessage = function (e) {
+  console.log('in msg loop: msg = ' + e.data);
   switch (e.data) {
-    case 'compare':
-      toggleCompare();
-      break;
     case 'about':
       toggleButton('about');
       break;
@@ -103,29 +191,34 @@ window.onmessage = function (e) {
         prv.click();
       }
       break;
-    case 'sections':
-      console.log('in content msg loop');
-      let pgs = document.getElementById('pages');
-      let scs = document.getElementById('sections');
-      if(isDefined(pgs)) {
-        hideButton('pages');
-      }
-      if(isDefined(scs)) {
-        //toggleButton('sections');
-        toggleSections();
-      }
-      break;
-    case 'pages':
-      let pgs2 = document.getElementById('pages');
-      let scs2 = document.getElementById('sections');
-      if(isDefined(scs2)) {
-        hideSections();
-        // hideButton('sections');
-      }
-      if(isDefined(pgs2)) {
-        toggleButton('pages');
-      }
-      break;
+      case 'compare':
+        hideElement('pages');
+        toggleCompare();
+        break;
+      case 'sections':
+        let pgs = document.getElementById('pages');
+        let scs = document.getElementById('sections');
+        if(isDefined(pgs)) {
+          hideElement('pages');
+        }
+        if(isDefined(scs)) {
+          //toggleButton('sections');
+          toggleElement('sections');
+        }
+        break;
+      case 'pages':
+        let pgs2 = document.getElementById('pages');
+        let scs2 = document.getElementById('sections');
+        if(isDefined(scs2)) {
+          hideElement('sections');
+        }
+        if(isDefined(pgs2)) {
+          toggleElement('pages');
+        }
+        break;
+      case 'clear':
+        closeMenues();
+        break;
     /* Explorer cases require files in NewSite or an immediate child */
     case 'Explore':
       if(dirName() === "NewSite") {
@@ -243,7 +336,6 @@ function getParameterByName(name, url = window.location.href) {
   return decodeURIComponent(results[2].replace(/\+/g, ' '));
 }
   
-  /*-- query string redirect processing --*/
 /*---------------------------------------------------------
   programmed button click given element id
 */
@@ -272,6 +364,9 @@ function setKeys() {
     if(event.key === 'p' || event.key === 'P') {
       clickButton('prev');
     }
+    if(event.key === 'h' || event.key === 'H') {
+      goHome();
+    }
     if(event.key === 'r' || event.key === 'R') {
       window.location.reload();
     }
@@ -295,6 +390,9 @@ function setKeys() {
     }
     if(event.key === 'c' || event.key === 'C') {
       toggleCompare();
+    }
+    if(event.key === "Escape") {
+      closeMenues();
     }
   });
 }
