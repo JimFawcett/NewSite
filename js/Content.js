@@ -364,6 +364,12 @@ function setKeys() {
     if(event.key === 'p' || event.key === 'P') {
       clickButton('prev');
     }
+    if(event.key === 'u' || event.key === 'U') {
+      window.sectionNavigator.up();
+    }
+    if(event.key === 'd' || event.key === 'D') {
+      window.sectionNavigator.down();
+    }
     if(event.key === 'h' || event.key === 'H') {
       goHome();
     }

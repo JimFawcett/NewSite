@@ -256,6 +256,12 @@ function buildKeys() {
         <td class='center clickable'><a onclick='goPrev()'>P</a></td><td>Prev</td>\
       </tr>\
       <tr>\
+        <td class='center clickable'><a onclick='window.sectionNavigator.down()'>D</a></td><td>Down</td>\
+      </tr>\
+      <tr>\
+        <td class='center clickable'><a onclick='window.sectionNavigator.up()'>U</a></td><td>Up</td>\
+      </tr>\
+      <tr>\
         <td class='center clickable'><a onclick='goHome()'>H</a></td><td>Home</td>\
       </tr>\
       <tr>\
