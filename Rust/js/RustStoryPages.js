@@ -8,7 +8,7 @@ function buildPages() {
   const pgs = document.getElementById('pages');
   if(isDefined(pgs)) {
     pgs.innerHTML =
-    "<div class='darkItem menuHeader' onclick='togglePages()'>Rust Story Pages</div>\
+    "<div class='darkItem listheader' onclick='togglePages()'>Rust Story Pages</div>\
     <div class='menuBody'>\
       <a href='RustStory_Prologue.html'>Introduction</a>\
       <a href='RustStory_Models.html'>Models</a>\
