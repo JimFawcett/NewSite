@@ -17,7 +17,6 @@ function buildPages() {
       <a href='RustStory_Structures.html'>Structures</a>\
       <a href='RustStory_Libraries.html'>Libraries</a>\
       <a href='RustStory_References.html'>References</a>\
-      <a href='RustStory_CodeIndex.html'>Code Index</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }

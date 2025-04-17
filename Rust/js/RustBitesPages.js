@@ -20,8 +20,6 @@ function buildPages() {
       <a class='undef' href='javascript:;'>Rust features</a>\
       <a class='undef' href='javascript:;'>Rust Safety</a>\
       <a class='undef' href='javascript:;'>many more coming</a>\
-      <hr style='margin: 0.5rem 0rem 0.25rem 0rem'>\
-      <a href='RustHome.html'>Track Summary</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
