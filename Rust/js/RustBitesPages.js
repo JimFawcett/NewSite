@@ -12,8 +12,9 @@ function buildPages() {
     <div class='menuBody'>\
       <a href='RustBites_Intro.html'>Introduction</a>\
       <a href='RustBites_HelloRust.html'>Hello World</a>\
-      <a href='RustBites_Data.html'>Data</a>\
+      <a href='RustBites_Data.html'>Data Operations</a>\
       <a href='RustBites_Starting.html'>Rust Features</a>\
+      <a href='RustBites_DataTypes.html'>Data Types</a>\
       <a class='undef' href='javascript:;'>Objects</a>\
       <a class='undef' href='javascript:;'>Generics</a>\
       <a class='undef' href='javascript:;'>Iteration</a>\
