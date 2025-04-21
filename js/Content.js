@@ -103,6 +103,9 @@ function goNext() {
     nxt.click();
   }
 }
+function goNextSelf() {
+  window.postMessage(makeMsg('next'));
+}
 /*---------------------------------------------------------
   Redirect to Prev page in thread
   - based on url of page's prev element
@@ -112,6 +115,9 @@ function goPrev() {
   if(isDefined(prv)) {
     prv.click();
   }
+}
+function goPrevSelf() {
+  window.postMessage(makeMsg('prev'));
 }
 /*---------------------------------------------------------
   Redirect to Home page, e.g., SiteHome.html
@@ -359,11 +365,17 @@ function setKeys() {
       window.location.href = '#bottom';
     }
     if(event.key === 'n' || event.key === 'N') {
-      clickButton('next');
+      window.postMessage(makeMsg('next'));
     }
+    // if(event.key === 'n' || event.key === 'N') {
+    //   clickButton('next');
+    // }
     if(event.key === 'p' || event.key === 'P') {
-      clickButton('prev');
+      window.postMessage(makeMsg('prev'));
     }
+    // if(event.key === 'p' || event.key === 'P') {
+    //   clickButton('prev');
+    // }
     if(event.key === 'u' || event.key === 'U') {
       window.sectionNavigator.up();
     }

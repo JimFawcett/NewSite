@@ -250,10 +250,10 @@ function buildKeys() {
         <td class='center clickable'><a href='#bottom'>E</a></td><td>scroll to end</td>\
       </tr>\
       <tr>\
-        <td class='center clickable'><a onclick='goNext()'>N</a></td><td>Next</td>\
+        <td class='center clickable'><a onclick='goNextSelf()'>N</a></td><td>Next</td>\
       </tr>\
       <tr>\
-        <td class='center clickable'><a onclick='goPrev()'>P</a></td><td>Prev</td>\
+        <td class='center clickable'><a onclick='goPrevSelf()'>P</a></td><td>Prev</td>\
       </tr>\
       <tr>\
         <td class='center clickable'><a onclick='window.sectionNavigator.down()'>D</a></td><td>Down</td>\
