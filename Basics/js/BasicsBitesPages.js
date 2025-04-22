@@ -12,8 +12,9 @@ function buildPages() {
       <div class='menuBody'>\
         <a href='Basics_Platform.html'>Platform</a>\
         <a href='Basics_Memory.html'>Virtual memory</a>\
-        <a class='undef' href='javascript:;'>Scheduling</a>\
-        <a class='undef' href='javascript:;'>IO</a>\
+        <a href='Basics_Scheduling.html'>Scheduling</a>\
+        <a href='Basics_Processes.html'>Processes</a>\
+        <a href='Basics_IO.html'>IO</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
