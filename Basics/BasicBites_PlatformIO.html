@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<!--
+  BasicBites_PlatformIO.html
+-->
+<head>
+  <title>Basics Platform IO</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/StylesPageFrameDefaults.css" />
+  <link rel="stylesheet" href="css/StylesPageFrameStructure.css" />
+  <link rel="stylesheet" href="css/StylesPageFrameMenus.css" />
+  <link rel="stylesheet" href="css/StylesPageFrameThemeDefault.css" />
+  <link rel="stylesheet" href="css/StylesWebComponents.css" />
+  <script src="js/ScriptsWebComponents.js"></script>
+  <script src="js/ScriptsPageFrameBasicTrack.js"></script>
+  <script src="js/ScriptsPageFramePagesBasicTrack.js"></script>
+  <script src="js/ScriptsPageFrameKeyboard.js"></script>
+  <style>
+    #github table {
+      width: 90%;
+      border: 1px solid black;
+    }
+
+      #github table tr {
+        border: 1px solid black;
+      }
+
+        #github table tr th {
+          color: white;
+          background-color: #666;
+        }
+
+        #github table tr td {
+          color: #111;
+          background-color: white;
+        }
+
+      #github table a:link {
+        color: black;
+        background-color: transparent;
+      }
+
+      #github table a:visited {
+        color: black;
+        background-color: transparent;
+      }
+
+      #github table a:hover {
+        color: #666;
+        background-color: transparent;
+      }
+
+      #github table a:active {
+        color: black;
+        background-color: transparent;
+      }
+  </style>
+  
+</head>
+<body id="github" onload="initialize()">
+
+  <a id="Next" href="BasicBites_PlatformSysRescr.html">Next</a>
+  <a id="Prev" href="BasicBites_PlatformSched.html">Prev</a>
+
+  <page-frame>
+    <frame-header>
+      <nav id="navbar"></nav>
+    </frame-header>
+    <main>
+      <div id="about" onclick="this.style.display = 'none'">about</div>
+      <div id="modified">3/04/2022</div>
+      <div id="page">Platform IO</div>
+      <div id="hlp"></div>
+      <a id="top"></a>
+      <content>
+        <header id="pagetitle" onclick="loadifbasic()" style="cursor:pointer;">
+          <h1>BasicBites - Platform IO</h1>
+          <h3 id="subtitle" class="indent">
+            Synchronous, asynchronous, buffered, unbuffered
+          </h3>
+        </header>
+        <t-b>
+          I/O operations send or receive data using terminals, files, in-memory strings, sockets, Graphical User
+          Interfaces (GUIs), and devices like keyboards, mice, trackpads, and speakers.
+          This involves one of two rather distinct types of processing: synchronous or asynchronous.
+          <ul>
+            <li>
+              Synchronous I/O uses functions that don&quot;t return until the operation completes.
+              Programming language libraries provide read and write functions for that purpose.
+            </li>
+            <li>
+              Asynchronous I/O uses functions that supply a call back function and return immediately.
+              The callback is invoked when the operation completes.
+              Programming language libraries provide async read and async write functions for that purpose.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          Synchronous operations interact with the platform API to translate to and from
+          an external environment.
+          Asynchronous operations use either I/O completion ports or Windows messages to send and receive data, using
+          the platform API.  API calls are routed to device drivers appropriate for a specified device.
+        </t-b>
+        <photosizer-block src="pictures/IOCP.png" width="500" class="photoSizerBlock right" style="margin-top:0;">
+          <span style="
+        display: inline-block;
+        font-weight: bold;
+        font-family: 'Comic Sans MS', Tahoma;
+        background-color: #ddd;
+        width: 100%;
+        padding: 5px 0px;">
+            Figure 1. Windows I/O completion ports
+          </span>
+        </photosizer-block>
+        <a id="IOCP"></a>
+        <h3>I/O Completion Ports</h3>
+        <t-b>
+          I/O completion ports provide a mechanism for processing multiple asynchronous I/O requests.  When sending
+          a request the requesting thread returns without waiting for the I/O process to complete.
+        </t-b>
+        <t-b>
+          Asynchronous read or write requests using library methods may use I/O completion ports internally.
+        </t-b>
+        <t-b>
+          When an asynchronous I/O request is made, an I/O Request (IOR) object is created and sent to the completion
+          port. The IOR holds a file handle for the specified destination and may also hold a callback reference.
+        </t-b>
+        <t-b>
+          Each IOR enqueues an I/O Completion Package (IOCPkg) that gets serviced by a thread pool thread which is responsible
+          for sending the request to an appropriate
+          device driver and await its completion.  If a callback is registered it will invoke the callback on completion.
+        </t-b>
+        <photosizer-block src="pictures/windows.png" width="500" class="photoSizerBlock right clear" style="margin-top:0;">
+          <span style="
+        display: inline-block;
+        font-weight: bold;
+        font-family: 'Comic Sans MS', Tahoma;
+        background-color: #ddd;
+        width: 100%;
+        padding: 5px 0px;">
+            Figure 2. Windows Event Processing
+          </span>
+        </photosizer-block>
+        <t-b>
+          <details>
+            <summary class="lightItem">
+              <h3 style="display:inline;">Async Await</h3><br />
+              <span class="indent pad5">related details</span>
+            </summary>
+            <div class="indent">
+              <t-b>
+                .Net provides a Task type that is used with async functions that invoke await and is
+                executed on the current synchronization context.  If that is a thread-pool
+                context each task is run on a thread-pool thread.  If a non thread-pool synchronization context is used, then
+                when the task blocks it is suspended, enqueued, and another task is dequeued by the same thread.
+              </t-b>
+              <t-b>
+                I suspect that the Rust async await functionality works the same way.
+              </t-b>
+            </div>
+          </details>
+        </t-b>
+        <a id="msg"></a>
+        <h3>Windows Messaging</h3>
+        <t-b>
+          When external devices are used to send key presses, mouse movements, button clicks, ... each device event
+          results in a device driver creating a message and enqueueing to a raw input queue.
+        </t-b>
+        <t-b>
+          The Window manager
+          dequeues each message and routes it to an appropriate window.  For example, a mouse button click gets
+          routed to the first window which contains the mouse coordinates in its active area.  Keyboard key events
+          by default are routed to the window in focus.
+        </t-b>
+        <t-b>
+          Routing means that the Window manager enqueues a filtered version of the message to an appropriate window&apos;s
+          message queue.  Each window has an event dispatcher that sends the message to an event handler for processing.
+        </t-b>
+        <t-b>
+          Note that an application may send messages to a hidden window as a means of internal communication.
+        </t-b>
+        <a id="streams"></a>
+        <h3 class="clear">Streams</h3>
+        <t-b>
+          Streams provide buffered I/O operations that collect data from possibly several requests and send that
+          data collection to a device driver as one operation.  Each basic read or write request needs to enter the platform kernel
+          to access an appropriate device driver.  That takes a
+          significant amount of time compared to user mode processing.  Buffering reduces the number of calls into the
+          platform kernel and so improves program throughput.
+        </t-b>
+        <t-b>
+          Essentially, streams collect a continuing sequence of event data and, based on an internal threshold,
+          send on all of the data since the last operation as a single new operation.  This happens for both
+          input and output streams, that is, data events external to the program - input - and data events generated
+          by the program - output.
+        </t-b>
+        <a id="conseq"></a>
+        <h3 class="clear">Consequences</h3>
+        <t-b>
+          Each application has the option of sending and receiving either synchronous or asynchronous I/O:
+          <ul>
+            <li>
+              Synchronous I/O requires the handling thread to block until completion so operations that may
+              block for a long time, like network communications, will adversely affect program performance
+              if handled on the main thread of execution.
+            </li>
+            <li>
+              Asynchronous I/O allows the requesting thread to return immediately, but increases the overall
+              processing load on machine&apos;s cores due to creation of I/O completion object and dispatching
+              to thread pool threads.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          Each application has the option of using buffered or unbuffered I/O.  This is independent of the choice
+          to use synchronous or asynchronous operations.
+          <ul>
+            <li>
+              Unbuffered I/O sends each request to the kernel for processing by a device driver.  For infrequent
+              requests this requires no addition processing at the expense of more (infrequent) system calls.
+            </li>
+            <li>
+              Buffered I/O collects a series of I/O requests before entering the kernel, resulting in fewer
+              expensive operations, but incurs the buffering overhead.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          For most programs the choice of buffering and asynchrony may or may not improve performance and so
+          should be tested before committing to production code.
+        </t-b>
+        <a id="refs"></a>
+        <h3 class="clear">References:</h3>
+        <ol class="indent tight">
+          <li>
+            <a href="https://www.microsoftpressstore.com/articles/article.aspx?p=2201309&seqNum=3">Understanding the Windows IO System</a>
+          </li>
+          <li>
+            <a href="https://dschenkelman.github.io/2013/10/29/asynchronous-io-in-c-io-completion-ports/">Asynchronous I/O: I/O Completion Ports</a>
+          </li>
+          <li>
+            <a href="https://weblogs.asp.net/kennykerr/parallel-programming-with-c-part-4-i-o-completion-ports">Part 4 - I/O Completion Ports</a>
+          </li>
+          <li>
+            <a href="https://stackoverflow.com/questions/35483763/async-and-await-are-single-threaded-really">async await - stackOverflow</a>&nbsp;&nbsp;
+            Read answer 4, at bottom
+          </li>
+          <li>
+            <a href="https://tooslowexception.com/net-asyncawait-in-a-single-picture/">.Net async/await in a single picture</a>
+          </li>
+          <li>
+            <a href="https://stackoverflow.com/questions/2794535/linux-and-i-o-completion-ports">Linux and I/O completion ports?</a>
+          </li>
+        </ol>
+      </content>
+      <a id="bottom"></a>
+      <page-TOC id="pages" style="display:none;">
+      </page-TOC>
+      <page-sections id="sections" style="display:none;">
+        <sec-elem style="width:0.0em">&nbsp;</sec-elem>
+        <menu-elem class="secElem"><a href="#bottom">bottom</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <menu-elem class="secElem"><a href="#conseq">conseq</a></menu-elem>
+        <menu-elem class="secElem"><a href="#streams">streams</a></menu-elem>
+        <menu-elem class="secElem"><a href="#msg">msg-ing</a></menu-elem>
+        <menu-elem class="secElem"><a href="#IOCP">IOCP</a></menu-elem>
+        <menu-elem class="secElem"><a href="#top">top</a></menu-elem>
+        <div class='darkItem popupHeader' style="padding:0.25em 2.0em;" onclick="this.parentElement.style.display='none'">Sections</div>
+      </page-sections>
+    </main>
+    <frame-footer>
+      <menu-item style="width:2.0em;">&nbsp;</menu-item>
+      <menu-elem id="nextLink2" onclick="bottomMenu.next()">Next</menu-elem>
+      <menu-elem id="prevLink2" onclick="bottomMenu.prev()">Prev</menu-elem>
+      <menu-elem id="pgbtn" onclick="bottomMenu.pages()">Pages</menu-elem>
+      <menu-elem onclick="bottomMenu.sections()">Sections</menu-elem>
+      <menu-elem onclick="bottomMenu.about()">About</menu-elem>
+      <menu-elem id="kysbtn" onclick="storyHlpMenu.keys()">Keys</menu-elem>
+      <menu-elem style="margin-right:1em">
+        <span id="loc" style="display:inline-block; font-weight:normal"></span>
+      </menu-elem>
+    </frame-footer>
+  </page-frame>
+  <script>
+    let loc = document.getElementById("loc");
+    let fn = window.location.href.split(/\/|\\/).pop();
+    loc.innerHTML = fn + ": ";
+  </script>
+</body>
+</html>
