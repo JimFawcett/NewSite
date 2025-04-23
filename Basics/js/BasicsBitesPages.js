@@ -15,6 +15,7 @@ function buildPages() {
         <a href='Basics_Scheduling.html'>Scheduling</a>\
         <a href='Basics_Processes.html'>Processes</a>\
         <a href='Basics_IO.html'>IO</a>\
+        <a href='Basics_SysRescr.html'>System Resources</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
