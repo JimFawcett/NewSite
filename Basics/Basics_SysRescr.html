@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  Basics_IO.html
+-->
+<head>
+  <title>Basics Sys Res</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      // setCookie('#pages', 0, 10);
+      setPersistantElements();
+      hideInfoMsgs();
+    }
+  </script>
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href="Basics_Memory.html"></a>
+  <a id="prev" class="hidden" href="Basics_Platform.html"></a> -->
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    Basics_SysRescr.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 03/12/2025
+  </div>
+
+  <content-block>
+    <header>
+      <!--<a class="repoLink" href="https://github.com/JimFawcett">JimFawcett Repositories</a>-->
+      <div id="pagetitle" class="header">
+        <h2 id="title">Basics: System Resources</h2>
+        <h4 id="subtitle" class="indent">Global resources, kernel objects</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="BasicsHome.html" style="position:absolute; left:6em; color:var(--atten); ">Track Summary</a>
+      </div>
+
+      <t-b>
+        All the common operating systems, Windows, linux, Unix, and macOS, provide ways to create and access system-wide resources.  That is, resources
+        that can be accessed by more than one scope in a given program without passing references and by more than
+        one program.  Typical examples are files, mutexes, and memory-mapped file pages.  Each shared resource is
+        represented by a named kernel object.
+      </t-b>
+      <t-b>
+        Here we are not concerned with platform components like memory and CPUs. Rather, we focus on objects
+        that our programs create to provide data and functionality shared between programs, including objects
+        created by the platform at startup or when critical events occur.
+      </t-b>
+      <t-b>
+        Sharing may result in collisions - concurrent reads and writes from different threads or processes.  This is
+        usually managed with shared named mutexes.  However, other possibilities exist.  I&apos;ve written a concurrent
+        file access library in C++ that uses failure of a file open to sleep and retry.  In managed code the same
+        retry strategy can be implemented by catching managed exceptions on file operations.
+      </t-b>
+      <t-b>
+        User libraries can also be shared by compiling to a sharable binary that is loaded at program load time if
+        not already loaded.  This only works effectively for languages that have a standardized binary format.  The
+        platform loader depends on that format to resolve function references between the main executable and loaded
+        library.
+      </t-b>
+      <t-b>
+        This works well for C++, C#, and Java.  Rust however has not yet standardized a binary format, so loading
+        only works if the executable and library are both compiled with the same binary format.  Rust makes no
+        guarantees that the format will remain fixed between versions of the compiler.
+      </t-b>
+      <t-b>
+        Depending on a standard binary format is important for cases where a library is intended to be provided
+        as an expected resource, perhaps for several years, not compiled with each application.
+      </t-b>
+      <div style="height:0.5em;"></div>
+      <a id="kerobj"></a>
+      <h3>Example Kernel Objects:</h3>
+      <t-b>
+        Windows provides:
+        <ul>
+          <li>
+            Acess token, Change notification, Event, Event log, I/O completion port
+          </li>
+          <li>
+            File, File mapping, Communications device, Socket, Console input, Console screen buffer, Pipe
+          </li>
+          <li>
+            Desktop, Heap, Job
+          </li>
+          <li>
+            Module, Process, Thread, Timer
+          </li>
+          <li>
+            Mutex, Semaphore
+          </li>
+        </ul>
+      </t-b>
+      <div style="height:0.5em;"></div>
+      <a id="conseq"></a>
+      <h3>Consequences:</h3>
+      <t-b>
+        Platforms that provide system-wide resources enable creation of global facilities, for example:
+        <ul>
+          <li>
+            Test Harness - used by development teams for continuous integration and testing
+          </li>
+          <li>
+            Logging - persistent error reports for applications with lifetime not tied to the logging applications
+          </li>
+          <li>
+            Application messaging
+          </li>
+          <li>
+            System health monitoring
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        Note that the examples cited above will be likely to work across a network of the local and remote platforms.
+        Communication between platforms will probably use sockets for connections, perhaps wrapped in objects
+        defined in a communication library.
+      </t-b>
+      <div style="height:0.5em;"></div>
+      <a id="refs"></a>
+      <h3>References:</h3>
+      <t-b>
+        <ol>
+          <li>
+            <a href="https://docs.microsoft.com/en-us/windows/win32/sysinfo/kernel-objects">Kernel Objects</a>
+          </li>
+        </ol>
+      </t-b>
+    <div style="height:15rem;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Page Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#kerobj">kernel objs</a></menu-elem>
+        <menu-elem class="secElem"><a href="#conseq">consequences</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden">
+      <!-- overwritten by BasicsBitesPages.js -->
+      <div class="darkItem listheader" onclick="togglePages()">Pages</div>
+      <div class="menuBody">
+        <a href="Basics_Platform.html">Platform</a>
+        <a href="Basics_Memory.html">Virtual Memory</a>
+      </div>
+    </div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/BasicsBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script src="js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+</body>
+</html>
