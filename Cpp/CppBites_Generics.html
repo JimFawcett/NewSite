@@ -1,0 +1,3108 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppRepos.html
+-->
+<head>
+  <title>Cpp Bites Generics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/Styles_BitsContent.css" />
+  <script src="../js/Scripts_BitsContent.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href="CppBites_STR.html"></a>
+  <a id="prev" class="hidden" href="CppBites_HelloCpp.html"></a> -->
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_Generics.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 01/06/2025
+  </div>
+
+  <content-block>
+    <header>
+      <!--<a class="repoLink" href="https://github.com/JimFawcett">JimFawcett Repositories</a>-->
+      <div id="pagetitle" class="header">
+        <h2 id="title">CppBites: Generics</h2>
+        <h4 id="subtitle" class="indent">
+          C++ templates for std::collections and user-defined types
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/STR" style="color:var(--atten); position:absolute; right:2em;">Repo Code</a>
+      </div>
+
+      <!--<div style="padding-right:25px; position:absolute; top:1.1em; right:13em; z-index:5;">-->
+    </header>
+    <t-b id="syn" style="border:1px solid maroon; padding:0.25em 1em 0.5em 1em;">
+      <h4 style="margin:0em 0em 0.25em 0em;">Synopsis:</h4>
+      Generics are code generators that allow you to write one generic function or class
+      that compiles into a separate concrete function or class for each unique list of
+      specified type parameters.
+      <div style="height:0.5em;"></div>
+      This page demonstrates creation and use of C++ generic functions, types, and
+      their objects. The purpose is to quickly acquire some familiarity with their use
+      and implementations.
+      <hr class="spread" />
+      <ul>
+        <li>
+          C++ Generics are defined with template functions, patterns for defining functions, and template
+          classes, patterns for defining types. Each template has one or more abstract type
+          parameters and a pattern for using them to define a class or function.
+        </li>
+        <li>
+          Template instantiation compiles an instance of a template with specific types
+          defined by the application.  The result is a function or class definition for
+          each unique parameter type list.
+        </li>
+      </ul>
+      <div style="height:0.5em;"></div>
+    </t-b>
+    <details id="notes">
+      <summary class="darkItem">Demo Notes&nbsp;&nbsp;</summary>
+      <t-b><hr style="border-bottom:2px solid var(--dark);" /></t-b>
+      <t-b>
+        Three of the languages: C++, Rust, and C# provide generics.  Each generic function or class
+        is a pattern for defining functions and classes of a specific type.  Thus a generic class is a
+        pattern for making patterns.
+      </t-b>
+      <t-b>
+        The other two, Python and JavaScript, are dynamically typed and already support defining
+        functions and classes for multiple types, e.g., no need for generics.
+      </t-b>
+      <t-b>
+        This demonstration illustrates use of generic classes and objects, which for C++, Rust, and C#,
+        are defined in a stackframe or in the heap or both. <strongs>All</strongs> data for Python and JavaScript are
+        stored in managed heaps.
+      </t-b>
+      <t-b>
+        <hr style="border-bottom:2px solid var(--dark);" />
+      </t-b>
+    </details>
+    <div style="height:0.25em;"></div>
+    <t-b>
+      Code shown in this page demonstrates C++ generics with a few standard library types, creates and uses
+      custom types, then examines several generic functions.
+    </t-b>
+    <div style="height:0.0em;"></div>
+    <h3 id="generics">1.0 Templates and Concepts</h3>
+    <t-b>
+      Templates are generic patterns for functions and classes that use placeholder template types,
+      like <c-s>T</c-s> below. The patterns become
+      specific functions and structs when the placeholders are replaced with specific defined types.
+    </t-b>
+    <t-b>
+      <hr />
+    </t-b>
+    <t-b>
+      <strong>Template functions</strong> use the syntax:<br />
+      <div class="inset">
+        <div style="float:right;margin-right:1em;">Examples in <a target="_blank" href="#gfdef">Section 2.6.1</a></div>
+        <c-s>
+          template &lt;typename T1, T2&gt;<br />
+          auto f&lt;T1, T2&gt (t:T1, ...) -&gt; T2 {<br />
+          &nbsp;&nbsp;&nbsp;/* implementing code using T1 and T2 */<br />
+          }
+        </c-s>
+      </div>
+      The keyword <c-s>auto</c-s> declares the return type to be inferred by the compiler,
+      <c-s>T1</c-s> is a placeholder for the type of the first argument, and
+      T2 is the type of the function return value.
+    </t-b>
+    <t-b>
+      <hr />
+    </t-b>
+    <t-b>
+      <strong>Template classes</strong> are defined with the syntax:
+      <div class="inset">
+        <div style="float:right;margin-right:1em;">Examples in <a target="_blank" href="#point">Section 2.5</a></div>
+        <c-s>
+          template&lt;typename T, const size_t N&gt;<br />
+          class Point<br />
+          {<br />
+          &nbsp;&nbsp;&nbsp;/* code declaring Point methods and<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;data with N items of type T */<br />
+          }<br />
+        </c-s>
+      </div>
+      C++ template arguments may be types like <c-s>T</c-s> and constant integral literals like
+      <c-s>const&nbsp;size_t&nbsp;N</c-s>. A <c-s>Point</c-s> class instance could be created like this:
+      <div class="inset">
+        <c-s>
+          Point&lt;double, 5&gt; p;<br />
+        </c-s>
+      </div>
+    </t-b>
+    <t-b>
+      <hr />
+    </t-b>
+    <t-b>
+      <strong>Concepts</strong> are declarations that may require any template type that implements the
+      concept to implement semantic constraints defined by the std library, e.g.:
+      <div class="inset">
+        <c-s>
+          template &lt;typename T&gt;<br />
+          concept Number = std::integral&lt;T&gt; || std::floating_point&lt;T&gt;;<br />
+          <div style="height:0.5em;"></div>
+          <div style="float:right;margin-right:1em;">Example in <a target="_blank" href="#statsdefn">Section 2.4.1</a></div>
+          template &lt;typename T&gt;<br />
+          &nbsp;&nbsp;&nbsp;requires Number&lt;T&gt;<br />
+          class Stats { /* method implementations here */ }
+        </c-s>
+      </div>
+    </t-b>
+    <t-b>
+      Concepts may also require any template type that implements the
+      concept to implement methods defined by the concept, e.g.:
+      <div class="inset">
+        <div style="float:right;margin-right:1em;">Example in <a target="_blank" href="#statsdef">Section 2.4.1</a></div>
+        <c-s>
+          template &lt;typename T&gt;<br />
+          concept Show = requires (T t, const std::string&amp; s) {<br />
+          &nbsp;&nbsp;&nbsp;t.show(s)<br />
+          };
+        </c-s>
+      </div>
+    </t-b>
+    <t-b>
+      <hr />
+    </t-b>
+    <t-b>
+      C++ Templates are compiled in two phases<sup>1</sup>:
+      <ol>
+        <li>
+          Compilation of template patterns with unknown parameter types:<br />
+          template code is checked for syntax errors.  Unknow names that don't depend on
+          template parameters are discovered, and static assertions that don't depend on template
+          patterns are checked.
+        </li>
+        <li>
+          Instantiation with specific parameter types in using code:<br />
+          When translating user code<sup>2</sup>, the compiler must see pattern definitions as well
+          as specific types for parameters<sup>3</sup>. Using that, code is generted if there are no
+          errors.
+        </li>
+      </ol>
+      <div style="margin:0em 2em 1em 1em;">
+        <hr class="spread" />
+        <div class="indent" style="font-size:0.8em;">
+          <ol class="indent tight">
+            <li>
+              C++ Templates, The Complete Guide, Second Edition, Vandevoorde, Josuttis, Gregor
+            </li>
+            <li>
+              Each *.cpp file and its included *.h files is compiled separately from
+              all other *.cpp filies, then resulting object code is linked together as the final stage
+              of translation, if statically linked.
+            </li>
+            <li>
+              That means that each included file must contain, directly, or indirectly, all of the template
+              definitions on which it depends.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </t-b>
+    <t-b>
+      The first phase compilation of a template class may
+      succeed but the second pass fails because on or more of the concrete parameter types
+      do not have operations the template expects.
+    </t-b>
+    <t-b>
+      Concepts are specifications on the types a template function or class expects, and helps the
+      compiler provide meaningful error messages.
+    </t-b>
+    <h3 id="code">2.0 Source Code</h3>
+    <t-b>
+      Code demonstrations are partitioned into several parts each of which has both class or function
+      definition and demonstrated uses.
+    </t-b>
+    <a id="getcode"></a>
+    <t-b style="border:1px solid var(--dark); padding:0.25em 1.5em; width:max-content;">
+      Source code is available
+      <a target="_blank" href="https://github.com/JimFawcett/Bits/tree/master/Cpp/Cpp_Generics/src">here</a>.
+      Download the entire Bits repository
+      <a target="_blank" href="https://github.com/JimFawcett/Bits">here</a>.
+    </t-b>
+    <div style="height:0.25em;"></div>
+    <h3 id="libtyp">2.1 Demo Standard Library Generic Types</h3>
+    <t-b>
+      Several of the often encountered generic standard collection types,
+      <c-s>std::array&lt;T, N&gt;</c-s>, <c-s>std::vector&lt;T&gt;</c-s>, and
+      <c-s>std::map&lt;Key, Value&gt;</c-s>, are illustrated here.
+    </t-b>
+    <t-b>
+      we show their initialization and display using generic functions. The generic
+      analysis and display functions are covered
+      in <a target="_blank" href="#genfunc">Section 1.6</a> and
+      <a target="_blank" href="#analysis">Section 2.0</a>.
+    </t-b>
+    <t-b>
+      Here you see a side-by-side view of executable code with the output
+      it provides. That proximity makes it easier to understand how the code works.
+    </t-b>
+    <t-b>
+      The two panels below are separated by a &quot;splitter bar&quot;.  You can drag the
+      bar horizontally to view hidden code or output.
+      You can also click in either panel to widen and display overflow
+    </t-b>
+    <div class="blockSingle" style="padding:0em;">
+      <input type="button" value="RemoteExecute" class="remotebutton" onclick="remote1()" />
+      <splitter-container id="container">
+        <first-item id="stdlib-first" style="width:52%;">
+          <div class="codewrap" onclick="cbubbleup('stdlib-first')">
+            <pre style="width:200em;"><code class="language-cpp">/*-------------------------------------------------------------------*/
+void demo_std_generic_types() {
+
+showNote(&quot;Demo std generic types&quot;, nl);
+showOp(&quot;array&lt;int,4&gt;&quot;,nl);
+auto a = std::array&lt;int, 4&gt; { 1, 2, 3, 4 };
+showArray(a);     // works only for arrays
+showSeqColl(a);   // works for any sequential collection
+
+showOp(&quot;vector&lt;double&gt;&quot;, nl);
+std::vector&lt;double&gt; v = { 1.0, 1.5, 2.0, 2.5 };
+std::cout &lt;&lt; v &lt;&lt; &quot;&#92;n&quot;; // uses operator&lt;&lt; overload for vectors, above
+showSeqColl(v);         // any sequential collection
+std::cout &lt;&lt; formatColl(v, &quot;v&quot;, &quot;&#92;n&quot;); // any STL collection
+
+showOp(&quot;std::map&lt;string,int&gt;&quot;, nl);
+std::map&lt;std::string, int&gt; m {
+{&quot;zero&quot;, 0}, {&quot;one&quot;, 1}, {&quot;two&quot;, 2}, {&quot;three&quot;, 3}
+};
+std::cout &lt;&lt; formatColl(m, &quot;m&quot;, &quot;&#92;n&quot;); // any STL collection
+showAssocColl(m);  // coll elements must be std::pair&lt;K,V&gt;
+
+showOp(&quot;std::unordered_map&lt;string,int&gt;&quot;, nl);
+std::unordered_map&lt;std::string, int&gt; um {
+{&quot;zero&quot;, 0}, {&quot;one&quot;, 1}, {&quot;two&quot;, 2}, {&quot;three&quot;, 3}
+};
+std::cout &lt;&lt; formatColl(um, &quot;um&quot;, &quot;&#92;n&quot;); // any STL collection
+showAssocColl(um);  // coll elements must be std::pair&lt;K,V&gt;
+}
+
+
+
+
+</code></pre>
+          </div>
+        </first-item>
+        <splitter-bar id="stdlib-seperator"></splitter-bar>
+        <second-item id="stdlib-second" style="width:48%;">
+          <div class="codewrap" onclick="obubbleup('stdlib-first')">
+            <pre style="width:200em;"><code class="language-shell">--------------------------------------------------
+Demo std generic types
+--------------------------------------------------
+
+--- array&lt;int,4&gt; ---
+array&lt;T,N&gt; [1, 2, 3, 4]
+Collection&lt;T&gt; [1, 2, 3, 4]
+
+--- vector&lt;double&gt; ---
+vector&lt;T&gt;: {
+1, 1.5, 2, 2.5
+}
+Collection&lt;T&gt; [1, 1.5, 2, 2.5]
+v: {
+1, 1.5, 2, 2.5
+}
+
+--- std::map&lt;string,int&gt; ---
+m: {
+{one, 1}, {three, 3}, {two, 2}, {zero, 0}
+}
+Collection&lt;K,V&gt; {
+{one, 1}, {three, 3}, {two, 2}, {zero, 0}
+}
+
+--- std::unordered_map&lt;string,int&gt; ---
+um: {
+{three, 3}, {zero, 0}, {one, 1}, {two, 2}
+}
+Collection&lt;K,V&gt; {
+{three, 3}, {zero, 0}, {one, 1}, {two, 2}
+}
+              </code></pre>
+          </div>
+        </second-item>
+      </splitter-container>
+    </div>
+    <div style="height:1em;"></div>
+    <!-- <div> -->
+      <div style="height:0.25em;"></div>
+      <h3 id="hellotempl">2.2 User-defined Class: HelloTemplates&lt;T&gt;</h3>
+      <t-b>
+        C++ generics are declared with a <c-s>template&lt;T1, T2, ...&gt;</c-s> prefix
+        followed by a class or function declaration that depends on the unspecified
+        types <c-s>T1</c-s>, <c-s>T2</c-s>, ...
+      </t-b>
+      <h3 id="hellodefn">2.2.1 HelloTemplates&lt;T&gt; Definition</h3>
+      <t-b>
+        This section declares a generic class to illustrate syntax required for that.
+      </t-b>
+      <div class="blockSingle" style="padding:0em;">
+        <input type="button" value="RemoteExecute" class="remotebutton" onclick="remote1()" />
+        <splitter-container id="container">
+          <first-item id="hello-first" style="width:52%;">
+            <div class="codewrap" onclick="cbubbleup('hello-first')">
+              <pre style="width:200em;"><code class="language-cpp">/*-------------------------------------------------------------------
+HelloTemplates.h defines HelloTemplates&lt;T&gt; class
+- HelloTemplates&lt;T&gt; is a simple demonstration of a template
+type that does'nt do anything very useful except to explain
+syntax.
+*/
+/*-------------------------------------------------------------------
+simple user-defined type to demonstrate template syntax
+*/
+#include &quot;AnalysisGen.h&quot;
+using namespace Analysis;
+
+template&lt;typename T&gt;
+class HelloTemplates {
+public:
+HelloTemplates() = default;
+HelloTemplates(T& tin) : t(tin) {};
+HelloTemplates(const HelloTemplates&lt;T&gt;& t) = default;
+HelloTemplates&lt;T&gt;& operator=(const HelloTemplates&lt;T&gt;&t) = default;
+~HelloTemplates() = default;
+T& value() { return t; }
+void show();
+private:
+T t;
+};
+
+template&lt;typename T&gt;
+void HelloTemplates&lt;T&gt;::show() {
+std::cout &lt;&lt; &quot;  HelloTemplates&lt;T&gt; {&#92;n  &quot;;
+std::cout &lt;&lt; &quot;  type T: &quot;
+        &lt;&lt; truncate(DisplayParams.trunc,typeid(t).name());  // show type
+std::cout &lt;&lt; &quot;, size: &quot; &lt;&lt; sizeof(t);  // show size on stack
+std::cout &lt;&lt; &quot;, value: &quot; &lt;&lt; t;
+std::cout &lt;&lt; &quot;&#92;n  }&#92;n&quot;;
+}
+/* template method specialization */
+template&lt;&gt;
+void HelloTemplates&lt;std::vector&lt;int&gt;&gt;::show() {
+std::cout &lt;&lt; &quot;  HelloTemplates&lt;T&gt; {&#92;n  &quot;;
+std::cout &lt;&lt; &quot;  type T: &quot;
+        &lt;&lt; truncate(DisplayParams.trunc,typeid(t).name());  // show type
+std::cout &lt;&lt; &quot;, size: &quot; &lt;&lt; sizeof(t) &lt;&lt; &quot;&#92;n    value: [ &quot;;
+for (auto item : t) {
+std::cout &lt;&lt; item &lt;&lt; &quot; &quot;;
+};
+std::cout &lt;&lt; &quot;]&#92;n  }&#92;n&quot;;
+}
+/* partial template specialization of HelloTemplates class */
+template&lt;template&lt;typename&gt; typename V, typename T&gt;
+class HelloTemplates&lt;V&lt;T&gt;&gt; {
+HelloTemplates&lt;V&lt;T&gt;&gt;& operator=(const HelloTemplates&lt;V&lt;T&gt;&gt;& v) = default;
+~HelloTemplates() = default;
+V&lt;T&gt;& value() { return val; }
+void show() {
+std::cout &lt;&lt; &quot;  HelloTemplates&lt;V&lt;T&gt;&gt; {&#92;n  &quot;;
+std::cout &lt;&lt; &quot;  type V&lt;T&gt;: &quot;
+          &lt;&lt; truncate(DisplayParams.trunc,typeid(val).name());  // show type
+std::cout &lt;&lt; &quot;, size: &quot; &lt;&lt; sizeof(val) &lt;&lt; &quot;&#92;n    value: [ &quot;;
+for (auto item : val) {
+  std::cout &lt;&lt; item &lt;&lt; &quot; &quot;;
+};
+std::cout &lt;&lt; &quot;]&#92;n  }&#92;n&quot;;
+}
+private:
+V&lt;T&gt; val;
+};
+</code></pre>
+            </div>
+          </first-item>
+          <splitter-bar id="hello-seperator"></splitter-bar>
+          <second-item id="hello-second" style="width:40em; background-color:var(--light);" onclick="obubbleup('hello-first')">
+            <div class="textwrap noflow commentary">
+              <!--  <pre><code class="language-term"> -->
+              <h3>Purpose:</h3>
+
+              <c-s>HelloTemplates&lt;T&gt;</c-s> is a simple class, intended to illustrate<br />
+              template syntax.<br />
+              <br /><br /><br /><br /><br /><br /><br /><br />
+
+              <h3><span style="font-size:1.25em; font-weight:bold;">&lArr;</span> Basic Syntax:</h3>
+
+              Each generic class and function must be preceeded by a<br />
+              template declaration:<br />
+
+              <c-s>&nbsp;&nbsp;&nbsp;template&lt;typename T, ...&gt;</c-s><br />
+
+              that has one or more typename arguments. T is an abstract<br />
+              type that will be replaced by a specific type in the using<br />
+              code.<br />
+              <br />
+              So a template is a pattern for defining one unique class or<br />
+              function for each unique type list used by an application.<br />
+              <br />
+              <c-s>HelloTemplates&lt;int&gt;</c-s> and <c-s>HelloTemplates&lt;double&gt;</c-s><br />
+              generate two unique classes.<br />
+              <br />
+              <c-s>HelloTemplates&lt;T&gt;</c-s> simply holds, provides mutable access
+              to,<br />
+              and displays a single instance of the type <c-s>T</c-s>.
+              That type can be<br />
+              almost anything that can send its value to std::cout.<br />
+              <br />
+              Its special methods are all declared default and no
+              definitions<br />
+              are provided. That means that the compiler will generate them<br />
+              by calling the operation applied to a <c-s>HelloTemplates&lt;T&gt;</c-s><br />
+              instance on its composed instance of T.<br />
+              <br />
+              <h3><span style="font-size:1.25em; font-weight:bold;">&lArr;</span> Specialization:</h3>
+
+              Template classes can have a specialized method for a specified<br />
+              type. Specialization is used when a method needs to treat the<br />
+              specified type differently than for all of the other generic types.<br />
+              <br />
+              <c-s>HelloTemplates&lt;T&gt;::show()</c-s> has been specialized for<br />
+              <c-s>std::vector&lt;int&gt;</c-s> to support displaying the vector&apos;s
+              items.<br />
+              <br />
+              The C++ language guarantees that when the template type <c-s>T</c-s><br />
+              is a specialized type it will call the specialized method. If not a<br />
+              specialized type the generic method is called.
+            </div>
+          </second-item>
+        </splitter-container>
+      </div>
+      <div style="height:0.75em;"></div>
+
+      <h3 id="hellodemo">2.2.2 HelloTemplates&lt;T&gt; Demo</h3>
+      <t-b>
+        Source code example using <c-s>HelloTemplates&lt;T&gt;</c-s> is
+        shown here along with output generated when it&apos;s executed.
+      </t-b>
+      <div class="blockSingle" style="padding:0em;">
+        <input type="button" value="RemoteExecute" class="remotebutton" onclick="remote1()" />
+        <splitter-container id="container">
+          <first-item id="hellodemo-first" style="width:52%;">
+            <div class="codewrap">
+              <pre onclick="cbubbleup('hellodemo-first')" style="width:200em;"><code class="language-cpp">/*-- demonstrate creation and use of HelloTemplates&lt;T&gt; --*/
+void demo_custom_type_HelloTemplates() {
+
+println();
+showNote(&quot;Demo user-defined HelloTemplates&lt;T&gt;&quot;, 40);
+
+showOp(&quot;HelloTemplates&lt;T&gt;&quot;, nl);
+int arg = 42;
+HelloTemplates&lt;int&gt; demi(arg);
+demi.show();
+std::cout &lt;&lt; std::endl;;
+
+double pi = 3.1415927;
+HelloTemplates&lt;double&gt; demd(pi);
+demd.show();
+
+/*-------------------------------------------------------
+specialization defined in HelloTemplates&lt;T&gt; class header
+HelloTemplates.h and used here
+*/
+auto vs = std::vector&lt;int&gt; { 1, 2, 3 };
+HelloTemplates&lt;std::vector&lt;int&gt;&gt; demv(vs);
+demv.show();
+}
+</code></pre>
+            </div>
+          </first-item>
+          <splitter-bar id="hellodemo-seperator"></splitter-bar>
+          <second-item id="hellodemo-second" style="width:48%;">
+            <div class="codewrap" onclick="obubbleup('hellodemo-first')">
+              <pre style="width:200em;"><code class="language-shell">----------------------------------------
+Demo user-defined HelloTemplates&lt;T&gt;
+----------------------------------------
+
+--- HelloTemplates&lt;T&gt; ---
+
+HelloTemplates&lt;T&gt; {
+type T: int, size: 4, value: 42
+}
+
+HelloTemplates&lt;T&gt; {
+type T: double, size: 8, value: 3.14159
+}
+
+HelloTemplates&lt;T&gt; {
+type T: class std::vector&lt;int,class std::allocat..., size: 32
+value: [ 1 2 3 ]
+}
+
+
+            </code></pre>
+            </div>
+          </second-item>
+        </splitter-container>
+      </div>
+      <div style="height:1em;"></div>
+      <div style="height:0.25em;"></div>
+      <h3 id="stats">2.3 User-defined Class: Stats&lt;T&gt;</h3>
+      <t-b>
+        This section defines a generic class that is intended to compute properties of
+        a collection of numbers, e.g., max, min, sum, and avg. We explore what happens
+        when the generic parameter type has some, but not all of the expected numerical
+        operations.
+      </t-b>
+      <h3 id="statsdefn">2.3.1 Stats&lt;T&gt; Definition</h3>
+      <div class="blockSingle" style="padding:0em;">
+        <input type="button" value="RemoteExecute" class="remotebutton" onclick="remote1()" />
+        <splitter-container id="container">
+          <first-item id="stats-first" style="width:52%;">
+            <div class="codewrap">
+              <pre onclick="cbubbleup('stats-first')" style="width:200em;"><code class="language-cpp">/*-------------------------------------------------------------------
+Stats&lt;T&gt;
+- Stats&lt;T&gt; holds a std::vector&lt;T&gt; and provides methods for
+computing max, min, average of this collection
+of unspecified type T
+- Code builds as a template definition
+- Will fail to build instantiation if T is not a numeric type
+*/
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;exception&gt;
+#include &lt;concepts&gt;
+#include &quot;AnalysisGen.h&quot;
+using namespace Analysis;
+
+/*-------------------------------------------------------------------
+Stats&lt;T&gt; class provides several simple computational services on
+a vector of items who's type provides required arithmetic operations.
+- This class inhibits compiler generation of default constructor
+and assignment operator.
+*/
+
+template &lt;typename T&gt;
+concept Number = std::integral&lt;T&gt; || std::floating_point&lt;T&gt;;
+
+template &lt;typename T&gt;
+&nbsp;&nbsp;&nbsp;requires Number&lt;T&gt;
+class Stats {
+public:
+Stats() = default;
+Stats(const std::vector&lt;T&gt;& v);
+Stats(const Stats&lt;T&gt;& s) = default;
+Stats&lt;T&gt;& operator=(Stats&lt;T&gt;& s) = default;
+size_t size();
+T max();
+T min();
+T sum();
+double avg();
+void show(const std::string& name=&quot;&quot;);
+private:
+bool check();
+const std::vector&lt;T&gt;& items;
+};
+/*-------------------------------------------------------------------
+Constructor initialized with vector of values
+*/
+template&lt;typename T&gt;
+&nbsp;&nbsp;&nbsp;requires Number&lt;T&gt;
+Stats&lt;T&gt;::Stats(const std::vector&lt;T&gt;& v) : items(v) {}
+
+/*-------------------------------------------------------------------
+check that Stats instance contains at least one value
+*/
+template&lt;typename T&gt;
+&nbsp;&nbsp;&nbsp;requires Number&lt;T&gt;
+bool Stats&lt;T&gt;::check() {
+return items.size() &gt; 0;
+}
+/*-------------------------------------------------------------------
+returns number of data items
+*/
+template&lt;typename T&gt;
+&nbsp;&nbsp;&nbsp;requires Number&lt;T&gt;
+size_t Stats&lt;T&gt;::size() {
+if(!check()) {
+    throw &quot;Stats is empty&quot;;
+}
+return items.size();
+}
+/*-------------------------------------------------------------------
+returns largest value (not necessarily largerst magnitude)
+*/
+template&lt;typename T&gt;
+&nbsp;&nbsp;&nbsp;requires Number&lt;T&gt;
+T Stats&lt;T&gt;::max() {
+if(!check()) {
+    throw &quot;Stats is empty&quot;;
+}
+auto max = items[0];
+for( auto item : items) {
+    if (item &gt; max) {
+        max = item;
+    }
+}
+return max;
+}
+/*-------------------------------------------------------------------
+returns smallest value (not necessarily smallest magnitude)
+*/
+template&lt;typename T&gt;
+&nbsp;&nbsp;&nbsp;requires Number&lt;T&gt;
+T Stats&lt;T&gt;::min() {
+if(!check()) {
+    throw &quot;Stats is empty&quot;;
+}
+auto min = items[0];
+for( auto item : items) {
+    if (item &lt; min) {
+        min = item;
+    }
+}
+return min;
+}
+/*-------------------------------------------------------------------
+returns sum of data values
+*/
+template&lt;typename T&gt;
+&nbsp;&nbsp;&nbsp;requires Number&lt;T&gt;
+T Stats&lt;T&gt;::sum() {
+if(!check()) {
+    throw &quot;Stats is empty&quot;;
+}
+auto sum = T{0};
+for( auto item : items) {
+    sum += item;
+}
+return sum;
+}
+/*-------------------------------------------------------------------
+returns average of data values
+*/
+template&lt;typename T&gt;
+&nbsp;&nbsp;&nbsp;requires Number&lt;T&gt;
+double Stats&lt;T&gt;::avg() {
+if(!check()) {
+    throw &quot;Stats is empty&quot;;
+}
+auto sum = T{0};
+for( auto item : items) {
+    sum += item;
+}
+return double(sum)/double(items.size());
+}
+/*-------------------------------------------------------------------
+displays current contents
+*/
+template&lt;typename T&gt;
+&nbsp;&nbsp;&nbsp;requires Number&lt;T&gt;
+void Stats&lt;T&gt;::show(const std::string& name) {
+if(!check()) {
+    throw &quot;Stats is empty&quot;;
+}
+std::cout &lt;&lt; &quot;&#92;n  &quot; &lt;&lt; name &lt;&lt; &quot; {&#92;n    &quot;;
+auto iter = items.begin();
+std::cout &lt;&lt; *iter++;
+while(iter != items.end()) {
+    std::cout &lt;&lt; &quot;, &quot; &lt;&lt; *iter++;
+    std::cout.flush();
+}
+std::cout &lt;&lt; &quot;&#92;n  }&#92;n&quot;;
+}
+              </code></pre>
+            </div>
+          </first-item>
+          <splitter-bar id="stats-seperator"></splitter-bar>
+          <second-item id="stats-second" style="width:40em; background-color:var(--light);" onclick="obubbleup('stats-first')">
+            <div class="textwrap noflow commentary">
+              <t-b>
+                <h3>Stats&lt;T&gt;:</h3>
+                This class contains a vector of numbers. Its methods<br />
+                compute simple statistics on that collection to demon-<br />
+                strate how arithmethic operations work on generic types.<br />
+                <br />
+                This example illustrates the use of C++ Concepts intro-<br />
+                duced in C++20.<br />
+                <br /><br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br />
+                <h3><span style="font-size:1.25em; font-weight:bold;">&lArr;</span> C++ concept definition:</h3>
+                <br /><br />
+                <h3><span style="font-size:1.25em; font-weight:bold;">&lArr;</span> Stats&lt;T&gt; class</h3>
+                contains a <c-s>std::vector&lt;T&gt;</c-s> of items, and defines methods<br />
+                to carry out numerical operations on them, e.g., <c-s>sum()</c-s>, <c-s>avg()</c-s>, ...<br />
+                <br />
+                The class, and each of its methods requires template para-<br />
+                meter <c-s>T</c-s> to satisfy the Number concept, e.g., it is either<br /> 
+                an integral or floating point type.<br />
+                
+                <h3>Template Compilation:</h3>
+                All templates are compiled in two phases.  The first checks<br />
+                template syntax but does not generate code as the size of<br />
+                items is unknown. The second phase occurs when using code<br />
+                supplies a specific type for <c-s>T</c-s>.  That will succeed<br />
+                if and only if all of the member function invocations on<br />
+                methods of <c-s>T</c-s> are valid for that specific type.<br />
+                <br />
+                So the second compilation phase will succeed for <c-s>Stats&lt;T&gt;</c-s><br />
+                if and only if <c-s>T</c-s> is a numeric type that can be ordered, added, <br />
+                and divided, as those operations
+                are used in the class&apos;s<br />
+                method definitions.<br />
+                <br />
+                During the second phase of compilation any methods that are<br />
+                not used by the program will not be compiled, so no code is<br />
+                generated for them.
+
+              </t-b>
+            </div>
+          </second-item>
+        </splitter-container>
+      </div>
+      <div style="height:0.75em;"></div>
+      <div style="height:1em;"></div>
+      <h3 id="statsdemo">2.3.2 Stats&lt;T&gt; Demonstration</h3>
+      <t-b>
+        Source code is available
+        <a target="_blank" href="https://github.com/JimFawcett/Bits/tree/master/Cpp/Cpp_Objects/src">here</a>.
+        Download the entire Bits repository
+        <a target="_blank" href="https://github.com/JimFawcett/Bits">here</a>.
+      </t-b>
+      <div class="blockSingle" style="padding:0em;">
+        <input type="button" value="RemoteExecute" class="remotebutton" onclick="remote1()" />
+        <splitter-container id="container">
+          <first-item id="statsdemo-first" style="width:52%;">
+            <div class="codewrap" onclick="cbubbleup('statsdemo-first')">
+              <pre style="width:200em;"><code class="language-cpp">/*-- demonstrate custom type Stats&lt;T&gt; --*/
+
+void demo_custom_type_Stats() {
+
+println();
+showNote(&quot;Demo user-defined Stats&lt;T&gt;&quot;, 35);
+
+showOp(&quot;Stats&lt;double&gt; s(v)&quot;, nl);
+std::vector&lt;double&gt; v { 1.0, 2.5, -3.0, 4.5 };
+showSeqColl(v);
+Stats&lt;double&gt; s(v);
+std::cout &lt;&lt; &quot;  min: &quot; &lt;&lt; s.min();
+std::cout &lt;&lt; &quot;, max: &quot; &lt;&lt; s.max();
+std::cout &lt;&lt; &quot;, sum: &quot; &lt;&lt; s.sum();
+std::cout &lt;&lt; &quot;, avg: &quot; &lt;&lt; s.avg() &lt;&lt; std::endl;
+
+showOp(&quot;Stats&lt;double&gt; s2 = s&quot;, nl);
+Stats&lt;double&gt; s2 = s;  // copy construction
+std::cout &lt;&lt; &quot;  min: &quot; &lt;&lt; s2.min();
+std::cout &lt;&lt; &quot;, max: &quot; &lt;&lt; s2.max();
+std::cout &lt;&lt; &quot;, sum: &quot; &lt;&lt; s2.sum();
+std::cout &lt;&lt; &quot;, avg: &quot; &lt;&lt; s2.avg() &lt;&lt; std::endl;
+
+showOp(&quot;Stats&lt;int&gt; s3(u)&quot;, nl);
+std::vector&lt;int&gt; u { 1, 2, 3, 1 };
+showSeqColl(u);
+Stats&lt;int&gt; s3(u);
+std::cout &lt;&lt; &quot;  min: &quot; &lt;&lt; s3.min();
+std::cout &lt;&lt; &quot;, max: &quot; &lt;&lt; s3.max();
+std::cout &lt;&lt; &quot;, sum: &quot; &lt;&lt; s3.sum();
+std::cout &lt;&lt; &quot;, avg: &quot; &lt;&lt; s3.avg() &lt;&lt; std::endl;
+
+/*--------------------------------------------------
+This works without the Number concept, with the
+exception of average. With concept the stats
+library fails to compile because strings are
+not ints or floats.
+*/
+// showOp(&quot;Stats&lt;std::string&gt; ss&quot;, nl);
+// std::vector&lt;std::string&gt; vstr { &quot;ab&quot;, &quot;cd&quot;, &quot;ef&quot; };
+// Stats&lt;std::string&gt; ss(vstr);
+// std::cout &lt;&lt; &quot;  min: &quot; &lt;&lt; ss.min();
+// std::cout &lt;&lt; &quot;, max: &quot; &lt;&lt; ss.max();
+// std::cout &lt;&lt; &quot;, sum: &quot; &lt;&lt; ss.sum();
+//--------------------------------------------------
+// first compile phase:
+//   Stats&lt;T&gt;::avg() passess
+// second compile phase:
+//   Stats&lt;std::string&gt;::avg() fails to compile.
+//   No way to divide sum string by size integer in
+//   std::cout &lt;&lt; &quot;, avg: &quot; &lt;&lt; ss.avg() &lt;&lt; std::endl;
+//   All the other methods compile successfully.
+
+println();
+}
+
+</code></pre>
+            </div>
+          </first-item>
+          <splitter-bar id="statsdemo-seperator"></splitter-bar>
+          <second-item id="statsdemo-second" style="width:40em;">
+            <div class="codewrap" onclick="obubbleup('statsdemo-first')">
+              <pre style="width:200em;"><code class="language-shell">-----------------------------------
+Demo user-defined Stats&lt;T&gt;
+-----------------------------------
+
+--- Stats&lt;double&gt; s(v) ---
+
+Collection&lt;T&gt; [1, 2.5, -3, 4.5]
+min: -3, max: 4.5, sum: 5, avg: 1.25
+
+--- Stats&lt;double&gt; s2 = s ---
+
+min: -3, max: 4.5, sum: 5, avg: 1.25
+
+--- Stats&lt;int&gt; s3(u) ---
+
+Collection&lt;T&gt; [1, 2, 3, 1]
+min: 1, max: 3, sum: 7, avg: 1.75
+
+</code></pre>
+            </div>
+          </second-item>
+        </splitter-container>
+      </div>
+      <div style="height:0.25em;"></div>
+      <h3 id="point">2.4 User-defined Class: Point&lt;T, N&gt;</h3>
+      <t-b>
+        <c-s>Point&lt;T, N&gt;</c-s> is a parameterized class representing points in an
+        N-dimensional hyperspace with a time member indicating the date and time at which
+        something was at that point.
+      </t-b>
+      <h3 id="pointdefn">2.4.1 Point&lt;T, N&gt; Definition</h3>
+      <t-b>
+        The PointsGen.h file defines <c-s>namespace Points</c-s> and <c-s>class Point</c-s>.
+        <c-s>Point</c-s> uses an instance of <c-s>class Time</c-s> defined in Time.h to
+        provide a time-stamp for each point.
+      </t-b>
+      <div class="blockSingle" style="padding:0em;">
+        <input type="button" value="RemoteExecute" class="remotebutton" onclick="remote1()" />
+        <splitter-container id="container">
+          <first-item id="point-first" style="width:52%;">
+            <div class="codewrap" onclick="cbubbleup('point-first')">
+              <pre><code class="language-cpp">/*-------------------------------------------------------------------
+PointsGen.h defines point classe Point&lt;T, N&gt;
+- Point&lt;T, N&gt; represents points with N coordinates of
+unspecified type T and a Time t.
+*/
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;string&gt;
+#include &lt;initializer_list&gt;
+#include &lt;concepts&gt;
+#include &quot;AnalysisGen.h&quot;
+#include &quot;Time.h&quot;
+
+namespace Points {
+
+//using namespace Analysis;
+
+/*-------------------------------------------------------------------
+Point&lt;T, N&gt; class represents a point in an N-Dimensional hyperspace.
+It uses a template parameter to support a variety of coordinate
+types, and uses a vector to hold any finite number of
+coordinates, specified by N.
+
+It also carries a Time t instance which conceptually is the time
+at which something was at that point in space. Time is a class
+defined for this demonstration in Time.h.
+
+All its special members, ctors, assignment, ... with the exception
+of constructor Point(), are declared default to indicate to a maintainer
+that compiler generated methods are correct and should not be provided.
+
+It does not provide an iterator nor begin() and end() members.
+Those will added in the iteration bit.
+*/
+template&lt;typename T, const size_t N&gt;
+class Point {
+public:
+Point();                                      // default ctor
+Point(std::initializer_list&lt;T&gt; il);           // construct from list
+Point(const Point& pt) = default;             // copy ctor
+Point(Point&& pt) = default;                  // move ctor
+Point& operator=(const Point& pt) = default;  // copy assignment
+Point& operator=(Point&& pt) = default;       // move assignemnt
+~Point() = default;                           // dtor
+
+void init(const std::vector&lt;T&gt;& v);
+
+std::string timeToString();
+void updateTime();
+Time& time();
+const size_t size() const;
+T& operator[](size_t index);                  // index oper
+const T operator[](size_t index) const;       // const index oper
+
+std::vector&lt;T&gt;& coords() { return coord; }    // accessor
+
+void show(const std::string& name);           // display contents
+size_t& left() { return _left; }              // display indent
+size_t& width() { return _width; }            // display width
+private:
+std::vector&lt;T&gt; coord;
+Time tm;
+size_t _left = 2;   // default display indent
+size_t _width = 7;  // default display row width
+};
+/*-----------------------------------------------
+Point&lt;T, N&gt; constructor with size Template
+parameter
+*/
+template&lt;typename T, size_t N&gt;
+Point&lt;T, N&gt;::Point()
+: tm(Time()) {
+for(size_t i=0; i&lt;N; i++) {
+  coord.push_back(T{0});
+}
+}
+/*-----------------------------------------------
+Fill coor with elements from initializer list li
+- if li is smaller than N then fill remainder with
+  default values of T
+- if li is larger use first N elements of li
+*/
+template&lt;typename T, size_t N&gt;
+Point&lt;T, N&gt;::Point(std::initializer_list&lt;T&gt; il)
+: tm(Time()) {
+size_t sz = std::min(N, il.size());
+size_t i = 0;
+for(auto item : il) {
+  coord.push_back(item);
+  if(++i == sz) {
+    break;
+  }
+}
+for(size_t i = il.size(); i&lt;N; i++) {
+  coord.push_back(T{0});
+}
+}
+/*---------------------------------------------
+Always returns N
+*/
+template&lt;typename T, size_t N&gt;
+const size_t Point&lt;T, N&gt;::size() const {
+return coord.size();
+}
+/*---------------------------------------------
+index returns mutable value
+*/
+template&lt;typename T, size_t N&gt;
+T& Point&lt;T, N&gt;::operator[](size_t index) {
+if (index &lt; 0 || coord.size() &lt;= index) {
+  throw &quot;Point&lt;T, N&gt; indexing error&quot;;
+}
+return coord[index];
+}
+/*---------------------------------------------
+index returns immutable value
+*/
+template&lt;typename T, size_t N&gt;
+const T Point&lt;T, N&gt;::operator[](size_t index) const {
+if (index &lt; 0 || coord.len() &lt;= index) {
+  throw &quot;Point&lt;T, N&gt; indexing error&quot;;
+}
+return coord[index];
+}
+/*-----------------------------------------------
+Fill coor with elements from vector v
+- if v is smaller fill remainder with default
+  values of T
+- if v is larger use first N elements of v
+*/
+template&lt;typename T, size_t N&gt;
+void Point&lt;T, N&gt;::init(const std::vector&lt;T&gt;& v) {
+size_t sz = std::min(N, v.size());
+for(size_t i=0; i&lt;sz; i++) {
+  coord[i] = v[i];
+}
+for(size_t i = v.size(); i&lt;N; i++) {
+  coord[i] = T{0};
+}
+}
+/*---------------------------------------------
+returns string datetime
+*/
+template&lt;typename T, size_t N&gt;
+std::string Point&lt;T, N&gt;::timeToString() {
+std::string ts = tm.toString();
+return ts;
+}
+/*---------------------------------------------
+set time to current time
+*/
+template&lt;typename T, size_t N&gt;
+void Point&lt;T, N&gt;::updateTime() {
+tm = std::time(0);
+}
+/*---------------------------------------------
+returns current number of seconds in clock's
+epoch
+*/
+template&lt;typename T, size_t N&gt;
+Time& Point&lt;T, N&gt;::time() {
+return tm;
+}
+/*-----------------------------------------------
+PointtN&lt;T&gt; display function
+*/
+template&lt;typename T, size_t N&gt;
+void Point&lt;T, N&gt;::show(const std::string& name) {
+std::cout &lt;&lt; &quot;&#92;n&quot; &lt;&lt; indent(_left) &lt;&lt; name &lt;&lt; &quot;: &quot; &lt;&lt; &quot;Point&lt;T, N&gt;&quot;;
+std::cout &lt;&lt; &quot; {&#92;n&quot;;
+std::cout &lt;&lt; fold(coord, _left + 2, _width);
+std::cout &lt;&lt; indent(_left) &lt;&lt; &quot;}&quot;;
+std::cout &lt;&lt; &quot;&#92;n&quot; &lt;&lt; indent(_left) &lt;&lt; tm.toString() &lt;&lt; std::endl;
+}
+/*-----------------------------------------------
+Overload operator&lt;&lt; required for
+showType(Point&lt;T, N&gt; t, const std::string& nm)
+*/
+template&lt;typename T, size_t N&gt;
+std::ostream& operator&lt;&lt;(std::ostream& out, Point&lt;T, N&gt;& t2) {
+out &lt;&lt; &quot;&#92;n&quot; &lt;&lt; indent(t2.left()) &lt;&lt; &quot;Point&lt;T, N&gt;&quot;;
+out &lt;&lt; &quot; {&#92;n&quot;;
+out &lt;&lt; fold(t2.coords(), t2.left() + 2, t2.width());
+out &lt;&lt; indent(t2.left()) &lt;&lt; &quot;}&quot;;
+return out;
+}
+}</code></pre>
+            </div>
+          </first-item>
+          <splitter-bar id="point-seperator"></splitter-bar>
+          <second-item id="point-second" style="width:40em; background-color:var(--light);" onclick="obubbleup('point-first')">
+            <div class="textwrap noflow commentary">
+              <h3>Concept:</h3>
+              <t-b>
+                A <c-s>Point&lt;T, N&gt;</c-s> instance could represent the state of some<br />
+                weather event at a given time, e.g., latitude, longitude, series<br />
+                of altitudes, wind velocities, dewpoint, ...
+              </t-b>
+              <t-b>
+                A sequence of instances could represent evolution of a complex<br />
+                chemical process, e.g. temperature, pressure, sequence of con-<br />
+                centrations of molecules, ...
+              </t-b>
+
+              <h3>Purpose:</h3>
+              <t-b>
+                This example illustrates use of both type <c-s>T</c-s> and numeric <c-s>N</c-s><br />
+                template parameters. <c-s>N</c-s> is the fixed number of elements of type<br />
+                <c-s>T</c-s> in point instances.
+              </t-b>
+              <t-b>
+                Each point also contains a Time instance, representing a date-<br />
+                time stamp for the point. Time is a type defined in the file<br />
+                Time.h. An application can extract both date and time inform-<br />
+                ation for each point.
+              </t-b>
+              <br /><br /><br /><br /><br /><br /><br /><br />
+              <br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
+
+              <h3><span style="font-size:1.25em; font-weight:bold;">&lArr;</span> Operations:</h3>
+              <t-b>
+                The <c-s>Point&lt;T, N&gt;</c-s> class declares all of the special methods.<br />
+                The void constructor <c-s>Point&lt;T, N&gt;()</c-s> initializes its <c-s>T</c-s> members<br />
+                to <c-s>T{0}</c-s> default values and sets <c-s>tm</c-s> to the current date and time.
+              </t-b>
+              <t-b>
+                It also declares a constructor:<br />
+                &nbsp;&nbsp;&nbsp;<c-s>Point&lt;T,&nbsp;N&gt;(std::initializer_list&lt;T&gt;)</c-s><br />
+                that supports the syntax:<br />
+                &nbsp;&nbsp;&nbsp;<c-s>Point&lt;double, 4&gt; p { 1.0, 1.5, 2.0, 1.5 };</c-s><br />
+                and index operators for reading and writing specific coordinate<br />
+                values:<br />
+                &nbsp;&nbsp;&nbsp;<c-s>T& operator[](size_t index);</c-s><br />
+                &nbsp;&nbsp;&nbsp;<c-s>const T operator[](size_t index);</c-s><br />
+                using syntax:<br />
+                &nbsp;&nbsp;&nbsp;<c-s>p[0] = 1.5;</c-s><br />
+                &nbsp;&nbsp;&nbsp;<c-s>const double d2 = p[1];</c-s><br />
+                The first returns a reference to <c-s>p</c-s>&apos;s value at index 0 and assigns<br />
+                it the value 1.5. The second simply returns a copy of the value<br />
+                at index 1.
+              </t-b>
+              <t-b>
+                A <c-s>Point</c-s>&apos;s datetime stamp can be retrieved using <c-s>Time& time()</c-s><br />
+                and reset to current time with <c-s>void updateTime()</c-s>.
+              </t-b>
+            </div>
+          </second-item>
+        </splitter-container>
+      </div>
+      <div style="height:0.75em;"></div>
+
+      <div style="height:1em;"></div>
+      <h3 id="pointdemo">2.4.2 Demonstrate Point&lt;T, N&gt;</h3>
+      <t-b>
+        Source code using <c-s>Point&lt;T, N&gt;</c-s> is shown here along with output generated
+        when executed.
+      </t-b>
+      <div class="blockSingle" style="padding:0em;">
+        <input type="button" value="RemoteExecute" class="remotebutton" onclick="remote1()" />
+        <splitter-container id="container">
+          <first-item id="pointdemo-first" style="width:52%;">
+            <div class="codewrap" onclick="cbubbleup('pointdemo-first')">
+              <pre style="width:200em;"><code class="language-cpp">/*-- demonstrate use of Point type --*/
+
+void demo_custom_type_Point() {
+using namespace Analysis;
+using namespace Points;
+
+println();
+showNote(&quot;Demo user-defined Point&lt;T, N&gt;&quot;, 40);
+
+/*-- demonstrate Point&lt;double 3&gt; initialization lists --*/
+showOp(&quot;Point&lt;double, 3&gt; p1 {1.0, 1.5, 2.0}&quot;);  // equal to N
+Point&lt;double, 3&gt; p1 {1.0, 1.5, 2.0};
+p1.show(&quot;p1&quot;);
+std::cout &lt;&lt; &quot;&#92;n  p1[1] = &quot; &lt;&lt; p1[1];           // indexing
+std::cout &lt;&lt; &quot;&#92;n  p1.time().day() = &quot;
+        &lt;&lt; p1.time().day();
+std::cout &lt;&lt; &quot;&#92;n  p1.time().seconds() = &quot;
+        &lt;&lt; p1.time().seconds() &lt;&lt; &quot;&#92;n&quot;;
+showOp(&quot;Point&lt;double, 3&gt; p2 {1.0, 1.5}&quot;);
+Point&lt;double, 3&gt; p2 {1.0, 1.5};                 // less than N
+p2.show(&quot;p2&quot;);
+showOp(&quot;Point&lt;double, 3&gt; p3 {1.0, 1.5, 2.0, 2.5}&quot;);
+Point&lt;double, 3&gt; p3 {1.0, 1.5, 2.0, 2.5};       // greater than N
+p3.show(&quot;p3&quot;);
+std::cout &lt;&lt; &quot;&#92;n  p3.timeToString():&#92;n    &#92;&quot;&quot;
+        &lt;&lt; p3.timeToString() &lt;&lt; &quot;&#92;&quot;&#92;n&quot;;
+showOp(&quot;Point&lt;int, 10&gt; p3 { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }&quot;);
+Point&lt;int, 10&gt; p4 { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+p4.show(&quot;p4&quot;);
+}
+</code></pre>
+            </div>
+          </first-item>
+          <splitter-bar id="pointdemo-seperator"></splitter-bar>
+          <second-item id="pointdemo-second" style="width:48%;">
+            <div class="codewrap" onclick="obubbleup('pointdemo-first')">
+              <pre style="width:200em;"><code class="language-shell">----------------------------------------
+Demo user-defined Point<T, N>
+----------------------------------------
+
+--- Point<double, 3> p1 {1.0, 1.5, 2.0} ---
+
+p1: Point<T, N> {
+1, 1.5, 2
+}
+Thu May  9 20:10:50 2024 local time zone
+
+p1[1] = 1.5
+p1.time().day() = 9
+p1.time().seconds() = 50
+
+--- Point<double, 3> p2 {1.0, 1.5} ---
+
+p2: Point<T, N> {
+1, 1.5, 0
+}
+Thu May  9 20:10:50 2024 local time zone
+
+--- Point<double, 3> p3 {1.0, 1.5, 2.0, 2.5} ---
+
+p3: Point<T, N> {
+1, 1.5, 2
+}
+Thu May  9 20:10:50 2024 local time zone
+
+p3.timeToString():
+"Thu May  9 20:10:50 2024 local time zone"
+
+--- Point<int, 10> p3 { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 } ---
+
+p4: Point<T, N> {
+1, 2, 3, 4, 5, 6, 7,
+8, 9, 10
+}
+Thu May  9 20:10:50 2024 local time zone
+
+              </code></pre>
+            </div>
+          </second-item>
+        </splitter-container>
+      </div>
+      <div style="height:1em;"></div>
+      <h3 id="genfunc">2.5 Demo Generic Functions</h3>
+      <t-b>
+        Generic functions are code generators; for each unique instantiated template parameter list
+        the compiler generates a function, mapping the generic parameters to the parameters
+        from the instantiated concrete types.
+        <c-s style="display:block; padding:0.0em 0.0em; font-size:0.95em;white-space:pre">
+          template&lt;T&gt;
+          f(T t) ----+--> f(int i)
+                         |
+                         +--> f(double d)
+        </c-s>
+      </t-b>
+      <h3 id="gfdef">2.5.1 Generic Function Definitions</h3>
+      <t-b>
+        The code in this section illustrates how template resources are defined. Often template
+        definitions will appear in a library, as is the case for <c-s>Point&lt;T, N&gt;</c-s>,
+        which resides in &quot;PointGen.h&quot.
+      </t-b>
+      <div class="blockSingle" style="padding:0em;">
+        <input type="button" value="RemoteExecute" class="remotebutton" onclick="remote1()" />
+        <splitter-container id="container">
+          <first-item id="genfun-first" style="width:52%;">
+            <div class="codewrap">
+              <pre onclick="cbubbleup('genfun-first')" style="width:200em;"><code class="language-cpp">/*---------------------------------------------------------
+Generic Function Definitions
+*/
+/*---------------------------------------------------------
+showType(T t, ...)
+- Display calling name, static class, and size
+- requires DisplayParams
+*/
+template&lt;typename T&gt;
+void showType(T t, const std::string &callname, const std::string& suffix) {
+std::cout &lt;&lt; &quot;&#92;n  &quot; &lt;&lt; callname;          // show name at call site
+std::cout &lt;&lt; &quot; type: &quot;
+        &lt;&lt; truncate(DisplayParams.trunc,typeid(t).name());  // show type
+std::cout &lt;&lt; &quot;&#92;n  size:  &quot; &lt;&lt; sizeof(t);  // show size on stack
+std::cout &lt;&lt; suffix;
+}
+/*-------------------------------------------------------
+show sequential collection
+- requires integer indexer and size() function
+- works for any sequential STL collection
+*/
+template&lt;typename C&gt;
+void showSeqColl(const C& c) {
+std::cout &lt;&lt; &quot;  Collection&lt;T&gt; [&quot;;
+std::cout &lt;&lt; c[0];
+for(size_t i=1; i&lt;c.size(); ++i) {
+std::cout &lt;&lt; &quot;, &quot; &lt;&lt; c[i];
+}
+std::cout &lt;&lt; &quot;]&quot; &lt;&lt; std::endl;
+}
+/*-------------------------------------------------------
+show associative collection
+- requires iterator
+- elements must be std::pair&lt;Key, Value&gt;
+- works for any associative STL collection
+*/
+template&lt;typename C&gt;
+void showAssocColl(const C& c) {
+std::cout &lt;&lt; &quot;  Collection&lt;K,V&gt; {&#92;n    &quot;;
+bool first = true;
+for(const auto& pair : c) {
+if(first) {
+  std::cout &lt;&lt; &quot;{&quot; &lt;&lt; pair.first &lt;&lt; &quot;, &quot; &lt;&lt; pair.second &lt;&lt; &quot;}&quot;;
+  first = false;
+}
+else {
+  std::cout &lt;&lt; &quot;, {&quot; &lt;&lt; pair.first &lt;&lt; &quot;, &quot; &lt;&lt; pair.second &lt;&lt; &quot;}&quot;;
+}
+}
+std::cout &lt;&lt; &quot;&#92;n  }&#92;n&quot;;
+}
+
+/*-----------------------------------------------
+Helper function for formatting output
+- truncates line to N chars and adds ellipsis
+*/
+inline std::string truncate(size_t N, const char* pStr) {
+std::string temp(pStr);
+if(temp.length() &gt; N) {
+temp.resize(N);
+return temp + &quot;...&quot;;
+}
+return temp;
+}
+/*-----------------------------------------------
+Helper function for formatting output
+- generates string of n blanks to offset text
+*/
+inline std::string indent(size_t n) {
+return std::string(n, ' ');
+}
+/*-----------------------------------------------
+Helper function for formatting output
+- folds lines after width elements
+- used only in Point&lt;T,N&gt;::show()
+*/
+template&lt;typename T&gt;
+std::string fold(std::vector&lt;T&gt;& v, size_t left, size_t width) {
+std::stringstream out(&quot;&#92;n&quot;);
+out &lt;&lt; indent(left);
+for(size_t i=0; i&lt;v.size(); ++i) {
+if((i % width) == 0 && i != 0 && i != width - 1) {
+  out &lt;&lt; &quot;&#92;n&quot; &lt;&lt; indent(left);
+}
+if(i &lt; v.size() - 1) {
+  out &lt;&lt; v[i] &lt;&lt; &quot;, &quot;;
+}
+else {
+  out &lt;&lt; v[i] &lt;&lt; &quot;&#92;n&quot;;
+  break;
+}
+}
+return out.str();
+}
+/*-----------------------------------------------
+Helper function for formatColl
+- defines out &lt;&lt; std::pair&lt;K,V&gt;
+- used in formatColl for associative containers
+*/
+template&lt;typename K, typename V&gt;
+std::stringstream& operator&lt;&lt;(
+std::stringstream& out, const std::pair&lt;K,V&gt;& p
+) {
+out &lt;&lt; &quot;{&quot; &lt;&lt; p.first &lt;&lt; &quot;, &quot; &lt;&lt; p.second &lt;&lt; &quot;}&quot;;
+return out;
+}
+/*-----------------------------------------------
+Format output for Collection types
+- any type with iterator, begin(), and end()
+like all the STL containers.
+- elements need overload for operator&lt;&lt; as
+implemented above
+- folds into rows with width elements
+- will replace folding logic with fold(...)
+  eventually
+*/
+template&lt;typename Coll&gt;
+std::string formatColl(
+const Coll& c, const std::string& nm, const std::string& suffix,
+size_t left, size_t width
+) {
+std::stringstream out;
+out &lt;&lt; indent(left) &lt;&lt; nm &lt;&lt; &quot;: {&#92;n&quot; &lt;&lt; indent(left + 2);
+size_t i = 0;
+for(const Coll::value_type& elem : c) {
+if((i % width) == 0 && i != 0 && i != width - 1) {
+  out &lt;&lt; &quot;&#92;n&quot; &lt;&lt; indent(left + 2);
+}
+if(i &lt; c.size() - 1) {
+  out &lt;&lt; elem &lt;&lt; &quot;, &quot;;
+}
+else {
+  out &lt;&lt; elem &lt;&lt; &quot;&#92;n&quot; &lt;&lt; indent(left) &lt;&lt; &quot;}&quot; &lt;&lt; suffix;
+  break;
+}
+++i;
+}
+return out.str();
+}
+/*-----------------------------------------------
+Format output for scalar types like primitives
+*/
+template&lt;typename T&gt;
+std::string formatScalar(
+const T& t, const std::string& nm, const std::string& suffix,
+size_t left
+) {
+std::stringstream out;
+out &lt;&lt; &quot;&#92;n&quot; &lt;&lt; indent(left) &lt;&lt; nm &lt;&lt; &quot;: &quot; &lt;&lt; t &lt;&lt; suffix;
+return out.str();
+}
+/*-----------------------------------------------
+Format output for strings
+- indent and embed in quotation marks
+*/
+template&lt;typename T&gt;
+std::string formatString(
+const T& t, const std::string& nm, const std::string& suffix,
+size_t left
+) {
+std::stringstream out;
+out &lt;&lt; &quot;&#92;n&quot; &lt;&lt; indent(left) &lt;&lt; nm &lt;&lt; &quot;: &#92;&quot;&quot; &lt;&lt; t &lt;&lt; &quot;&#92;&quot;&quot; &lt;&lt; suffix;
+return out.str();
+}
+/*-----------------------------------------------
+Defines is_iterable trait
+- uses template metaprogramming, e.g., user code
+that evaluates during compilation
+- detects STL containers and user-defined types
+that provide iteration
+https://stackoverflow.com/questions/13830158/check-if-a-variable-type-is-iterable
+*/
+template &lt;typename T, typename = void&gt;
+struct is_iterable : std::false_type {};
+
+// this gets used only when we can call
+// std::begin() and std::end() on that type
+template &lt;typename T&gt;
+struct is_iterable&lt;
+T,
+std::void_t
+&lt;decltype(std::begin(std::declval&lt;T&gt;())),
+decltype(std::end(std::declval&lt;T&gt;()))&gt;
+&gt; : std::true_type {};
+
+template &lt;typename T&gt;
+constexpr bool is_iterable_v = is_iterable&lt;T&gt;::value;
+
+/*-----------------------------------------------
+Displays almost everything.
+- strings work better with formatString(...)
+https://www.cppstories.com/2018/03/ifconstexpr/
+Iteration is discussed in Bit Cpp_iter
+*/
+template&lt;typename T&gt;
+std::string format(
+const T& t, const std::string& nm, const std::string& suffix,
+size_t left, size_t width
+) {
+if constexpr(is_iterable_v&lt;T&gt;) {  // decision at compile-time
+return formatColl(t, nm, suffix, left, width);
+}
+else {
+return formatScalar(t, nm, suffix, left);
+}
+}
+</code></pre>
+            </div>
+          </first-item>
+          <splitter-bar id="genfun-seperator"></splitter-bar>
+          <second-item id="genfun-second" style="width:48%;">
+            <div class="textwrap noflow commentary" onclick="obubbleup('genfun-first')">
+              <h4>Generic Functions:</h4>
+              <br /><br /><br /><br /><br /><br /><br />
+              ---------------------------------------<br />
+              &nbsp;&nbsp;&nbsp;<c-s>showType(T t, ...)</c-s><br />
+              ---------------------------------------<br />
+              Arguments:<br />
+              - generic type <c-s>T</c-s>, specified in using code<br />
+              - string callname, name of t in caller&apos;s scope:<br />
+              - string suffix, usually either &apos; &apos; or &apos;\n&apos;<br />
+              Operation:<br />
+              - displays callname, truncated version of<br />
+              &nbsp;&nbsp;<c-s>typeid(t).name()</c-s>, and suffix<br />
+              <br />
+              <br /><br /><br />
+              ---------------------------------------<br />
+              &nbsp;&nbsp;&nbsp;<c-s>showSeqColl(const C& c)</c-s><br />
+              ---------------------------------------<br />
+              Arguments:<br />
+              - generic type <c-s>C</c-s>, a collection type<br />
+              Operation displays:<br />
+              - prefix<br />
+              - first element value <c-s>c[0]</c-s><br />
+              - comma followed by next element value <c-s>c[i]</c-s>, ...<br />
+              - suffix<br />
+              Requires of collection:<br />
+              - index operator<br />
+              - <c-s>size()</c-s> function<br />
+              - all STL containers have these<br />
+              <br />
+              --------------------------------------------<br />
+              &nbsp;&nbsp;&nbsp;<c-s>showAssocColl(const C& c)</c-s><br />
+              --------------------------------------------<br />
+              Arguments:<br />
+              - generic type <c-s>C</c-s>, a collection type<br />
+              Operation displays:<br />
+              - prefix<br />
+              - first element value <c-s>{ pair.first, pair.second }</c-s><br />
+              - comma followed by next element value, ...<br />
+              - suffix<br />
+              - pair types are inferred from collection type<br />
+              Requires of collection:<br />
+              - iterator used in range-for<br />
+              - elements are <c-s>std::pair&lt;T1, T2&gt;</c-s><br />
+              - all STL containers have these<br />
+              - element types must have a <c-s>std::operator&lt;&lt;(...)</c-s><br />
+              &nbsp;&nbsp;overload<br />
+              <br /><br /><br /><br />
+
+              --------------------------------------------------------<br />
+              &nbsp;&nbsp;&nbsp;<c-s>truncate(size_t N, const char* pStr)</c-s><br />
+              --------------------------------------------------------<br />
+              Arguments:<br />
+              - number of characters to retain in truncated string<br />
+              - literal string<br />
+              <br /><br /><br /><br /><br /><br /><br />
+              <br /><br /><br /><br /><br /><br /><br /><br /><br />
+
+              --------------------------------------------<br />
+              &nbsp;&nbsp;&nbsp;<c-s>
+fold(<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;std::vector&lt;T&gt;& v,<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;size_t left, size_t width<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br />
+</c-s>
+              --------------------------------------------<br />
+              Arguments:
+              - collection of elements to be folded into rows<br />
+              - left indentation in spaces<br />
+              - width of each row<br />
+              Operations:<br />
+              - creates in-memory <c-s>stringstream</c-s><br />
+              - pushes left indent <c-s>string</c-s><br />
+              - pushes vector elements into <c-s>stringstream</c-s><br />
+              - inserts newline at end of row, determined by width<br />
+              - inserts element followed by comma if not last<br />
+              - ...<br />
+              - inserts last element<br />
+              - returns stringstreams internal string<br />
+              <br /><br /><br /><br /><br /><br />
+
+              ---------------------------------------<br />
+              <c-s>
+                &nbsp;&nbsp;&nbsp;operator&lt;&lt;(<br />
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;std::stringstream& out,<br />
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const std::pair&lt;K,V&gt;& p<br />
+                &nbsp;&nbsp;&nbsp;)<br />
+              </c-s>
+              ---------------------------------------<br />
+              Arguments:<br />
+              - std::stringstream collects output<br />
+              - std::pair&lt;K,V&gt is argument to send to output<br />
+              Operations:<br />
+              - push pair into output<br />
+              - return output<br />
+              ---------------------------------------<br />
+              &nbsp;&nbsp;&nbsp;<c-s>
+                formatColl(
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const Coll& c,
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const std::string& nm,
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const std::string& suffix,
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;size_t left,
+                &nbsp;&nbsp;&nbsp;size_t width
+                &nbsp;&nbsp;&nbsp;)<br />
+              </c-s>
+              ---------------------------------------<br />
+              Arguments:
+              - collection type c
+              - caller name nm
+              - suffix string ends output
+              - number of indent spaces
+              - number of elements per row
+              Operations:
+              - creates stringstream out
+              - sends indent and name to out
+              - sends elements to output
+              - sends value followed by comma for all but last
+              - pushes newline at end of row
+              - pushes suffix to output
+              - returns stringstream&apos;s internal string
+
+
+
+              ---------------------------------------
+              formatScalar(
+              const T&t,
+              const std::string& nm,
+              const std::string& suffix,
+              size_t left
+              )
+              ---------------------------------------
+              Arguments:
+              - const T&t scalar, e.g., single item
+              - const std::string& nm, caller name
+              - const std::string& suffix, last thing sent to ouput
+              - indent in spaces
+              Operations:
+              - creates stringstream out
+              - pushes indent, name, value of t, and suffix
+              - returns out&apos;s internal string
+
+              ---------------------------------------
+              formatString(
+              const T&t,
+              const std::string& nm,
+              const std::string& suffix,
+              size_t left
+              )
+              ---------------------------------------
+
+              Same as formatScalar except value t is enclosed
+              with quotes.
+
+
+              ---------------------------------------
+              is_iterable_v&lt;T&gt;
+              ---------------------------------------
+              Template metaprogramming construct
+              tests if T defines begin() and end()
+              methods.
+
+              That is true of all STL containers and
+              many user-defined containers
+
+              This trait enables checking at compile-time
+              if a collection can be iterated, as needed
+              by range for.
+
+
+
+
+
+
+
+
+
+              ---------------------------------------
+              format(
+              const T& t,
+              const std::string& nm,
+              const std::string& suffix,
+              size_t left,
+              size_t width
+              )
+              ---------------------------------------
+              Decides at compile-time, using is_iterable_v&lt;T&gt;,
+              whether to use formatColl or formatScalar.
+
+              This function can format a large variety of scalars
+              and collections, through the power of C++ generics.
+
+
+
+
+            </div>
+          </second-item>
+        </splitter-container>
+      </div>
+      <div style="height:1em;"></div>
+      <h3 id="gfdemo">2.5.2 Generic Functions Demonstration</h3>
+      <t-b>
+        The examples below illustrate how generic functions are instantiated and used
+        in application code. Notice that some of these functions are powerful; they can be
+        passed many different types.  See especially the function <c-s>format(const T& t, ...)</c-s>
+        which can display scalars and any collection that obeys the Standard Template Library (STL) rules.
+      </t-b>
+      <div class="blockSingle" style="padding:0em;">
+        <input type="button" value="RemoteExecute" class="remotebutton" onclick="remote1()" />
+        <splitter-container id="container">
+          <first-item id="genfundemo-first" style="width:52%;">
+            <div class="codewrap">
+              <pre onclick="cbubbleup('genfundemo-first')" style="width:200em;"><code class="language-cpp">/*---------------------------------------------------------
+Demonstrate functions
+*/
+void demo_generic_functions() {
+
+showNote(&quot;demo generic functions&quot;, nl);
+
+showOp(&quot;showType for std::string&quot;);
+std::string s = &quot;a string&quot;;
+showType(s, &quot;s&quot;, nl);
+
+showOp(&quot;showType for std::vector&quot;);
+std::vector&lt;int&gt; v {1, 2, 3, 2, 1, 0, -1, -2};
+showType(v, &quot;v&quot;, nl);
+
+/*-------------------------------------------------------
+showSeqColl works for any collection with
+iterator, integer indexing, and size() function
+*/
+showOp(&quot;showSeqColl for std::string&quot;, nl);
+showSeqColl(s);
+
+showOp(&quot;showSeqColl for std::vector&quot;, nl);
+showSeqColl(v);
+
+/*-------------------------------------------------------
+showAssocColl works for any collection with
+interator and std::pair&lt;key, Value&gt; elements
+*/
+showOp(&quot;showAssocColl for std::map&quot;, &quot;&#92;n&quot;);
+std::map&lt;std::string, int&gt; m {
+{&quot;zero&quot;, 0}, {&quot;one&quot;, 1}, {&quot;two&quot;, 2}, {&quot;three&quot;, 3},
+{&quot;four&quot;, 4}, {&quot;five&quot;, 5}
+};
+showAssocColl(m);
+
+showOp(&quot;showAssocColl for std::unordered_map&quot;, &quot;&#92;n&quot;);
+std::unordered_map&lt;std::string, int&gt; um1 {
+{&quot;zero&quot;, 0}, {&quot;one&quot;, 1}, {&quot;two&quot;, 2}, {&quot;three&quot;, 3},
+{&quot;four&quot;, 4}, {&quot;five&quot;, 5}
+};
+showAssocColl(um1);
+
+/*-------------------------------------------------------
+Analysis::format works for any collection with
+interator and std::pair&lt;key, Value&gt; elements
+*/
+showOp(&quot;Analysis::format for int&quot;);
+int mol = 42;
+std::cout &lt;&lt; Analysis::format(42, &quot;mol&quot;, &quot;&#92;n&quot;);
+// need to distinguish Analysis::format from std::format
+
+showOp(&quot;Analysis::format for std::string&quot;);
+std::cout &lt;&lt; Analysis::format(s, &quot;s&quot;, &quot;&#92;n&quot;);
+
+showOp(&quot;Analysis::format for std::vector&quot;);
+std::cout &lt;&lt; Analysis::format(v, &quot;v&quot;, &quot;&#92;n&quot;, 2, 5);
+
+showOp(&quot;Analysis::format for std::map&quot;);
+std::cout &lt;&lt; Analysis::format(m, &quot;m&quot;, &quot;&#92;n&quot;, 2, 4);
+
+showOp(&quot;Analysis::format for std::unordered_map&quot;);
+std::unordered_map&lt;std::string, int&gt; um2 {
+{&quot;zero&quot;, 0}, {&quot;one&quot;, 1}, {&quot;two&quot;, 2}, {&quot;three&quot;, 4},
+{&quot;four&quot;, 4}, {&quot;five&quot;, 5}
+};
+std::cout &lt;&lt; Analysis::format(um2, &quot;um&quot;, &quot;&#92;n&quot;, 2, 4);
+}
+</code></pre>
+            </div>
+          </first-item>
+          <splitter-bar id="genfundemo-seperator"></splitter-bar>
+          <second-item id="genfundemo-second" style="width:48%;">
+            <div class="codewrap" onclick="obubbleup('genfundemo-first')">
+              <pre style="width:200em;"><code class="language-terminal">
+
+
+
+--------------------------------------------------
+demo generic functions
+--------------------------------------------------
+
+--- showType for std::string ---
+s type: class std::basic_string&lt;char,struct std:...
+size:  28
+
+--- showType for std::vector ---
+v type: class std::vector&lt;int,class std::allocat...
+size:  16
+
+--- showSeqColl for std::string ---
+Collection&lt;T&gt; [a,  , s, t, r, i, n, g]
+
+--- showSeqColl for std::vector ---
+Collection&lt;T&gt; [1, 2, 3, 2, 1, 0, -1, -2]
+
+--- showAssocColl for std::map ---
+Collection&lt;K,V&gt; {
+{five, 5}, {four, 4}, {one, 1}, {three, 3}, {two, 2}, {zero, 0}
+}
+
+--- showAssocColl for std::unordered_map ---
+Collection&lt;K,V&gt; {
+{three, 3}, {zero, 0}, {one, 1}, {two, 2}, {five, 5}, {four, 4}
+}
+
+--- Analysis::format for int ---
+mol: 42
+
+--- Analysis::format for std::string ---  s: {
+a,  , s, t, r, i, n,
+g
+}
+
+--- Analysis::format for std::vector ---  v: {
+1, 2, 3, 2, 1,
+0, -1, -2
+}
+
+--- Analysis::format for std::map ---  m: {
+{five, 5}, {four, 4}, {one, 1}, {three, 3},
+{two, 2}, {zero, 0}
+}
+
+--- Analysis::format for std::unordered_map ---  um: {
+{three, 4}, {zero, 0}, {one, 1}, {two, 2},
+{five, 5}, {four, 4}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</code></pre>
+            </div>
+          </second-item>
+        </splitter-container>
+      </div>
+      <div style="height:1em;"></div>
+      <h3 id="time">2.6 Time and Timer</h3>
+      <t-b>
+        An instance of the <c-s>Time</c-s> class is used by <c-s>Point&lt;T, N&gt;</c-s> to provide datetime
+        stamp services, but has additional calendar services that will be useful for other
+        applications.
+      </t-b>
+      <details>
+        <summary class="darkItem">Time&nbsp;&nbsp;</summary>
+        <h3>2.6.1 Time Definition</h3>
+        <t-b>
+          The <c-s>Time</c-s> class is a non-generic type that captures and parses date and time.
+          It can display its results in either local time or GMT.
+          It has methods to retreive the current datetime stamp and individual components like
+          <c-s>day()</c-s> and <c-s>hour()</c-s>.
+        </t-b>
+        <div class="blockSingle" style="padding:0em;">
+          <input type="button" value="RemoteExecute" class="remotebutton" onclick="remote1()" />
+          <splitter-container id="container">
+            <first-item id="timedef-first" style="width:52%;">
+              <div class="codewrap" onclick="cbubbleup('timedef-first')">
+                <pre><code class="language-cpp">/*-------------------------------------------------------------------
+Time.h defines Time class to manage datetime strings
+- Uses chrono to implement class for updateable time instances
+
+Note: Add callable function for end of time period
+*/
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;chrono&gt;
+#include &lt;ctime&gt;
+
+namespace Points {
+
+/*---------------------------------------------
+Time manages calendar times
+*/
+class Time {
+public:
+  Time();
+  time_t getTime();
+  tm getLocalTime();
+  tm getGMTTime();
+  std::string getTimeZone();
+  std::string toString();
+  size_t year();
+  size_t month();
+  size_t day();
+  size_t hour();
+  size_t minutes();
+  size_t seconds();
+private:
+  std::chrono::time_point&lt;std::chrono::system_clock&gt; tp;
+  std::tm calTime;
+  std::string dateTimeSuffix;
+};
+/*-----------------------------------------------
+Construct instance holding time_point for
+std::chrono::system_clock's epoch
+- epoch is number of seconds since 1 January 1970 UTC
+- epoch may vary with clock, e.g.,
+  system_clock, high_resolution_clock
+- time_point is a structure holding chrono::duration
+  for the clock's epoch
+*/
+Time::Time() {
+tp = std::chrono::system_clock::now();
+calTime = getLocalTime();
+}
+/*-----------------------------------------------
+time_t is an integral type holding number of
+seconds in the current time_point
+*/
+std::time_t Time::getTime() {
+return std::chrono::system_clock::to_time_t(tp);
+}
+/*-----------------------------------------------
+returns datetime string
+- Wed Feb 21 10:18:12 2024 local_time_zone
+*/
+std::string Time::toString() {
+struct tm time;
+time_t tt = getTime();
+/* compute for GMT zone */
+if(dateTimeSuffix == &quot;GMT&quot;) {
+  gmtime_s(&time, &tt);
+}
+/* compute for local time zone*/
+else {
+  localtime_s(&time, &tt);
+}
+std::string rs = asctime(&time);
+rs.resize(rs.size() - 1);  // remove trailing newline
+rs += &quot; &quot; + dateTimeSuffix;
+return rs;
+}
+/*-----------------------------------------------
+tm is structure holding components of calendar
+date and time, e.g., tm_sec, tm_min, ...
+- member calTime is localtime after calling
+  this function
+*/
+tm Time::getLocalTime() {
+time_t tt = getTime();
+localtime_s(&calTime, &tt);  // save in calTime
+dateTimeSuffix = &quot;local time zone&quot;;
+return calTime;
+}
+/*-----------------------------------------------
+tm is structure holding components of calendar
+date and time, e.g., tm_sec, tm_min, ...
+- member calTime is gmttime after calling
+  this function
+*/
+tm Time::getGMTTime() {
+time_t tt = getTime();
+gmtime_s(&calTime, &tt);  // save in calTime
+dateTimeSuffix = &quot;GMT&quot;;
+return calTime;
+}
+/*---------------------------------------------
+methods to retrieve dateTime components
+*/
+std::string Time::getTimeZone() {
+return dateTimeSuffix;
+}
+size_t Time::year() {
+auto yr = calTime.tm_year + 1900;
+return yr;
+}
+size_t Time::month() {
+auto mn = calTime.tm_mon + 1;
+return mn;
+}
+size_t Time::day() {
+auto d = calTime.tm_mday;
+return d;
+}
+size_t Time::hour() {
+auto hr = calTime.tm_hour;
+return hr;
+}
+size_t Time::minutes() {
+auto min = calTime.tm_min;
+return min;
+}
+size_t Time::seconds() {
+double sec = calTime.tm_sec;
+return sec;
+}
+}
+</code></pre>
+              </div>
+            </first-item>
+            <splitter-bar id="timedef-seperator"></splitter-bar>
+            <second-item id="timedef-second" style="width:40em;">
+              <div class="textwrap noflow" onclick="obubbleup('timedef-first')">
+                <!--  <pre><code class="language-term">Time: -->
+                <h3>Time:</h3>
+
+                The <c-s>Time</c-s> class provides formatted datetime strings, <br />
+                referred here by the term datetime stamps. These<br />
+                provide local calendar and time like this:<br />
+                <br />
+                &nbsp;&nbsp;&nbsp;Wed Feb 28 20:35:23 2024 local time zone<br />
+                <br />
+                It also provides methods to access local date and time<br />
+                components like <c-s>day()</c-s> and <c-s>seconds()</c-s> and to switch<br />
+                between local time and GMT.<br />
+                <br />
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br /><br /><br />
+                <span style="font-size:1.25em; font-weight:bold;">&lArr;</span> <c-s>Time</c-s><br />
+                uses the <c-s>std::chrono::system_clock</c-s> for all date<br />
+                and time evaluations. Its epoch is elapsed time since<br />
+                1 January 1970, measured in ticks which are a platform<br />
+                defined number of seconds.<br />
+                <br />
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br /><br /><br /><br /><br /><br /><br /><br />
+                <span style="font-size:1.25em; font-weight:bold;">&lArr;</span> Methods<br />
+                <c-s>getLocalTime()</c-s> and <c-s>getGMTTime()</c-s> determine<br />
+                whether <c-s>toString()</c-s> and the components <c-s>day()</c-s><br />
+                and <c-s>hour()</c-s> are based on local time or on<br />
+                Greenwich Mean Time, GMT.
+
+                <!-- </code></pre> -->
+              </div>
+            </second-item>
+          </splitter-container>
+        </div>
+        <div style="height:0.75em;"></div>
+        <h3 id="demotime">2.6.2 Demo Time</h3>
+        <t-b>
+          <c-s>Time</c-s> is used by <c-s>Point&lt;T, N&gt;</c-s> to provide datetime services
+          for points. The value of the <c-s>Time</c-s> member is interpreted as a time at which
+          some application specific thing was at the point described by its dimensional member.
+        </t-b>
+        <div class="blockSingle" style="padding:0em;">
+          <input type="button" value="RemoteExecute" class="remotebutton" onclick="remote1()" />
+          <splitter-container id="container">
+            <first-item id="timedemo-first" style="width:52%;">
+              <div class="codewrap">
+                <pre onclick="cbubbleup('timedemo-first')" style="width:200em;"><code class="language-cpp">/*-------------------------------------------------------------------*/
+void testtime() {
+showNote(&quot;test Time&quot;,&quot;&#92;n&quot;);
+Time t;
+t.getLocalTime();
+std::cout &lt;&lt; &quot;&#92;n  datetime = &quot; &lt;&lt; t.toString() &lt;&lt; std::endl;
+std::cout &lt;&lt; &quot;&#92;n  epoch in secs = &quot; &lt;&lt; t.getTime();
+std::cout &lt;&lt; &quot;&#92;n  year:     &quot; &lt;&lt; t.year();
+std::cout &lt;&lt; &quot;&#92;n  month:    &quot; &lt;&lt; t.month();
+std::cout &lt;&lt; &quot;&#92;n  day:      &quot; &lt;&lt; t.day();
+std::cout &lt;&lt; &quot;&#92;n  hour:     &quot; &lt;&lt; t.hour();
+std::cout &lt;&lt; &quot;&#92;n  minutes:  &quot; &lt;&lt; t.minutes();
+std::cout &lt;&lt; &quot;&#92;n  seconds:  &quot; &lt;&lt; t.seconds();
+std::cout &lt;&lt; &quot;&#92;n  timezone: &quot; &lt;&lt; t.getTimeZone();
+std::cout &lt;&lt; std::endl;
+
+t.getGMTTime();
+std::cout &lt;&lt; &quot;&#92;n  datetime = &quot; &lt;&lt; t.toString() &lt;&lt; std::endl;
+std::cout &lt;&lt; &quot;&#92;n  epoch in secs = &quot; &lt;&lt; t.getTime();
+std::cout &lt;&lt; &quot;&#92;n  year:     &quot; &lt;&lt; t.year();
+std::cout &lt;&lt; &quot;&#92;n  month:    &quot; &lt;&lt; t.month();
+std::cout &lt;&lt; &quot;&#92;n  day:      &quot; &lt;&lt; t.day();
+std::cout &lt;&lt; &quot;&#92;n  hour:     &quot; &lt;&lt; t.hour();
+std::cout &lt;&lt; &quot;&#92;n  minutes:  &quot; &lt;&lt; t.minutes();
+std::cout &lt;&lt; &quot;&#92;n  seconds:  &quot; &lt;&lt; t.seconds();
+std::cout &lt;&lt; &quot;&#92;n  timezone: &quot; &lt;&lt; t.getTimeZone();
+std::cout &lt;&lt; std::endl;
+}
+</code></pre>
+              </div>
+            </first-item>
+            <splitter-bar id="timedemo-seperator"></splitter-bar>
+            <second-item id="timedemo-second" style="width:48%;">
+              <div class="codewrap" onclick="obubbleup('timedemo-first')">
+                <pre style="width:200em;"><code class="language-shell">
+--------------------------------------------------
+test Time
+--------------------------------------------------
+
+datetime = Wed Feb 28 20:35:23 2024 local time zone
+
+epoch in secs = 1709174123
+year:     2024
+month:    2
+day:      28
+hour:     20
+minutes:  35
+seconds:  23
+timezone: local time zone
+
+datetime = Thu Feb 29 02:35:23 2024 GMT
+
+epoch in secs = 1709174123
+year:     2024
+month:    2
+day:      29
+hour:     2
+minutes:  35
+seconds:  23
+timezone: GMT
+
+              </code></pre>
+              </div>
+            </second-item>
+          </splitter-container>
+        </div>
+        <div style="height:1em;"></div>
+      </details>
+      <t-b id="timer">
+        The <c-s>Timer</c-s> class is used by demonstrations in &quot;Cpp_Generics.cpp&quot;
+        to explore the resolution and accuracy of system time measurements.
+      </t-b>
+      <details>
+        <summary class="darkItem">Timer&nbsp;</summary>
+        <h3>2.6.3 Timer Definition</h3>
+        <t-b>
+          The <c-s>Timer</c-s> class is a non-generic type that measures elapsed type with the
+          <c-s style="overflow-wrap:anywhere;">std::chrono::high_resolution_clock</c-s>.
+        </t-b>
+        <t-b>
+          It has methods to start and stop the timer and retrieve elapsed time in milliseconds,
+          microseconds, and nanoseconds.
+        </t-b>
+        <div class="blockSingle" style="padding:0em;">
+          <input type="button" value="RemoteExecute" class="remotebutton" onclick="remote1()" />
+          <splitter-container id="container">
+            <first-item id="timerdef-first" style="width:52%;">
+              <div class="codewrap" onclick="cbubbleup('timerdef-first')">
+                <pre style="width:200em;"><code class="language-cpp">/*-------------------------------------------------------------------
+Timer provides elapsed time services
+*/
+class Timer {
+public:
+Timer();
+void start();
+void stop();
+size_t elapsedNanoSec();
+size_t elapsedMicroSec();
+size_t elapsedMilliSec();
+private:
+std::chrono::time_point&lt;
+  std::chrono::high_resolution_clock
+&gt; tp;
+std::chrono::time_point&lt;
+  std::chrono::high_resolution_clock
+&gt; starttime;
+std::chrono::time_point&lt;
+  std::chrono::high_resolution_clock
+&gt; stoptime;
+};
+Timer::Timer() {
+starttime = std::chrono::high_resolution_clock::now();
+stoptime = std::chrono::high_resolution_clock::now();
+}
+void Timer::start() {
+starttime = std::chrono::high_resolution_clock::now();
+}
+void Timer::stop() {
+stoptime = std::chrono::high_resolution_clock::now();
+}
+size_t Timer::elapsedNanoSec() {
+auto duration = 
+duration_cast&lt;std::chrono::nanoseconds&gt;(stoptime - starttime);
+return duration.count();
+}
+size_t Timer::elapsedMicroSec() {
+auto duration = 
+duration_cast&lt;std::chrono::microseconds&gt;(stoptime - starttime);
+return duration.count();
+}
+size_t Timer::elapsedMilliSec() {
+auto duration = 
+duration_cast&lt;std::chrono::milliseconds&gt;(stoptime - starttime);
+return duration.count();
+}
+</code></pre>
+              </div>
+            </first-item>
+            <splitter-bar id="timerdef-seperator"></splitter-bar>
+            <second-item id="timerdef-second" style="width:40em;">
+              <div class="textwrap noflow" onclick="obubbleup('timerdef-first')">
+                <h3>Timer:</h3>
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br />
+                <span style="font-size:1.25em; font-weight:bold;">&lArr;</span> <c-s>Timer</c-s><br />
+                uses the <c-s>std::chrono::high_resolution_clock</c-s> for<br />
+                all time evaluations. Its epoch is elapsed time since<br />
+                1 January 1970, measured in ticks which are platform<br />
+                defined number of nanoseconds.<br />
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br />
+                <span style="font-size:1.25em; font-weight:bold;">&lArr;</span> <c-s>Timer</c-s><br />
+                defines stopwatch functionality with <c-s>start()</c-s> and
+                <c-s>stop()</c-s><br />
+                methods.<br />
+                <br /><br /><br /><br />
+                <span style="font-size:1.25em; font-weight:bold;">&lArr;</span> Time interval<br />
+                Time interval results are accessed with<br />
+                <c-s>elapsedNanoSec()</c-s>,
+                <c-s>elapsedMicroSec()</c-s>, and<br /> <c-s>elapsedMilliSec()</c-s> methods.
+              </div>
+            </second-item>
+          </splitter-container>
+        </div>
+        <h3 id="demotimer">2.6.4 Demo Timer</h3>
+        <t-b>
+          Timing data are not likely to be repeatable; the operating system starts and stops
+          tasks, network I/O processes messages, and users create UI events, all of which take
+          CPU resources at essentially random times.
+        </t-b>
+        <t-b>
+          This demonstration repeats timing tasks four times to show the kinds of variations
+          in measurements that are likely during each run.
+        </t-b>
+        <t-b>
+          In each run, we start and then stop the timer immediately to test, with a noop,
+          the finest granularity of time we can measure.
+        </t-b>
+        <t-b>
+          A computational task is run 200 times for each task measurement, and a thread is
+          blocked for a specified interval and measured for each of the four runs.
+        </t-b>
+        <div class="blockSingle" style="padding:0em;">
+          <input type="button" value="RemoteExecute" class="remotebutton" onclick="remote1()" />
+          <splitter-container id="container">
+            <first-item id="timerdemo-first" style="width:52%;">
+              <div class="codewrap">
+                <pre onclick="cbubbleup('timerdemo-first')" style="width:200em;"><code class="language-cpp">/*-------------------------------------------------------------------*/
+void testtimer() {
+
+showNote(&quot;test Timer&quot;);
+
+std::vector&lt;double&gt; v {
+1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5
+};
+/*-------------------------------------------------------
+lambda that squares each element of the collection v
+*/
+auto f = [&v]() {
+for(auto &item : v) { item *= item; }
+};
+/*-------------------------------------------------------
+lambda g executes lambda f for n times.
+*/
+auto g = [f](size_t n) {
+for(size_t i = 0; i &lt; n; ++i) { f(); }
+};
+/*-------------------------------------------------------
+Timer test
+*/
+Timer tmr;
+tmr.start();
+tmr.stop();
+std::cout &lt;&lt; &quot;&#92;n  noOp elapsed interval in nanosec = &quot; &lt;&lt; tmr.elapsedNanoSec();
+
+tmr.start();
+g(200);
+tmr.stop();
+std::cout &lt;&lt; &quot;&#92;n  g(200) elapsed interval in nanosec = &quot; &lt;&lt; tmr.elapsedNanoSec();
+std::cout &lt;&lt; &quot;&#92;n  g(200) elapsed interval in microsec = &quot; &lt;&lt; tmr.elapsedMicroSec();
+
+tmr.start();
+std::this_thread::sleep_for(std::chrono::milliseconds(5));
+tmr.stop();
+std::cout &lt;&lt; &quot;&#92;n  5 millisec sleep elapsed interval in millisec = &quot; &lt;&lt; tmr.elapsedMilliSec();
+std::cout &lt;&lt; std::endl;
+}
+</code></pre>
+              </div>
+            </first-item>
+            <splitter-bar id="timerdemo-seperator"></splitter-bar>
+            <second-item id="timerdemo-second" style="width:48%;">
+              <div class="codewrap" onclick="obubbleup('timerdemo-first')">
+                <pre style="width:200em;"><code class="language-shell">
+--------------------------------------------------
+test Timer
+--------------------------------------------------
+noOp elapsed interval in nanosec = 0
+g(200) elapsed interval in nanosec = 2300
+g(200) elapsed interval in microsec = 2
+5 millisec sleep elapsed interval in millisec = 5
+
+--------------------------------------------------
+test Timer
+--------------------------------------------------
+noOp elapsed interval in nanosec = 200
+g(200) elapsed interval in nanosec = 10900
+g(200) elapsed interval in microsec = 10
+5 millisec sleep elapsed interval in millisec = 12
+
+--------------------------------------------------
+test Timer
+--------------------------------------------------
+noOp elapsed interval in nanosec = 100
+g(200) elapsed interval in nanosec = 9600
+g(200) elapsed interval in microsec = 9
+5 millisec sleep elapsed interval in millisec = 8
+
+--------------------------------------------------
+test Timer
+--------------------------------------------------
+noOp elapsed interval in nanosec = 100
+g(200) elapsed interval in nanosec = 7300
+g(200) elapsed interval in microsec = 7
+5 millisec sleep elapsed interval in millisec = 11
+
+
+
+
+
+
+
+              </code></pre>
+              </div>
+            </second-item>
+          </splitter-container>
+        </div>
+      </details>
+      <t-b>
+        Neither of these classes is generic, and so we provide them as details that may be
+        shown, but are not by default.
+      </t-b>
+      <div style="height:0em;"></div>
+      <h3 id="analysis">2.7 Analysis and Display Functions</h3>
+      <t-b style="margin-bottom:1em;">
+        This block presents functions for analysis and display of instances of generic types.
+        Many of them were discussed in some detail in the section
+        <a target="_blank" href="#genfunc">1.6 Demo Generic Functions</a>.  There are a few
+        functions, not treated there, but are relatively simple.
+      </t-b>
+      <t-b>
+        The code doesn&apos;t introduce any new information about generics, and so is not
+        shown by default.
+      </t-b>
+      <details open>
+        <summary class="darkItem">Analysis and Display Functions&nbsp;</summary>
+        <div class="blockSingle" style="padding:0em;">
+          <input type="button" value="RemoteExecute" class="remotebutton" onclick="remote1()" />
+          <splitter-container id="container">
+            <first-item id="anal-first" style="width:52%;">
+              <div class="codewrap" onclick="cbubbleup('anal-first')">
+                <pre style="width:200em;"><code class="language-cpp">/*---------------------------------------------------------
+AnalysisGen.h
+- Provides functions that analyze types, display results
+and other program defined information.
+- Some of this code requires complex template operations.
+Those will be discussed in the generics bit.
+- You can skip the hard parts until then, without loss
+of understanding.
+*/
+
+#include &lt;typeinfo&gt;     // typeid
+#include &lt;utility&gt;      // move()
+#include &lt;sstream&gt;      // stringstream
+#include &lt;type_traits&gt;  // is_scalar, if constexpr
+#include &lt;iostream&gt;     // cout
+#include &lt;vector&gt;       // vector
+
+namespace Analysis {
+/*------------------------------------------------------------
+Analysis function declarations are provided here so that
+definitions below may be placed in any order. That's
+needed because C++ requires declaration before use.
+*/
+template&lt;typename T, int N&gt;
+void showArray(std::array&lt;T,N&gt; &a);
+template&lt;typename C&gt;
+void showColl(const C& c);
+template&lt;typename K, typename V&gt;
+void showMap(const std::map&lt;K,V&gt; &m);
+template&lt;typename T&gt;
+void showType(T t, const std::string &nm, const std::string& suffix = &quot;&quot;);
+void showNote(const std::string& txt, const std::string& suffix = &quot;&quot;);
+void showOp(const std::string& opstr, const std::string& suffix = &quot;&quot;);
+void print(const std::string& txt = &quot;&quot;);
+void println(const std::string& txt = &quot;&quot;);
+std::string truncate(size_t N, const char* pStr);
+std::string indent(size_t n);
+template&lt;typename T&gt;
+std::string fold(std::vector&lt;T&gt;& v, size_t left, size_t width);
+template&lt;typename T&gt;
+std::string formatColl(
+const T& t, const std::string& nm,
+const std::string& suffix = &quot;&quot;, size_t left = 2, size_t width = 7
+);
+template&lt;typename T&gt;
+std::string formatScalar(
+const T& t, const std::string& nm,
+const std::string& suffix = &quot;&quot;, size_t left = 2
+);
+template&lt;typename T&gt;
+std::string formatString(
+const T& t, const std::string& nm, const std::string& suffix,
+size_t left = 2
+);
+template&lt;typename T&gt;
+std::string format(
+const T& t, const std::string& nm, const std::string& suffix = &quot;&quot;,
+size_t left = 2, size_t width = 7
+);
+/*-- end of function declarations --*/
+
+/*------------------------------------------------------------
+Display and Analysis functions and global definitions
+--------------------------------------------------------------
+*/
+const std::string nl = &quot;&#92;n&quot;;
+/*------------------------------------------------------------
+Mutable globals are a common source of bugs.  We try not
+to use them, but will use DisplayParams here to control how
+the insertion operator sends instances to standard output.
+*/
+struct displayParams {
+size_t left = 2;    // number of spaces to indent
+size_t width = 7;   // width of display row
+size_t trunc = 40;  // replace text after trunc with ...
+} DisplayParams;      // global object
+
+/*------------------------------------------------------
+Demonstration functions
+*/
+/*-----------------------------------------------
+Display calling name, static class, and size
+- requires DisplayParams
+*/
+template&lt;typename T&gt;
+void showType(T t, const std::string &callname, const std::string& suffix) {
+std::cout &lt;&lt; &quot;&#92;n  &quot; &lt;&lt; callname;          // show name at call site
+std::cout &lt;&lt; &quot; type: &quot;
+          &lt;&lt; truncate(DisplayParams.trunc,typeid(t).name());  // show type
+std::cout &lt;&lt; &quot;&#92;n  size:  &quot; &lt;&lt; sizeof(t);  // show size on stack
+std::cout &lt;&lt; suffix;
+}
+/*-------------------------------------------------------
+showArray function -- specific to std::array
+*/
+template&lt;typename T, int N&gt;
+void showArray(std::array&lt;T,N&gt; &a) {
+std::cout &lt;&lt; &quot;  array&lt;T,N&gt; [&quot;;
+std::cout &lt;&lt; a[0];
+for(int i=1; i&lt;N; ++i) {
+  std::cout &lt;&lt; &quot;, &quot; &lt;&lt; a[i];
+}
+std::cout &lt;&lt; &quot;]&quot; &lt;&lt; std::endl;
+}
+/*-------------------------------------------------------
+show sequential collection
+- requires integer indexer and size() function
+- works for any sequential STL collection
+*/
+template&lt;typename C&gt;
+void showSeqColl(const C& c) {
+std::cout &lt;&lt; &quot;  Collection&lt;T&gt; [&quot;;
+std::cout &lt;&lt; c[0];
+for(size_t i=1; i&lt;c.size(); ++i) {
+  std::cout &lt;&lt; &quot;, &quot; &lt;&lt; c[i];
+}
+std::cout &lt;&lt; &quot;]&quot; &lt;&lt; std::endl;
+}
+/*-------------------------------------------------------
+show associative collection
+- requires iterator
+- elements must be std::pair&lt;Key, Value&gt;
+- works for any associative STL collection
+*/
+template&lt;typename C&gt;
+void showAssocColl(const C& c) {
+std::cout &lt;&lt; &quot;  Collection&lt;K,V&gt; {&#92;n    &quot;;
+bool first = true;
+for(const auto& pair : c) {
+  if(first) {
+    std::cout &lt;&lt; &quot;{&quot; &lt;&lt; pair.first &lt;&lt; &quot;, &quot; &lt;&lt; pair.second &lt;&lt; &quot;}&quot;;
+    first = false;
+  }
+  else {
+    std::cout &lt;&lt; &quot;, {&quot; &lt;&lt; pair.first &lt;&lt; &quot;, &quot; &lt;&lt; pair.second &lt;&lt; &quot;}&quot;;
+  }
+}
+std::cout &lt;&lt; &quot;&#92;n  }&#92;n&quot;;
+}
+
+/*-----------------------------------------------
+Helper function for formatting output
+- truncates line to N chars and adds ellipsis
+*/
+inline std::string truncate(size_t N, const char* pStr) {
+std::string temp(pStr);
+if(temp.length() &gt; N) {
+  temp.resize(N);
+  return temp + &quot;...&quot;;
+}
+return temp;
+}
+/*-----------------------------------------------
+Helper function for formatting output
+- generates string of n blanks to offset text
+*/
+inline std::string indent(size_t n) {
+return std::string(n, ' ');
+}
+/*-----------------------------------------------
+Helper function for formatting output
+- folds lines after width elements
+- used only in Point&lt;T,N&gt;::show()
+*/
+template&lt;typename T&gt;
+std::string fold(std::vector&lt;T&gt;& v, size_t left, size_t width) {
+std::stringstream out(&quot;&#92;n&quot;);
+out &lt;&lt; indent(left);
+for(size_t i=0; i&lt;v.size(); ++i) {
+  if((i % width) == 0 && i != 0 && i != width - 1) {
+    out &lt;&lt; &quot;&#92;n&quot; &lt;&lt; indent(left);
+  }
+  if(i &lt; v.size() - 1) {
+    out &lt;&lt; v[i] &lt;&lt; &quot;, &quot;;
+  }
+  else {
+    out &lt;&lt; v[i] &lt;&lt; &quot;&#92;n&quot;;
+    break;
+  }
+}
+return out.str();
+}
+/*-----------------------------------------------
+Helper function for formatColl
+- defines out &lt;&lt; std::pair&lt;K,V&gt;
+- used in formatColl for associative containers
+*/
+template&lt;typename K, typename V&gt;
+std::stringstream& operator&lt;&lt;(
+std::stringstream& out, const std::pair&lt;K,V&gt;& p
+) {
+out &lt;&lt; &quot;{&quot; &lt;&lt; p.first &lt;&lt; &quot;, &quot; &lt;&lt; p.second &lt;&lt; &quot;}&quot;;
+return out;
+}
+/*-----------------------------------------------
+Format output for Collection types
+- any type with iterator, begin(), and end()
+  like all the STL containers.
+- elements need overload for operator&lt;&lt; as
+  implemented above
+- folds into rows with width elements
+  - will replace folding logic with fold(...)
+    eventually
+*/
+template&lt;typename Coll&gt;
+std::string formatColl(
+const Coll& c, const std::string& nm, const std::string& suffix,
+size_t left, size_t width
+) {
+std::stringstream out;
+out &lt;&lt; indent(left) &lt;&lt; nm &lt;&lt; &quot;: {&#92;n&quot; &lt;&lt; indent(left + 2);
+size_t i = 0;
+for(const Coll::value_type& elem : c) {
+  if((i % width) == 0 && i != 0 && i != width - 1) {
+    out &lt;&lt; &quot;&#92;n&quot; &lt;&lt; indent(left + 2);
+  }
+  if(i &lt; c.size() - 1) {
+    out &lt;&lt; elem &lt;&lt; &quot;, &quot;;
+  }
+  else {
+    out &lt;&lt; elem &lt;&lt; &quot;&#92;n&quot; &lt;&lt; indent(left) &lt;&lt; &quot;}&quot; &lt;&lt; suffix;
+    break;
+  }
+  ++i;
+}
+return out.str();
+}
+/*-----------------------------------------------
+Format output for scalar types like primitives
+*/
+template&lt;typename T&gt;
+std::string formatScalar(
+const T& t, const std::string& nm, const std::string& suffix,
+size_t left
+) {
+std::stringstream out;
+out &lt;&lt; &quot;&#92;n&quot; &lt;&lt; indent(left) &lt;&lt; nm &lt;&lt; &quot;: &quot; &lt;&lt; t &lt;&lt; suffix;
+return out.str();
+}
+/*-----------------------------------------------
+Format output for strings
+- indent and embed in quotation marks
+*/
+template&lt;typename T&gt;
+std::string formatString(
+const T& t, const std::string& nm, const std::string& suffix,
+size_t left
+) {
+std::stringstream out;
+out &lt;&lt; &quot;&#92;n&quot; &lt;&lt; indent(left) &lt;&lt; nm &lt;&lt; &quot;: &#92;&quot;&quot; &lt;&lt; t &lt;&lt; &quot;&#92;&quot;&quot; &lt;&lt; suffix;
+return out.str();
+}
+/*-----------------------------------------------
+Defines is_iterable trait
+- uses template metaprogramming, e.g., user code
+  that evaluates during compilation
+- detects STL containers and user-defined types
+  that provide iteration
+https://stackoverflow.com/questions/13830158/check-if-a-variable-type-is-iterable
+*/
+template &lt;typename T, typename = void&gt;
+struct is_iterable : std::false_type {};
+
+// this gets used only when we can call
+// std::begin() and std::end() on that type
+template &lt;typename T&gt;
+struct is_iterable&lt;
+T,
+std::void_t
+  &lt;decltype(std::begin(std::declval&lt;T&gt;())),
+  decltype(std::end(std::declval&lt;T&gt;()))&gt;
+&gt; : std::true_type {};
+
+template &lt;typename T&gt;
+constexpr bool is_iterable_v = is_iterable&lt;T&gt;::value;
+
+/*-----------------------------------------------
+Displays almost everything.
+- strings work better with formatString(...)
+https://www.cppstories.com/2018/03/ifconstexpr/
+Iteration is discussed in Bit Cpp_iter
+*/
+template&lt;typename T&gt;
+std::string format(
+const T& t, const std::string& nm, const std::string& suffix,
+size_t left, size_t width
+) {
+if constexpr(is_iterable_v&lt;T&gt;) {  // decision at compile-time
+  return formatColl(t, nm, suffix, left, width);
+}
+else {
+  return formatScalar(t, nm, suffix, left);
+}
+}
+/*-----------------------------------------------
+Display emphasized text
+*/
+inline void showNote(const std::string& txt, const std::string& suffix) {
+print(&quot;--------------------------------------------------&quot;);
+print(&quot;  &quot; + txt);
+print(&quot;--------------------------------------------------&quot;);
+std::cout &lt;&lt; suffix;
+}
+/*-----------------------------------------------
+Display emphasized line
+*/
+inline void showOp(const std::string& opstr, const std::string& suffix) {
+std::cout &lt;&lt; &quot;&#92;n  --- &quot; &lt;&lt; opstr &lt;&lt; &quot; ---&quot; &lt;&lt; suffix;
+}
+/*-----------------------------------------------
+Display text after newline and indentation
+*/
+inline void print(const std::string& txt) {
+std::cout &lt;&lt; &quot;&#92;n  &quot; &lt;&lt; txt;
+}
+/*-----------------------------------------------
+Display text after newline and indentation
+- provides trailing newline
+*/
+inline void println(const std::string& txt) {
+std::cout &lt;&lt; &quot;&#92;n  &quot; &lt;&lt; txt &lt;&lt; &quot;&#92;n&quot;;
+}
+}
+</code></pre>
+              </div>
+            </first-item>
+            <splitter-bar id="anal-seperator"></splitter-bar>
+            <second-item id="anal-second" style="width:40em;">
+              <div class="textwrap noflow commentary" onclick="obubbleup('anal-first')">
+                <h3>Analysis & Display:</h3>
+
+                This code defines fifteen functions. Nine of them are<br />
+                generic, and three are helpers that applications will<br />
+                not call directly.<br />
+                <br />
+                The code starts with declarations for each function, so<br />
+                they can be defined in any order. That is necessary since<br />
+                C++ demands that declaration comes before definition.<br />
+                That means that one function cannot be used by another<br />
+                unless the compiler has already seen its declaration.<br />
+                <br />
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br /><br /><br /><br /><br /><br /><br />
+                <br /><br /><br /><br />
+                <h3>Formatting:</h3>
+
+                A shared global data structure <c-s>struct displayParams</c-s><br />
+                is used to pass formatting for indentation and width of<br />
+                rows for folded items to functions.<br />
+                <br />
+                We try to avoid shared globals as they are a frequent<br />
+                source of bugs.  They can have effects on functions<br />
+                without them acknowledging use in their function<br />
+                signature. In this case, we have no choice because we<br />
+                need to affect formatting implemented by<br />
+                <c-s>operator&lt;&lt;(std::ostream&amp; out, collection_type)</c-s><br />
+                and cannot change its signature.<br />
+                <br />
+                <h3>Abstraction:</h3>
+
+                Consider function <c-s>std::string format(const T&t, ...)</c-s><br />
+                near the bottom of the left code panel. That function can<br />
+                display <strong>any</strong> type that is either scalar or iterable.<br />
+                <br />
+                That is a very powerful facililty.  It means we don&apos;t<br />
+                have to build many functions to display the wide variety<br />
+                of types we use in applications.<br />
+
+              </div>
+            </second-item>
+          </splitter-container>
+        </div>
+
+      </details>
+      <div style="height:1em;"></div>
+      <div class="clear"></div>
+    <h3 id="structure">2.8 Program Structure</h3>
+    <t-b style="margin-bottom:1em;">
+      The &quot;Program Structure&quot; dropdown below illustrates how this program is structured
+      using six files:
+      AnalysisGen.h, HelloTemplates.h, Stats.h, PointsGen.h, Time.h, and several functions
+      defined in Bits_Generics.cpp.
+    </t-b>
+    <t-b>
+      The first five files are header-only libraries and the sixth defines execution flow
+      for demonstration of C++ generic library and user-defined types. 
+    </t-b>
+    <t-b>
+      Each file defines one type and a demonstration function that illustrates how the file&apos;s defined
+      class and functions work. The main program file, Bits_Generics.cpp, invokes the
+      demonstration functions from each of the header libraries.
+    </t-b>
+    <div class="blockSingle" style="padding:0em;">
+      <input type="button" value="RemoteExecute" class="remotebutton" onclick="remote1()" />
+      <splitter-container id="container">
+        <first-item id="structure-first" style="width:52%;">
+          <div class="codewrap" onclick="cbubbleup('structure-first')">
+            <pre style="width:200em;"><code class="language-cpp">/*---------------------------------------------------------
+Cpp_Generics.cpp
+- demonstrates creating and using std::library generic 
+types: array, basic_string, vector, and map
+- demonstrates creating and using user-defined generic 
+types: HelloTemplates, Stats, and Point
+- depends on HelloTemplates.h to provide user-defined 
+HelloTemplates class
+- depends on Stats.h to provide user-defined Stats class
+- depends on PointsGen.h to provide user-defined point
+class
+- depends on Analysis.h for several display and analysis
+functions
+*/
+/*-----------------------------------------------
+Note:
+Find all Bits code, including this in
+https://github.com/JimFawcett/Bits
+You can clone the repo from this link.
+-----------------------------------------------*/
+
+#include &lt;iostream&gt;       // std::cout
+#include &lt;memory&gt;         // std::unique_ptr
+#include &lt;vector&gt;         // vector&lt;T&gt; class
+#include &lt;array&gt;          // array&lt;T&gt; class
+#include &lt;map&gt;            // map&lt;K,V&gt; class
+#include &lt;unordered_map&gt;  // unordered_map&lt;k,V&gt; class
+#include &lt;set&gt;            // set&lt;T&gt; class
+#include &lt;thread&gt;         // this_thread
+#include &quot;AnalysisGen.h&quot;  // Analysis functions
+#include &quot;HelloTemplates.h&quot;        // Stats class declaration
+#include &quot;Stats.h&quot;
+#include &quot;PointsGen.h&quot;    // Point&lt;T, N&gt; class declaration
+
+using namespace Analysis;
+using namespace Points;
+
+
+/*-----------------------------------------------
+Overload operator&lt;&lt; for std::vector,
+required for demo_std_generic_types()
+and testformats()
+*/
+template&lt;typename T&gt;
+std::ostream& operator&lt;&lt;(std::ostream& out, std::vector&lt;T&gt;& v) {
+out &lt;&lt; format(v, &quot;vector&lt;T&gt;&quot;, &quot;&quot;, DisplayParams.left, DisplayParams.width);
+return out;
+}
+
+/*-----------------------------------------------
+demonstrate use of std generic types
+*/
+void demo_std_generic_types() {
+/* code elided */
+}
+
+/*-----------------------------------------------
+demonstrate use of generic functions
+*/
+void demo_generic_functions() {
+/* code elided */
+}
+
+int main() {
+
+showNote(&quot;Demonstrate C++ Generics&quot;, 30, nl);
+
+demo_std_generic_types();
+demo_custom_type_HelloTemplates();
+demo_custom_type_Stats();
+demo_custom_type_Point();
+demo_generic_functions();
+
+testtime();
+
+for(size_t i=0; i&lt;4; ++i) {
+testtimer();
+std::this_thread::sleep_for(std::chrono::seconds(1));
+}
+
+print(&quot;&#92;n  That's all Folks!&#92;n&#92;n&quot;);
+}
+</code></pre>
+          </div>
+        </first-item>
+        <splitter-bar id="structure-seperator"></splitter-bar>
+        <second-item id="structure-second" style="width:40em; background-color:var(--light);" onclick="obubbleup('structure-first')">
+          <div class="textwrap noflow commentary">
+            <h3>Program Structure:</h3>
+            <br /><br /><br /><br /><br /><br /><br /><br />
+            <br /><br /><br /><br /><br /><br /><br /><br />
+            <br /><br /><br /><br />
+            <span style="font-size:1.25em; font-weight:bold;">&lArr;</span> Code<br />
+            begins with a series of #include statements that import<br />
+            declarations for the standard library and also for<br />
+            four header only libraries defined as part of this<br />
+            demonstration.
+            <br /><br /><br /><br /><br />
+            <span style="font-size:1.25em; font-weight:bold;">&lArr;</span> This demonstration of C++ templates is partitioned<br />
+            into files: AnalysisGen.h, HelloTemplates.h, Stats.h,<br />
+            Pointsgen.h, Time.h, and Cpp_Generics.cpp.<br />
+            <br />
+            The first five files are &quot;header only&quot; libraries, and the<br />
+            last includes them either directly or indirectly to create<br />
+            this demonstration program.<br />
+            <br />
+            Partitioning makes learning, testing, and maintenance<br />
+            significantly easier than putting everything into one<br />
+            large file.<br />
+            <br />
+            <h3>C++ Modules:</h3>
+
+            The #include declarations, shown in the left panel, are<br />
+            being superceded by module imports, as of C++20. For<br />
+            example, all the standard library #includes, like<br />
+            #include &lt;iostream&gt;, are being replaced with a single<br />
+            &quot;import std&quot;.<br />
+            <br />
+            Individual libraries can be imported with declarations like<br />
+            <c-s>import &lt;iostream&gt;</c-s>.<br />
+            <br />
+            These modern module declarations are not used in this<br />
+            demonstration because the build tool I use, CMake, does<br />
+            not, as of version 3.9.2, process compiler generated<br />
+            modules, e.g., the std library module.<br />
+            <br />
+            Modules do work with code compiled in the Visual Studio<br />
+            IDE. You will find a demonstration of that in the<br />
+            <a target="_blank" href="#">Bits Repository</a>.<br />
+            <br /><br /><br /><br /><br /><br />
+
+            <strong><span style="font-size:1.25em; font-weight:bold;">&lArr;</span> Execution Flow:</strong><br />
+            Processing begins on entry to the main function which,
+            in turn, invokes several functions, devoted to
+            demonstrating generic standard library types and three
+            generic custom types and generic functions.
+
+
+
+
+
+            <span style="font-size:1.25em; font-weight:bold;">&lArr;</span> Two more functions are provided to demonstrate the
+            operation of Time and Timer class instances, used by
+            the Point&lt;T, N&gt; class.
+
+            This partitioning makes code easier to understand and
+            maintain.
+
+
+
+          </div>
+        </second-item>
+      </splitter-container>
+    </div>
+    <div style="height:0.75em;"></div>
+      <h3>3.0 Build</h3>
+      <t-b>
+        In the dropdown you will find output emitted by CMake during a build for this code.
+      </t-b>
+      <details id="build">
+        <summary class="darkItem">Build&nbsp;&nbsp;</summary>
+        <div class="blockSingle" style="padding:0.5em 0.5em; width:auto; font-size:0.8em;">
+          <div style="overflow-x:auto; width:auto; background-color: var(--pbg);">
+            <pre style="width:max-content;"><code class="language-term">
+C:\github\JimFawcett\Bits\Cpp\Cpp_Generics\build
+&gt; cmake ..
+-- The CXX compiler identification is MSVC 19.39.33218.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.39.33218/bin/Hostx64/x64/cl.exe - skipped   
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.39.33218/bin/Hostx64/x64/cl.exe - skipped 
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (2.9s)
+-- Generating done (0.0s)
+-- Build files have been written to: C:/github/JimFawcett/Bits/Cpp/Cpp_Generics/build
+C:\github\JimFawcett\Bits\Cpp\Cpp_Generics\build
+&gt; cmake --build .
+MSBuild version 17.9.0-preview-23551-05+34ae4f308 for .NET Framework
+
+1&gt;Checking Build System
+Building Custom Rule C:/github/JimFawcett/Bits/Cpp/Cpp_Generics/CMakeLists.txt
+Bits_Generics.cpp
+Cpp_Generics.vcxproj -&gt; C:\github\JimFawcett\Bits\Cpp\Cpp_Generics\build\Debug\Cpp_Generics.exe
+Building Custom Rule C:/github/JimFawcett/Bits/Cpp/Cpp_Generics/CMakeLists.txt
+C:\github\JimFawcett\Bits\Cpp\Cpp_Generics\build
+</code></pre>
+          </div>
+        </div>
+      </details>
+      <div style="height:0.5em;"></div>
+      <h3 id="ide">4.0 Visual Studio Code View</h3>
+      <t-b>
+        The code for this demo is available in
+        <a target="_blank" href="https://github.com/JimFawcett/Bits/tree/master/Cpp/Cpp_Generics/src">github.com/JimFawcett/Bits/Cpp_Generics/src</a>.
+        If you go up to the <a target="_blank" href="https://github.com/JimFawcett/Bits">Bits Repository</a> and click on
+        the Code dropdown you can clone the repository of all code for these demos to your local drive.
+        Then, it is easy to bring up any example, in any of the languages, in VS Code.
+      </t-b>
+      <t-b>
+        Here, we do that for Cpp\Cpp_Generics.
+      </t-b>
+      <photosizer-block src="pictures/VS_Code_Cpp_Generics_Debug.png" width="800" class="photoSizerBlock left"
+                        style="overflow-x:auto;">
+        <span style="font-family:'Comic Sans MS';">Figure 1. VS Code IDE</span>
+      </photosizer-block>
+      <photosizer-block src="pictures/LaunchJSON_Cpp_Objects.JPG" width="700" class="photoSizerBlock left"
+                        style="overflow-x:auto;">
+        <span style="font-family:'Comic Sans MS';">Figure 2. Launch.JSON</span>
+      </photosizer-block>
+
+      <div style="height:0.75em;" class="clear"></div>
+      <h3 id="refs">5.0 References</h3>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Reference</th>
+          <th class="darkItem">Description</th>
+        </tr>
+        <tr>
+          <td>
+            <a target="_blank" href="../../CppStoryRepo.html">C++ Story</a>
+          </td>
+          <td>
+            E-book with thirteen chapters covering most of intermediate C++
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <a target="_blank" href="../../CppStory_Templates.html">C++&nbsp;Templates</a>
+          </td>
+          <td>
+            Templates chapter from C++ Story
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <a target="_blank" href="../../CppStory_TemplateMetaProg.html">Template Metaprogramming</a>
+          </td>
+          <td>
+            Template Metaprogramming chapter from C++ Story
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <a target="_blank" href="../CppBites/CppBites_Intro.html">C++ Bites</a>
+          </td>
+          <td>
+            Relatively incomplete list of short feature discussions
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <a target="_blank " href="../../StrCode.Html">STRCode</a>
+          </td>
+          <td>
+            User-defined string type with all standard methods and functions
+            documented with: purpose, declaration, definition, invocation, and notes.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <a target="_blank" href="https://www.w3schools.com/cpp/default.asp">w3schools&nbsp;tutorial</a>
+          </td>
+          <td>
+            Slow and easy walk throught basics.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <a target="_blank" href="https://en.cppreference.com/w/">cppreference.com</a>&nbsp;&nbsp;&nbsp;&nbsp;
+          </td>
+          <td>
+            Very complete reference with lots of details and examples.
+          </td>
+        </tr>
+      </table>
+      <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#syn">synopsis</a>
+        <a href="#notes">notes</a>
+        <a href="#generics">templates</a>
+        <a href="#code">source code</a>
+        <a href="#libtyp">std::lib generic types</a>
+        <a href="#hellotempl">hello templates</a>
+        <a href="#hellodefn">HelloTemplates&lt;T&gt; defn</a>
+        <a href="#hellodemo">HelloTemplates&lt;T&gt; demo</a>
+        <a href="#stats">Stats&lt;T&gt;</a>
+        <a href="#statsdemo">Stats&lt;T&gt; demo</a>
+        <a href="#point">Point&lt;T, N&gt;</a>
+        <a href="#pointdefn">Point&lt;T, N&gt; defn</a>
+        <a href="#pointdemo">Point&lt;T, N&gt; demo</a>
+        <a href="#genfunc">generic functions</a>
+        <a href="#gfdef">generic function defs</a>
+        <a href="#gfdemo">generic function demos</a>
+        <a href="#time">Time &amp; Timer</a>
+        <a href="#demotime">Time demo</a>
+        <a href="#timer">Timer defn</a>
+        <a href="#demotimer">Timer demo</a>
+        <menu-elem class="secElem"><a href="#analysis">analysis</a></menu-elem>
+        <menu-elem class="secElem"><a href="#structure">structure</a></menu-elem>
+        <a href="#build">build</a>
+        <a href="#ide">VS Code</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+  <script>
+    onLoadSplitter("structure");
+    onLoadSplitter("stdlib");
+    onLoadSplitter("hello");
+    onLoadSplitter("hellodemo");
+    onLoadSplitter("stats");
+    onLoadSplitter("statsdemo");
+    onLoadSplitter("point");
+    onLoadSplitter("pointdemo");
+    onLoadSplitter("genfun");
+    onLoadSplitter("genfundemo");
+    onLoadSplitter("timedef");
+    onLoadSplitter("timedemo");
+    onLoadSplitter("timerdef");
+    onLoadSplitter("timerdemo");
+    onLoadSplitter("anal");
+  </script>
+</body>
+</html>
