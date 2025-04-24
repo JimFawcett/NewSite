@@ -18,7 +18,6 @@ function buildPages() {
       <a href='RustBites_Objects.html'>Objects</a>\
       <a href='RustBites_Generics.html'>Generics</a>\
       <a href='RustBites_Iter.html'>Iteration</a>\
-      <a class='undef' href='javascript:;'>Rust features</a>\
       <a class='undef' href='javascript:;'>Rust Safety</a>\
       <a class='undef' href='javascript:;'>many more coming</a>\
       </div>\
