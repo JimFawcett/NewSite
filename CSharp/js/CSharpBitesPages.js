@@ -8,11 +8,11 @@ function buildPages() {
   const pgs = document.getElementById('pages');
   if(isDefined(pgs)) {
     pgs.innerHTML =
-    "<div class='darkItem menuHeader' onclick='togglePages()'>C# Bites Pages</div>\
+    "<div class='darkItem listheader' onclick='togglePages()'>C# Bites Pages</div>\
     <div class='menuBody'>\
-      <a href='CSharpHome.html'>Track Summary</a>\
       <a href='CSharpBites_Intro.html'>Introduction</a>\
-      <a href='CSharpBites_Hello.html'>Hello</a>\
+      <a href='CSharpBites_Execution.html'>Execution</a>\
+      <a href='CSharpBites_HelloCSharp.html'>Hello</a>\
       <a href='CSharpBites_Data.html'>Data</a>\
       <a class='undef' href='javascript:;'>Objects</a>\
       <a class='undef' href='javascript:;'>Generics</a>\
