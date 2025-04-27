@@ -18,6 +18,7 @@ function buildPages() {
       <a href='Help_Git.html'>Git</a>\
       <a class='undef' href='javascript:;'>GitHub</a>\
       <a href='Help_PowerShell.html'>PowerShell</a>\
+      <a href='Help_RegEx.html'>RegEx</a>\
       <a href='Help_ChatGPT.html'>ChatGPT</a>\
       <a class='undef' href='javascript:;'>CompilerExplorer</a>\
       <a href='Help_SiteNav.html'>SiteNav</a>\
