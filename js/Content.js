@@ -406,9 +406,9 @@ function setKeys() {
     if(event.key === 'q' || event.key === 'Q') {
       toggleButton('pages');
     }
-    if(event.key === 'c' || event.key === 'C') {
-      toggleCompare();
-    }
+    // if(event.key === 'c' || event.key === 'C') {
+    //   toggleCompare();
+    // }
     if(event.key === "Escape") {
       closeMenues();
     }
