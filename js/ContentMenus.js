@@ -279,9 +279,6 @@ function buildKeys() {
         <td class='center clickable'><a onclick='togglePages()'>Q</a></td><td>Toggle Pages</td>\
       </tr>\
       <tr>\
-        <td class='center clickable'><a onclick='toggleCompare()'>C</a></td><td>Toggle Compare</td>\
-      </tr>\
-      <tr>\
         <td class='center clickable'><a onclick='closeMenues()'>esc</a></td><td>Close Menus</td>\
       </tr>\
     </table>";
