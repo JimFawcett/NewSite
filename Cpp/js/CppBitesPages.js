@@ -14,7 +14,7 @@ function buildPages() {
       <a href='CppBites_HelloCpp.html'>Hello</a>\
       <a href='CppBites_Data.html'>Data</a>\
       <a href='CppBites_Objects.html'>Objects</a>\
-      <a href='CppBites_STR.html'>STR</a>\
+      <a href='CppBites_STR.html'>Special Ops</a>\
       <a href='CppBites_Generics.html'>Generics</a>\
       <a href='CppBites_Iter.html'>Iteration</a>\
       </div>\
