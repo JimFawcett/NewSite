@@ -84,17 +84,32 @@ function showButton(id) {
   }
 }
 
+function showPanel() {
+  const lpanel = document.getElementById("lpanel");
+  const rpanel = document.getElementById('rpanel');
+  lpanel.style.display = "block";
+  setTimeout(() => {
+    rpanel.classList.remove('expanded');
+    lpanel.classList.remove("hidden");
+    lpanel.classList.add("visible");
+    setCookie('lpanel', 'true', 1);
+    lpanel.style.opacity = "1";
+    lpanel.style.transform = "translateX(0)";
+    setCookie('lpanel', 'true', 1)
+  }, 10); // Small delay to allow transition
+}
 
 function togglePanel() {
   const lpanel = document.getElementById("lpanel");
   const rpanel = document.getElementById('rpanel');
   if (lpanel.classList.contains("visible")) {
     lpanel.classList.remove("visible");
+    lpanel.classList.add("hidden");
     lpanel.style.opacity = "0";
     lpanel.style.transform = "translateX(-100%)";
     setTimeout(() => {
       rpanel.classList.add("expanded");
-      lpanel.classList.add("hidden");
+      // lpanel.classList.add("hidden");
       setCookie('lpanel', 'false', 1);
       lpanel.style.display = "none";
     }, 10); // Matches the transition duration
@@ -103,10 +118,10 @@ function togglePanel() {
     setTimeout(() => {
       rpanel.classList.remove('expanded');
       lpanel.classList.remove("hidden");
+      lpanel.classList.add("visible");
       setCookie('lpanel', 'true', 1);
       lpanel.style.opacity = "1";
       lpanel.style.transform = "translateX(0)";
-      lpanel.classList.add("visible");
       setCookie('lpanel', 'true', 1)
     }, 10); // Small delay to allow transition
   }
