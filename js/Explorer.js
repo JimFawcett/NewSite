@@ -44,25 +44,70 @@ function handleIframeTransition() {
 // function togglePanel() {
 //   toggleElement('lpanel');
 // }
+/*---------------------------------------------------------
+  temporarily toggle element's hidden state
+  - does not toggle persistance cookie 
+*/
+function toggleButton(id) {
+  const btn = document.getElementById(id);
+  if(isDefined(btn)) {
+    btn.classList.toggle('hidden');
+  }
+}
+/*---------------------------------------------------------
+  temporarily set element's hidden state to true
+  - does not change persistance cookie 
+  This is needed here to show Blogs, Help, and Resrcs
+  because each calls hide on the other 
+*/
+function hideButton(id) {
+  const btn = document.getElementById(id);
+  if(isDefined(btn)) {
+    btn.classList.add('hidden');
+  }
+}
+/*---------------------------------------------------------
+  temporarily set element's hidden state to false
+  - does not change persistance cookie 
+  This prevents forcing lpanel to appear on reload
+  Don't yet know why.
+*/
+function showButton(id) {
+  console.debug('showButton: ' + id);
+  const btn = document.getElementById(id);
+  if(isDefined(btn)) {
+    btn.classList.remove('hidden');
+    btn.classList.add("visible");
+  }
+  else {
+    console.debug('btn not defined');
+  }
+}
+
+
 function togglePanel() {
   const lpanel = document.getElementById("lpanel");
+  const rpanel = document.getElementById('rpanel');
   if (lpanel.classList.contains("visible")) {
     lpanel.classList.remove("visible");
     lpanel.style.opacity = "0";
     lpanel.style.transform = "translateX(-100%)";
     setTimeout(() => {
+      rpanel.classList.add("expanded");
       lpanel.classList.add("hidden");
       setCookie('lpanel', 'false', 1);
       lpanel.style.display = "none";
-    }, 300); // Matches the transition duration
+    }, 10); // Matches the transition duration
   } else {
     lpanel.style.display = "block";
     setTimeout(() => {
+      rpanel.classList.remove('expanded');
       lpanel.classList.remove("hidden");
       setCookie('lpanel', 'true', 1);
       lpanel.style.opacity = "1";
       lpanel.style.transform = "translateX(0)";
       lpanel.classList.add("visible");
+      setCookie('lpanel', 'true', 1)
     }, 10); // Small delay to allow transition
   }
 }
@@ -152,6 +197,11 @@ function closeLeftPanel() {
   // if(isDefined(leftPanel)) {
   //   leftPanel.classList.add('hidden');
   // }
+}
+
+function showLeftPanel() {
+  // alert('showLeftPanel()');
+  showElement('lpanel');
 }
 
 function replaceLastSrc(filename) {

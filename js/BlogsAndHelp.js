@@ -5,6 +5,7 @@
  */
 
 function toggleBlogs() {
+  // alert('BlogsAndHelp.js');
   console.log("in toggleBlogs()");
   const blg = document.getElementById('blogs');
   console.log(blg);

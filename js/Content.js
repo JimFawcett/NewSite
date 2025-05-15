@@ -75,6 +75,7 @@ function showButton(id) {
   const btn = document.getElementById(id);
   if(isDefined(btn)) {
     btn.classList.remove('hidden');
+    btn.classList.add("visible");
   }
 }
 /*---------------------------------------------------------
