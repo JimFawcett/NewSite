@@ -218,20 +218,20 @@ function align(ida, idp) {
   loader method collects load actions for all persistent
   elements
 */
-function setPersistantElements() {
-  setElements('sections');
-  setElements('pages');
-  // setElements('compare');
-  setElements('blogs');
-  setElements('help');
-  setElements('res');
-  setElements('lpanel');
-  setElements('controls');
-  // postMsg('loaded');
-  // align('mblogs', 'blogs');
-  // align('mhelp', 'help');
-  // align('mres', 'res');
-}
+// function setPersistantElements() {
+//   setElements('sections');
+//   setElements('pages');
+//   // setElements('compare');
+//   setElements('blogs');
+//   setElements('help');
+//   setElements('res');
+//   setElements('lpanel');
+//   setElements('controls');
+//   // postMsg('loaded');
+//   // align('mblogs', 'blogs');
+//   // align('mhelp', 'help');
+//   // align('mres', 'res');
+// }
 /*---------------------------------------------------------
   Creates HTML for keys list
 */

@@ -123,6 +123,7 @@ function toggleSections() {
   - persistent, actions do not revert on refresh
 */
 function showElement(id) {
+  // alert('showElement');
   console.info('in showElement: id = ' + id);
   showButton(id);
   setCookie(id, 'true', 1);
@@ -184,6 +185,8 @@ function setElements(id) {
       hideButton(id);  //added 1/20
       // console.info('cookie value: ' + getCookie(id));
     default:
+      setCookie(id, 'true', 1);
+      showButton(id);
   }
 }
 function align(ida, idp) {
@@ -225,7 +228,7 @@ function setPersistantElements() {
   setElements('blogs');
   setElements('help');
   setElements('res');
-  setElements('lpanel');
+  // setElements('lpanel');
   // postMsg('loaded');
   // align('mblogs', 'blogs');
   // align('mhelp', 'help');

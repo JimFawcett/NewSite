@@ -15,10 +15,12 @@ panel.toggleLeftPanel = function() {
   if (this.isLPanelOpen) {
     this.rpanel.classList.add("expanded"); // Expand smoothly
     setCookie('rpanel', false, 2);
+    setCookie('lpanel', false, 2);
     console.info("closing panel");
   } else {
     this.rpanel.classList.remove("expanded"); // Shrink smoothly
     setCookie('rpanel', true, 2);
+    setCookie('lpanel', true, 2);
     console.info("opening panel");
   }
 
