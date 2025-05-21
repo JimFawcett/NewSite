@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/x-icon" href="images/favicon.ico" />
+  <script src="js/ContentMenus.js"></script>
   <title>Page Host</title>
   <link rel="stylesheet" href="css/Explorer.css" />
   <script src="js/Explorer.js"></script>
@@ -90,13 +91,18 @@
     }
     window.onmessage = function(e) {
       console.log('PageHost recevied message: ' + e.data);
-      switch(e.data) {
+      switch(e.data.key) {
         case 'loaded':
           statusGreen();
           break;
         case 'loading':
           statusRed();
           console.log('handling loading in PageHost');
+          break;
+        case 'src':
+          let frm = document.getElementById('pgframe');
+          frm.src = e.data.value;
+          // alert(frm.src);
           break;
         case 'setsections':
           break;
@@ -127,6 +133,12 @@
     function load() {
       processQueryString();
       // setfs();
+      // let explorer = getCookie('explorer');
+      // if(isDefined(explorer)) {
+      //   frm = document.getElementById(pgframe);
+      //   frm.src = explorer;
+      // }
+      var dummy;
     }
     // function setfs() {
     //   const fsb = document.getElementById('fullscreen');
@@ -158,6 +170,30 @@
     function togglerf() {}  // recent files
     function togglebm() {}  // bookmarks
   </script>
+  <script>
+    function getParameterByName(name, url = window.location.href) {
+      name = name.replace(/[\[\]]/g, '\\$&');
+      var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+      results = regex.exec(url);
+      if (!results) return null;
+      if (!results[2]) return '';
+      return decodeURIComponent(results[2].replace(/\+/g, ' '));
+    }
+  
+    /*-- query string redirect processing --*/
+    function processQueryString() {
+    var url = window.location.href;
+    var src = getParameterByName("src", url);
+    if (isDefined(src)) { 
+      /*-- redirect to specified page --*/
+      let pf = document.getElementById("pgframe");
+      if (isDefined(src)) {
+        pf.src = src;
+        src = null;
+      }
+    }    
+  }  
+</script>
 </head>
 <body onload="load()">
   <header>
@@ -170,7 +206,8 @@
     <button id="pages" class="clickable topButton undef" onclick="togglebm()">pages</button> -->
     <button id="scroll" class="clickable topButton undef" onclick="togglebm()" style="width:10em;">persistent scroll</button>
   </header>
-  <iframe id="pgframe" src="Site/Explore.html" name = "pgframe"></iframe>
+  <iframe id="pgframe" name = "pgframe"></iframe>
+  <!-- <iframe id="pgframe" src="Site/Explore.html" name = "pgframe"></iframe> -->
   <script>
     /* this call has to be here, not in onload processing */
     handleIframeTransition();
