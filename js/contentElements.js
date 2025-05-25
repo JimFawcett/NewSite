@@ -115,12 +115,18 @@ function toggleSections() {
 */
 function showElement(id) {
   console.info('in showElement: id = ' + id);
-  showButton(id);
+  const elem = document.getElementById(id);
+  elem.classList.remove('hidden');
+  elem.classList.add('visible');
+  // showButton(id);
   setCookie(id, 'true', 1);
 }
 function hideElement(id) {
   console.info('in hideElement: id = ' + id);
-  hideButton(id);
+  const elem = document.getElementById(id);
+  elem.classList.remove('visible');
+  elem.classList.add('hidden');
+  // hideButton(id);
   setCookie(id,'false', 1);
 }
 // function toggleElement(id) {
@@ -136,8 +142,10 @@ function toggleElement(id) {
   const elem = document.getElementById(id);
   elem.classList.toggle('hidden');
   if(elem.classList.contains('hidden')) {
+    elem.classList.remove('visible');
     setCookie(id, false, 10);
   } else {
+    elem.classList.add('visible');
     setCookie(id, true, 10);
   }
 }
