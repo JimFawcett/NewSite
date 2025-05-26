@@ -150,9 +150,11 @@ function toggleTransitionElement(id) {
     if (element.classList.contains('hidden')) {
       element.classList.remove('hidden');
       element.classList.add('visible');
+      setCookie(id, 'true', 1);
     } else {
       element.classList.remove('visible');
       element.classList.add('hidden');
+      setCookie(id, 'false', 1);
     }
   } else {
     console.warn(`Element with ID ${id} not found.`);
