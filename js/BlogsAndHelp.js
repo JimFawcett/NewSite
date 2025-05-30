@@ -44,9 +44,8 @@ function buildBlogs() {
     blg.innerHTML =
     "<div class='darkItem menuHeader' onclick='hideBlogs()'>Blogs</div>\
     <div class='menuBody'>\
-      <a href='../Site/Explore.html?src=../Blogs/Blog_Prototype.html'>Blog_Prototype</a>\
-      <a href='../Site/Explore.html?src=../Blogs/Blog_CommCompare.html'>Comm Compare</a>\
       <a href='../Site/Explore.html?src=../Blogs/Blog.html'>First Things</a>\
+      <a href='../Site/Explore.html?src=../Blogs/Blog_CommCompare.html'>Comm Compare</a>\
       <a class='undef' href='javascript:;'>Rust Safety</a>\
       <div style='height:0.5em;'></div>\
     </div>";
@@ -201,7 +200,7 @@ function buildRes() {
       <a target='_blank' href='../../JimFawcett.github.io/index.html'>Old Site</a>\
       <a target='_blank' href='../GridExplorer/GridExplorer.html'>GridExplorer</a>\
       <a target='_blank' href='https://ecs.syr.edu/faculty/fawcett'>SU Site</a>\
-      <a target='_blank' href='https://github.com/mwcorley79'>MWCorely Site</a>\
+      <a target='_blank' href='https://github.com/mwcorley79'>MWCorley Site</a>\
       <div style='height:1.0em;'></div>\
     </div>";
     // res.addEventListener('mouseleave', function(event) {
