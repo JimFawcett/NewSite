@@ -13,9 +13,9 @@ function buildPages() {
       <a href='PythonBites_Intro.html'>Introduction</a>\
       <a href='PythonBites_HelloPython.html'>Hello</a>\
       <a href='PythonBites_Data.html'>Data</a>\
-      <a class='undef' href='javascript:;'>Objects</a>\
-      <a class='undef' href='javascript:;'>Everything's Generic</a>\
-      <a class='undef' href='javascript:;'>Iteration</a>\
+      <a href='PythonBites_Objects.html'>Objects</a>\
+      <a href='PythonBites_Generics.html'>Everything's Generic</a>\
+      <a class='undef' href='PythonBites_Iter.html'>Iteration</a>\
       <a class='undef' href='javascript:;'>Libraries</a>\
       <a class='undef' href='javascript:;'>more bites</a>\
       <a href='PythonBites_Glossary.html'>Glossary</a>\
