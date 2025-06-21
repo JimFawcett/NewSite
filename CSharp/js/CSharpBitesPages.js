@@ -17,6 +17,7 @@ function buildPages() {
       <a href='CSharpBites_Objects.html'>Objects</a>\
       <a href='CSharpBites_Generics.html'>Generics</a>\
       <a href='CSharpBites_Iteration.html'>Iteration</a>\
+      <a href='CSharpBites_Glossary.html'>Glossary</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }

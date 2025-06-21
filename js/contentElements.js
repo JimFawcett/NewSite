@@ -117,14 +117,14 @@ function showElement(id) {
   console.info('in showElement: id = ' + id);
   const elem = document.getElementById(id);
   elem.classList.remove('hidden');
-  elem.classList.add('visible');
+  // elem.classList.add('visible');
   // showButton(id);
   setCookie(id, 'true', 1);
 }
 function hideElement(id) {
   console.info('in hideElement: id = ' + id);
   const elem = document.getElementById(id);
-  elem.classList.remove('visible');
+  // elem.classList.remove('visible');
   elem.classList.add('hidden');
   // hideButton(id);
   setCookie(id,'false', 1);
@@ -142,10 +142,10 @@ function toggleElement(id) {
   const elem = document.getElementById(id);
   elem.classList.toggle('hidden');
   if(elem.classList.contains('hidden')) {
-    elem.classList.remove('visible');
+    // elem.classList.remove('visible');
     setCookie(id, false, 10);
   } else {
-    elem.classList.add('visible');
+    // elem.classList.add('visible');
     setCookie(id, true, 10);
   }
 }
@@ -156,9 +156,9 @@ function toggleTransitionElement(id) {
   if (element) {
     if (element.classList.contains('hidden')) {
       element.classList.remove('hidden');
-      element.classList.add('visible');
+      // element.classList.add('visible');
     } else {
-      element.classList.remove('visible');
+      // element.classList.remove('visible');
       element.classList.add('hidden');
     }
   } else {
