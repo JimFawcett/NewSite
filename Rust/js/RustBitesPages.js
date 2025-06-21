@@ -20,6 +20,7 @@ function buildPages() {
       <a href='RustBites_Iter.html'>Iteration</a>\
       <a class='undef' href='javascript:;'>Rust Safety</a>\
       <a class='undef' href='javascript:;'>many more coming</a>\
+      <a href='RustBites_Glossary.html'>Glossary</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
