@@ -164,10 +164,33 @@
     #github table#dev {
       table-layout: fixed;
       margin-right:6rem;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
 
     #github table#dev td {
       vertical-align: top;
+    }
+
+    #dev.allCols col:nth-child(1) { width: 6em !important; }
+    #dev.allCols col:nth-child(2) { width: 7em !important; }
+    /* columns 3–7 all 50em */
+    #dev.allCols col:nth-child(n+3):nth-child(-n+7) { width: 12em !important; }
+
+    #github form#left input[type=radio] {
+      /* enlarge the hit-area and the circle */
+      transform: scale(1.5);
+      /* give yourself some breathing room */
+      margin: 0.4em 0.6em 0.4em 0;
+      /* change the fill (modern browsers) */
+      accent-color: #b30000;  /* or any highlight color you like */
+    }
+
+    #github table#reftable th {
+      line-height: 0.9rem;
+    }
+    #github table#reftable td {
+      padding:0.25rem 1rem;
     }
   </style>
   <script>
@@ -183,7 +206,8 @@
       postFileName();
       // setCookie('#pages', 0, 10);
       setPersistantElements();
-      hideInfoMsgs();
+      // hideInfoMsgs();
+      initCheck();
     }
   </script>
   <script>
@@ -191,7 +215,7 @@
       clearCheck();
       //localStorage.clear();
       if (localStorage == undefined || localStorage.length < 1) {
-        document.getElementById("cpp").checked = true;
+        let cpp = document.getElementById("cpp").checked = true;
         cpp.click();
         localStorage.setItem("lang", "cpp");
         return;
@@ -200,7 +224,18 @@
       let rbl = document.getElementById(idl);
       rbl.click();
     }
+    function resetColWidths() {
+      document
+        .querySelectorAll('#dev col')
+        .forEach(col => {
+          col.removeAttribute('width');
+          col.style.removeProperty('width');
+        });
+    }
     function clearCheck() {
+      // resetColWidths();
+      document.getElementById("dev").classList.remove("allCols");
+
       let cpp2 = document.getElementsByClassName("Cpp");
       for (let i = 0; i < cpp2.length; ++i) {
         cpp2[i].style.display = "none";
@@ -221,9 +256,14 @@
       for (let i = 0; i < javascript2.length; ++i) {
         javascript2[i].style.display = "none";
       }
+      let all2 = document.getElementsByClassName("all");
+      for (let i = 0; i < all2.length; ++i) {
+        all2[i].style.display = "none";
+      }
     }
     function showCpp() {
       clearCheck();
+
       let cpp = document.getElementsByClassName("Cpp");
       for (let i = 0; i < cpp.length; ++i) {
         cpp[i].style.display = "table-cell";
@@ -262,6 +302,40 @@
       }
       localStorage.setItem("lang", "javascript");
     }
+    function showAll() {
+      clearCheck();
+      const classes = ["Cpp", "Rust", "CSharp", "Python", "JavaScript"];
+      for (const cls of classes) {
+        const elems = document.getElementsByClassName(cls);
+        for (let i = 0; i < elems.length; ++i) {
+          elems[i].style.display = "table-cell";
+        }
+      }
+      document.getElementById("dev").classList.add("allCols");
+      localStorage.setItem("lang", "all");
+
+      // const widths = [
+      //   "6em",  // column 0 (the radio‐button column)
+      //   "7em",  // column 1 (Topic)
+      //   "10em", // column 2 (C#)
+      //   "10em", // column 3 (C++)
+      //   "10em", // column 4 (Rust)
+      //   "10em", // column 5 (Python)
+      //   "10em"  // column 6 (JavaScript)
+      // ];
+      // const cols = document.querySelectorAll("#dev col");
+      // cols.forEach((col, i) => {
+      //   // set the width _attribute_
+      //   col.setAttribute("width", widths[i]);
+      //   // also set an inline style with !important
+      //   col.style.setProperty("width", widths[i], "important");
+      // });
+    }
+    function initCheck() {
+      let all = document.getElementById('all');
+      all.checked = true;
+      showAll();
+    }
   </script>  
 </head>
 <body id="github" onload="load()">
@@ -273,7 +347,7 @@
   <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
     Basics_Tooling.html<br />
     copyright &copy; James Fawcett<br />
-    Revised: 06/22/2025
+    Revised: 06/23/2025
   </div>
 
   <content-block>
@@ -293,7 +367,7 @@
         <div>
           <h3 id="prologue">1.0 Prologue</h3>
           <t-b>
-            In this Bit we look at processes for building programs and software systems using C#, C++, Rust, Python
+            In this Bite we look at processes for building programs and software systems using C#, C++, Rust, Python
             and JavaScript.
             The intent is to provide build processes for each of these languages that are as nearly identical as
             practical, and to enable builds on Windows, Linux, and macOS.
@@ -306,7 +380,7 @@
           </t-b>
           <t-b>
             Plugins provide debugging with the help of VS Code launch profiles written in JSON. We will show how
-            to set up and configure all of this, in this page, and in the &quot;Hello World&quot; Bits.
+            to set up and configure all of this, in this page, and in the &quot;<a target="_blank" href="../Rust/RustBites_HelloRust.html">Hello World</a>&quot; Bites.
           </t-b>
           <t-b>
             <div style="border:1px solid red; padding:0.5em 1.5em;">
@@ -645,29 +719,45 @@
           </t-b>
           <div style="height:1.0em;" class="clear"></div>
           <h3 id="devproc">5.0 Development Process:</h3>
-          <table id="dev">
+          <t-b>
+            The radio buttons below allow you to view installation and work flow for each of the languages individually or together,
+            enabling easy comparison. The content is the same in the all view and in each language view.
+          </t-b>
+          <div style="height:0.75rem;"></div>
+          <table id="dev" style="width:calc(100% - 6rem);">
+            <colgroup>
+              <col style="width: 6em;">
+              <col style="width: 7em;">
+              <col style="width: 40em;">
+              <col style="width: 40em;">
+              <col style="width: 40em;">
+              <col style="width: 40em;">
+              <col style="width: 40em;">
+            </colgroup>
             <tr>
-              <th style="width:4em; border:none;" class="lightItem"></th>
-              <th class="darkItem normal-font" style="width:7em;">Topic</th>
-              <th class="darkItem normal-font CSharp" style="width:50em;">C#</th>
-              <th class="darkItem normal-font Cpp" style="width:50em;">C++</th>
-              <th class="darkItem normal-font Rust" style="width: 50em;">Rust</th>
-              <th class="darkItem normal-font Python" style="width: 50em;">Python</th>
-              <th class="darkItem normal-font JavaScript" style="width: 50em;">JavaScript</th>
+              <th style="border:none;" class="lightItem"></th>
+              <th class="darkItem normal-font">Topic</th>
+              <th class="darkItem normal-font CSharp">C#</th>
+              <th class="darkItem normal-font Cpp">C++</th>
+              <th class="darkItem normal-font Rust">Rust</th>
+              <th class="darkItem normal-font Python">Python</th>
+              <th class="darkItem normal-font JavaScript">JavaScript</th>
             </tr>
             <tr>
               <td rowspan="2" style="border:none; padding:0em; margin:0em;">
                 <form id="left" name="left" style="margin-left:0em; padding:0em;">
+                  <input type="radio" id="all" name="lang1" value="1" onclick="showAll()">
+                  <label for="all">All</label><br />
+                  <input type="radio" id="cpp" name="lang1" value="2" onclick="showCpp()">
                   <label for="cpp">C++</label><br />
-                  <input type="radio" id="cpp" name="lang1" value="1" onclick="showCpp()"><br />
+                  <input type="radio" id="rust" name="lang1" value="3" onclick="showRust()">
                   <label for="rust">Rust</label><br />
-                  <input type="radio" id="rust" name="lang1" value="3" onclick="showRust()"><br />
+                  <input type="radio" id="csharp" name="lang1" value="4" onclick="showCSharp()">
                   <label for="csharp">C#&nbsp;</label><br />
-                  <input type="radio" id="csharp" name="lang1" value="2" onclick="showCSharp()"><br />
-                  <label for="python">Python</label><br />
-                  <input type="radio" id="python" name="lang1" value="4" onclick="showPython()"><br />
+                  <input type="radio" id="python" name="lang1" value="5" onclick="showPython()">
+                  <label for="python">Python</label><br>
+                  <input type="radio" id="javascript" name="lang1" value="6" onclick="showJavaScript()">
                   <label for="javascript">JvScpt</label><br />
-                  <input type="radio" id="javascript" name="lang1" value="5" onclick="showJavaScript()"><br />
                 </form>
               </td>
               <td class="topborder" style="vertical-align: top;">
@@ -914,15 +1004,107 @@
           <td class="elem topborder"><a id="epilog"></a></td>
         </tr>-->
           </table>
-          <div style="height:1.0rem;"></div>
-          <h3 id="epilogue">6.0 Epilogue</h3>
-          <t-b>
-            The following pages provide sequences of small code examples in each of the languages
-            cited here, e.g. C#, C++, Rust, Python, and JavaScript.  Object model differences will
-            often be pointed out in comments within code blocks.
-          </t-b>
         </div>
-        <div style="height:10rem;"></div>
+
+        <div style="height:1.75rem;"></div>
+        <h3 id="refs">6.0 References</h3>
+        <div style="height:0.75rem;"></div>
+    <table id="reftable" border="2" cellpadding="8" cellspacing="0">
+      <thead>
+        <tr><th colspan="2">VS Code Resources</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><a target="_blank" href="https://code.visualstudio.com/docs">VS Code Documentation (Official)</a></td>
+          <td>Getting started, editing, extensions, debugging, Git, customization</td>
+        </tr>
+        <tr>
+          <td><a target="_blank" href="https://www.youtube.com/c/Code/videos">VS Code YouTube Channel</a></td>
+          <td>Official tutorials and video features</td>
+        </tr>
+      </tbody>
+
+      <thead>
+        <tr><th colspan="2">Tutorials</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><a target="_blank" href="https://code.visualstudio.com/docs/introvideos/basics">Microsoft: VS Code Tutorial for Beginners</a></td>
+          <td>Setup, features, and popular extensions</td>
+        </tr>
+        <tr>
+          <td><a target="_blank" href="https://learn.microsoft.com/en-us/shows/visual-studio-code/learn-visual-studio-code-in-7min-official-beginner-tutorial">Microsoft: Getting Started with VS Code</a></td>
+          <td>Setup, interface, shortcuts, development basics</td>
+        </tr>
+        <!-- <tr>
+          <td><a target="_blank" href="https://learn.microsoft.com/en-us/training/modules/introduction-to-vs-code/">Microsoft Learn: Introduction to VS Code</a></td>
+          <td>Interactive course covering fundamentals</td>
+        </tr> -->
+        <tr>
+          <td><a target="_blank" href="https://www.codecademy.com/article/visual-studio-code">codecademy: Getting Started with VS Code</a></td>
+          <td>Starts from very begining</td>
+        </tr>
+        <tr>
+          <td><a target="_blank" href="https://www.w3schools.io/editor/vscode-installation/">w3schools: VS Code Installation</a></td>
+          <td>Starts from very begining</td>
+        </tr>
+      </tbody>
+
+      <thead>
+        <tr><th colspan="2">Language-Specific Setup</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><a target="_blank" href="https://code.visualstudio.com/docs/python/python-tutorial">Python in VS Code</a></td>
+          <td>Python development workflow</td>
+        </tr>
+        <tr>
+          <td><a target="_blank" href="https://code.visualstudio.com/docs/cpp/config-msvc">C++ in VS Code</a></td>
+          <td>MSVC configuration and C++ workflow</td>
+        </tr>
+        <tr>
+          <td><a target="_blank" href="https://code.visualstudio.com/docs/languages/rust">Rust in VS Code (Rust Analyzer)</a></td>
+          <td>Rust setup and tooling support</td>
+        </tr>
+        <tr>
+          <td><a target="_blank" href="https://code.visualstudio.com/docs/nodejs/nodejs-tutorial">JavaScript/TypeScript: Node.js Development</a></td>
+          <td>VS Code for Node.js and frontend work</td>
+        </tr>
+        <tr>
+          <td><a target="_blank" href="https://code.visualstudio.com/docs/editor/userdefinedsnippets#_example-snippet">HTML/CSS/JS: Web Development Basics</a></td>
+          <td>Snippets, editing, and live preview tips</td>
+        </tr>
+      </tbody>
+
+      <thead>
+        <tr><th colspan="2">Interactive & Guided Learning</th></tr>
+      </thead>
+      <tbody>
+        <!-- <tr>
+          <td><a target="_blank" href="https://www.codecademy.com/learn/learn-visual-studio-code">Codecademy: Learn VS Code</a></td>
+          <td>Interactive tutorials with challenges</td>
+        </tr> -->
+        <tr>
+          <td><a target="_blank" href="https://www.linkedin.com/learning/visual-studio-code-essential-training">LinkedIn Learning: Essential Training</a></td>
+          <td>In-depth training (subscription or library access)</td>
+        </tr>
+      </tbody>
+
+      <thead>
+        <tr><th colspan="2">Reference Cheat Sheets</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><a target="_blank" href="https://code.visualstudio.com/shortcuts/keyboard-shortcuts-windows.pdf">Keyboard Shortcuts (PDF)</a></td>
+          <td>Printable reference for Windows shortcuts</td>
+        </tr>
+        <tr>
+          <td><a target="_blank" href="https://code.visualstudio.com/docs/getstarted/tips-and-tricks">VS Code Tips and Tricks</a></td>
+          <td>Advanced tips for power users</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="height:10rem;"></div>
   </content-block>
   <div id="bottomMenu">
     <div id="keys" class="hidden"></div>
@@ -930,10 +1112,14 @@
       <div class="darkItem listheader" onclick="toggleSections()">Page Sections</div>
       <div class="menuBody">
         <a href="#top">top</a>
-        <menu-elem class="secElem"><a href="#IOCP">IOCP</a></menu-elem>
-        <menu-elem class="secElem"><a href="#msg">msg-ing</a></menu-elem>
-        <menu-elem class="secElem"><a href="#streams">streams</a></menu-elem>
-        <menu-elem class="secElem"><a href="#conseq">conseq</a></menu-elem>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#tools">tool chains</a></menu-elem>
+        <menu-elem class="secElem"><a href="#vscode">VS Code</a></menu-elem>
+        <menu-elem class="secElem"><a href="#settings">settings</a></menu-elem>
+        <menu-elem class="secElem"><a href="#setup">setup</a></menu-elem>
+        <menu-elem class="secElem"><a href="#git">github repos</a></menu-elem>
+        <menu-elem class="secElem"><a href="#clone">clone repo</a></menu-elem>
+        <menu-elem class="secElem"><a href="#devproc">dev proc</a></menu-elem>
         <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
         <a href="#bottom">bottom</a>
       </div>
