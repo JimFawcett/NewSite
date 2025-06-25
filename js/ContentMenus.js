@@ -149,10 +149,10 @@ function toggleTransitionElement(id) {
   if (element) {
     if (element.classList.contains('hidden')) {
       element.classList.remove('hidden');
-      element.classList.add('visible');
+      // element.classList.add('visible');
       setCookie(id, 'true', 1);
     } else {
-      element.classList.remove('visible');
+      // element.classList.remove('visible');
       element.classList.add('hidden');
       setCookie(id, 'false', 1);
     }
@@ -178,13 +178,21 @@ function setElements(id) {
       // console.info('id: ' + id)
       // console.info('cookie value: ' + getCookie(id));
       break;
+    case undefined:
+      setCookie(id, 'false', 1);
+      hideButton(id);
+      // console.info('id: ' + id)
+      // console.info('cookie value: ' + getCookie(id));
+      break;
     case 'true':
       showButton(id);
+      setCookie(id, 'true', 1);
       // toggleElement(id); // changed 1/20
       // console.info('cookie value: ' + getCookie(id));
       break;
     case 'false':
       hideButton(id);  //added 1/20
+      setCookie(id, 'false', 1);
       // console.info('cookie value: ' + getCookie(id));
     default:
       setCookie(id, 'true', 1);
