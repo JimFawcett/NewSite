@@ -13,7 +13,7 @@ function buildPages() {
       <a href='SiteMap.html'>Site Map</a>\
       <a href='SiteDemo.html'>Site Demo</a>\
       <a href='SiteDesign.html'>Site Design</a>\
-      <a class='undef' href='javascript:;'>References</a>\
+      <a href='SiteRepos.html'>Site Repos</a>\
       <a class='undef' href='javascript:;'>Recent Changes</a>\
       </div>\
     <div style='height:0.5em;'></div>";
