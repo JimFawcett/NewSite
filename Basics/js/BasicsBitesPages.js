@@ -18,6 +18,7 @@ function buildPages() {
         <a href='Basics_SysRescr.html'>System Resources</a>\
         <a href='Basics_Languages.html'>Languages</a>\
         <a href='Basics_Tooling.html'>Tooling</a>\
+        <a href='BasicsBites_Glossary.html'>Glossary</a>\
         <a href='Basics_Plans.html'>Plans</a>\
       </div>\
     <div style='height:0.5em;'></div>";
