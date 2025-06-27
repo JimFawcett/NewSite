@@ -197,7 +197,7 @@ function buildRes() {
       <a target='_blank' href='https://jimfawcett.github.io/personalComputerSecurity.html'>Computer Security</a>\
       <div style='height:0.25rem;'></div>\
       <div class='category'>-neighborhoods-</div>\
-      <a target='_blank' href='../../JimFawcett.github.io/index.html'>Old Site</a>\
+      <a target='_blank' href='../../JimFawcett.github.io/indexOld.html'>Old Site</a>\
       <a target='_blank' href='../GridExplorer/GridExplorer.html'>GridExplorer</a>\
       <a target='_blank' href='https://ecs.syr.edu/faculty/fawcett'>SU Site</a>\
       <a target='_blank' href='https://github.com/mwcorley79'>MWCorley Site</a>\
