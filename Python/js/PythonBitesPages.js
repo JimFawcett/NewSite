@@ -17,7 +17,7 @@ function buildPages() {
       <a href='PythonBites_Generics.html'>Everything's Generic</a>\
       <a href='PythonBites_Iter.html'>Iteration</a>\
       <a class='undef' href='javascript:;'>Libraries</a>\
-      <a class='undef' href='javascript:;'>more bites</a>\
+      <a href='PythonBites_References.html'>References</a>\
       <a href='PythonBites_Glossary.html'>Glossary</a>\
       </div>\
     <div style='height:0.5em;'></div>";
