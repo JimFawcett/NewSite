@@ -291,7 +291,7 @@ window.onmessage = function (e) {
 function setbg(anchor) {
   const collection = document.getElementsByClassName("clickable");
   for(let i = 0; i < collection.length; i++) {
-    collection[i].style.color = 'var(--unclickclr)';
+    collection[i].style.color = 'var(--lpanel)';
   }
   anchor.style.color = 'var(--clickclr)';
 }
