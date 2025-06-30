@@ -98,7 +98,7 @@ function buildHelp() {
       <a class='undef' target='_self' href='javascript:;'>MSBuild</a>\
       <a target='rpanel' href='../Help/Help_DotNet.html'>DotNet</a>\
       <a target='rpanel' href='../Help/Help_Git.html'>Git</a>\
-      <a target='rpanel' href='../Help/Help_GitHub.html'>GitHub</a>\
+      <a class='undef' target='rpanel' href='javascript:;'>GitHub</a>\
       <a target='rpanel' href='../Help/Help_PowerShell.html'>PowerShell</a>\
       <a target='rpanel' href='../Help/Help_RegEx.html'>RegEx</a>\
       <a target='rpanel' href='../Help/Help_ChatGPT.html'>ChatGPT</a>\
