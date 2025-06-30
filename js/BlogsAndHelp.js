@@ -43,7 +43,7 @@ function buildBlogs() {
   if(isDefined(blg)) {
     blg.innerHTML =
     "<div class='darkItem menuHeader' onclick='hideBlogs()'>Blogs</div>\
-    <div class='menuBody'>\
+    <div onmouseleave='hideBlogs()' class='menuBody'>\
       <a href='../Site/Explore.html?src=../Blogs/Blog.html'>First Things</a>\
       <a href='../Site/Explore.html?src=../Blogs/Blog_CommCompare.html'>Comm Compare</a>\
       <a class='undef' href='javascript:;'>Rust Safety</a>\
@@ -91,7 +91,7 @@ function buildHelp() {
   if(isDefined(hlp)) {
     hlp.innerHTML =
     "<div class='darkItem menuHeader' onclick='hideHelp()'>Help</div>\
-    <div class='menuBody'>\
+    <div onmouseleave='hideHelp()' class='menuBody'>\
       <a target='rpanel' href='../Help/Help_VSCode.html'>VS Code</a>\
       <a target='rpanel' href='../Help/Help_Cargo.html'>Rust Cargo</a>\
       <a target='rpanel' href='../Help/Help_CMake.html'>CMake</a>\
@@ -149,7 +149,7 @@ function buildRes() {
   if(isDefined(res)) {
     res.innerHTML =
     "<div class='darkItem menuHeader' onclick='hideRes()'>Resources</div>\
-    <div class='menuBody'>\
+    <div onmouseleave='hideRes()' class='menuBody'>\
       <div class='category'>-documents-</div>\
       <details style='margin-left:0.5rem;'>\
         <summary>ChatGPT Topics</summary>\

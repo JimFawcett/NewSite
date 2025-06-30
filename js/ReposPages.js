@@ -10,6 +10,7 @@ function buildPages() {
     pgs.innerHTML =
     "<div class='darkItem listheader' style='text-align:center' onclick='togglePages()'>Repos Pages</div>\
     <div class='menuBody'>\
+      <a href='../Site/SiteRepos.html'>Site Repos</a>\
       <a href='../Rust/RustRepos.html'>Rust Repos</a>\
       <a href='../Cpp/CppRepos.html'>C++ Repos</a>\
       <a href='../CSharp/CSharpRepos.html'>C# Repos</a>\
