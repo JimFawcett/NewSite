@@ -126,12 +126,12 @@ function goPrevSelf() {
     or one of its immediate subdirectories
 */
 function goHome() {
-  let url = "Explore.html?src=SiteHome.html";
+  let url = "../Site/Explore.html?src=SiteHome.html";
   if(dirName() === 'NewSite') {
     window.parent.location = url;
   }
   else {
-    window.parent.location = "../" + url;
+    window.parent.location = url;
   }
 }
 /*---------------------------------------------------------
@@ -141,12 +141,12 @@ function goHome() {
 */
 function dirName() {
   let path = window.location.href;
-  alert(path);
+  // alert(path);
   path = path.replace(/^file:\/\//i, "");
   if (path.split('/').pop().includes('.')) {
     path = path.substring(0, path.lastIndexOf('/'));
   }
-  alert(path);
+  // alert(path);
   return path.split('/').pop();
   // return path;
 }
