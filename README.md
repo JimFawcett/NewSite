@@ -3,7 +3,7 @@ Replaces original site designed for me to learn Rust by trying to explain it.
 The original site grew to document languages: Rust, C++, C#, Python, and 
 Static web technologies, with code and discussions.
 
-The original site grew to be complex to use and maintain.
+The original site became complex to use and maintain.
 NewSite is intended to make usability and maintenance improvements.
 
 <img src="pictures/HomePic.png">
