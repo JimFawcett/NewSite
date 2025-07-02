@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<!--
+  BasicBites_Intro.html
+-->
+<head>
+  <title>Design Structure</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/StylesPageFrameDefaults.css" />
+  <link rel="stylesheet" href="css/StylesPageFrameStructure.css" />
+  <link rel="stylesheet" href="css/StylesPageFrameMenus.css" />
+  <link rel="stylesheet" href="css/StylesPageFrameThemeDefault.css" />
+  <link rel="stylesheet" href="css/StylesWebComponents.css" />
+  <script src="js/ScriptsWebComponents.js"></script>
+  <script src="js/ScriptsPageFrameDesignTrack.js"></script>
+  <script src="js/ScriptsPageFramePagesDesignTrack.js"></script>
+  <script src="js/ScriptsPageFrameKeyboard.js"></script>
+  <style>
+    #github table {
+      width: 90%;
+      border: 1px solid black;
+    }
+
+      #github table tr {
+        border: 1px solid var(--dark);
+      }
+
+        #github table tr th {
+          color: var(--dark);
+          background-color: var(--menu);
+        }
+
+        #github table tr td {
+          color: var(--dark);
+          background-color: var(--light);
+        }
+
+      #github table a:link {
+        color: var(--dark);
+        background-color: transparent;
+      }
+
+      #github table a:visited {
+        color: var(--dark);
+        background-color: transparent;
+      }
+
+      #github table a:hover {
+        color: var(--dark);
+        background-color: transparent;
+      }
+
+      #github table a:active {
+        color: var(--dark);
+        background-color: transparent;
+      }
+  </style>
+  <!--   <script>
+      window.onmessage = function () {
+        bottomMenu.sections();
+      }
+    </script>
+   -->
+</head>
+<body id="github" onload="initialize()">
+
+  <a id="Next" href="DesignBites_StructureBasic.html">Next</a>
+  <a id="Prev" href="Design.html">Prev</a>
+
+  <page-frame>
+    <frame-header>
+      <nav id="navbar"></nav>
+    </frame-header>
+    <main>
+      <div id="about" onclick="this.style.display = 'none'">about</div>
+      <div id="modified">3/07/2022</div>
+      <div id="page">Structure</div>
+      <div id="hlp"></div>
+      <a id="top"></a>
+      <content>
+        <header id="pagetitle" onclick="loadifdesign()" style="cursor:pointer;">
+          <h1>Design Bite - Structure</h1>
+          <h3 id="subtitle" class="indent">Motivated by TextFinder project</h3>
+        </header>
+        <t-b class="indent">
+          &quot;The only way you can coast is downhill&quot;<br />
+          - anonymous
+        </t-b>
+        <hr style="margin:1em 0em 1.5em 0em;" />
+        <a id="motivation"></a>
+        <h3>1.0 Motivation</h3>
+        <div class="indents">
+          <t-b>
+            As you look over the specifications for <a href="../BuildOn/Step0.html">TextFinder</a> and
+            its parts: <a href="../BuildOn/Step1.html">TextSearch</a>, <a href="../BuildOn/Step2.html">DirNav</a>,
+            <a href="../BuildOn/Step3.html">CmdlnParser</a>, and <a href="../BuildOn/Step4.html">Executive &amp; Display</a>,
+            you may be puzzled by some of its structure like DirEvent and SearchEvent.  Here, we explore
+            design structure alternatives and think about how they apply to TextFinder.
+          </t-b>
+          <t-b>
+            Look back at the <a href="DesignBites_Intro.html#impl">TextFinder Implementation</a> structure.  In these
+            Bites we will be exploring why this structure makes sense for this project.
+          </t-b>
+          <t-b>
+            TextFinder is unique in that it is relatively small, has understandable operations, but still presents
+            a number of opportunities to explore design variations.  One particularly relevant feature is its
+            display of output, as shown in Figure 1.  That displays a tiny bit of implementation and a good look
+            at its output, as provided by my solution for the TextFinder BuildOn project.
+          </t-b>
+          <t-b>
+            For each of the parts: TextSearch, DirNav, CmdlnParser, and Executive &amp; Display, there is code
+            in the Rust <a href="https://github.com/JimFawcett/BuildOn">BuildOn repository</a>,
+            with brief discussions in the <a href="../../BuildOn.html">BuildOn Repo Doc</a>.
+          </t-b>
+        </div>
+        <div class="indents">
+          <photosizer-block src="pictures/TextFinderExecution.jpg" width="800" class="photoSizerBlock" style="margin-top:0;">
+            <span style="
+          display: inline-block;
+          font-weight: bold;
+          font-family: 'Comic Sans MS, Tahoma';
+          background-color: #ddd;
+          width: 100%;
+          padding: 5px 0px;
+        ">
+              Figure 1. TextFinder Execution
+            </span>
+          </photosizer-block>
+        </div>
+        <div class="indents">
+          <t-b>
+            Large software systems may be composed of hundreds of thousands, even millions, of lines of source code.  Much more than any
+            developer can understand completely.  In order to use and maintain these systems a developer needs to have some way of
+            understanding their properties and expected operations.
+          </t-b>
+          <t-b>
+            Most often we factor systems into components that are small enough to be well understood and visualize the complete system
+            as couplings of these smaller components.  Often the components themselves may be decomposed into fundamental parts.
+          </t-b>
+          <t-b>
+            An abstraction consists of a set of components with specified responsibilities and usually one or more diagrams That
+            illustrate ownership and usage relationships between components.  That&apos;s what we will see here.
+          </t-b>
+          <t-b>
+            One of the things that drives the design structure of TextFinder is the output as shown in Figure 1.  Depending
+            on where we start in a directory tree, the output may be very large and may take a significant amount of time
+            to generate.  If we do all the processing before displaying any output the user may have a very unsatisfying
+            experience.  Is the program still running?  What kinds of output am I going to get?  I&apos;m bored.  Please
+            amuse me.
+          </t-b>
+          <t-b>
+            This leads us to a design structure that provides users with continuous output as the search process
+            unfolds.  You can see how that works by cloning and building
+            <a href="https://github.com/JimFawcett/RustTextFinder">Rust Textfinder</a>.
+          </t-b>
+          <t-b>
+            We will step through five alternatives for a simpler program, line counter, with a structure that
+            displays output continuously.
+            We chose to use the line count process because it is small enough that we can easily see how
+            the structures come to gether and operate.  Exactly the same ideas apply to TextFinder.
+          </t-b>
+        </div>
+        <a id="structure"></a>
+        <div style="height:0.75rem;"></div>
+        <h3>2. Application Structure</h3>
+        <t-b>
+          The design alternatives summarized in the <a href="../../DesignBites.html#summary">Design Bites</a> repository documentation
+          are explored with discussion and code in the following Bites.
+        </t-b>
+        <div class="indents">
+          <t-b>
+            Five design alternatives considered:
+            <ol class="tight" style="margin-left:2em;">
+              <li><a href="DesignBites_StructureBasic.html">Monolithic Structure</a></li>
+              <li><a href="DesignBites_StructureFactored.html">Factored Structure</a></li>
+              <li><a href="DesignBites_StructureDataFlow.html">DataFlow Structure</a></li>
+              <li><a href="DesignBites_StructureTypeErase.html">TypeErase Structure</a></li>
+              <li><a href="DesignBites_StructurePlugIn.html">PlugIn Structure</a></li>
+            </ol>
+            They are progressively more flexible, eventually resulting in reusable components, but also increasingly
+            complex.  Where you settle in these alternatives is determined by design context.  Is this a
+            one-of-a-kind project that you want to finish quickly or is it
+            heading for production code that will be maintained by more than one developer?
+          </t-b>
+        </div>
+      </content>
+      <a id="bottom"></a>
+      <page-TOC id="pages" style="display:none;">
+      </page-TOC>
+      <page-sections id="sections" style="display:none;">
+        <sec-elem style="width:0.0em">&nbsp;</sec-elem>
+        <menu-elem class="secElem"><a href="#bottom">bottom</a></menu-elem>
+        <menu-elem class="secElem"><a href="#structure">structure</a></menu-elem>
+        <menu-elem class="secElem"><a href="#motivation">motivation</a></menu-elem>
+        <menu-elem class="secElem"><a href="#top">top</a></menu-elem>
+        <div class='darkItem popupHeader' style="padding:0.25em 2.0em;" onclick="this.parentElement.style.display='none'">Sections</div>
+      </page-sections>
+    </main>
+    <frame-footer>
+      <menu-item style="width:1.0em;">&nbsp;</menu-item>
+      <menu-elem id="nextLink2" onclick="bottomMenu.next()">Next</menu-elem>
+      <menu-elem id="prevLink2" onclick="bottomMenu.prev()">Prev</menu-elem>
+      <menu-elem id="pgbtn" onclick="bottomMenu.pages()">Pages</menu-elem>
+      <menu-elem onclick="bottomMenu.sections()">Sections</menu-elem>
+      <menu-elem onclick="bottomMenu.about()">About</menu-elem>
+      <menu-elem id="kysbtn" onclick="storyHlpMenu.keys()">Keys</menu-elem>
+      <div style="margin-right:1em">
+        <span id="loc" style="display:inline-block; font-weight:normal"></span>
+      </div>
+    </frame-footer>
+  </page-frame>
+  <script>
+    let loc = document.getElementById("loc");
+    let fn = window.location.href.split(/\/|\\/).pop();
+    loc.innerHTML = fn + ": ";
+  </script>
+</body>
+</html>
