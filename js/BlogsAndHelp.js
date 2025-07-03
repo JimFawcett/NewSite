@@ -177,6 +177,7 @@ function buildRes() {
       <div class='category'>-Tests-</div>\
       <details style='margin-left:0.5rem;'>\
         <summary>Web Tech Tests</summary>\
+        <a target='_top' href='../Tests/SplitterComponent/SplitterComponent.html'>Splitter Component</a>\
         <a target='_top' href='../Tests/GridExplorer/GridExplorer.html'>GridExplorer</a>\
         <a target='_top' href='../Tests/FigureSizer/ImageSizer.html'>FigureSizer</a>\
         <a target='_top' href='../Tests/link-navigator/LinkNavigator.html'>LinkNavigator</a>\
