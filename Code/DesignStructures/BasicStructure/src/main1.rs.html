@@ -1,0 +1,120 @@
+<pre>/////////////////////////////////////////////////////////////
+// basic_structure::main.rs                                //
+//                                                         //
+// Jim Fawcett, https://JimFawcett.github.io, 07 Mar 2021  //
+/////////////////////////////////////////////////////////////
+/*
+  BasicStructure
+  - Demonstrates simplest form of structure: everything, e.g.,
+    input, computation, and output, in one package.
+  - It counts the number of lines in a file specified on the
+    command line.
+*/
+#![allow(dead_code)]
+use std::fs::*;
+use std::io::{Read, Error, ErrorKind};
+
+/*-- part of input processing --*/
+fn open_file_for_read(file_name:&amp;str) 
+     -&gt;Result&lt;File, std::io::Error&gt; {
+    let rfile = OpenOptions::new()
+               .read(true)
+               .open(file_name);
+    rfile
+}
+/*-- part of compute processing --*/
+fn read_file_to_string(f:&amp;mut File) 
+     -&gt; Result&lt;String, std::io::Error&gt; {
+  let mut contents = String::new();
+  let bytes_rslt = f.read_to_string(&amp;mut contents);
+  if bytes_rslt.is_ok() {
+    Ok(contents)
+  }
+  else {
+      Err(Error::new(ErrorKind::Other, "read error"))
+  }
+}
+
+#[derive(Debug)]
+struct Basic {
+    name: String,
+    file: Option&lt;File&gt;,
+    lines: usize,
+}
+impl Basic {
+    fn new() -&gt; Basic {
+        Basic {
+            name: String::new(),
+            file: None,
+            lines: 0,
+        }
+    }
+    /*-----------------------------------------------------
+      Input processing
+    */
+    fn parse_cmdln() -&gt; Vec&lt;String&gt; {
+        let cl_iter = std::env::args().into_iter();
+        let args: Vec&lt;String&gt; = cl_iter.skip(1).collect();
+        args
+    }
+    fn show_cmdln(args: &amp;Vec&lt;String&gt;)  {
+        if args.len() == 0 {
+            return;
+        }
+        print!("\n  {}", args[0]);
+        for arg in &amp;args[1..] {
+            print!(", {}", arg);
+        }
+    }
+    fn input(&amp;mut self, name: &amp;str) {
+        self.name = name.to_string();
+        let rslt = open_file_for_read(name);
+        if let Ok(file) = rslt {
+            self.file = Option::Some(file);
+        }
+        else {
+            print!("\n  can't open file {:?}", name);
+        }
+    }
+    /*-----------------------------------------------------
+      Compute processing
+    */
+    fn compute(&amp;mut self) {
+        if let Some(file) = &amp;mut self.file {
+            let rslt = read_file_to_string(file);
+            if let Ok(contents) = rslt {
+                self.lines = 1;
+                for ch in contents.chars() {
+                    if ch == '\n' {
+                        self.lines += 1;
+                    }
+                }
+            }
+        }
+    }
+    /*-----------------------------------------------------
+      Output processing
+    */
+    fn output(&amp;self) {
+        print!("\n  {:4} lines in {:?}", self.lines, self.name);
+    }
+}
+/*---------------------------------------------------------
+  Executive processing
+*/
+fn main() {
+
+    print!("\n  -- counting lines in files --\n");
+
+    let mut basic = Basic::new();
+    let args = Basic::parse_cmdln();
+
+    for name in args {
+        basic.input(&amp;name);
+        basic.compute();
+        basic.output();
+    }
+
+    println!("\n\n  That's all Folks!\n\n");
+}
+</pre>
