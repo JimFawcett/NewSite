@@ -71,6 +71,18 @@ window.onmessage = function (event) {
       }
       break;
 
+    case 'url':
+      // alert('url');
+      let url = document.getElementById('url');
+      if(url.classList.contains('hidden')) {
+        url.classList.remove('hidden');
+        url.innerHTML='<a href=' + window.location.href + '>' + window.location.href + '</a>';
+      } else {
+        url.classList.add('hidden');
+      }
+      // alert('done');
+      break;
+
     default:
       console.log('no match for message data');
   }
