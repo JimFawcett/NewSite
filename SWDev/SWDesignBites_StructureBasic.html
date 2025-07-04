@@ -26,6 +26,9 @@
   <script src="../js/cookies.js"></script>
   <script src="../js/contentElements.js"></script>
   <script src="../js/contentMessages.js"></script>
+  <script src="../js/SplitterComponent.js"></script>
+  <link rel="stylesheet" href="../css/prism.css">
+  <script src="../js/prism.js"></script>
   <style>
     .menuHeader {
       padding:0.0rem 0.5rem 0.25rem 0.5rem;
@@ -62,6 +65,17 @@
     }
     #github ol.tight {
       padding-bottom:0.25rem;
+    }
+    #github splitter-container {
+      height:30rem;
+    }
+    #github pre {
+      line-height: 1.25rem;
+      padding: 0.25rem 1.25rem;
+      margin:0.25rem;
+      height:30rem;
+      overflow-y: auto;
+      /* background-color: black; */
     }
   </style>
 </head>
@@ -127,7 +141,7 @@
             used to implement processing, e.g., counting lines of code in files specified on the command line.
           </t-b>
         </div>
-        <div style="width:calc(100vw - 4rem);">
+        <div id="fig1" style="width:calc(100vw - 4rem);">
           <div style="display:flex; float:right; padding:1rem;">
             <photosizer-block src="pictures/Design1.jpg" width="400" class="photoSizerBlock" style="margin-top:0; float: right;">
               <span style="
@@ -173,14 +187,11 @@
         </div>
         <div style="height:0.5rem;"></div>
         <!-- <hr class="spread" /> -->
-        <a class="indent" href="https://github.com/JimFawcett/DesignStructure/tree/master/BasicStructure">Basic Code Repository</a>
+        <a class="indent" target="_blank" href="https://github.com/JimFawcett/NewSite/tree/main/Code/DesignStructure">DesignStructure Repository</a>
         <div style="height:1.0em;"></div>
-        <div class="indent">
-          <defn-OuterBlock>
-            <defn-block>
-              <defn-head>Source</defn-head>
-              <defn-code>
-/////////////////////////////////////////////////////////////
+        <splitter-container left-width="35rem;" style="height:30rem;">
+          <div slot="first">
+            <pre><code class="language-rust">/////////////////////////////////////////////////////////////
 // basic_structure::main.rs                                //
 //                                                         //
 // Jim Fawcett, https://JimFawcett.github.io, 07 Mar 2021  //
@@ -191,40 +202,36 @@
     input, computation, and output, in one package.
   - It counts the number of lines in a file specified on the
     command line.
+  - Simple so we can focus on code structure.
 */
 #![allow(dead_code)]
 use std::fs::*;
-use std::io::{Read, Error, ErrorKind};
- 
+use std::io::{Error, ErrorKind, Read};
+
 /*-- part of input processing --*/
-fn open_file_for_read(file_name:&amp;str)
-     -&gt;Result&lt;File, std::io::Error&gt; {
-  let rfile = OpenOptions::new()
-  .read(true)
-  .open(file_name);
+fn open_file_for_read(file_name: &str) -> Result<File, std::io::Error> {
+  let rfile = OpenOptions::new().read(true).open(file_name);
   rfile
 }
 /*-- part of compute processing --*/
-fn read_file_to_string(f:&amp;mut File)
--&gt; Result&lt;String, std::io::Error&gt; {
+fn read_file_to_string(f: &mut File) -> Result<String, std::io::Error> {
   let mut contents = String::new();
-  let bytes_rslt = f.read_to_string(&amp;mut contents);
+  let bytes_rslt = f.read_to_string(&mut contents);
   if bytes_rslt.is_ok() {
     Ok(contents)
-  }
-  else {
+  } else {
     Err(Error::new(ErrorKind::Other, "read error"))
   }
 }
- 
+
 #[derive(Debug)]
 struct Basic {
   name: String,
-  file: Option&lt;File&gt;,
+  file: Option<File>,
   lines: usize,
 }
 impl Basic {
-  fn new() -&gt; Basic {
+  fn new() -> Basic {
     Basic {
       name: String::new(),
       file: None,
@@ -232,37 +239,36 @@ impl Basic {
     }
   }
   /*-----------------------------------------------------
-  Input processing
+    Input processing
   */
-  fn parse_cmdln() -&gt; Vec&lt;String&gt; {
-    let cl_iter = std::env::args().into_iter();
-    let args: Vec&lt;String&gt; = cl_iter.skip(1).collect();
+  fn parse_cmdln() -> Vec<String> {
+    let cl_iter = std::env::args();
+    let args: Vec<String> = cl_iter.skip(1).collect();
     args
   }
-  fn show_cmdln(args: &amp;Vec&lt;String&gt;)  {
-    if args.len() == 0 {
+  fn show_cmdln(args: &[String]) {
+    if args.is_empty() {
       return;
     }
     print!("\n  {}", args[0]);
-    for arg in &amp;args[1..] {
+    for arg in &args[1..] {
       print!(", {}", arg);
     }
   }
-  fn input(&amp;mut self, name: &amp;str) {
+  fn input(&mut self, name: &str) {
     self.name = name.to_string();
     let rslt = open_file_for_read(name);
     if let Ok(file) = rslt {
       self.file = Option::Some(file);
-    }
-    else {
+    } else {
       print!("\n  can't open file {:?}", name);
     }
   }
   /*-----------------------------------------------------
-  Compute processing
+    Compute processing
   */
-  fn compute(&amp;mut self) {
-    if let Some(file) = &amp;mut self.file {
+  fn compute(&mut self) {
+    if let Some(file) = &mut self.file {
       let rslt = read_file_to_string(file);
       if let Ok(contents) = rslt {
         self.lines = 1;
@@ -275,62 +281,60 @@ impl Basic {
     }
   }
   /*-----------------------------------------------------
-  Output processing
+    Output processing
   */
-  fn output(&amp;self) {
+  fn output(&self) {
     print!("\n  {:4} lines in {:?}", self.lines, self.name);
-   }
- }
- /*---------------------------------------------------------
- Executive processing
- */
- fn main() {
-   
-   print!("\n  -- counting lines in files --\n");
-   
-   let mut basic = Basic::new();
-   let args = Basic::parse_cmdln();
-   
-   for name in args {
-     basic.input(&amp;name);
-     basic.compute();
-     basic.output();
-   }
-   
-   println!("\n\n  That's all Folks!\n\n");
- }              </defn-code>
-            </defn-block>
-            <defn-block>
-              <defn-head>Output</defn-head>
-              <defn-code>
-                cargo run -q ./src/main.rs cargo.toml
+  }
+}
+/*---------------------------------------------------------
+  Executive processing
+*/
+fn main() {
+  print!("\n  -- counting lines in files --\n");
 
-                -- counting lines in files --
+  let mut basic = Basic::new();
+  let args = Basic::parse_cmdln();
 
-                120 lines in "./src/main.rs"
-                10 lines in "cargo.toml"
+  for name in args {
+    basic.input(&name);
+    basic.compute();
+    basic.output();
+  }
 
-                That's all Folks!
+  println!("\n\n  That's all Folks!\n\n");
+}
+            </code></pre>
+          </div>
+          <div slot="second">
+            <pre style="height:29.5rem;"><code class="language-term">
+> cargo run -q -- src/main.rs
 
-              </defn-code>
-              <defn-head class="defnBorderTop">cargo.toml</defn-head>
-              <defn-code>
-                [package]
-                name = "basic_structure"
-                version = "0.1.0"
-                authors = ["James W. Fawcett"]
+  -- counting lines in files --
 
-                edition = "2018"
+   114 lines in "src/main.rs"
 
-                # See more keys ...
+  That's all Folks!
 
-                [dependencies]
+            </code></pre>
+          </div>
+        </splitter-container>
+        <div style="height:1rem;"></div>
+        <div style="border:2px solid var(--dark); padding:0.25em; width:35rem;">
+          <pre style=" height:17rem; overflow-y: hidden;"><code class="language-term">
+[package]
+name = "basic_structure"
+version = "0.1.0"
+authors = ["James W. Fawcett <fawcettjim@outlook.com>"]
+edition = "2018"
 
-              </defn-code>
-            </defn-block>
-          </defn-OuterBlock>
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+          </code></pre>
         </div>
-        <div style="height:0.5rem;"></div>
+
+        <div style="height:1rem;"></div>
         <a id="epilogue"></a>
         <div style="height:0.75rem;"></div>
         <h3>3. Epilogue</h3>
@@ -338,11 +342,11 @@ impl Basic {
           <t-b>
             The fourh design alternatives considered here:
             <ol class="tight">
-              <li><a href="DesignBites_StructureBasic.html">Monolithic Structure</a></li>
-              <li><a href="DesignBites_StructureFactored.html">Factored Structure</a></li>
-              <li><a href="DesignBites_StructureDataFlow.html">DataFlow Structure</a></li>
-              <li><a href="DesignBites_StructureTypeErase.html">TypeErase Structure</a></li>
-              <li><a href="DesignBites_StructurePlugIn.html">PlugIn Structure</a></li>
+              <li><a href="SWDesignBites_StructureBasic.html">Monolithic Structure</a></li>
+              <li><a href="SWDesignBites_StructureFactored.html">Factored Structure</a></li>
+              <li><a href="SWDesignBites_StructureDataFlow.html">DataFlow Structure</a></li>
+              <li><a href="SWDesignBites_StructureTypeErase.html">TypeErase Structure</a></li>
+              <li><a href="SWDesignBites_StructurePlugIn.html">PlugIn Structure</a></li>
             </ol>
             are progressively more flexible, eventually resulting in reusable components, but also increasingly
             complex.  Where you settle in these alternatives is determined by design context.  Is this a
