@@ -12,6 +12,7 @@ function buildPages() {
     <div class='menuBody'>\
       <a class='undef' href='javascript:;'>Introduction</a>\
       <a class='undef' href='javascript:;'>more</a>\
+      <a href='SWDevBites_Glossary.html'>Glossary</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
