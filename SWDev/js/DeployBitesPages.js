@@ -8,7 +8,7 @@ function buildPages() {
   const pgs = document.getElementById('pages');
   if(isDefined(pgs)) {
     pgs.innerHTML =
-    "<div class='darkItem listheader' onclick='togglePages()'>SWDev Bites Pages</div>\
+    "<div class='darkItem listheader' onclick='togglePages()'>SW Deploy Bites Pages</div>\
     <div class='menuBody'>\
       <a href='SWDeployBites_Intro.html'>Introduction</a>\
       <a class='undef' href='javascript:;'>Process</a>\
