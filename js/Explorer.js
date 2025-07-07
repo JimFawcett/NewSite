@@ -44,6 +44,18 @@ function handleIframeTransition() {
 // function togglePanel() {
 //   toggleElement('lpanel');
 // }
+/*----------------------------------------------------
+  doUrl() must be called from inline onclick event
+*/
+function doUrl(text) {
+  postMsg(makeMsg('url'));
+  copyUrlToClipboard(text);
+}
+function copyUrlToClipboard() {
+  navigator.clipboard.writeText(window.location.href)
+    .then(() => console.log('URL copied to clipboard:', window.location.href))
+    .catch(err => console.error('Copy failed:', err));
+}
 /*---------------------------------------------------------
   temporarily toggle element's hidden state
   - does not toggle persistance cookie 
