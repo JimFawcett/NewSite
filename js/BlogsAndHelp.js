@@ -45,6 +45,7 @@ function buildBlogs() {
     "<div class='darkItem menuHeader' onclick='hideBlogs()'>Blogs</div>\
     <div onmouseleave='hideBlogs()' class='menuBody'>\
       <a href='../Site/Explore.html?src=../Blogs/Blog.html'>First Things</a>\
+      <a href='../Site/Explore.html?src=../Blogs/Blog_DisthinguishedRust.html'>Disthinguished Rust</a>\
       <a href='../Site/Explore.html?src=../Blogs/Blog_CommCompare.html'>Comm Compare</a>\
       <a class='undef' href='javascript:;'>Rust Safety</a>\
       <div style='height:0.5em;'></div>\
