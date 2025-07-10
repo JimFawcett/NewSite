@@ -26,17 +26,17 @@ function buildPages() {
       <a href='RustBites_Strings.html'>Strings</a>\
       <a href='RustBites_DataStr.html'>Data Structures</a>\
       <a href='RustBites_SmartPtrs.html'>Smart Pointers</a>\
-      <a class='undef' href='RustBites_LifeCycle.html'>Life Cycle</a>\
-      <a class='undef' href='RustBites_OwnerShip.html'>Ownership</a>\
-      <a class='undef' href='RustBites_Traits.html'>Traits</a>\
-      <a class='undef' href='RustBites_Functions.html'>Functions</a>\
-      <a class='undef' href='RustBites_Structs.html'>Structs</a>\
-      <a class='undef' href='RustBites_LifeTime.html'>LifeTime Annot.</a>\
-      <a class='undef' href='RustBites_Abstractions.html'>Abstractions</a>\
-      <a class='undef' href='RustBites_Enums.html'>Enums</a>\
-      <a class='undef' href='RustBites_ErrorHandling.html'>Error Handling</a>\
-      <a class='undef' href='RustBites_Options.html'>Options</a>\
-      <a class='undef' href='RustBites_Conversions.html'>Conversions</a>\
+      <a href='RustBites_LifeCycle.html'>Life Cycle</a>\
+      <a href='RustBites_Ownrs.html'>Ownership</a>\
+      <a href='RustBites_Traits.html'>Traits</a>\
+      <a href='RustBites_Funcs.html'>Functions</a>\
+      <a href='RustBites_Structs.html'>Structs</a>\
+      <a href='RustBites_LifeTime.html'>LifeTime Annot.</a>\
+      <a href='RustBites_Abstract.html'>Abstractions</a>\
+      <a href='RustBites_Enums.html'>Enums</a>\
+      <a href='RustBites_ErrHnd.html'>Error Handling</a>\
+      <a href='RustBites_Options.html'>Options</a>\
+      <a href='RustBites_Conversions.html'>Conversions</a>\
       <a class='undef' href='RustBites_Collections.html'>Collections</a>\
       <a class='undef' href='RustBites_Iterators.html'>Iterators</a>\
       <a class='undef' href='RustBites_Idiomatic.html'>Idiomatic Rust</a>\
