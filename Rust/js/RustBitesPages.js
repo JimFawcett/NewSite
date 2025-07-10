@@ -23,9 +23,9 @@ function buildPages() {
       <a href='RustBites_UDB.html'>Undefined Behavior</a>\
       <a href='RustBites_FlashCards.html'>Flash Cards</a>\
       <a href='RustBites_Facts.html'>Facts</a>\
-      <a class='undef' href='RustBites_Strings.html'>Strings</a>\
-      <a class='undef' href='RustBites_DataStr.html'>Data Structures</a>\
-      <a class='undef' href='RustBites_SmartPtrs.html'>Smart Pointers</a>\
+      <a href='RustBites_Strings.html'>Strings</a>\
+      <a href='RustBites_DataStr.html'>Data Structures</a>\
+      <a href='RustBites_SmartPtrs.html'>Smart Pointers</a>\
       <a class='undef' href='RustBites_LifeCycle.html'>Life Cycle</a>\
       <a class='undef' href='RustBites_OwnerShip.html'>Ownership</a>\
       <a class='undef' href='RustBites_Traits.html'>Traits</a>\
