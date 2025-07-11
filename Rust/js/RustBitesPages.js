@@ -37,11 +37,11 @@ function buildPages() {
       <a href='RustBites_ErrHnd.html'>Error Handling</a>\
       <a href='RustBites_Options.html'>Options</a>\
       <a href='RustBites_Conversions.html'>Conversions</a>\
-      <a class='undef' href='RustBites_Collections.html'>Collections</a>\
-      <a class='undef' href='RustBites_Iterators.html'>Iterators</a>\
-      <a class='undef' href='RustBites_Idiomatic.html'>Idiomatic Rust</a>\
-      <a class='undef' href='RustBites_Macros.html'>Macros</a>\
-      <a class='undef' href='RustBites_Threads.html'>Threads</a>\
+      <a href='RustBites_Collects.html'>Collections</a>\
+      <a href='RustBites_Iter.html'>Iterators</a>\
+      <a href='RustBites_Idioms.html'>Idiomatic Rust</a>\
+      <a href='RustBites_Macros.html'>Macros</a>\
+      <a href='RustBites_Threads.html'>Threads</a>\
       <a class='undef' href='RustBites_Synch.html'>Synchronization</a>\
       <a class='undef' href='RustBites_RegExp.html'>Reg Expressions</a>\
       <a class='undef' href='RustBites_HacksHelps.html'>Helpers</a>\
