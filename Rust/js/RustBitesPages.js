@@ -43,9 +43,10 @@ function buildPages() {
       <a href='RustBites_Macros.html'>Macros</a>\
       <a href='RustBites_Threads.html'>Threads</a>\
       <a href='RustBites_Synchron.html'>Synchronization</a>\
-      <a class='undef' href='RustBites_RegExp.html'>Reg Expressions</a>\
-      <a class='undef' href='RustBites_HacksHelps.html'>Helpers</a>\
-      <a class='undef' href='RustBites_CodeExper.html'>Code Experim</a>\
+      <a href='RustBites_RegEx.html'>Reg Expressions</a>\
+      <a href='RustBites_TipsAndTricks.html'>Helpers</a>\
+      <a href='RustBites_CodeExamples.html'>Code Examples</a>\
+      <a href='RustBites_CodeExperiments.html'>Code Experim</a>\
       <a href='RustBites_References.html'>References</a>\
       <a href='RustBites_Glossary.html'>Glossary</a>\
       </div>\
