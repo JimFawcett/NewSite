@@ -93,6 +93,7 @@ function buildHelp() {
     hlp.innerHTML =
     "<div class='darkItem menuHeader' onclick='hideHelp()'>Help</div>\
     <div onmouseleave='hideHelp()' class='menuBody'>\
+      <a target='rpanel' href='../Help/Help_SiteNav.html'>SiteNav</a>\
       <a target='rpanel' href='../Help/Help_VSCode.html'>VS Code</a>\
       <a target='rpanel' href='../Help/Help_Cargo.html'>Rust Cargo</a>\
       <a target='rpanel' href='../Help/Help_CMake.html'>CMake</a>\
@@ -104,7 +105,6 @@ function buildHelp() {
       <a target='rpanel' href='../Help/Help_RegEx.html'>RegEx</a>\
       <a target='rpanel' href='../Help/Help_ChatGPT.html'>ChatGPT</a>\
       <a class='undef' target='_self' href='javascript:;'>Compiler Explorer</a>\
-      <a target='rpanel' href='../Help/Help_SiteNav.html'>SiteNav</a>\
       <div style='height:1.0em;'></div>\
     </div>";
     // hlp.addEventListener('mouseleave', function(event) {
