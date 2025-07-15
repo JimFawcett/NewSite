@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="../css/StylesSizerComp.css" />
   <link rel="stylesheet" href="../css/StylesWebComponents.css" />
   <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/SplitterComponent.js"></script>
   <script src="../js/Content.js"></script>
   <script src="../js/ContentMenus.js"></script>
   <script src="../js/SitePagesForTools.js"></script>
@@ -26,6 +27,8 @@
   <script src="../js/cookies.js"></script>
   <script src="../js/contentElements.js"></script>
   <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css">
+  <script src="../js/prism.js"></script>
   <style>
     .menuHeader {
       padding:0.0rem 0.5rem 0.25rem 0.5rem;
@@ -53,6 +56,17 @@
     #github td {
       vertical-align: top;
       line-height: 1rem;
+    }
+    splitter-container {
+      --dark: rgb(73, 2, 2);
+      /* --dark: var(--dark); */
+    }
+    #github pre {
+      padding-left:1rem;
+      line-height: 0.95;
+    }
+    #github code {
+      font-family: monospace;
     }
   </style>
 </head>
@@ -135,53 +149,274 @@
             </ul>
           </t-b>
         </div>
-        <div style="width:calc(100vw - 9rem);">
-          <div style="display:flex;">
-            <photosizer-block src="pictures/Design2.jpg" width="400" class="photoSizerBlock" style="margin-top:0;">
+
+        <div id="fig1" style="width:calc(100vw - 4rem);">
+          <div style="display:flex; float:right; padding:1rem;">
+            <photosizer-block src="pictures/Design2.jpg" width="400" class="photoSizerBlock" style="margin-top:0; float: right;">
               <span style="
-            display: inline-block;
-            font-weight: bold;
-            font-family: 'Comic Sans MS, Tahoma';
-            background-color: #ddd;
-            width: 100%;
-            padding: 5px 0px;
-          ">
-                Figure 3. Factored Pkg Structure
+                display: inline-block;
+                font-weight: bold;
+                font-family: 'Comic Sans MS', Tahoma;
+                background-color: #ddd;
+                width: 100%;
+                padding: 5px 0px;
+              ">
+                Figure 2. Factored Pkg Structure
               </span>
             </photosizer-block>
-            <explain-block style="border:1px solid var(--dark); padding: 0.5em;">
-              <h4>Factored Structure</h4>
-              <t-b>
+          </div>
+            <div style="border:1px solid var(--dark); padding: 0rem 1.0em;">
+              <h4>Basic Factored Structure</h4>
+              <div>
                 Program&apos;s operations are implemented in separate packages. Some of the factored packages
                 may, themselves, be factored.
-              </t-b>
+              </div>
               <t-b>
                 <hr />
                 <pros-cons>
                   <div>
                     <h4>Pros:</h4>
-                    <ol>
+                    <ol class="tight">
                       <li>If only one package is changed, only that one is compiled</li>
                       <li>Much easier to understand and test</li>
                     </ol>
                   </div>
                   <div>
                     <h4>Cons:</h4>
-                    <ol>
+                    <ol class="tight">
                       <li>Project setup gets more complex</li>
                       <li>More pieces to track and deploy</li>
                       <li>Executive has to participate in each stage of the processing</li>
                     </ol>
                   </div>
+                  <div style="height:1rem;"></div>
                 </pros-cons>
               </t-b>
-            </explain-block>
+            </div>
+            <!-- </div> -->
           </div>
         </div>
+          <!-- </div> -->
+        </div>
         <div style="height:0.5rem;"></div>
-        <hr class="spread" />
         <a class="indent" href="https://github.com/JimFawcett/DesignStructure/tree/master/FactoredStructure">Factored Code Repository</a>
         <div style="height:1.0rem;"></div>
+        <splitter-container style="height:40rem; width:100%">
+          <div slot="first" style="padding-left:0.3rem;">
+            <pre><code class="language-rust">/////////////////////////////////////////////////////////////
+// FactoredStructure::Executive::main.rs                   //
+//   - Executive creates and uses all lower level parts    //
+// Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
+/////////////////////////////////////////////////////////////
+#![allow(dead_code)]
+#![allow(unused_imports)]
+use compute::*;
+use input::*;
+use output::*;
+
+/*-- module of command line utilities --*/
+mod exec_proc_mod;
+use exec_proc_mod::{parse_cmdln, show_cmdln};
+
+/*-- run using command line args --*/
+fn use_args_for_run() -> usize {
+  let args = parse_cmdln();
+  let mut total_lines: usize = 0;
+
+  for name in &args {
+    let mut lines = 0;
+    let mut inp = Input::new();
+    let mut cmp = Compute::new();
+    let out = Output::new();
+
+    let opt = inp.do_input(name);
+    if let Some(file) = opt {
+      cmp.do_compute(name, file);
+      lines = cmp.lines();
+      out.do_output(name, lines);
+    } else {
+      print!("\n  couldn't process {:?}", name);
+    }
+    total_lines += lines;
+  }
+  total_lines
+}
+/*-- attempt to open file and count its lines of code --*/
+fn test_ops(name: &str) -> usize {
+  let mut inp = Input::new();
+  let mut cmp = Compute::new();
+  let out = Output::new();
+
+  let mut lines: usize = 0;
+  let opt = inp.do_input(name);
+  if let Some(file) = opt {
+    cmp.do_compute(name, file);
+    lines = cmp.lines();
+    out.do_output(name, lines);
+  } else {
+    print!("\n  couldn't process {:?}", name);
+  }
+  lines
+}
+/*-- run test_ops for each package in this project --*/
+fn run_test_ops() -> usize {
+  let name = "../Executive/src/main.rs";
+  let mut lines = 0;
+  lines += test_ops(name);
+  let name = "../Executive/src/exec_proc_mod.rs";
+  lines += test_ops(name);
+  println!();
+
+  let name = "../Input/src/lib.rs";
+  lines += test_ops(name);
+  let name = "../Input/examples/test1.rs";
+  lines += test_ops(name);
+  println!();
+
+  let name = "../Compute/src/lib.rs";
+  lines += test_ops(name);
+  let name = "../Compute/examples/test1.rs";
+  lines += test_ops(name);
+  println!();
+
+  let name = "../Output/src/lib.rs";
+  lines += test_ops(name);
+  let name = "../Output/examples/test1.rs";
+  lines += test_ops(name);
+  println!();
+
+  let name = "no-exist";
+  lines += test_ops(name);
+  println!();
+
+  lines
+}
+/*-- Executive processing --*/
+fn main() {
+  print!("\n  -- FactoredStructure::Executive --\n");
+
+  let lines = run_test_ops();
+  // let lines = use_args_for_run();
+
+  print!("\n  total lines: {}", lines);
+
+  print!("\n\n  That's all Folks!\n\n");
+}
+            </code></pre>
+          </div>
+          <div slot="second" style="padding-right:0.4rem;">
+            <pre><code class="language-rust">/////////////////////////////////////////////////////////////
+// FactoredStructure::Executive::exec_proc_mod.rs          //
+//   - Executive creates and uses all lower level parts    //
+// Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
+/////////////////////////////////////////////////////////////
+/*
+  Extracted as Module since these could be useful in
+  other programs.
+*/
+/*-- extract command line arguments into vector --*/
+pub fn parse_cmdln() -> Vec<String> {
+  let cl_iter = std::env::args();
+  let args: Vec<String> = cl_iter.skip(1).collect();
+  args
+}
+/*-- display command line args in comma seperated list --*/
+pub fn show_cmdln(args: &[String]) {
+  if args.is_empty() {
+    return;
+  }
+  print!("\n  {}", args[0]);
+  for arg in &args[1..] {
+    print!(", {}", arg);
+  }
+}
+            </code></pre>
+          </div>
+        </splitter-container>
+        <div style="height:0.5rem;"></div>
+        <a class="indent" href="https://github.com/JimFawcett/DesignStructure/tree/master/FactoredStructure">Factored Code Repository</a>
+        <div style="height:1.0rem;"></div>
+        <splitter-container style="height:40rem; width:100%">
+          <div slot="first" style="padding-left:0.3rem;">
+            <pre><code class="language-rust">/////////////////////////////////////////////////////////////
+// FactoredStructure::Compute::lib.rs                      //
+//   - Input attempts to read File to string & count lines //
+// Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
+/////////////////////////////////////////////////////////////
+
+use std::fs::*;
+mod file_utilities;
+use file_utilities::read_file_to_string;
+
+#[derive(Debug)]
+pub struct Compute {
+  lines: usize,
+}
+impl Compute {
+  pub fn new() -> Compute {
+    Compute { lines: 0 }
+  }
+  /*-- read file, count lines and save count --*/
+  pub fn do_compute(&mut self, name: &str, mut file: File) {
+    let rslt = read_file_to_string(&mut file);
+    if let Ok(contents) = rslt {
+      self.lines = 1;
+      for ch in contents.chars() {
+        if ch == '\n' {
+          self.lines += 1;
+        }
+      }
+    } else {
+      print!("\n  couldn't open {:?}", name);
+    }
+  }
+  /*-- return saved line count --*/
+  pub fn lines(&self) -> usize {
+    self.lines
+  }
+}
+#[cfg(test)]
+mod tests {
+  #[test]
+  fn it_works() {
+    assert_eq!(2 + 2, 4);
+  }
+}
+            </code></pre>
+          </div>
+          <div slot="second" style="padding-right:0.4rem;">
+            <pre><code class="language-rust">/////////////////////////////////////////////////////////////
+// FactoredStructure::Input::file_utilities.rs             //
+//   - Input attempts to open named file and return File   //
+// Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
+/////////////////////////////////////////////////////////////
+/*
+  This code may be useful for other programs so it is
+  factored into a module here.
+*/
+#![allow(dead_code)]
+
+use std::fs::*;
+use std::io::{Error, ErrorKind, Read};
+
+pub fn open_file_for_read(file_name: &str) -> Result<File, std::io::Error> {
+  let rfile = OpenOptions::new().read(true).open(file_name);
+  rfile
+}
+
+pub fn read_file_to_string(f: &mut File) -> Result<String, std::io::Error> {
+  let mut contents = String::new();
+  let bytes_rslt = f.read_to_string(&mut contents);
+  if bytes_rslt.is_ok() {
+    Ok(contents)
+  } else {
+    Err(Error::new(ErrorKind::Other, "read error"))
+  }
+}
+            </code></pre>
+          </div>
+        </splitter-container>
+        <div style="height:0.75rem;"></div>
         <div class="indent">
           <defn-OuterBlock>
             <defn-block>

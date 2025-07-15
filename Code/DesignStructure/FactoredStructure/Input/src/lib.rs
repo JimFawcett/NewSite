@@ -5,9 +5,7 @@
 /////////////////////////////////////////////////////////////
 
 use std::fs::*;
-
-mod file_utilities;
-use file_utilities::open_file_for_read;
+use file_utils::open_file_for_read;
 
 #[allow(dead_code)]
 #[derive(Debug)]
