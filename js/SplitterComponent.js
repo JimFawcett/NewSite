@@ -14,36 +14,32 @@
 // </splitter-container>
 //-----------------------------------------------
 
+// SplitterComponent.js
+
 class SplitterContainer extends HTMLElement {
   static get observedAttributes() { 
-    return ['left-width'];
+    return ['left-width']; 
   }
 
   constructor() {
     super();
-    const shadow = this.attachShadow({ mode: 'open' });
+    this._step    = 100;   // click‐resize step in px
+    this._minPane = 30;    // minimum pane width in px
 
+    const shadow = this.attachShadow({ mode: 'open' });
     shadow.innerHTML = `
       <style>
-        :host {
-          display: block;
-          width: 100%;
-        }
+        :host { display: block; width:100%; }
         .container {
           display: flex;
-          width: 100%;
-          height: 100%;
-          overflow: hidden;
-          border: 3px solid var(--dark, #333);
+          width:100%; height:100%; overflow:hidden;
+          border:3px solid var(--dark,#333);
         }
         .pane {
-          background: #eee;
-          overflow: auto;
-          user-select: none;
+          background:#eee; overflow:auto; user-select:none;
         }
         .pane.first {
-          /* use the custom property or default to 50% */
-          width: var(--left-width, 50%);
+          width: var(--left-width,50%);
           flex: 0 0 auto;
         }
         .pane.second {
@@ -52,7 +48,7 @@ class SplitterContainer extends HTMLElement {
         .splitter {
           flex: 0 0 10px;
           margin: 0 0.25rem;
-          background: var(--dark, #333);
+          background: var(--dark,#333);
           cursor: col-resize;
           user-select: none;
         }
@@ -66,56 +62,78 @@ class SplitterContainer extends HTMLElement {
   }
 
   connectedCallback() {
-    // apply the initial left-width (if any)
-    this._updateLeftWidth(this.getAttribute('left-width'));
+    this._applyLeftWidth();
     this._initDrag();
+    this._initClickResize();
   }
 
-  attributeChangedCallback(name, oldValue, newValue) {
-    if (name === 'left-width') {
-      this._updateLeftWidth(newValue);
-    }
+  attributeChangedCallback(name, oldVal, newVal) {
+    if (name === 'left-width') this._applyLeftWidth();
   }
 
-  _updateLeftWidth(raw) {
+  _applyLeftWidth() {
+    const raw = this.getAttribute('left-width');
     if (raw != null) {
-      // strip whitespace and any trailing semicolons
       const cleaned = raw.trim().replace(/;$/, '');
-      // set it on the host so the shadow CSS var picks it up
       this.style.setProperty('--left-width', cleaned);
     } else {
-      // no attribute: remove the custom property so CSS falls back to 50%
       this.style.removeProperty('--left-width');
     }
   }
 
   _initDrag() {
-    const splitter = this.shadowRoot.querySelector('.splitter');
+    const splitter  = this.shadowRoot.querySelector('.splitter');
     const firstPane = this.shadowRoot.querySelector('.pane.first');
 
     splitter.addEventListener('pointerdown', e => {
       e.preventDefault();
-      this._startX = e.clientX;
-      this._startWidth = firstPane.getBoundingClientRect().width;
+      const startX        = e.clientX;
+      const startWidth    = firstPane.getBoundingClientRect().width;
+      const hostWidth     = this.getBoundingClientRect().width;
+      const splitterWidth = splitter.getBoundingClientRect().width;
+      const minW = this._minPane;
+      const maxW = hostWidth - splitterWidth - this._minPane;
 
-      this._onPointerMove = this._onPointerMove.bind(this, firstPane);
-      this._onPointerUp   = this._onPointerUp.bind(this);
+      const onMove = ev => {
+        let newW = startWidth + (ev.clientX - startX);
+        newW = Math.min(Math.max(newW, minW), maxW);
+        firstPane.style.width = `${newW}px`;
+      };
+      const onUp = () => {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup',   onUp);
+      };
 
-      document.addEventListener('pointermove', this._onPointerMove);
-      document.addEventListener('pointerup',   this._onPointerUp);
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup',   onUp);
     });
   }
 
-  _onPointerMove(firstPane, e) {
-    const dx = e.clientX - this._startX;
-    firstPane.style.width = `${this._startWidth + dx}px`;
-  }
+  _initClickResize() {
+    const firstPane  = this.shadowRoot.querySelector('.pane.first');
+    const secondPane = this.shadowRoot.querySelector('.pane.second');
+    const splitter   = this.shadowRoot.querySelector('.splitter');
 
-  _onPointerUp() {
-    document.removeEventListener('pointermove', this._onPointerMove);
-    document.removeEventListener('pointerup',   this._onPointerUp);
+    const clampWidth = w => {
+      const hostWidth     = this.getBoundingClientRect().width;
+      const splitterWidth = splitter.getBoundingClientRect().width;
+      const minW = this._minPane;
+      const maxW = hostWidth - splitterWidth - this._minPane;
+      return Math.min(Math.max(w, minW), maxW);
+    };
+
+    // expand on left-pane click
+    firstPane.addEventListener('click', () => {
+      const curW = firstPane.getBoundingClientRect().width;
+      firstPane.style.width = `${clampWidth(curW + this._step)}px`;
+    });
+
+    // shrink on right-pane click
+    secondPane.addEventListener('click', () => {
+      const curW = firstPane.getBoundingClientRect().width;
+      firstPane.style.width = `${clampWidth(curW - this._step)}px`;
+    });
   }
 }
 
 customElements.define('splitter-container', SplitterContainer);
-
