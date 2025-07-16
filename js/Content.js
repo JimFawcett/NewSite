@@ -298,10 +298,22 @@ window.onmessage = function (e) {
       else {
         window.top.location.href = '../Basics/ExploreBasics.html?src=' + window.location.href;
       }
-      break;                                                      
+      break;    
+    case 'goto':
+      alert('GoTo msg');
+      showGoToMenu(); 
+      break;                                                 
     default:
 
   }
+}
+function showGoToMenu() {
+  alert('goto');
+  let gte = document.getElementById('goto');
+  let gtm = document.createElement('div');
+  gtm.innerHtml = "style='display:flex; flexwrap:nowrap; position:relative; bottom:1rem; right:2rem;'>\
+  + 'GoTo' + '</div>';\
+  + 'alert('goto')";
 }
 /*---------------------------------------------------------
   set background-color for link in list and remove

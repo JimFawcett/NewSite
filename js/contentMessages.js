@@ -83,6 +83,23 @@ window.onmessage = function (event) {
       // alert('done');
       break;
 
+    case 'goto':
+      // alert('url');
+      let gtm = document.getElementById('goto');
+      if(gtm.classList.contains('hidden')) {
+        gtm.classList.remove('hidden');
+        // gtm.innerHTML='<a href=' + window.location.href + '>' + window.location.href + '</a>';
+        // gtm.innerHTML=
+        //   "<div style='display:flex; flex-direction:column; flexwrap:nowrap;'>"
+        //    + "<div>This Page:</div>"
+        //    + "<div>foobar</div><br>" 
+        //    + "</div>";
+      } else {
+        gtm.classList.add('hidden');
+      }
+      // alert('done');
+      break;
+      
     default:
       console.log('no match for message data');
   }
