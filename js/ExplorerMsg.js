@@ -2,6 +2,8 @@
  * Explorer.js - Scripts for the entire site
  * ver 1.0 - 09 Dec 2024
  * Jim Fawcett
+ * 
+ * --- DEPRICATED! ---
  */
 
 function isDefined(elem) {

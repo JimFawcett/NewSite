@@ -1,9 +1,26 @@
+/*---------------------------------------------------------
+ * exploreMessages.js
+ * ver 2.0 - 17 July 2025
+ * Jim Fawcett
+*/
+/*---------------------------------------------------------
+  Post message to iframe
+*/
 function postMsg(msg) {
   let iframe = document.getElementById('pgframe');
   iframe.contentWindow.postMessage(msg, '*');
   console.log('posting msg: ' + msg);
   hideInfoMsgs();
 }
+/*---------------------------------------------------------
+  Post message to Page Host
+*/
+function postHostMsg(msg) {
+  window.top.postMessage(msg, '*');
+}
+/*---------------------------------------------------------
+  Build key value message
+*/
 function makeMsg(key, value) {
   let msg = new Object();
   msg.key = key;
@@ -15,6 +32,19 @@ window.addEventListener("message", function (event) {
   // if (event.origin !== "https://your-trusted-domain.com") return;
 
   console.info("Controller Received message:", event.data);
+  switch(event.data.key) {
+    case 'back':
+      history.back();
+      break;
+    case 'forward':
+      history.forward();
+      break;
+    case 'reload':
+      location.reload();
+      break;
+    default:
+      console.log('no case for ' + event.data.key);
+  }
   // event.data will be "Hello from sender!"
 });
 
