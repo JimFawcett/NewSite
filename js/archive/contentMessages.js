@@ -1,3 +1,22 @@
+/*---------------------------------------------------------
+ * ContentMsg.js - Scripts for content messaging
+ * ver 1.0 - 19 Feb 2025
+ * Jim Fawcett
+ */
+
+function isDefined(elem) {
+  if (typeof elem === 'undefined' || elem === null || elem === undefined) {
+    return false;
+  }
+  return true;
+}
+/*---------------------------------------------------------
+  Post message to Parent
+  - content window posts to parent Explorer
+*/
+function postMsg(msg) {
+  window.parent.postMessage(msg, '*');
+}
 window.onmessage = function (event) {
   console.log("Message received in iframe:" + event.data.key + ", " + event.data.value);
   switch(event.data.key) {
@@ -71,6 +90,35 @@ window.onmessage = function (event) {
       }
       break;
 
+    case 'url':
+      // alert('url');
+      let url = document.getElementById('url');
+      if(url.classList.contains('hidden')) {
+        url.classList.remove('hidden');
+        url.innerHTML='<a href=' + window.location.href + '>' + window.location.href + '</a>';
+      } else {
+        url.classList.add('hidden');
+      }
+      // alert('done');
+      break;
+
+    case 'goto':
+      // alert('url');
+      let gtm = document.getElementById('goto');
+      if(gtm.classList.contains('hidden')) {
+        gtm.classList.remove('hidden');
+        // gtm.innerHTML='<a href=' + window.location.href + '>' + window.location.href + '</a>';
+        // gtm.innerHTML=
+        //   "<div style='display:flex; flex-direction:column; flexwrap:nowrap;'>"
+        //    + "<div>This Page:</div>"
+        //    + "<div>foobar</div><br>" 
+        //    + "</div>";
+      } else {
+        gtm.classList.add('hidden');
+      }
+      // alert('done');
+      break;
+      
     default:
       console.log('no match for message data');
   }

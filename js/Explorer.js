@@ -268,6 +268,7 @@ function checkUrl(url) {
     alert('frame load succeeded');
     console.log(`File loaded successfully: ${url}`);
     // iframe.style.display = 'block'; // Show iframe after successful load
+    postHostMsg(makeMsg('loaded'));
     return true;
   };
 

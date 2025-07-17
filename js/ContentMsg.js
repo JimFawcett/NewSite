@@ -2,7 +2,9 @@
  * ContentMsg.js - Scripts for content messaging
  * ver 1.0 - 19 Feb 2025
  * Jim Fawcett
- */
+ *
+ * --- DEPRICATED! ---
+*/
 
 function isDefined(elem) {
   if (typeof elem === 'undefined' || elem === null || elem === undefined) {
