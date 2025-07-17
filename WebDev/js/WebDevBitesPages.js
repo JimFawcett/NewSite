@@ -10,7 +10,7 @@ function buildPages() {
     pgs.innerHTML =
     "<div class='darkItem listheader' onclick='togglePages()'>WebDev Bites Pages</div>\
     <div class='menuBody'>\
-      <a class='undef' href='javascript:;'>Introduction</a>\
+      <a href='WebDevBites_Survey.html'>Survey</a>\
       <a class='undef' href='javascript:;'>more</a>\
       <a href='WebDevBites_Glossary.html'>Glossary</a>\
       </div>\

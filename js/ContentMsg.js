@@ -10,10 +10,11 @@ function isDefined(elem) {
   }
   return true;
 }
-
+/*---------------------------------------------------------
+  Post message to Parent
+  - content window posts to parent Explorer
+*/
 function postMsg(msg) {
-  // let ifrm = document.getElementById("pgframe");
-  // ifrm.contentWindow.postMessage(msg, '*');
   window.parent.postMessage(msg, '*');
 }
 /*---------------------------------------------------------
@@ -150,3 +151,7 @@ window.onmessage = function (e) {
 
   }
 }
+// function postMsg(msg) {
+//   let ifrm = document.getElementById("pgframe");
+//   ifrm.contentWindow.postMessage(msg, '*');
+// }
