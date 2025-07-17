@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html>
+<!--
+  WebDev_WinMsg.html
+-->
+<head>
+  <title>WebDev WinMsg</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="css/StylesPageFrameDefaults.css" />
+  <link rel="stylesheet" href="css/StylesPageFrameStructure.css" />
+  <link rel="stylesheet" href="css/StylesPageFrameMenus.css" />
+  <link rel="stylesheet" href="css/StylesPageFrameThemeGreen.css" />
+  <link rel="stylesheet" href="css/StylesWebComponents.css" />
+  <script src="js/ScriptsWebComponents.js"></script>
+  <script src="js/ScriptsPageFrameWebDev.js"></script>
+  <script src="js/ScriptsPageFramePagesWebDev.js"></script>
+  <script src="js/ScriptsPageFrameKeyboard.js"></script>
+  <link rel="stylesheet" href="css/Styles_BitsContent.css" />
+  <script src="js/Scripts_BitsContent.js"></script>
+  <link rel="stylesheet" href="css/StylesSplitterBar.css" />
+  <script src="js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="css/prism.css" />
+  <script src="js/prism.js"></script>
+  <style>
+    #github #pagetitle {
+      color: var(--light);
+      background-color: var(--dark);
+    }
+
+    #github #title {
+      color: var(--light);
+      background-color: var(--dark);
+    }
+
+    #github #subtitle {
+      color: var(--light);
+      background-color: var(--dark);
+      font-weight: normal;
+      font-size: 0.9em;
+    }
+
+    #github a.repoLink {
+      background-color: var(--dark);
+      color: var(--light);
+    }
+
+    #github ul.tight {
+      line-height: 1.0;
+      margin-left: -1em;
+    }
+
+      #github ul.tight > li {
+        margin: 0.25em 0em;
+      }
+
+    #github details {
+      padding: 0em 0em;
+      margin: 0.0em 0.0em;
+    }
+
+      #github details > summary {
+        padding: 0em;
+        margin: 0.25em 0em;
+      }
+
+    #github code {
+      font-size: 0.9em;
+    }
+  </style>
+  <script>
+    function load() {
+      initialize();
+    }
+  </script>
+  <script>
+    /*-- send request message to iframe child MsgRsvr --*/
+    function postMsg(data) {
+
+      /* msg should be 'sections' or 'reply' */
+      let ifrm = document.getElementById("pgframe");
+      ifrm.contentWindow.postMessage(data, '*');
+
+      /*-- clear display --*/
+      let rply = document.getElementById('rply');
+      rply.innerHTML = "No Reply";
+    }
+    /*-----------------------------------------------------
+      The onmessage(event) function is a message handler 
+      installed by JavaScript runtime in a message event
+      listener. It is invoked when a message is posted 
+      by another window.
+
+      The function supplies application specific processing
+      for each type of message used by the application.
+    -----------------------------------------------------*/
+    window.onmessage = function (evnt) {
+      if (evnt === null) {
+        console.log('null msg');
+        return;
+      }
+      if (evnt.data === 'sections') {
+
+        /*------------------------------------------------- 
+          message from Explorer parent so toggle display 
+          of sectons list 
+        -------------------------------------------------*/
+        bottomMenu.sections();
+
+      } else {
+
+        /*-- message from MsgRcvr child --*/
+        console.log('msg: ', evnt.data);
+        let rply = document.getElementById('rply');
+        rply.innerHTML = "Received Reply";
+
+      }
+    }
+  </script>
+  <style>
+    #github .msgButton {
+      cursor: pointer;
+      padding: 0.25em 0.75em;
+      font-size: 1em;
+      border: 2px solid var(--dark);
+    }
+    #github .replyDisplay {
+      padding: 0.25em 0.75em;
+      font-size: 1em;
+      border: 2px solid var(--dark);
+    }
+    #github .iFrame {
+      height: 30em;
+      width: 99%;
+      border: 2px solid var(--dark);
+    }
+    #github .codeHeader {
+      background-color: var(--light);
+      padding: 0.10em 1.25em 0.15em 1.25em;
+      font-weight: bold;
+      font-size: 1em;
+    }
+  </style>
+</head>
+
+<body id="github" onload="load()">
+
+  <a id="Next" href="WebDev_MsgSndr.html">N</a>
+  <a id="Prev" href="WebDev_ShowDiag.html">P</a>
+
+  <page-frame>
+    <frame-header>
+      <nav id="navbar"></nav>
+    </frame-header>
+    <main id="main">
+      <div id="about" onclick="this.style.display = 'none'">about</div>
+      <div id="modified">08/09/2024</div>
+      <div id="page">WebDev MsgSndr</div>
+      <div id="hlp"></div>
+      <a id="top"></a>
+      <content>
+        <header>
+          <a target="_blank" class="repoLink" href="https://github.com/JimFawcett/WebDev" style="margin-right:0.5em;">
+            WebDev Code
+          </a>
+          <!--<a class="repoLink" href="https://github.com/JimFawcett">JimFawcett Repositories</a>-->
+          <hgroup id="pagetitle" onclick="loadifwebdev()" style="cursor:pointer;">
+            <h1 id="title">WebDev MsgSndr</h1>
+            <h3 id="subtitle" class="indent">
+              <span>communication between parent page and iframe child using JavaScript messages</span>
+            </h3>
+          </hgroup>
+
+        </header>
+        <div style="height:1em;"></div>
+        <h3 id="jsmsgs">1.0 JavaScript Messaging</h3>
+        <t-b>
+          This page demonstrates JavaScript messaging by sending messages to another page embedded in the iframe
+          below and receiving its replies.
+          Clicking buttons just above the iframe result in messages sent to the child page. If the child replies
+          that results in a text display in the area to the right of the two message buttons.
+        </t-b>
+        <h3 id="msgs">2.0 Messages</h3>
+        <t-b>
+          The demonstration uses these JavaScript messages:
+        </t-b>
+        <table style="font-size:0.9em;">
+          <tr>
+            <th>Message</th>
+            <th>Sender</th>
+            <th>Receiver</th>
+          </tr>
+          <tr>
+            <td>&quot;sections&quot;</td>
+            <td>Sent by WebDev_MsgSndr to request receiver display its sections menu</td>
+            <td>
+              Received by WebDev_MsgRcvr which calls its JavaScript method: bottomMenu.sections()
+              to toggle display of its sections menu.
+            </td>
+          </tr>
+          <tr>
+            <td>&quot;request&quot;</td>
+            <td>Sent by WebDev_MsgSndr to request receiver to send back a reply message</td>
+            <td>
+              Received by WebDev_MsgRcvr which posts a reply message containing its url.
+            </td>
+          </tr>
+          <tr>
+            <td>&quot;url&quot;</td>
+            <td>Reply sent by WebDev_MsgRcvr back to WebDev_MsgSndr in response to its request</td>
+            <td>
+              Received by WebDev_MsgSndr which posts a &quot;Received Reply&quot; string to display block, and logs the
+              url to the JavaScript console.
+            </td>
+          </tr>
+        </table>
+        <div style="height:0.25em;"></div>
+        <h3 id="comments">3.0 Comments</h3>
+        <t-b>
+          Browsers classify pages from a static site as each coming from its own domain. That means that a
+          page from a static site is not allowed to directly run JavaScript in another page. That&apos;s
+          cross-site scripting, a security vulnerability. However, one page can send a JavaScript message 
+          to another page requesting it run its own JavaScript.
+        </t-b>
+        <t-b>
+          That is what Explorers from this site do when the &quot;Page Sections&quot; button is clicked.
+          The button click sends a message to the hosted page to display its page sections for navigation.
+        </t-b>
+        <t-b>
+          This demo just abstracts away all the other details to illustrate how that message-passing works.
+          JavaScript, CSS, and page markup for both iframe host and child are shown in the code blocks below
+          the iframe.
+        </t-b>
+        <!-- <t-b>
+    &quot;Prev&quot; and &quot;Next&quot; buttons on either top or bottom menus take page view back to
+    WebDev_MsgSndr with this child page loaded in iframe.
+  </t-b> -->
+        <div style="height:0.25em;"></div>
+        <div>
+          <t-b>
+            <div style="display:flex; flex-direction:row; gap:1em;">
+              <button onclick="postMsg('sections')" class="msgButton">Send Message &apos;sections&apos;</button>
+              <button onclick="postMsg('request')" class="msgButton">Send Message &apos;request&apos;</button>
+              <div id="rply" class="replyDisplay">No Reply</div>
+            </div>
+          </t-b>
+          <div style="height:0.75em;"></div>
+          <div>
+            <iframe id="pgframe" class="iFrame" src="WebDev_MsgRcvr.html" name="rtcnt"></iframe>
+          </div>
+        </div>
+        <div style="height:0.5em;"></div>
+        <h3 id="code">4.0 Code Excerpts</h3>
+        <t-b>
+          The two panels below show messaging code for both WebDev_MsgSndr.html and WebDev_MsgRcvr.html.
+        </t-b>
+        <div style="height:0.250em;"></div>
+        <div class="blockSingle" style="padding:0em;">
+          <div style="padding:0.25em 1.5em; height:max-content;">
+            <div style="float:left; font-weight:bold; font-size:1em;">MsgSndr</div>
+            <div style="float:right; font-weight:bold; font-size:1em;">MsgRcvr</div>
+          </div>
+          <div style="clear:both"></div>
+          <splitter-container id="container">
+            <first-item id="toggle-first" style="width:50%;">
+              <div class="codewrap" onclick="cbubbleup('toggle-first')">
+                <div class="codeHeader">WebDev_MsgSndr JavaScript</div>
+                <pre><code class="language-javascript">&lt;script&gt;
+  /*-- send request message to iframe child MsgRsvr --*/
+  function postMsg(data) {
+
+    /* msg should be 'sections' or 'reply' */
+    let ifrm = document.getElementById("pgframe");
+    ifrm.contentWindow.postMessage(data, '*');
+
+    /*-- clear display --*/
+    let rply = document.getElementById('rply');
+    rply.innerHTML = "No Reply";
+  }
+  /*-----------------------------------------------------
+    The onmessage(event) function is a message handler 
+    installed by JavaScript runtime in a message event
+    listener. It is invoked when a message is posted 
+    by another window.
+
+    The function supplies application specific processing
+    for each type of message used by the application.
+  -----------------------------------------------------*/
+  window.onmessage = function (evnt) {
+    if (evnt === null) {
+      console.log('null msg');
+      return;
+    }
+    if (evnt.data === 'sections') {
+
+      /*------------------------------------------------- 
+        message from Explorer parent so toggle display 
+        of sectons list 
+      -------------------------------------------------*/
+      bottomMenu.sections();
+
+    } else {
+
+      /*-- message from MsgRcvr child --*/
+      console.log('msg: ', evnt.data);
+      let rply = document.getElementById('rply');
+      rply.innerHTML = "Received Reply";
+
+    }
+  }
+&lt;/script&gt;
+
+
+
+
+
+
+
+
+</code></pre>
+                <div class="codeHeader">WebDev_MsgSndr HTML Markup</div>
+<pre><code class="language-html">&lt;div&gt;
+  &lt;t-b&gt;
+    &lt;div style=&quot;display:flex; flex-direction:row; gap:1em;&quot;&gt;
+      &lt;button onclick=&quot;postMsg('sections')&quot; class=&quot;msgButton&quot;&gt;
+        Send Message &apos;sections&apos;
+      &lt;/button&gt;
+      &lt;button onclick=&quot;postMsg('request')&quot; class=&quot;msgButton&quot;&gt;
+        Send Message &apos;request&apos;
+      &lt;/button&gt;
+      &lt;div id=&quot;rply&quot; class=&quot;replyDisplay&quot;&gt;No Reply&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/t-b&gt;
+  &lt;div style=&quot;height:0.75em;&quot;&gt;&lt;/div&gt;
+  &lt;div&gt;
+    &lt;iframe 
+      id=&quot;pgframe&quot; 
+      class=&quot;iFrame&quot; 
+      src=&quot;WebDev_MsgRcvr.html&quot; 
+      name=&quot;rtcnt&quot;&gt;
+    &lt;/iframe&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+
+
+
+</code></pre>
+<div class="codeHeader">WebDev_MsgSndr CSS</div>
+<pre><code class="language-term">&lt;style&gt;
+  #github .msgButton {
+    cursor: pointer;
+    padding: 0.25em 0.75em;
+    font-size: 1em;
+    border: 2px solid var(--dark);
+  }
+
+  #github .replyDisplay {
+    padding: 0.25em 0.75em;
+    font-size: 1em;
+    border: 2px solid var(--dark);
+  }
+
+  #github .iFrame {
+    height: 30em;
+    width: 99%;
+    border: 2px solid var(--dark);
+  }
+
+  #github .codeHeader {
+    background-color: var(--light);
+    padding: 0.15em 1.25em;
+    font-weight: bold;
+    font-size: 1em;
+  }
+&lt;/style&gt;
+</code></pre>
+              </div>
+            </first-item>
+            <splitter-bar id="toggle-seperator"></splitter-bar>
+            <second-item id="toggle-second" style="width:40em;">
+              <div class="codewrap" onclick="obubbleup('toggle-first')">
+                <div class="codeHeader">WebDev_MsgRcvr JavaScript</div>
+                <pre><code style="width:400em;" class="language-javascript">&lt;script&gt;
+  /*-- send reply message to parent MsgSndr --*/
+  function postMsg(msg) {
+    let parent = window.parent;
+    parent.postMessage(msg, '*');
+  }
+  /*-----------------------------------------------------
+    The onmessage(event) function is a message handler
+    installed by JavaScript runtime in a message event
+    listener. It is invoked when a message is posted
+    by another window.
+
+    The function supplies application specific processing
+    for each type of message used by the application.
+  -----------------------------------------------------*/
+  /*-- receive message from parent MsgSndr --*/
+  window.onmessage = function (evnt) {
+    let msg = evnt.data;
+    if (evnt === null | evnt.data === 'sections') {
+
+      /*-- toggle display of sectons list --*/
+      bottomMenu.sections();
+
+    } else {
+
+      if (evnt.data === 'request') {
+        let url = window.location.href;
+        /*-- post url back to parent MsgSndr --*/
+        postMsg(url);
+      }
+    }
+  }
+&lt;/script&gt;
+
+&lt;script&gt;
+/*----------------------------------------------- 
+  used by onmessage(evnt) to toggle display 
+  of page-sections list 
+------------------------------------------------*/
+
+bottomMenu.sections = function () {
+  var menu = document.getElementById("sections");
+  if (isDefined(menu)) {
+    if (menu.style.display == "flex")
+      menu.style.display = "none";
+    else
+      menu.style.display = "flex";
+  }
+}
+&lt;/script&gt;
+
+
+</code></pre>
+                <div class="codeHeader">WebDev_MsgRcvr HTML Markup</div>
+<pre><code class="language-html">&lt;page-sections id=&quot;sections&quot; style=&quot;display:none;&quot;&gt;
+  &lt;sec-elem style=&quot;width:0.0em&quot;&gt;&nbsp;&lt;/sec-elem&gt;
+  &lt;menu-elem class=&quot;secElem&quot;&gt;
+    &lt;a target=&quot;_self&quot; href=&quot;#bottom&quot;&gt;bottom&lt;/a&gt;
+  &lt;/menu-elem&gt;
+  &lt;menu-elem class=&quot;secElem&quot;&gt;
+    &lt;a target=&quot;_self&quot; href=&quot;#actions&quot;&gt;actions&lt;/a&gt;
+  &lt;/menu-elem&gt;
+  &lt;menu-elem class=&quot;secElem&quot;&gt;
+    &lt;a target=&quot;_self&quot; href=&quot;#request&quot;&gt;request&lt;/a&gt;
+  &lt;/menu-elem&gt;
+  &lt;menu-elem class=&quot;secElem&quot;&gt;
+    &lt;a target=&quot;_self&quot; href=&quot;#sect&quot;&gt;sections&lt;/a&gt;
+  &lt;/menu-elem&gt;
+  &lt;menu-elem class=&quot;secElem&quot;&gt;
+    &lt;a target=&quot;_self&quot; href=&quot;#demo&quot;&gt;demo&lt;/a&gt;
+  &lt;/menu-elem&gt;
+  &lt;menu-elem class=&quot;secElem&quot;&gt;
+    &lt;a target=&quot;_self&quot; href=&quot;#top&quot;&gt;top&lt;/a&gt;
+  &lt;/menu-elem&gt;
+  &lt;div class='darkItem popupHeader' 
+    style=&quot;padding:0.25em 2.0em;&quot; 
+    onclick=&quot;this.parentElement.style.display = 'none'&quot;&gt;
+      Sections
+  &lt;/div&gt;
+&lt;/page-sections&gt;
+</code></pre>
+<div class="codeHeader">WebDev_MsgRcvr CSS</div>
+<pre><code class="language-term">&lt;!--
+  The markup above and this set of styles completely define
+  the &quot;sections&quot; popup.
+--&gt;
+
+&lt;style&gt;
+  #github page-sections {
+    position: fixed;
+    right: 0em;
+    bottom: calc(2.0em);
+    max-height: calc(100% - 6em - 6px);
+    padding: 0em 0.25em;
+    display: flex;
+    flex-direction: column-reverse;
+    overflow-y: auto;
+    z-index: 1000;
+    background-color: var(--light);
+    color: var(--dark);
+    border: 5px double var(--dark);
+  }
+
+  #github page-sections a {
+    color: var(--dark);
+  }
+&lt;/style&gt;
+</code></pre>
+              </div>
+            </second-item>
+          </splitter-container>
+        </div>
+        <div style="height:1em;"></div>
+        <strong styles="font-size:1.25em">Note:</strong>
+        <t-b>
+          There is one peculiar thing about the code above. If you look closely, you will see that
+          the <c-s>page-sections</c-s> markup elements are in the reverse order you might expect.
+          Then, the <c-s>page-sections</c-s> styles reverse the order.
+        </t-b>
+        <t-b>
+          That little bit of code strangeness is an artifact left from an earlier menu system. By
+          the time the current system was installed, there were too many pages to go back and
+          make the required changes, e.g., reorder the markup and remove the reverse from flex-direction.
+        </t-b>
+      </content>
+      <a id="bottom"></a>
+      <page-TOC id="pages" style="display:none;">
+      </page-TOC>
+      <page-sections id="sections" style="display:none;">
+        <sec-elem style="width:0.0em">&nbsp;</sec-elem>
+        <menu-elem class="secElem"><a target="_self" href="#bottom">bottom</a></menu-elem>
+        <!--<menu-elem class="secElem"><a target="_self" href="#table3">table 3</a></menu-elem>-->
+        <menu-elem class="secElem"><a target="_self" href="#code">code</a></menu-elem>
+        <menu-elem class="secElem"><a target="_self" href="#comments">comments</a></menu-elem>
+        <menu-elem class="secElem"><a target="_self" href="#msgs">messages</a></menu-elem>
+        <menu-elem class="secElem"><a target="_self" href="#jsmsgs">javascript msgs</a></menu-elem>
+        <menu-elem class="secElem"><a target="_self" href="#top">top</a></menu-elem>
+        <div class='darkItem popupHeader' style="padding:0.25em 2.0em;" onclick="this.parentElement.style.display = 'none'">Sections</div>
+      </page-sections>
+    </main>
+    <frame-footer>
+      <menu-item style="width:1.0em;">&nbsp;</menu-item>
+      <menu-elem id="nextLink2" onclick="bottomMenu.next()">Next</menu-elem>
+      <menu-elem id="prevLink2" onclick="bottomMenu.prev()">Prev</menu-elem>
+      <menu-elem id="pgbtn" onclick="bottomMenu.pages()">Pages</menu-elem>
+      <menu-elem onclick="bottomMenu.sections()">Sections</menu-elem>
+      <menu-elem onclick="bottomMenu.about()">About</menu-elem>
+      <menu-elem id="kysbtn" onclick="storyHlpMenu.keys()">Keys</menu-elem>
+      <menu-elem style="margin-right:1em">
+        <span id="loc" style="display:inline-block; font-weight:normal"></span>
+      </menu-elem>
+    </frame-footer>
+  </page-frame>
+  <script>
+    let loc = document.getElementById("loc");
+    let fn = window.location.href.split(/\/|\\/).pop();
+    loc.innerHTML = fn + ": ";
+  </script>
+  <script>
+    onLoadSplitter("toggle");
+  </script>
+</body>
+</html>
