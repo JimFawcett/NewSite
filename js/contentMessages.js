@@ -32,6 +32,16 @@ function postParentMsg(msg) {
 function postHostMsg(msg) {
   window.top.postMessage(msg, '*');
 }
+function copyUrlToClipboard() {
+  navigator.clipboard.writeText(window.location.href)
+    .then(() => console.log('URL copied to clipboard:', window.location.href))
+    .catch(err => console.error('Copy failed:', err));
+}
+function doUrl() {
+  postMsg(makeMsg('url'));
+  copyUrlToClipboard();
+  alert('url');
+}
 /*---------------------------------------------------------
   Process messages to content pages
 */
