@@ -103,5 +103,10 @@ function clearMenus() {
     bpi.classList.add('hidden');
     setCookie('bottom-menu-info', false, 10);
   }
+  let gt = document.getElementById('goto');
+  if(isDefined(gt)) {
+    gt.classList.add('hidden');
+    setCookie('gt', false, 10);
+  }
   postMsg(makeMsg('clear', null));
 }

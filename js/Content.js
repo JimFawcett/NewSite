@@ -91,6 +91,8 @@ function closeMenues() {
   hideElement('blogs');
   hideElement('help');
   hideElement('res');
+  hideElement('goto');
+  postMsg('close-goto');
   postMsg('esc');
   postMsg('clear');
 }
@@ -224,7 +226,7 @@ window.onmessage = function (e) {
         }
         break;
       case 'clear':
-        closeMenues();
+        clearMenues();
         break;
     /* Explorer cases require files in NewSite or an immediate child */
     case 'Explore':
@@ -300,9 +302,12 @@ window.onmessage = function (e) {
       }
       break;    
     case 'goto':
-      alert('GoTo msg');
+      // alert('GoTo msg');
       showGoToMenu(); 
-      break;                                                 
+      break; 
+    case 'close-goto':
+      alert('close-goto');
+      hideElement('goto');                                                
     default:
 
   }
@@ -502,7 +507,7 @@ function bigger(img) {
 
     // 4. Full menu template
     const html = `
-      <div class="darkItem" style="text-align:left; padding-left:1.0rem;">
+      <div class="darkItem" style="text-align:left; padding-left:1.0rem; cursor:pointer;" onclick="hideElement('goto')">
         Page Actions
       </div>
       <div style="
