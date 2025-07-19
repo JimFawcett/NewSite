@@ -80,6 +80,10 @@ fn run_test_ops() -> usize {
   lines += test_ops(name);
   println!();
 
+  let name = "../Fileutils/src/lib.rs";
+  lines += test_ops(name);
+  println!();
+
   let name = "no-exist";
   lines += test_ops(name);
   println!();
