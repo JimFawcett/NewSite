@@ -31,8 +31,31 @@ impl Input {
 
 #[cfg(test)]
 mod tests {
-  #[test]
-  fn it_works() {
-    assert_eq!(2 + 2, 4);
-  }
+    use super::*;
+    use file_utils::{write_string_to_file, read_file_to_string};
+
+    // fn test1() has been refactored by Perplexity AI from my
+    // original test code.  Now more consise.
+     
+    #[test]
+    fn test1() {
+        // Test setup: create test file
+        write_string_to_file("test1", "test1.txt")
+          .expect("Failed to write test file");
+
+        // Check: file is readable
+        let _file = open_file_for_read("test1.txt")
+          .expect("File should be readable");
+
+        // Test Input::do_input opens file successfully
+        let mut inp = Input::new();
+        let file_option = inp.do_input("test1.txt");
+        let mut file = file_option
+          .expect("Input::do_input should return Some(file)");
+
+        // The file content is as expected
+        let content = read_file_to_string(&mut file)
+          .expect("Should read file content");
+        assert_eq!(content, "test1");
+    }
 }

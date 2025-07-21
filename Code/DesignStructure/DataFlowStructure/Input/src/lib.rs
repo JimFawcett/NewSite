@@ -11,8 +11,7 @@
     - Returns line count if successful
 */
 use compute::*;
-mod file_utilities;
-use file_utilities::open_file_for_read;
+use file_utils::{open_file_for_read};
 
 #[derive(Debug)]
 pub struct Input {
