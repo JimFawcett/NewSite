@@ -28,62 +28,65 @@ pub fn read_file_to_string(f: &mut File) -> Result<String, std::io::Error> {
 }
 
 pub fn open_file_for_write(file_name: &str) -> Result<File, std::io::Error> {
-  let wfile = OpenOptions::new().write(true).truncate(true).open(file_name);
+  let wfile = OpenOptions::new()
+    .write(true)
+    .truncate(true)
+    .open(file_name);
   wfile
 }
 
-pub fn write_string_to_file_handle(s:&str, mut f:std::fs::File) -> std::io::Result<()> {
+pub fn write_string_to_file_handle(s: &str, mut f: std::fs::File) -> std::io::Result<()> {
   f.write_all(s.as_bytes())?;
   f.flush()?;
   Ok(())
 }
 
-pub fn write_string_to_file(s:&str, file_name:&str) -> std::io::Result<()> {
+pub fn write_string_to_file(s: &str, file_name: &str) -> std::io::Result<()> {
   std::fs::write(file_name, s)?;
   Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+  use super::*;
 
-    #[test]
-    fn file_name_write_read() {
-        let file_name = "temp.txt";
-        let test_string = "test string";
+  #[test]
+  fn file_name_write_read() {
+    let file_name = "temp.txt";
+    let test_string = "test string";
 
-        // Write using the filename
-        open_file_for_write(file_name)
-          .expect("open for write failed");
-        write_string_to_file(test_string, file_name)
-          .expect("write string failed");
+    // Write using the filename
+    open_file_for_write(file_name)
+      .expect("open for write failed");
+    write_string_to_file(test_string, file_name)
+      .expect("write string failed");
 
-        // Read back
-        let mut rfile = open_file_for_read(file_name)
-          .expect("open for read failed");
-        let r_string = read_file_to_string(&mut rfile)
-          .expect("read to string failed");
-        
-        assert_eq!(r_string, test_string);
-    }
+    // Read back
+    let mut rfile = open_file_for_read(file_name)
+      .expect("open for read failed");
+    let r_string = read_file_to_string(&mut rfile)
+      .expect("read to string failed");
 
-    #[test]
-    fn file_handle_write_read() {
-        let file_name = "temp.txt";
-        let test_string = "test string";
+    assert_eq!(r_string, test_string);
+  }
 
-        // Open for writing and write using handle
-        let wfile = open_file_for_write(file_name)
-          .expect("open for write failed");
-        write_string_to_file_handle(test_string, wfile)
-          .expect("write string failed");
+  #[test]
+  fn file_handle_write_read() {
+    let file_name = "temp.txt";
+    let test_string = "test string";
 
-        // Read back
-        let mut rfile = open_file_for_read(file_name)
-          .expect("open for read failed");
-        let r_string = read_file_to_string(&mut rfile)
-          .expect("read to string failed");
-        
-        assert_eq!(r_string, test_string);
-    }
+    // Open for writing and write using handle
+    let wfile = open_file_for_write(file_name)
+      .expect("open for write failed");
+    write_string_to_file_handle(test_string, wfile)
+      .expect("write string failed");
+
+    // Read back
+    let mut rfile = open_file_for_read(file_name)
+      .expect("open for read failed");
+    let r_string = read_file_to_string(&mut rfile)
+      .expect("read to string failed");
+
+    assert_eq!(r_string, test_string);
+  }
 }
