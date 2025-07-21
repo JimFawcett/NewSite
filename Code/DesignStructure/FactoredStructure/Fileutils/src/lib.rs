@@ -49,70 +49,41 @@ mod tests {
 
     #[test]
     fn file_name_write_read() {
+        let file_name = "temp.txt";
+        let test_string = "test string";
 
-      let file_name = "temp.txt";
-      let test_string = "test string";
+        // Write using the filename
+        open_file_for_write(file_name)
+          .expect("open for write failed");
+        write_string_to_file(test_string, file_name)
+          .expect("write string failed");
 
-      let res = open_file_for_write(file_name);
-      if let Err(err) = res {
-        eprintln!("open for write failed:\n{}", err);
-        return;
-      }
-      let _wfile = res.unwrap();
-
-      let _ = write_string_to_file(test_string, file_name);
-
-      let ropen = open_file_for_read(file_name);
-      if let Err(err) = ropen {
-        eprintln!("open for read failed:\n{}", err);
-        return;
-      }
-      let mut rfile = ropen.unwrap();
-
-      let r_string_res = read_file_to_string(&mut rfile);
-      if let Err(err) = r_string_res {
-        eprintln!("read to string failed:\n{}", err);
-        return;
-      }
-      let r_string = r_string_res.unwrap();
-
-      assert_eq!(r_string, test_string);
+        // Read back
+        let mut rfile = open_file_for_read(file_name)
+          .expect("open for read failed");
+        let r_string = read_file_to_string(&mut rfile)
+          .expect("read to string failed");
+        
+        assert_eq!(r_string, test_string);
     }
 
     #[test]
     fn file_handle_write_read() {
+        let file_name = "temp.txt";
+        let test_string = "test string";
 
-      let file_name = "temp.txt";
-      let test_string = "test string";
+        // Open for writing and write using handle
+        let wfile = open_file_for_write(file_name)
+          .expect("open for write failed");
+        write_string_to_file_handle(test_string, wfile)
+          .expect("write string failed");
 
-      let res = open_file_for_write(file_name);
-      if let Err(err) = res {
-        eprintln!("open for write failed:\n{}", err);
-        return;
-      }
-      let wfile = res.unwrap();
-
-      let wres = write_string_to_file_handle(test_string, wfile);
-      if let Err(err) = wres {
-        eprintln!("write string failed:\n{}", err);
-        return;
-      }
-
-      let ropen = open_file_for_read(file_name);
-      if let Err(err) = ropen {
-        eprintln!("open for read failed:\n{}", err);
-        return;
-      }
-      let mut rfile = ropen.unwrap();
-
-      let r_string_res = read_file_to_string(&mut rfile);
-      if let Err(err) = r_string_res {
-        eprintln!("read to string failed:\n{}", err);
-        return;
-      }
-      let r_string = r_string_res.unwrap();
-
-      assert_eq!(r_string, test_string);
+        // Read back
+        let mut rfile = open_file_for_read(file_name)
+          .expect("open for read failed");
+        let r_string = read_file_to_string(&mut rfile)
+          .expect("read to string failed");
+        
+        assert_eq!(r_string, test_string);
     }
-
 }

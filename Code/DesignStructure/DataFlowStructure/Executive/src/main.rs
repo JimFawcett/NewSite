@@ -41,6 +41,10 @@ fn main() {
   lines += inp.do_input(name);
   putln();
 
+  let name = "../Fileutils/src/lib.rs";
+  lines += inp.do_input(name);
+  putln();
+
   print!("\n  total lines: {}", lines);
 
   print!("\n\n  That's all Folks!\n\n");

@@ -12,8 +12,7 @@
 use output::Output;
 use std::fs::*;
 
-mod file_utilities;
-use file_utilities::read_file_to_string;
+use file_utils::read_file_to_string;
 
 #[derive(Debug)]
 pub struct Compute {
