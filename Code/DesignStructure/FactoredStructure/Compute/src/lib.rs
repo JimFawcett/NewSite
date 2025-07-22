@@ -35,22 +35,19 @@ impl Compute {
   }
 }
 #[cfg(test)]
-
 mod tests {
-  use super::*;
-  use file_utils::{write_string_to_file, open_file_for_read};
+    use super::*;
+    use file_utils::{write_string_to_file, open_file_for_read};
 
-  #[test]
-  fn read_and_compute() {
-    let rslt = write_string_to_file("test1", "test1.txt");
-    if let Err(_err) = rslt {
-      assert!(true);
+    #[test]
+    fn read_and_compute() {
+        write_string_to_file("test1", "test1.txt")
+          .expect("Failed to write test file");
+        let file = open_file_for_read("test1.txt")
+          .expect("Failed to open test file for read");
+
+        let mut comp = Compute::new();
+        comp.do_compute("test1.txt", file);
+        assert_eq!(comp.lines(), 1);
     }
-    let file = open_file_for_read("test1.txt");
-    assert!(file.is_ok());
-
-    let mut comp = Compute::new();
-    comp.do_compute("test1.txt", file.unwrap());
-    assert_eq!(comp.lines(), 1);
-  }
 }

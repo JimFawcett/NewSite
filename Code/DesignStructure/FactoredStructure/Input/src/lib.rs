@@ -10,13 +10,11 @@ use file_utils::open_file_for_read;
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct Input {
-  name: String,
+  // no data members
 }
 impl Input {
   pub fn new() -> Input {
-    Input {
-      name: String::new(),
-    }
+    Input {}
   }
   pub fn do_input(&mut self, name: &str) -> Option<File> {
     let rslt = open_file_for_read(name);
@@ -36,7 +34,7 @@ mod tests {
 
     // fn test1() has been refactored by Perplexity AI from my
     // original test code.  Now more consise.
-     
+
     #[test]
     fn test1() {
         // Test setup: create test file
