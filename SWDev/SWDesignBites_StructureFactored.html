@@ -605,10 +605,10 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
             <div style="height:1.5rem;"></div>
           </div>
         </splitter-container>
-        <div style="height:3.0rem;"></div>
+        <div style="height:2.0rem;"></div>
         <div id="mod-out" style="padding:0rem 1.5rem;">
           <span style="float:left; font-weight:bold">Output Library</span>
-          <span style="float:right; font-weight:bold">Fileutils Library</span>
+          <span style="float:right; font-weight:bold">Cargo.toml</span>
         </div>
         <splitter-container style="width:100%">
           <div slot="first" style="padding-left:0.3rem;">
@@ -641,16 +641,15 @@ mod tests {
               <strong style="margin-bottom: 0rem;">Comments:</strong>
               <ul class="tights" style="margin: 0rem 1.5rem;">
                 <li>
-                  The Fileutils library provides functionality for opening and reading files, 
-                  shared by Input and Compute libraries. 
+                  Output library defines type Output that has no data members. It provides 
+                  one method <c-s>fn do_output(&self, name: &str, lines: usize)</c-s>. 
                 </li>
                 <li>
-                  It provides functions for opening files, reading file contents into a string, 
-                  and writing a string to a file.
+                  The method simply prints a file name and the number of lines it contains,
+                  supplied as input arguments.
                 </li>
                 <li>
-                  This library defines unit tests for writing a string to a file and reading 
-                  it back again, using either a filename string or a file handle.
+                  This library defines a default unit test that always succeeds.
                 </li>
               </ul>
             </div>
@@ -658,124 +657,50 @@ mod tests {
 
           </div>
           <div slot="second" style="padding-right:0.4rem;">
-            <pre><code class="language-term">/////////////////////////////////////////////////////////////
-// FactoredStructure::Fileutils::file_utilities.rs         //
-//   - Input attempts to open named file and return File   //
-// Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
-/////////////////////////////////////////////////////////////
-/*
-  This code may be useful for other programs so it is
-  factored into a module here.
-*/
-#![allow(dead_code)]
+            <pre><code class="language-term">[package]
+name = "output"
+version = "0.1.0"
+authors = ["James W. Fawcett <jfawcett@twcny.rr.com>"]
+edition = "2018"
 
-use std::fs::*;
-use std::io::{Error, ErrorKind, Read, Write};
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-pub fn open_file_for_read(file_name: &str) -&gt; Result&lt;File, std::io::Error&gt; {
-  let rfile = OpenOptions::new().read(true).open(file_name);
-  rfile
-}
+[dependencies]
+            </code></pre>
+            <div style="margin: 0.5rem 1.5rem; line-height:1.0rem; font-size:0.9rem;">
+              <div style="height: 1.0rem;">Build and Test</div>
+            </div>
+            <pre><code class="language-term">> cargo build --lib
+   Compiling output v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\FactoredStructure\Output)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.22s
+C:\github\JimFawcett\NewSite\Code\DesignStructure\FactoredStructure\Output
+> cargo test --lib
+   Compiling output v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\FactoredStructure\Output)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.37s
+     Running unittests src\lib.rs (target\debug\deps\output-1eee8dc0a1134569.exe)
 
-pub fn read_file_to_string(f: &mut File) -&gt; Result&lt;String, std::io::Error&gt; {
-  let mut contents = String::new();
-  let bytes_rslt = f.read_to_string(&mut contents);
-  if bytes_rslt.is_ok() {
-    Ok(contents)
-  } else {
-    Err(Error::new(ErrorKind::Other, &quot;read error&quot;))
-  }
-}
+running 1 test
+test tests::it_works ... ok
 
-pub fn open_file_for_write(file_name: &str) -&gt; Result&lt;File, std::io::Error&gt; {
-  let wfile = OpenOptions::new().write(true).truncate(true).open(file_name);
-  wfile
-}
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+            </code></pre>
 
-pub fn write_string_to_file_handle(s:&str, mut f:std::fs::File) -&gt; std::io::Result&lt;()&gt; {
-  f.write_all(s.as_bytes())?;
-  f.flush()?;
-  Ok(())
-}
+            <div style="margin: 0.5rem 1.5rem; line-height:1.0rem; font-size:0.9rem;">
+              <div style="height: 1.0rem;"></div>
+              <strong style="margin-bottom: 0rem;">Comments:</strong>
+              <ul class="tights" style="margin: 0rem 1.5rem;">
+                <li>
+                  Output library has no dependencies other than the Rust standard libraries, 
+                  as shown in the Cargo.toml file at the top of this view.
+                </li>
+                <li>
+                  The build and output view above shows successful build and execution 
+                  of the default - always passes - unit test function.
+                </li>
+              </ul>
+            </div>
+            <div style="height:1.5rem;"></div>
 
-pub fn write_string_to_file(s:&str, file_name:&str) -&gt; std::io::Result&lt;()&gt; {
-  std::fs::write(file_name, s)?;
-  Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn file_name_write_read() {
-
-      let file_name = &quot;temp.txt&quot;;
-      let test_string = &quot;test string&quot;;
-
-      let res = open_file_for_write(file_name);
-      if let Err(err) = res {
-        eprintln!(&quot;open for write failed:&#92;n{}&quot;, err);
-        return;
-      }
-      let _wfile = res.unwrap();
-
-      let _ = write_string_to_file(test_string, file_name);
-
-      let ropen = open_file_for_read(file_name);
-      if let Err(err) = ropen {
-        eprintln!(&quot;open for read failed:&#92;n{}&quot;, err);
-        return;
-      }
-      let mut rfile = ropen.unwrap();
-
-      let r_string_res = read_file_to_string(&mut rfile);
-      if let Err(err) = r_string_res {
-        eprintln!(&quot;read to string failed:&#92;n{}&quot;, err);
-        return;
-      }
-      let r_string = r_string_res.unwrap();
-
-      assert_eq!(r_string, test_string);
-    }
-
-    #[test]
-    fn file_handle_write_read() {
-
-      let file_name = &quot;temp.txt&quot;;
-      let test_string = &quot;test string&quot;;
-
-      let res = open_file_for_write(file_name);
-      if let Err(err) = res {
-        eprintln!(&quot;open for write failed:&#92;n{}&quot;, err);
-        return;
-      }
-      let wfile = res.unwrap();
-
-      let wres = write_string_to_file_handle(test_string, wfile);
-      if let Err(err) = wres {
-        eprintln!(&quot;write string failed:&#92;n{}&quot;, err);
-        return;
-      }
-
-      let ropen = open_file_for_read(file_name);
-      if let Err(err) = ropen {
-        eprintln!(&quot;open for read failed:&#92;n{}&quot;, err);
-        return;
-      }
-      let mut rfile = ropen.unwrap();
-
-      let r_string_res = read_file_to_string(&mut rfile);
-      if let Err(err) = r_string_res {
-        eprintln!(&quot;read to string failed:&#92;n{}&quot;, err);
-        return;
-      }
-      let r_string = r_string_res.unwrap();
-
-      assert_eq!(r_string, test_string);
-    }
-
-}            </code></pre>
           </div>
         </splitter-container>
         <div style="height:2.75rem;"></div>
