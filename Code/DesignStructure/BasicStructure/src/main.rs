@@ -32,13 +32,19 @@ fn read_file_to_string(f: &mut File) -> Result<String, std::io::Error> {
 }
 
 #[derive(Debug)]
-struct Basic {
+pub struct Basic {
   name: String,
   file: Option<File>,
   lines: usize,
 }
+
+impl Default for Basic {
+  fn default() -> Self {
+    Self::new()
+  }
+}
 impl Basic {
-  fn new() -> Basic {
+  pub fn new() -> Basic {
     Basic {
       name: String::new(),
       file: None,
@@ -48,12 +54,12 @@ impl Basic {
   /*-----------------------------------------------------
     Input processing
   */
-  fn parse_cmdln() -> Vec<String> {
+  pub fn parse_cmdln() -> Vec<String> {
     let cl_iter = std::env::args();
     let args: Vec<String> = cl_iter.skip(1).collect();
     args
   }
-  fn show_cmdln(args: &[String]) {
+  pub fn show_cmdln(args: &[String]) {
     if args.is_empty() {
       return;
     }
@@ -62,7 +68,10 @@ impl Basic {
       print!(", {}", arg);
     }
   }
-  fn input(&mut self, name: &str) {
+  /*-------------------------------------------------------
+    Input processing
+  */
+  pub fn input(&mut self, name: &str) {
     self.name = name.to_string();
     let rslt = open_file_for_read(name);
     if let Ok(file) = rslt {
@@ -74,7 +83,7 @@ impl Basic {
   /*-----------------------------------------------------
     Compute processing
   */
-  fn compute(&mut self) {
+  pub fn compute(&mut self) {
     if let Some(file) = &mut self.file {
       let rslt = read_file_to_string(file);
       if let Ok(contents) = rslt {
@@ -90,7 +99,7 @@ impl Basic {
   /*-----------------------------------------------------
     Output processing
   */
-  fn output(&self) {
+  pub fn output(&self) {
     print!("\n  {:4} lines in {:?}", self.lines, self.name);
   }
 }
