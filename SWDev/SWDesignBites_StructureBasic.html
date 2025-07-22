@@ -208,7 +208,7 @@
           <span style="float:left;">Source Code</span>
           <span style="float:right;">Output</span>
         </div>
-        <splitter-container left-width="35rem;" style="height:max-content">
+        <splitter-container left-width="31rem;" style="height:max-content">
           <div slot="first">
             <pre><code class="language-rust">/////////////////////////////////////////////////////////////
 // basic_structure::main.rs                                //
@@ -244,13 +244,19 @@ fn read_file_to_string(f: &mut File) -&gt; Result&lt;String, std::io::Error&gt; 
 }
 
 #[derive(Debug)]
-struct Basic {
+pub struct Basic {
   name: String,
   file: Option&lt;File&gt;,
   lines: usize,
 }
+
+impl Default for Basic {
+  fn default() -&gt; Self {
+    Self::new()
+  }
+}
 impl Basic {
-  fn new() -&gt; Basic {
+  pub fn new() -&gt; Basic {
     Basic {
       name: String::new(),
       file: None,
@@ -260,12 +266,12 @@ impl Basic {
   /*-----------------------------------------------------
     Input processing
   */
-  fn parse_cmdln() -&gt; Vec&lt;String&gt; {
+  pub fn parse_cmdln() -&gt; Vec&lt;String&gt; {
     let cl_iter = std::env::args();
     let args: Vec&lt;String&gt; = cl_iter.skip(1).collect();
     args
   }
-  fn show_cmdln(args: &[String]) {
+  pub fn show_cmdln(args: &[String]) {
     if args.is_empty() {
       return;
     }
@@ -274,7 +280,10 @@ impl Basic {
       print!(&quot;, {}&quot;, arg);
     }
   }
-  fn input(&mut self, name: &str) {
+  /*-------------------------------------------------------
+    Input processing
+  */
+  pub fn input(&mut self, name: &str) {
     self.name = name.to_string();
     let rslt = open_file_for_read(name);
     if let Ok(file) = rslt {
@@ -286,7 +295,7 @@ impl Basic {
   /*-----------------------------------------------------
     Compute processing
   */
-  fn compute(&mut self) {
+  pub fn compute(&mut self) {
     if let Some(file) = &mut self.file {
       let rslt = read_file_to_string(file);
       if let Ok(contents) = rslt {
@@ -302,7 +311,7 @@ impl Basic {
   /*-----------------------------------------------------
     Output processing
   */
-  fn output(&self) {
+  pub fn output(&self) {
     print!(&quot;&#92;n  {:4} lines in {:?}&quot;, self.lines, self.name);
   }
 }
@@ -322,7 +331,8 @@ fn main() {
   }
 
   println!(&quot;&#92;n&#92;n  That's all Folks!&#92;n&#92;n&quot;);
-}            </code></pre>
+}
+            </code></pre>
           </div>
           <div slot="second">
             <pre><code class="language-term">
@@ -330,17 +340,15 @@ fn main() {
 
   -- counting lines in files --
 
-   114 lines in "src/main.rs"
+   123 lines in "src/main.rs"
 
   That's all Folks!
 
 </code></pre>
-          </div>
-        </splitter-container>
-        <div style="height:3rem; clear:both;"></div>
-        <div style="padding: 0.25rem 1rem; float:left; font-weight: bold;">cargo.toml</div>
-        <div style="border:2px solid var(--dark); padding:0.25em; width:35rem; clear:both;">
-          <pre style=" height:17rem; overflow-y: hidden;"><code class="language-term">
+<div style="font-weight:bold; padding:0.5rem 1.5rem;">
+  Cargo.toml
+</div>
+<pre><code class="language-term">
 [package]
 name = "basic_structure"
 version = "0.1.0"
@@ -350,12 +358,63 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-          </code></pre>
-        </div>
 
-        <div style="height:1rem;"></div>
+</code></pre>
+            <div style="height:0.25rem;"></div>
+            <div style="margin: 0.5rem 1.5rem; line-height:1.0rem; font-size:0.9rem;">
+              <strong style="margin-bottom: 0rem;">Comments:</strong>
+              <ul class="tights" style="margin: 0rem 1.0rem;">
+                <li>
+                  Executive code resides in the left panel. It defines and creates an instance of type Basic.
+                </li>
+                <li>
+                  Basic provides public methods:
+                  <ol class="tight">
+                    <li>
+                      <c-s>input(&mut self, name: &str)</c-s><br>
+                      attempts to open named file, and if successul, attaches an Option containing the file handle 
+                      to private member <c-s>file</c-s>.
+                    </li>
+                    <li>
+                      <c-s>compute(&mut self)</c-s><br>
+                      counts lines in the file opened with <c-s>input(&mut self, name: &str)</c-s> and stores the 
+                      result in private member <c-s>lines</c-s>.
+                    </li>
+                    <li>
+                      <c-s>output(&self)</c-s><br>
+                      prints the name and number of lines to stdout.
+                    </li>
+                  </ol>
+                </li>
+                <li>
+                  The Executive then simply creates an instance of <c-s>Basic</c-s> and calls its <c-s>parse_cmdln()</c-s> 
+                  function to get names of files to process.
+                </li>
+                <li>
+                  It finishes by calling <c-s>input(&name), compute(), and output()</c-s> to evaluate number of lines 
+                  and display the result for each file cited in the command line.
+                </li>
+                <li>
+                  StructureBasic project has only one source file: src/main.rs.
+                  The total line count of the single StructureBasic file is 123 lines (see Program Output, above).
+                </li>
+              </ul>
+            </div>
+            <div style="margin: 0.5rem 1.5rem; line-height:1.0rem; font-size:0.9rem;">
+              <strong style="margin-bottom: 0rem;">Final Comment:</strong><br>
+              <ul class="tights" style="margin: 0rem 1.0rem;">
+                <li>
+                  Note from the Cargo.toml file that main.rs has no dependencies other than to the Rust standard library.
+                </li>
+                <li>
+                  All of the Structures to follow have multiple files for Executive, Input, Compute, and Output processing.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </splitter-container>
+        <div style="height:2rem; clear:both;"></div>
         <a id="epilogue"></a>
-        <div style="height:0.75rem;"></div>
         <h3>3. Epilogue</h3>
         <div class="indent">
           <t-b>
