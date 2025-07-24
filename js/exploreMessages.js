@@ -42,6 +42,8 @@ window.addEventListener("message", function (event) {
     case 'reload':
       location.reload();
       break;
+    case 'picklist':
+      showPickList();
     default:
       console.log('no case for ' + event.data.key);
   }
