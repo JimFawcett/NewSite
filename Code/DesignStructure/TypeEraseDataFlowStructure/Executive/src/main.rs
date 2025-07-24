@@ -9,9 +9,7 @@
     the pipeline self installs, e.g., Input creates Compute,
     and Compute creates Output.
 */
-use compute::*;
 use input::*;
-use output::*;
 
 fn main() {
   let putln = || println!();
@@ -19,9 +17,6 @@ fn main() {
   print!("\n  -- TypeErasureDataFlowStructure::Executive --\n");
 
   let mut lines = 0;
-
-  type Comp = ComputeImpl<OutputImpl>;
-  let mut inp = Input::<Comp>::new();
 
   let name = "./src/main.rs";
   lines += inp.do_input(name);

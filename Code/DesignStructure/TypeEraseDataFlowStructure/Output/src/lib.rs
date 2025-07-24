@@ -4,11 +4,12 @@
 // Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
 /////////////////////////////////////////////////////////////
 
-use compute::Output;
+#![allow(dead_code)]
 
 #[derive(Debug)]
 pub struct OutputImpl {}
-impl Output for OutputImpl {
+
+impl OutputImpl {
   fn new() -> OutputImpl {
     OutputImpl {}
   }
