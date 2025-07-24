@@ -10,10 +10,10 @@
       processing.
     - Returns line count if successful
 */
-use std::fs::*;
+#![allow(non_snake_case)]
 
-mod file_utilities;
-use file_utilities::open_file_for_read;
+use std::fs::*;
+use file_utils::open_file_for_read;
 
 pub trait Compute {
   fn new() -> Self;
@@ -22,15 +22,15 @@ pub trait Compute {
 }
 
 #[derive(Debug)]
-pub struct Input<T: Compute> {
+pub struct InputImpl<C: Compute> {
   name: String,
-  compute: T,
+  Compute: C,
 }
-impl<T: Compute> Input<T> {
-  pub fn new() -> Input<T> {
-    Input {
+impl<C: Compute> InputImpl<C> {
+  pub fn new() -> InputImpl<C> {
+    InputImpl {
       name: String::new(),
-      compute: T::new(),
+      Compute: C::new(),
     }
   }
   pub fn do_input(&mut self, name: &str) -> usize {
@@ -38,8 +38,8 @@ impl<T: Compute> Input<T> {
     self.name = name.to_string();
     let rslt = open_file_for_read(name);
     if let Ok(file) = rslt {
-      self.compute.do_compute(name, file);
-      lines = self.compute.lines();
+      self.Compute.do_compute(name, file);
+      lines = self.Compute.lines();
     } else {
       print!("\n  can't open file {:?}", name);
     }

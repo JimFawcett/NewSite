@@ -199,7 +199,7 @@
         <a class="indent" href="https://github.com/JimFawcett/DesignStructure/tree/master/FactoredStructure">Factored Code Repository</a>
         <div style="height:1.0rem;"></div>
         <div style="height:1.0rem;"></div>
-        <div id="exec-compute" style="padding:0rem 1.5rem;">
+        <div id="executive" style="padding:0rem 1.5rem;">
           <span style="float:left; font-weight:bold">Executive</span>
           <span style="float:right; font-weight:bold">Output</span>
         </div>
@@ -313,7 +313,7 @@ input = { path = "../Input" }
           </div>
         </splitter-container>
         <div style="height:3.0rem;"></div>
-        <div id="input-output" style="padding:0rem 1.5rem;">
+        <div id="input" style="padding:0rem 1.5rem;">
           <span style="float:left; font-weight:bold">Input Library</span>
           <span style="float:right; font-weight:bold">Build and Test</span>
         </div>
@@ -459,7 +459,7 @@ tempfile = "3"      // tempfile crate from crates.io
           </div>
         </splitter-container>
         <div style="height:3.0rem;"></div>
-        <div id="mod-out" style="padding:0rem 1.5rem;">
+        <div id="compute" style="padding:0rem 1.5rem;">
           <span style="float:left; font-weight:bold">Comp Library</span>
           <span style="float:right; font-weight:bold">Build and Test</span>
         </div>
@@ -650,8 +650,252 @@ tempfile = "3"
             <div style="height:1.5rem;"></div>
           </div>
         </splitter-container>
-        <div style="height:2.75rem;"></div>
-        <div style="height:0.5rem;"></div>
+        <div style="height:3.0rem;"></div>
+        <div id="output" style="padding:0rem 1.5rem;">
+          <span style="float:left; font-weight:bold">Output Library</span>
+          <span style="float:right; font-weight:bold">Build</span>
+        </div>
+        <splitter-container style="width:100%">
+          <div slot="first" style="padding-left:0.3rem;">
+            <pre><code class="language-rust">/////////////////////////////////////////////////////////////
+// DataFlowStructure::Output::lib.rs                       //
+//   - Sends results to console                            //
+// Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
+/////////////////////////////////////////////////////////////
+
+#[derive(Debug)]
+pub struct Output {}
+impl Output {
+  pub fn new() -&gt; Output {
+    Output {}
+  }
+  pub fn do_output(&self, name: &str, lines: usize) {
+    print!(&quot;&#92;n  file {:?} has {} lines of code&quot;, name, lines);
+  }
+}
+#[cfg(test)]
+mod tests {
+  #[test]
+  fn it_works() {
+    assert_eq!(2 + 2, 4);
+  }
+}</code></pre>
+          </div>
+          <div slot="second" style="padding-right:0.4rem;">
+            <pre><code class="language-term">> cargo build --lib
+   Compiling output v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\FactoredStructure\Output)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.57s
+C:\github\JimFawcett\NewSite\Code\DesignStructure\FactoredStructure\Output
+            </code></pre>
+  <div style="width:100%; float:right; font-weight:bold; text-align: right; padding-right:1rem; padding-bottom:0.5rem;">
+    Cargo.toml
+  </div>
+ <pre><code class="language-tern">[package]
+name = "output"
+version = "0.1.0"
+authors = ["James W. Fawcett <jfawcett@twcny.rr.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+</code></pre>
+            <div style="margin: 0.5rem 1.5rem; line-height:1.0rem; font-size:0.9rem;">
+              <div style="height: 1.0rem;"></div>
+              <strong style="margin-bottom: 0rem;">Comments:</strong>
+              <ul class="tights" style="margin: 0rem 1.5rem;">
+                <li>
+                  Output library defines the type Output with no data members. 
+                </li>
+                <li>
+                  It provides two functions <c-s>new()</c-s> and <c-s>fn do_output(&mut self, name: &str, lines: usize)</c-s>.
+                </li>
+                <li>
+                  <c-s>do_output</c-s> displays a file name and its line count.
+                </li>
+                <li>
+                  Because of its simplicity this library defines only one default unit test that always passes.
+                </li>
+                <li>
+                  Cargo.toml [dependencies] is empty, signifying that this library only depends on the Rust standard library.
+                </li>
+              </ul>
+            </div>
+            <div style="height:1.5rem;"></div>
+          </div>
+        </splitter-container>
+        <div style="height:3.0rem;"></div>
+        <div id="fileutils" style="padding:0rem 1.5rem;">
+          <span style="float:left; font-weight:bold">Fileutils Library</span>
+          <span style="float:right; font-weight:bold">Build and Test</span>
+        </div>
+        <splitter-container style="width:100%">
+          <div slot="first" style="padding-left:0.3rem;">
+            <pre><code class="language-rust">/////////////////////////////////////////////////////////////
+// FactoredStructure::Input::file_utilities.rs             //
+//   - Input attempts to open named file and return File   //
+// Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
+/////////////////////////////////////////////////////////////
+/*
+  This code may be useful for other programs so it is
+  factored into a module here.
+*/
+#![allow(dead_code)]
+
+use std::fs::*;
+use std::io::{Error, ErrorKind, Read, Write};
+
+pub fn open_file_for_read(file_name: &str) -&gt; Result&lt;File, std::io::Error&gt; {
+  let rfile = OpenOptions::new().read(true).open(file_name);
+  rfile
+}
+
+pub fn read_file_to_string(f: &mut File) -&gt; Result&lt;String, std::io::Error&gt; {
+  let mut contents = String::new();
+  let bytes_rslt = f.read_to_string(&mut contents);
+  if bytes_rslt.is_ok() {
+    Ok(contents)
+  } else {
+    Err(Error::new(ErrorKind::Other, &quot;read error&quot;))
+  }
+}
+
+pub fn open_file_for_write(file_name: &str) -&gt; Result&lt;File, std::io::Error&gt; {
+  let wfile = OpenOptions::new()
+    .write(true)
+    .truncate(true)
+    .open(file_name);
+  wfile
+}
+
+pub fn write_string_to_file_handle(s: &str, mut f: std::fs::File) -&gt; std::io::Result&lt;()&gt; {
+  f.write_all(s.as_bytes())?;
+  f.flush()?;
+  Ok(())
+}
+
+pub fn write_string_to_file(s: &str, file_name: &str) -&gt; std::io::Result&lt;()&gt; {
+  std::fs::write(file_name, s)?;
+  Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn file_name_write_read() {
+    let file_name = &quot;temp.txt&quot;;
+    let test_string = &quot;test string&quot;;
+
+    // Write using the filename
+    open_file_for_write(file_name)
+      .expect(&quot;open for write failed&quot;);
+    write_string_to_file(test_string, file_name)
+      .expect(&quot;write string failed&quot;);
+
+    // Read back
+    let mut rfile = open_file_for_read(file_name)
+      .expect(&quot;open for read failed&quot;);
+    let r_string = read_file_to_string(&mut rfile)
+      .expect(&quot;read to string failed&quot;);
+
+    assert_eq!(r_string, test_string);
+  }
+
+  #[test]
+  fn file_handle_write_read() {
+    let file_name = &quot;temp.txt&quot;;
+    let test_string = &quot;test string&quot;;
+
+    // Open for writing and write using handle
+    let wfile = open_file_for_write(file_name)
+      .expect(&quot;open for write failed&quot;);
+    write_string_to_file_handle(test_string, wfile)
+      .expect(&quot;write string failed&quot;);
+
+    // Read back
+    let mut rfile = open_file_for_read(file_name)
+      .expect(&quot;open for read failed&quot;);
+    let r_string = read_file_to_string(&mut rfile)
+      .expect(&quot;read to string failed&quot;);
+
+    assert_eq!(r_string, test_string);
+  }
+}</code></pre>
+          </div>
+          <div slot="second" style="padding-right:0.4rem;">
+            <pre><code class="language-term">> cargo build --lib
+   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\FactoredStructure\Fileutils)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.43s
+C:\github\JimFawcett\NewSite\Code\DesignStructure\FactoredStructure\Fileutils
+> cargo test --lib
+   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\FactoredStructure\Fileutils)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.46s
+     Running unittests src\lib.rs (target\debug\deps\file_utils-c70071d2546d9160.exe)
+
+running 2 tests
+test tests::file_handle_write_read ... ok
+test tests::file_name_write_read ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+            </code></pre>
+  <div style="width:100%; float:right; font-weight:bold; text-align: right; padding-right:1rem; padding-bottom:0.5rem;">
+    Cargo.toml
+  </div>
+ <pre><code class="language-tern">[package]
+name = "file_utils"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+</code></pre>
+            <div style="margin: 0.5rem 1.5rem; line-height:1.0rem; font-size:0.9rem;">
+              <div style="height: 1.0rem;"></div>
+              <strong style="margin-bottom: 0rem;">Comments:</strong>
+              <ul class="tights" style="margin: 0rem 1.5rem;">
+                <li>
+                  Fileutils library has no dependencies other than the Rust standard libraries, 
+                  as shown in the Cargo.toml file at the top of this view.
+                </li>
+                <li>
+                  It does not define any new types, but does define several functions:
+                  <ol>
+                    <li>
+                      <c-s>fn open_file_for_read(file_name: &str) -> Result&lt;File: std::io::Error&gt;</c-s><br>
+                      Attempts to open named file and return a handle to its String contents. 
+                      The return type is <c-s>Result&lt;File, std::io::Error&gt;</c-s>
+                    </li>
+                    <li>
+                      <c-s>fn read_file_to_string(f: &mut File) -> Result&lt;String, std::io::Error&gt;</c-s><br>
+                      Attempts to read contents referred to by file handle and return the string of contents 
+                      wrapped in Ok(contents).
+                    </li>
+                    <li>
+                      <c-s>fn open_file_for_write(file_name: &str) -> Result&lt;File, std::io::Error&gt;</c-s><br>
+                      Attempts to open named file and return a File handle to the opened named file. 
+                    </li>
+                    <li>
+                      <c-s>fn write_string_to_file_handle(s: &str, mut f: std::fs:::File) -> Result&lt;()&gt; </c-s><br>
+                      Attempts to write string to file referred to by the File handle and flush the handle.
+                    </li>
+                    <li>
+                      <c-s>fn write_string_to_file(s: &str, file_name: &str) -> Result&lt;()&gt; </c-s><br>
+                      Attempts to write string to file referred to named file.
+                    </li>
+                  </ol> 
+                </li>
+                <li>
+                  The Build and Test view above shows successful build and execution 
+                  of two unit test functions.
+                </li>
+              </ul>
+            </div>
+            <div style="height:1.5rem;"></div>
+          </div>
+        </splitter-container>
+        <div style="height:3.00rem;"></div>
         <a id="epilogue"></a>
         <div style="height:0.75rem;"></div>
         <h3>3. Epilogue</h3>
@@ -683,6 +927,11 @@ tempfile = "3"
         <a href="#top">top</a>
         <a href="#intro">introduction</a>
         <a href="#structure">structure</a>
+        <a href="#executive">executive</a>
+        <a href="#input">input</a>
+        <a href="#compute">compute</a>
+        <a href="#output">output</a>
+        <a href="#fileutils">fileutills</a>
         <a href="#epilogue">epilog</a>
         <a href="#bottom">bottom</a>
       </div>

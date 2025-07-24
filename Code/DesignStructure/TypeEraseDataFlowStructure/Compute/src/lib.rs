@@ -9,7 +9,9 @@
     - attempts to read file to string and count its lines
     - sends results to Output
 */
-use input::Compute;
+#![allow(dead_code)]
+
+use file_utils::read_file_to_string;
 use std::fs::*;
 
 pub trait Output {
@@ -17,15 +19,12 @@ pub trait Output {
   fn do_output(&self, name: &str, lines: usize);
 }
 
-mod file_utilities;
-use file_utilities::read_file_to_string;
-
 #[derive(Debug)]
 pub struct ComputeImpl<Out: Output> {
   lines: usize,
   out: Out,
 }
-impl<Out: Output> Compute for ComputeImpl<Out> {
+impl<Out: Output> ComputeImpl<Out> {
   fn new() -> ComputeImpl<Out> {
     ComputeImpl {
       lines: 0,

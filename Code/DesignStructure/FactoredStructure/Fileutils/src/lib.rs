@@ -30,6 +30,7 @@ pub fn read_file_to_string(f: &mut File) -> Result<String, std::io::Error> {
 pub fn open_file_for_write(file_name: &str) -> Result<File, std::io::Error> {
   let wfile = OpenOptions::new()
     .write(true)
+    .create(true)
     .truncate(true)
     .open(file_name);
   wfile
