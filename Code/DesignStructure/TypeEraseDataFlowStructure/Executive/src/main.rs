@@ -9,38 +9,31 @@
     the pipeline self installs, e.g., Input creates Compute,
     and Compute creates Output.
 */
-use input::*;
+// executive/src/main.rs
+use compute::ComputeImpl;
+use input::InputImpl;
+use output::OutputImpl;
 
 fn main() {
-  let putln = || println!();
+  println!("\n-- Type‑Erasure Pipeline via dyn --\n");
 
-  print!("\n  -- TypeErasureDataFlowStructure::Executive --\n");
+  // Wire the chain up, but only in `main`
+  let output: Box<dyn compute::Output> = Box::new(OutputImpl::new());
+  let compute: Box<dyn input::Compute> = Box::new(ComputeImpl::new(output));
+  let mut input: InputImpl = InputImpl::new(compute);
 
-  let mut lines = 0;
+  // Use it generically:
+  let mut total = 0;
+  for path in &[
+    "./src/main.rs",
+    "../Input/src/lib.rs",
+    "../Compute/src/lib.rs",
+    "../Output/src/lib.rs",
+  ] {
+    total += input.do_input(path);
+    println!();
+  }
 
-  let name = "./src/main.rs";
-  lines += inp.do_input(name);
-  putln();
-
-  let name = "../Input/src/lib.rs";
-  lines += inp.do_input(name);
-  let name = "../Input/examples/test1.rs";
-  lines += inp.do_input(name);
-  putln();
-
-  let name = "../Compute/src/lib.rs";
-  lines += inp.do_input(name);
-  let name = "../Compute/examples/test1.rs";
-  lines += inp.do_input(name);
-  putln();
-
-  let name = "../Output/src/lib.rs";
-  lines += inp.do_input(name);
-  let name = "../Output/examples/test1.rs";
-  lines += inp.do_input(name);
-  putln();
-
-  print!("\n  total lines: {}", lines);
-
-  print!("\n\n  That's all Folks!\n\n");
+  println!("total lines: {}", total);
+  println!("\nThat's all Folks!\n");
 }
