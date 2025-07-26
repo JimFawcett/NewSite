@@ -157,7 +157,7 @@
             <div style="border:1px solid var(--dark); padding: 0rem 1.0em;">
             <h4>Type Erasure Structure</h4>
             <t-b>
-              Type erasure changes dependency relationships. In Figure 5, <c-s>Input</c-s> holds a &quot;type erased&quot;
+              Type erasure changes dependency relationships. In Figure 4, <c-s>Input</c-s> holds a &quot;type erased&quot;
               instance of the compute block.  Input defines an interface it will call, <c-s>Compute</c-s>, that
               <c-s>ComputeImpl</c-s> implements.
               The Executive creates an instance of <c-s>Input&lt;ComputeImpl&gt;</c-s> but Input, internally,
@@ -208,77 +208,66 @@
         </div>
         <splitter-container style="width:100%">
           <div slot="first" style="padding-left:0.3rem;">
-            <pre><code class="language-rust">/////////////////////////////////////////////////////////////////////
-// TypeErasureDataFlowStructure::Executive::main.rs                //
-//   - Executive creates Input which creates downstream components //
-// Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021          //
-/////////////////////////////////////////////////////////////////////
+            <pre><code class="language-rust">/////////////////////////////////////////////////////////////
+// TypeErasureDataFlowStructure::Executive::main.rs        //
+//   - Executive creates and uses all lower level parts    //
+// Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
+/////////////////////////////////////////////////////////////
 /*
   Note:
-    Executive only creates Input instance.  The rest of
-    the pipeline self installs, e.g., Input creates Compute,
-    and Compute creates Output.
+    Executive creates trait objects for Output and Compute
+    and wires them into a dataflow pipeline with InputImpl.
+    None of the other components use concrete types. 
 */
-use compute::*;
-use input::*;
-use output::*;
+// executive/src/main.rs
+use compute::ComputeImpl;
+use input::InputImpl;
+use output::OutputImpl;
 
 fn main() {
-  let putln = || println!();
+  println!(&quot;&#92;n-- Type-Erasure Pipeline via dyn --&#92;n&quot;);
 
-  print!(&quot;&#92;n  -- TypeErasureDataFlowStructure::Executive --&#92;n&quot;);
+  // Create trait objects and wire up the pipeline
+  let output: Box&lt;dyn compute::Output&gt; = Box::new(OutputImpl::new());
+  let compute: Box&lt;dyn input::Compute&gt; = Box::new(ComputeImpl::new(output));
+  let mut input: InputImpl = InputImpl::new(compute);
 
-  let mut lines = 0;
+  // Use it generically:
+  let mut total = 0;
+  for path in &[
+    &quot;./src/main.rs&quot;,
+    &quot;../Input/src/lib.rs&quot;,
+    &quot;../Compute/src/lib.rs&quot;,
+    &quot;../Output/src/lib.rs&quot;,
+    &quot;../Fileutils/src/lib.rs&quot;
+  ] {
+    total += input.do_input(path);
+    println!();
+  }
 
-  type Comp = ComputeImpl&lt;OutputImpl&gt;;
-  let mut inp = Input::&lt;Comp&gt;::new();
-
-  let name = &quot;./src/main.rs&quot;;
-  lines += inp.do_input(name);
-  putln();
-
-  let name = &quot;../Input/src/lib.rs&quot;;
-  lines += inp.do_input(name);
-  let name = &quot;../Input/examples/test1.rs&quot;;
-  lines += inp.do_input(name);
-  putln();
-
-  let name = &quot;../Compute/src/lib.rs&quot;;
-  lines += inp.do_input(name);
-  let name = &quot;../Compute/examples/test1.rs&quot;;
-  lines += inp.do_input(name);
-  putln();
-
-  let name = &quot;../Output/src/lib.rs&quot;;
-  lines += inp.do_input(name);
-  let name = &quot;../Output/examples/test1.rs&quot;;
-  lines += inp.do_input(name);
-  putln();
-
-  print!(&quot;&#92;n  total lines: {}&quot;, lines);
-
-  print!(&quot;&#92;n&#92;n  That's all Folks!&#92;n&#92;n&quot;);
+  println!(&quot;total lines: {}&quot;, total);
+  println!(&quot;&#92;nThat's all Folks!&#92;n&quot;);
 }            </code></pre>
           </div>
           <div slot="second" style="padding-right:0.4rem;">
             <pre><code class="language-term">> cargo run -q
 
-  -- TypeErasureDataFlowStructure::Executive --
+-- Type‑Erasure Pipeline via dyn --
 
-  file "./src/main.rs" has 52 lines of code
+./src/main.rs => 41 lines
 
-  file "../Input/src/lib.rs" has 86 lines of code
-  file "../Input/examples/test1.rs" has 31 lines of code       
+../Input/src/lib.rs => 116 lines
 
-  file "../Compute/src/lib.rs" has 120 lines of code
-  file "../Compute/examples/test1.rs" has 37 lines of code     
+../Compute/src/lib.rs => 139 lines
 
-  file "../Output/src/lib.rs" has 26 lines of code
-  file "../Output/examples/test1.rs" has 17 lines of code      
+../Output/src/lib.rs => 62 lines
 
-  total lines: 369
+../Fileutils/src/lib.rs => 86 lines
 
-  That's all Folks!
+total lines: 444
+
+That's all Folks!
+
 </code></pre>
               <div style="width:100%; float:right; font-weight:bold; text-align: right; padding-right:1rem; padding-bottom:0.5rem;">
                 Cargo.toml
@@ -293,21 +282,31 @@ edition = "2018"
 
 [dependencies]
 input = { path = "../Input" }
+compute = { path = "../Compute" }
+output = { path = "../Output" }
             </code></pre>
             <div style="height: 0.5rem;"></div>
             <div style="margin: 0.5rem 1.5rem; line-height:1.0rem; font-size:0.9rem;">
               <strong style="margin-bottom: 0rem;">Comments:</strong>
               <ul class="tights" style="margin: 0rem 1.5rem;">
                 <li>
-                  Executive code resides in the left panel. It creates and uses instances of the type 
-                  Input.
+                  Executive code resides in the left panel. It creates and uses instances of the types 
+                  OutputImpl, ComputeImpl, and InputImpl, all stored in heap memory.
                 </li>
                 <li>
-                  This type is defined by library Input::lib.rs.
+                  The instances are wired into a dataflow pipeline: input to compute to output.
                 </li>
                 <li>
-                  Input provides function <c-s>fn do_input(&mut self, name: &str)</c-s>.
+                  InputImpl provides function <c-s>fn do_input(&mut self, name: &str)</c-s>.
                   That attempts to open a named file and return its handle.
+                </li>
+                <li>
+                  ComputeImple reads the file into a string and counts its lines. It then calls OutputImpl 
+                  to display the name and lines.
+                </li>
+                <li>
+                  Only Executive knows the concrete type names.  The other components simply use trait objects 
+                  through their trait specified interface.
                 </li>
               </ul>
             </div>
@@ -321,7 +320,7 @@ input = { path = "../Input" }
         <splitter-container style="width:100%">
           <div slot="first" style="padding-left:0.3rem;">
             <pre><code class="language-rust">/////////////////////////////////////////////////////////////
-// DataFlowStructure::Input::lib.rs                        //
+// TypeErasureDataFlowStructure::Input::lib.rs             //
 //   - Attempts to return line count from file             //
 // Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
 /////////////////////////////////////////////////////////////
@@ -332,90 +331,134 @@ input = { path = "../Input" }
       processing.
     - Returns line count if successful
 */
-use compute::*;
-use file_utils::{open_file_for_read};
+// input/src/lib.rs
+use file_utils::open_file_for_read;
+use std::fs::File;
 
-#[derive(Debug)]
-pub struct Input {
-  name: String,
-  compute: Compute,
+/// Down-stream abstraction: Input only needs to know about &quot;Compute&quot; behavior.
+pub trait Compute {
+  fn do_compute(&mut self, name: &str, file: File);
+  fn lines(&self) -&gt; usize;
 }
-impl Input {
-  pub fn new() -&gt; Input {
-    Input {
+
+/// The Input implementation only "owns" a Box&lt;dyn Compute&gt;.
+pub struct InputImpl {
+  name: String,
+  compute: Box&lt;dyn Compute&gt;,
+}
+
+impl InputImpl {
+  /// Caller wires in any Compute-impl.
+  pub fn new(compute: Box&lt;dyn Compute&gt;) -&gt; Self {
+    InputImpl {
       name: String::new(),
-      compute: Compute::new(),
+      compute,
     }
   }
+
+  /// Opens the file, hands it to compute, and returns the line count.
   pub fn do_input(&mut self, name: &str) -&gt; usize {
-    let mut lines: usize = 0;
     self.name = name.to_string();
-    let rslt = open_file_for_read(name);
-    if let Ok(file) = rslt {
+    if let Ok(file) = open_file_for_read(name) {
       self.compute.do_compute(name, file);
-      lines = self.compute.lines();
+      self.compute.lines()
     } else {
-      print!(&quot;&#92;n  can't open file {:?}&quot;, name);
+      eprintln!(&quot;can't open {:?}&quot;, name);
+      0
     }
-    lines
   }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use tempfile::NamedTempFile;
-    use std::io::Write;
+  use super::*; // brings in Compute and InputImpl
+  use std::cell::RefCell;
+  use std::fs::File;
+  use std::io::Write;
+  use std::rc::Rc;
+  use tempfile::NamedTempFile;
 
-    /// Helper to create a temp file with arbitrary contents
-    /// and return its filesystem path.
-    fn make_path(contents: &str) -&gt; String {
-        let mut tmp = NamedTempFile::new().expect(&quot;create temp file&quot;);
-        write!(tmp, &quot;{}&quot;, contents).expect(&quot;write to temp file&quot;);
-        tmp.flush().expect(&quot;flush&quot;);
-        let path = tmp.into_temp_path();
-        let s = path.to_str().unwrap().to_string();
-        // Keep the file around for the duration of the test suite
-        path.keep().unwrap();
-        s
-    }
+  /// A test-stub Compute that records the last name it was handed,
+  /// and returns a preconfigured `desired` line count.
+  struct TestCompute {
+    last: Rc&lt;RefCell&lt;Option&lt;String&gt;&gt;&gt;,
+    desired: usize,
+  }
 
-    #[test]
-    fn missing_file_returns_zero() {
-        let mut inp = Input::new();
-        let lines = inp.do_input(&quot;definitely_not_a_file.txt&quot;);
-        assert_eq!(lines, 0, &quot;should return 0 when the file can't be opened&quot;);
+  impl Compute for TestCompute {
+    fn do_compute(&mut self, name: &str, _file: File) {
+      *self.last.borrow_mut() = Some(name.to_string());
     }
+    fn lines(&self) -&gt; usize {
+      self.desired
+    }
+  }
 
-    #[test]
-    fn existing_file_invokes_compute() {
-        // we don't assert an exact count here-just that it
-        // recognized the file and returned &gt;0 for nonempty contents.
-        let path = make_path(&quot;anything&quot;);
-        let mut inp = Input::new();
-        let lines = inp.do_input(&path);
-        assert!(lines &gt; 0, &quot;should return a positive count for an existing file&quot;);
-    }
+  #[test]
+  fn missing_file_returns_zero_and_compute_not_called() {
+    let last = Rc::new(RefCell::new(None));
+    let stub = TestCompute {
+      last: Rc::clone(&last),
+      desired: 42,
+    };
+    let mut inp = InputImpl::new(Box::new(stub));
+
+    let count = inp.do_input(&quot;definitely_not_a_file.rs&quot;);
+    assert_eq!(count, 0, &quot;should return 0 for missing file&quot;);
+    assert!(last.borrow().is_none(), &quot;compute should not be called&quot;);
+  }
+
+  #[test]
+  fn existing_file_calls_compute_and_returns_desired() {
+    let last = Rc::new(RefCell::new(None));
+    let stub = TestCompute {
+      last: Rc::clone(&last),
+      desired: 7,
+    };
+    let mut inp = InputImpl::new(Box::new(stub));
+
+    // create a real temp file so open succeeds
+    let mut tmp = NamedTempFile::new().expect(&quot;create temp file&quot;);
+    write!(tmp, &quot;ignored contents&quot;).expect(&quot;write temp file&quot;);
+    tmp.flush().expect(&quot;flush temp file&quot;);
+    let path = tmp.path().to_str().unwrap().to_string();
+
+    let count = inp.do_input(&path);
+    assert_eq!(count, 7, &quot;should return stub's desired count&quot;);
+
+    // verify that compute.do_compute was called with the same path
+    assert_eq!(
+      last.borrow().as_ref(),
+      Some(&path),
+      &quot;compute should be called with the file name&quot;
+    );
+  }
 }</code></pre>
           </div>
           <div slot="second" style="padding-right:0.4rem;">
             <pre><code class="language-rust">> cargo build --lib
-   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\DataFlowStructure\Fileutils)
-   Compiling output v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\DataFlowStructure\Output)
-   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\DataFlowStructure\Compute)
-   Compiling input v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\DataFlowStructure\Input)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.39s
-  C:\github\JimFawcett\NewSite\Code\DesignStructure\DataFlowStructure\Input
-  > cargo test --lib
-    Compiling input v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\DataFlowStructure\Input)
-      Finished `test` profile [unoptimized + debuginfo] target(s) in 0.21s
-      Running unittests src\lib.rs (target\debug\deps\input-09ddb55c91a23b85.exe)
+   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Fileutils)
+   Compiling input v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Input)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.20s
+C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Input
+> cargo test --lib
+   Compiling windows_x86_64_msvc v0.52.6
+   Compiling getrandom v0.3.3
+   Compiling cfg-if v1.0.1
+   Compiling fastrand v2.3.0
+   Compiling once_cell v1.21.3
+   Compiling windows-targets v0.52.6
+   Compiling windows-sys v0.59.0
+   Compiling tempfile v3.20.0
+   Compiling input v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Input)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.47s
+     Running unittests src\lib.rs (target\debug\deps\input-f4e2ad4738f6bc68.exe)
 
-  running 2 tests
-  test tests::test_do_input_no_file ... ok
-  test tests::test_do_input_line_count ... ok
+running 2 tests
+test tests::missing_file_returns_zero_and_compute_not_called ... ok
+test tests::existing_file_calls_compute_and_returns_desired ... ok
 
-  test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
   </code></pre>
   <div style="width:100%; float:right; font-weight:bold; text-align: right; padding-right:1rem; padding-bottom:0.5rem;">
     Cargo.toml
@@ -423,32 +466,37 @@ mod tests {
  <pre><code class="language-tern">[package]
 name = "input"
 version = "0.1.0"
+authors = ["James W. Fawcett <jfawcett@twcny.rr.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-compute = { path = "../Compute" }
 file_utils = { path = "../Fileutils" }
 
 [dev-dependencies]
-tempfile = "3"      // tempfile crate from crates.io
+tempfile = "3"        // tempfile crate from crates.io
 </code></pre>
             <div style="margin: 0.5rem 1.5rem; line-height:1.0rem; font-size:0.9rem;">
               <div style="height: 1.0rem;"></div>
               <strong style="margin-bottom: 0rem;">Comments:</strong>
               <ul class="tights" style="margin: 0rem 1.5rem;">
                 <li>
-                  Input library defines the type <c-s>Input</c-s> containing one String data member. 
+                  Input library defines the trait Compute and type <c-s>InputImpl</c-s> containing one String data member, 
+                  and a smart Box pointer to trait object Compute in the heap.
                 </li>
                 <li>
-                  It defines one method <c-s>fn do_input(&mut self, name:&str) -> Option&lt;File&gt;</c-s>
+                  It defines a <c-s>fn new(compute: Box&lt;dyn Computer&gt;)</c-s> that returns an InputImpl holding a 
+                  smart Box pointer to the trait object Compute.
+                </li>
+                <li>
+                  It defines another method <c-s>fn do_input(&mut self, name:&str) -> Option&lt;File&gt;</c-s>
                 </li>
                 <li>
                   That attempts to open a named file for reading, and, if successful, calls <c-s>compute.do_compute(name, file)</c-s>.
                 </li>
                 <li>
-                  The Input library depends on the libraries <c-s>compute</c-s>, and <c-s>file_utils</c-s>.
+                  The Input library depends on the library <c-s>file_utils</c-s>.
                 </li>
                 <li>
                   It also depends on a crate, tempfile from crates.io, supporting creation of temporary files that 
@@ -467,7 +515,7 @@ tempfile = "3"      // tempfile crate from crates.io
         <splitter-container style="width:100%">
           <div slot="first" style="padding-left:0.3rem;">
             <pre><code class="language-rust">/////////////////////////////////////////////////////////////
-// DataFlowStructure::Compute::lib.rs                      //
+// TypeErasureDataFlowStructure::Compute::lib.rs           //
 //   - Attempts to read opened file to string, count lines //
 // Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
 /////////////////////////////////////////////////////////////
@@ -477,107 +525,141 @@ tempfile = "3"      // tempfile crate from crates.io
     - attempts to read file to string and count its lines
     - sends results to Output
 */
-use output::Output;
-use std::fs::*;
-
+// compute/src/lib.rs
 use file_utils::read_file_to_string;
+use input::Compute;
+use std::fs::File; // import the trait from input
 
-#[derive(Debug)]
-pub struct Compute {
-  lines: usize,
-  out: Output,
+/// Down-stream abstraction: Compute only needs to know about &quot;Output&quot;.
+pub trait Output {
+  fn do_output(&self, name: &str, lines: usize);
 }
-impl Compute {
-  pub fn new() -&gt; Compute {
-    Compute {
-      lines: 0,
-      out: Output::new(),
+
+/// Concrete Compute implementation, type-erased over any Output.
+pub struct ComputeImpl {
+  lines: usize,
+  out: Box&lt;dyn Output&gt;,
+}
+
+impl ComputeImpl {
+  /// Caller wires in any Output-impl.
+  pub fn new(out: Box&lt;dyn Output&gt;) -&gt; Self {
+    ComputeImpl { lines: 0, out }
+  }
+}
+
+impl Compute for ComputeImpl {
+  fn do_compute(&mut self, name: &str, mut file: File) {
+    match read_file_to_string(&mut file) {
+      Ok(contents) =&gt; {
+        // count lines in contents
+        let mut count = if contents.is_empty() { 0 } else { 1 };
+        count += contents.chars().filter(|&c| c == '&#92;n').count();
+        self.lines = count;
+        self.out.do_output(name, count);
+      }
+      Err(_) =&gt; eprintln!(&quot;could not read {:?}&quot;, name),
     }
   }
-  pub fn do_compute(&mut self, name: &str, mut file: File) {
-    let rslt = read_file_to_string(&mut file);
-    if let Ok(contents) = rslt {
-      if contents.len() == 0 {
-        self.lines = 0;
-      }
-      else {
-        self.lines = 1;
-      }
-      for ch in contents.chars() {
-        if ch == '&#92;n' {
-          self.lines += 1;
-        }
-      }
-      self.out.do_output(name, self.lines);
-    } else {
-      print!(&quot;&#92;n  could not read {:?}&quot;, name);
-    }
-  }
-  pub fn lines(&self) -&gt; usize {
+
+  fn lines(&self) -&gt; usize {
     self.lines
   }
 }
-
-/// unit tests generated using ChatGPT 4o
-
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use tempfile::NamedTempFile;
-    use std::io::{Write};
+  use super::*; // brings in ComputeImpl and Output
+  use std::cell::RefCell;
+  use std::fs::File;
+  use std::io::Write;
+  use std::rc::Rc;
+  use tempfile::NamedTempFile;
 
-    /// Helper to write `contents` into a NamedTempFile and
-    /// return a fresh File handle opened at the start.
-    fn make_file(contents: &str) -&gt; std::fs::File {
-        let mut tmp = NamedTempFile::new().expect(&quot;failed to create temp file&quot;);
-        write!(tmp, &quot;{}&quot;, contents).expect(&quot;failed to write to temp file&quot;);
-        tmp.flush().expect(&quot;failed to flush temp file&quot;);
-        // Re-open so that the read pointer is at the start
-        tmp.reopen().expect(&quot;failed to reopen temp file&quot;)
-    }
+  /// A test-output that records the last (name, lines) it was asked to print.
+  struct TestOutput {
+    record: Rc&lt;RefCell&lt;Option&lt;(String, usize)&gt;&gt;&gt;,
+  }
 
-    #[test]
-    fn empty_file_has_zero_lines() {
-        let file = make_file(&quot;&quot;);
-        let mut comp = Compute::new();
-        comp.do_compute(&quot;empty&quot;, file);
-        assert_eq!(comp.lines(), 0);
+  impl TestOutput {
+    fn new(record: Rc&lt;RefCell&lt;Option&lt;(String, usize)&gt;&gt;&gt;) -&gt; Self {
+      TestOutput { record }
     }
+  }
 
-    #[test]
-    fn file_without_newlines_has_one_line() {
-        let file = make_file(&quot;just one line&quot;);
-        let mut comp = Compute::new();
-        comp.do_compute(&quot;single&quot;, file);
-        assert_eq!(comp.lines(), 1);
+  impl Output for TestOutput {
+    fn do_output(&self, name: &str, lines: usize) {
+      *self.record.borrow_mut() = Some((name.to_string(), lines));
     }
+  }
 
-    #[test]
-    fn file_with_multiple_lines_counts_correctly() {
-        // Three logical lines separated by two '&#92;n's, no trailing newline
-        let file = make_file(&quot;line1&#92;nline2&#92;nline3&quot;);
-        let mut comp = Compute::new();
-        comp.do_compute(&quot;three&quot;, file);
-        assert_eq!(comp.lines(), 3);
-    }
+  /// Helper: write `contents` into a temp file, then reopen so reading starts at 0.
+  fn make_file(contents: &str) -&gt; File {
+    let mut tmp = NamedTempFile::new().expect(&quot;create temp file&quot;);
+    write!(tmp, &quot;{}&quot;, contents).expect(&quot;write temp file&quot;);
+    tmp.flush().expect(&quot;flush temp file&quot;);
+    tmp.reopen().expect(&quot;reopen temp file&quot;)
+  }
 
-    #[test]
-    fn file_with_trailing_newline_counts_empty_line() {
-        // Two content lines + trailing '&#92;n' ␦ counts as 3 lines
-        let file = make_file(&quot;foo&#92;nbar&#92;n&quot;);
-        let mut comp = Compute::new();
-        comp.do_compute(&quot;trailing&quot;, file);
-        assert_eq!(comp.lines(), 3);
-    }
+  #[test]
+  fn empty_file_emits_zero() {
+    let record = Rc::new(RefCell::new(None));
+    let out = TestOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(out));
+
+    let file = make_file(&quot;&quot;);
+    comp.do_compute(&quot;empty&quot;, file);
+
+    assert_eq!(comp.lines(), 0);
+    assert_eq!(*record.borrow(), Some((&quot;empty&quot;.to_string(), 0)));
+  }
+
+  #[test]
+  fn single_line_emits_one() {
+    let record = Rc::new(RefCell::new(None));
+    let out = TestOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(out));
+
+    let file = make_file(&quot;just one line&quot;);
+    comp.do_compute(&quot;single&quot;, file);
+
+    assert_eq!(comp.lines(), 1);
+    assert_eq!(*record.borrow(), Some((&quot;single&quot;.to_string(), 1)));
+  }
+
+  #[test]
+  fn multiple_lines_counted_correctly() {
+    let record = Rc::new(RefCell::new(None));
+    let out = TestOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(out));
+
+    let file = make_file(&quot;a&#92;nb&#92;nc&quot;);
+    comp.do_compute(&quot;multi&quot;, file);
+
+    assert_eq!(comp.lines(), 3);
+    assert_eq!(*record.borrow(), Some((&quot;multi&quot;.to_string(), 3)));
+  }
+
+  #[test]
+  fn trailing_newline_adds_empty_line() {
+    let record = Rc::new(RefCell::new(None));
+    let out = TestOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(out));
+
+    let file = make_file(&quot;x&#92;ny&#92;n&quot;);
+    comp.do_compute(&quot;trail&quot;, file);
+
+    assert_eq!(comp.lines(), 3);
+    assert_eq!(*record.borrow(), Some((&quot;trail&quot;.to_string(), 3)));
+  }
 }</code></pre>
           </div>
           <div slot="second" style="padding-right:0.4rem;">
             <pre><code class="language-term">> cargo build --lib
-   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\DataFlowStructure\Fileutils)
-   Compiling output v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\DataFlowStructure\Output)
-   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\DataFlowStructure\Compute)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.34s
-C:\github\JimFawcett\NewSite\Code\DesignStructure\DataFlowStructure\Compute
+   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Fileutils)
+   Compiling input v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Input)
+   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Compute)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.33s
+C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Compute
 > cargo test --lib
    Compiling windows_x86_64_msvc v0.52.6
    Compiling getrandom v0.3.3
@@ -587,17 +669,17 @@ C:\github\JimFawcett\NewSite\Code\DesignStructure\DataFlowStructure\Compute
    Compiling windows-targets v0.52.6
    Compiling windows-sys v0.59.0
    Compiling tempfile v3.20.0
-   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\DataFlowStructure\Compute)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.82s
-     Running unittests src\lib.rs (target\debug\deps\compute-2bf6b10a5844dd6d.exe)
+   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Compute)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.60s
+     Running unittests src\lib.rs (target\debug\deps\compute-076bb42754ebb50e.exe)
 
 running 4 tests
-test tests::empty_file_has_zero_lines ... ok
-test tests::file_with_multiple_lines_counts_correctly ... ok
-test tests::file_with_trailing_newline_counts_empty_line ... ok
-test tests::file_without_newlines_has_one_line ... ok
+test tests::empty_file_emits_zero ... ok
+test tests::single_line_emits_one ... ok
+test tests::trailing_newline_adds_empty_line ... ok
+test tests::multiple_lines_counted_correctly ... ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s     
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
             </code></pre>
   <div style="width:100%; float:right; font-weight:bold; text-align: right; padding-right:1rem; padding-bottom:0.5rem;">
     Cargo.toml
@@ -611,7 +693,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-output = { path = "../Output" }
+input = { path = "../Input" }
 file_utils = { path = "../Fileutils" }
 
 [dev-dependencies]
@@ -623,15 +705,12 @@ tempfile = "3"
               <ul class="tights" style="margin: 0rem 1.5rem;">
                 <li>
                   The Comp library defines the type Compute with two data members, lines and out, 
-                  an instance of type Out. 
+                  a trait object for Compute, stored in the heap. 
                 </li>
                 <li>
-                  It provides two functions <c-s>fn do_compute(&mut self, name: &str, mut file: File)</c-s>
+                  It provides thre functions <c-s>fn new(out: Box&lt;dyn Output&gt;)</c-s>,  
+                  <c-s>fn do_compute(&mut self, name: &str, mut file: File)</c-s>
                   and <c-s>fn lines(&self) -> usize</c-s>.
-                </li>
-                <li>
-                  This library defines unit tests for writing a string to a file and reading 
-                  it back again, using either a filename string or a file handle.
                 </li>
                 <li>
                   <c-s>do_compute</c-s> attempts to read contents of file handle file into a String.
@@ -646,6 +725,10 @@ tempfile = "3"
                 <li>
                   Cargo.toml [dev-dependencies] identifies crates library tests depend on.
                 </li>
+                <li>
+                  This library defines unit tests for counting lines in a file, considering several
+                  cases indicated with comments.
+                </li>
               </ul>
             </div>
             <div style="height:1.5rem;"></div>
@@ -659,35 +742,89 @@ tempfile = "3"
         <splitter-container style="width:100%">
           <div slot="first" style="padding-left:0.3rem;">
             <pre><code class="language-rust">/////////////////////////////////////////////////////////////
-// DataFlowStructure::Output::lib.rs                       //
+// TypeErasureDataFlowStructure::Output::lib.rs            //
 //   - Sends results to console                            //
 // Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
 /////////////////////////////////////////////////////////////
 
+// use std::fs::File;
+
+// output/src/lib.rs
+use compute::Output as ComputeOutput; // rename to avoid conflict
+
+/// Concrete Output implementation.
 #[derive(Debug)]
-pub struct Output {}
-impl Output {
-  pub fn new() -&gt; Output {
-    Output {}
+pub struct OutputImpl;
+
+impl OutputImpl {
+  pub fn new() -&gt; Self {
+    OutputImpl
   }
   pub fn do_output(&self, name: &str, lines: usize) {
-    print!(&quot;&#92;n  file {:?} has {} lines of code&quot;, name, lines);
+    println!(&quot;{} =&gt; {} lines&quot;, name, lines);
   }
 }
+impl Default for OutputImpl {
+  fn default() -&gt; Self {
+    Self::new()
+  }
+}
+
+// Hook the Compute::Output trait from the compute crate to this impl:
+impl ComputeOutput for OutputImpl {
+  fn do_output(&self, name: &str, lines: usize) {
+    self.do_output(name, lines)
+  }
+}
+
 #[cfg(test)]
 mod tests {
+  use super::*;
+  use compute::Output as ComputeOutput;
+
   #[test]
-  fn it_works() {
-    assert_eq!(2 + 2, 4);
+  fn new_creates_instance_and_debugs() {
+    let out = OutputImpl::new();
+    // Debug must print the struct name:
+    assert_eq!(format!(&quot;{:?}&quot;, out), &quot;OutputImpl&quot;);
+  }
+
+  #[test]
+  fn do_output_does_not_panic() {
+    let out = OutputImpl::new();
+    // Simply ensure calling do_output is safe
+    out.do_output(&quot;some_file.rs&quot;, 7);
+  }
+
+  #[test]
+  fn trait_object_dispatches_correctly() {
+    // Box it as the compute::Output trait
+    let out_obj: Box&lt;dyn ComputeOutput&gt; = Box::new(OutputImpl::new());
+    // Must still work through the trait
+    out_obj.do_output(&quot;foo.rs&quot;, 13);
   }
 }</code></pre>
           </div>
           <div slot="second" style="padding-right:0.4rem;">
             <pre><code class="language-term">> cargo build --lib
-   Compiling output v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\FactoredStructure\Output)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.57s
-C:\github\JimFawcett\NewSite\Code\DesignStructure\FactoredStructure\Output
-            </code></pre>
+   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Fileutils)
+   Compiling input v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Input)
+   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Compute)
+   Compiling output v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Output)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.43s
+C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Output
+> cargo test --lib
+   Compiling output v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Output)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.27s
+     Running unittests src\lib.rs (target\debug\deps\output-e8639558e699949f.exe)
+
+running 3 tests
+test tests::do_output_does_not_panic ... ok
+test tests::new_creates_instance_and_debugs ... ok
+test tests::trait_object_dispatches_correctly ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+</code></pre>
   <div style="width:100%; float:right; font-weight:bold; text-align: right; padding-right:1rem; padding-bottom:0.5rem;">
     Cargo.toml
   </div>
@@ -700,13 +837,14 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+compute = { path = "../Compute" }
 </code></pre>
             <div style="margin: 0.5rem 1.5rem; line-height:1.0rem; font-size:0.9rem;">
               <div style="height: 1.0rem;"></div>
               <strong style="margin-bottom: 0rem;">Comments:</strong>
               <ul class="tights" style="margin: 0rem 1.5rem;">
                 <li>
-                  Output library defines the type Output with no data members. 
+                  Output library defines the type OutputImpl with no data members. 
                 </li>
                 <li>
                   It provides two functions <c-s>new()</c-s> and <c-s>fn do_output(&mut self, name: &str, lines: usize)</c-s>.
@@ -715,10 +853,10 @@ edition = "2018"
                   <c-s>do_output</c-s> displays a file name and its line count.
                 </li>
                 <li>
-                  Because of its simplicity this library defines only one default unit test that always passes.
+                  This library implements 3 simple unit tests.
                 </li>
                 <li>
-                  Cargo.toml [dependencies] is empty, signifying that this library only depends on the Rust standard library.
+                  Output depends only on Compute, as show in its Cargo.toml file.
                 </li>
               </ul>
             </div>
@@ -739,7 +877,7 @@ edition = "2018"
 /////////////////////////////////////////////////////////////
 /*
   This code may be useful for other programs so it is
-  factored into a module here.
+  factored into this library.
 */
 #![allow(dead_code)]
 
@@ -764,6 +902,7 @@ pub fn read_file_to_string(f: &mut File) -&gt; Result&lt;String, std::io::Error&
 pub fn open_file_for_write(file_name: &str) -&gt; Result&lt;File, std::io::Error&gt; {
   let wfile = OpenOptions::new()
     .write(true)
+    .create(true)
     .truncate(true)
     .open(file_name);
   wfile
@@ -790,16 +929,12 @@ mod tests {
     let test_string = &quot;test string&quot;;
 
     // Write using the filename
-    open_file_for_write(file_name)
-      .expect(&quot;open for write failed&quot;);
-    write_string_to_file(test_string, file_name)
-      .expect(&quot;write string failed&quot;);
+    open_file_for_write(file_name).expect(&quot;open for write failed&quot;);
+    write_string_to_file(test_string, file_name).expect(&quot;write string failed&quot;);
 
     // Read back
-    let mut rfile = open_file_for_read(file_name)
-      .expect(&quot;open for read failed&quot;);
-    let r_string = read_file_to_string(&mut rfile)
-      .expect(&quot;read to string failed&quot;);
+    let mut rfile = open_file_for_read(file_name).expect(&quot;open for read failed&quot;);
+    let r_string = read_file_to_string(&mut rfile).expect(&quot;read to string failed&quot;);
 
     assert_eq!(r_string, test_string);
   }
@@ -810,16 +945,12 @@ mod tests {
     let test_string = &quot;test string&quot;;
 
     // Open for writing and write using handle
-    let wfile = open_file_for_write(file_name)
-      .expect(&quot;open for write failed&quot;);
-    write_string_to_file_handle(test_string, wfile)
-      .expect(&quot;write string failed&quot;);
+    let wfile = open_file_for_write(file_name).expect(&quot;open for write failed&quot;);
+    write_string_to_file_handle(test_string, wfile).expect(&quot;write string failed&quot;);
 
     // Read back
-    let mut rfile = open_file_for_read(file_name)
-      .expect(&quot;open for read failed&quot;);
-    let r_string = read_file_to_string(&mut rfile)
-      .expect(&quot;read to string failed&quot;);
+    let mut rfile = open_file_for_read(file_name).expect(&quot;open for read failed&quot;);
+    let r_string = read_file_to_string(&mut rfile).expect(&quot;read to string failed&quot;);
 
     assert_eq!(r_string, test_string);
   }
@@ -827,12 +958,12 @@ mod tests {
           </div>
           <div slot="second" style="padding-right:0.4rem;">
             <pre><code class="language-term">> cargo build --lib
-   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\FactoredStructure\Fileutils)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.43s
-C:\github\JimFawcett\NewSite\Code\DesignStructure\FactoredStructure\Fileutils
+   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Fileutils)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.34s
+C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Fileutils
 > cargo test --lib
-   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\FactoredStructure\Fileutils)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.46s
+   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Fileutils)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.28s
      Running unittests src\lib.rs (target\debug\deps\file_utils-c70071d2546d9160.exe)
 
 running 2 tests
@@ -840,8 +971,7 @@ test tests::file_handle_write_read ... ok
 test tests::file_name_write_read ... ok
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
-            </code></pre>
+</code></pre>
   <div style="width:100%; float:right; font-weight:bold; text-align: right; padding-right:1rem; padding-bottom:0.5rem;">
     Cargo.toml
   </div>
@@ -858,7 +988,7 @@ edition = "2024"
               <ul class="tights" style="margin: 0rem 1.5rem;">
                 <li>
                   Fileutils library has no dependencies other than the Rust standard libraries, 
-                  as shown in the Cargo.toml file at the top of this view.
+                  as shown in the Cargo.toml above.
                 </li>
                 <li>
                   It does not define any new types, but does define several functions:

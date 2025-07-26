@@ -4,8 +4,6 @@
 // Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
 /////////////////////////////////////////////////////////////
 
-// use std::fs::File;
-
 // output/src/lib.rs
 use compute::Output as ComputeOutput; // rename to avoid conflict
 
