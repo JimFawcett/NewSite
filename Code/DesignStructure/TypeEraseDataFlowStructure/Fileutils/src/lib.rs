@@ -5,7 +5,7 @@
 /////////////////////////////////////////////////////////////
 /*
   This code may be useful for other programs so it is
-  factored into a module here.
+  factored into this library.
 */
 #![allow(dead_code)]
 

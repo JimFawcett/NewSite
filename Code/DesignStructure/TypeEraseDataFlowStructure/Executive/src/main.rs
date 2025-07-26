@@ -5,9 +5,9 @@
 /////////////////////////////////////////////////////////////
 /*
   Note:
-    Executive only creates Input instance.  The rest of
-    the pipeline self installs, e.g., Input creates Compute,
-    and Compute creates Output.
+    Executive creates trait objects for Output and Compute
+    and wires them into a dataflow pipeline with InputImpl.
+    None of the other components use concrete types. 
 */
 // executive/src/main.rs
 use compute::ComputeImpl;
@@ -29,6 +29,7 @@ fn main() {
     "../Input/src/lib.rs",
     "../Compute/src/lib.rs",
     "../Output/src/lib.rs",
+    "../Fileutils/src/lib.rs"
   ] {
     total += input.do_input(path);
     println!();
