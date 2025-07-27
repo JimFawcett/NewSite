@@ -1,0 +1,1 @@
+C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Fileutils\target\debug\libfile_utils.rlib: C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Fileutils\src\lib.rs

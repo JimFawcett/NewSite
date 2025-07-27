@@ -1,11 +1,11 @@
 /////////////////////////////////////////////////////////////
-// FactoredStructure::Input::file_utilities.rs             //
+// FactoredStructure::Fileutils::file_utilities.rs         //
 //   - Input attempts to open named file and return File   //
 // Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
 /////////////////////////////////////////////////////////////
 /*
   This code may be useful for other programs so it is
-  factored into this library.
+  factored into a module here.
 */
 #![allow(dead_code)]
 
@@ -57,12 +57,16 @@ mod tests {
     let test_string = "test string";
 
     // Write using the filename
-    open_file_for_write(file_name).expect("open for write failed");
-    write_string_to_file(test_string, file_name).expect("write string failed");
+    open_file_for_write(file_name)
+      .expect("open for write failed");
+    write_string_to_file(test_string, file_name)
+      .expect("write string failed");
 
     // Read back
-    let mut rfile = open_file_for_read(file_name).expect("open for read failed");
-    let r_string = read_file_to_string(&mut rfile).expect("read to string failed");
+    let mut rfile = open_file_for_read(file_name)
+      .expect("open for read failed");
+    let r_string = read_file_to_string(&mut rfile)
+      .expect("read to string failed");
 
     assert_eq!(r_string, test_string);
   }
@@ -73,12 +77,16 @@ mod tests {
     let test_string = "test string";
 
     // Open for writing and write using handle
-    let wfile = open_file_for_write(file_name).expect("open for write failed");
-    write_string_to_file_handle(test_string, wfile).expect("write string failed");
+    let wfile = open_file_for_write(file_name)
+      .expect("open for write failed");
+    write_string_to_file_handle(test_string, wfile)
+      .expect("write string failed");
 
     // Read back
-    let mut rfile = open_file_for_read(file_name).expect("open for read failed");
-    let r_string = read_file_to_string(&mut rfile).expect("read to string failed");
+    let mut rfile = open_file_for_read(file_name)
+      .expect("open for read failed");
+    let r_string = read_file_to_string(&mut rfile)
+      .expect("read to string failed");
 
     assert_eq!(r_string, test_string);
   }
