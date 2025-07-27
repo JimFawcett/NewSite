@@ -27,7 +27,7 @@ pub struct InputImpl {
 }
 
 impl InputImpl {
-  /// Caller wires in any Compute‑impl.
+  /// Caller wires in any Compute-impl with factory function new.
   pub fn new(compute: Box<dyn Compute>) -> Self {
     InputImpl {
       name: String::new(),

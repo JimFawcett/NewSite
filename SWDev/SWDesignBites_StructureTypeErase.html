@@ -141,7 +141,7 @@
         </div>
         <div style="width:calc(100vw - 4rem);">
           <div style="display:flex; float:right; padding:1rem;">
-            <photosizer-block src="pictures/Design5b.png" width="400" class="photoSizerBlock" style="margin-top:0; float: right;">
+            <photosizer-block src="pictures/Design5d.png" width="450" class="photoSizerBlock" style="margin-top:0; float: right;">
               <span style="
                 display: inline-block;
                 font-weight: bold;
@@ -157,22 +157,28 @@
             <div style="border:1px solid var(--dark); padding: 0rem 1.0em;">
             <h4>Type Erasure Structure</h4>
             <t-b>
-              Type erasure changes dependency relationships. In Figure 4, <c-s>Input</c-s> holds a &quot;type erased&quot;
+              Type erasure can change dependency relationships. In Figure 4, <c-s>InputImpl</c-s> holds a &quot;type erased&quot;
               instance of the compute block.  Input defines an interface it will call, <c-s>Compute</c-s>, that
               <c-s>ComputeImpl</c-s> implements.
-              The Executive creates an instance of <c-s>Input&lt;ComputeImpl&gt;</c-s> but Input, internally,
-              just uses the Compute interface, <c-s>Compute</c-s>.
+              The Executive creates an instance of <c-s>InputImpl</c-s> that holds a smart pointer reference to a Compute trait object.
+              Input, internally, just uses the Compute interface, <c-s>Compute</c-s> via its trait object member.
             </t-b>
             <t-b>
-              That means that both <c-s>Input</c-s> and <c-s>ComputeImpl</c-s> depend on <c-s>Compute</c-s>.
-              Since <c-s>Input</c-s> defines <c-s>Compute</c-s>,
+              That means that both <c-s>InputImpl</c-s> and <c-s>ComputeImpl</c-s> depend on <c-s>Compute</c-s>.
+              Since <c-s>InputImpl</c-s> defines <c-s>Compute</c-s>,
               the Compute package now depends on the Input package - the opposite of the basic
               data flow structure.  Because of that, we say this design uses dependency inversion.
             </t-b>
             <t-b>
-              Now, Input can be instantiated with <strong>any</strong> type that implements Comp.
+              Now, Input can be instantiated by Executive with <strong>any</strong> type that implements Comp.
               It does not depend on any of the downstream implementation details, and so can be reusable.
             </t-b>
+            <t-b>
+              Executive also creates trait objects for Output and Compute, using the concrete types OutputImpl and ComputeImpl.
+              It is the only component that uses concrete types.  All the other components use trait objects and don&apos;t have 
+              knowledge of, or dependencies on, concrete types.
+            </t-b>
+            <div style="height:0.75rem;"></div>
             <hr />
             <pros-cons>
               <div>
@@ -348,7 +354,7 @@ pub struct InputImpl {
 }
 
 impl InputImpl {
-  /// Caller wires in any Compute-impl.
+  /// Caller wires in any Compute-impl with factory function new.
   pub fn new(compute: Box&lt;dyn Compute&gt;) -&gt; Self {
     InputImpl {
       name: String::new(),
@@ -1058,6 +1064,10 @@ edition = "2024"
         <a href="#top">top</a>
         <a href="#intro">introduction</a>
         <a href="#structure">structure</a>
+        <a href="#executive">executive</a>
+        <a href="#input">input</a>
+        <a href="#compute">compute</a>
+        <a href="#output">output</a>
         <a href="#epilogue">epilogue</a>
         <a href="#bottom">bottom</a>
       </div>
