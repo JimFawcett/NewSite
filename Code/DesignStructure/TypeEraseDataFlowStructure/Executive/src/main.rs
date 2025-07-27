@@ -5,22 +5,20 @@
 /////////////////////////////////////////////////////////////
 /*
   Note:
-    Executive creates trait objects for Output and Compute
-    and wires them into a dataflow pipeline with InputImpl.
-    None of the other components use concrete types. 
+    Executive only creates Input instance.  The rest of
+    the pipeline self installs, e.g., Input creates Compute,
+    and Compute creates Output.
 */
-// executive/src/main.rs
-use compute::ComputeImpl;
-use input::InputImpl;
-use output::OutputImpl;
+use compute::*;
+use input::*;
+use output::*;
 
 fn main() {
-  println!("\n-- Type‑Erasure Pipeline via dyn --\n");
 
-  // Wire the chain up, but only in `main`
-  let output: Box<dyn compute::Output> = Box::new(OutputImpl::new());
-  let compute: Box<dyn input::Compute> = Box::new(ComputeImpl::new(output));
-  let mut input: InputImpl = InputImpl::new(compute);
+  print!("\n  -- TypeErasureDataFlowStructure::Executive --\n");
+
+  type Comp = ComputeImpl<OutputImpl>;
+  let mut input = Input::<Comp>::new();
 
   // Use it generically:
   let mut total = 0;
@@ -32,9 +30,9 @@ fn main() {
     "../Fileutils/src/lib.rs"
   ] {
     total += input.do_input(path);
-    println!();
   }
 
-  println!("total lines: {}", total);
-  println!("\nThat's all Folks!\n");
+  print!("\n  total lines: {}", total);
+
+  print!("\n\n  That's all Folks!\n\n");
 }

@@ -1,0 +1,61 @@
+<pre>/////////////////////////////////////////////////////////////
+// PlugInDataFlowStructure::Input::lib.rs                  //
+//   - Attempts to return line count from file             //
+// Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
+/////////////////////////////////////////////////////////////
+/*
+  Note:
+    - Input owns and instantiates Compute.
+    - It attempts to open file and pass to Compute for
+      processing.
+    - Returns line count if successful
+*/
+use std::fs::*;
+
+pub trait Compute {
+    fn new() -&gt; Self;
+    fn do_compute(&amp;mut self, name: &amp;str, file:File);
+    fn lines(&amp;self) -&gt; usize;
+}
+
+mod file_utilities;
+use file_utilities::open_file_for_read;
+
+#[derive(Debug)]
+pub struct Input&lt;T: Compute&gt; {
+    name: String,
+    compute: T
+}
+impl&lt;T: Compute&gt; Input&lt;T&gt; {
+    pub fn new() -&gt; Input&lt;T&gt; {
+        Input {
+            name: String::new(),
+            compute: T::new()
+        }
+    }
+    pub fn do_input(&amp;mut self, name: &amp;str) -&gt; usize {
+        let mut lines: usize = 0;
+        self.name = name.to_string();
+        let rslt = open_file_for_read(name);
+        if let Ok(file) = rslt {
+            self.compute.do_compute(name, file);
+            lines = self.compute.lines();
+        }
+        else {
+            print!("\n  can't open file {:?}", name);
+        }
+        lines
+    }
+    pub fn get_app(&amp;mut self) -&gt; &amp;mut T {
+        &amp;mut self.compute
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {
+        assert_eq!(2 + 2, 4);
+    }
+}
+</pre>

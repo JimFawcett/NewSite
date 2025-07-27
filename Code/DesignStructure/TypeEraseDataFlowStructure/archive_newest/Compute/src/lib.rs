@@ -9,111 +9,130 @@
     - attempts to read file to string and count its lines
     - sends results to Output
 */
-use input::Compute;
+// compute/src/lib.rs
 use file_utils::read_file_to_string;
-use std::fs::File;
+use input::Compute;
+use std::fs::File; // import the trait from input
 
+/// Down‑stream abstraction: Compute only needs to know about "Output".
 pub trait Output {
-  fn new() -> Self;
   fn do_output(&self, name: &str, lines: usize);
 }
 
-// mod file_utilities;
-// use file_utilities::read_file_to_string;
-
-#[derive(Debug)]
-pub struct ComputeImpl<Out: Output> {
+/// Concrete Compute implementation, type‑erased over any Output.
+pub struct ComputeImpl {
   lines: usize,
-  out: Out,
+  out: Box<dyn Output>,
 }
-impl<Out: Output> Compute for ComputeImpl<Out> {
-  fn new() -> ComputeImpl<Out> {
-    ComputeImpl {
-      lines: 0,
-      out: Out::new(),
-    }
+
+impl ComputeImpl {
+  /// Caller wires in any Output‑impl.
+  pub fn new(out: Box<dyn Output>) -> Self {
+    ComputeImpl { lines: 0, out }
   }
+}
+
+impl Compute for ComputeImpl {
   fn do_compute(&mut self, name: &str, mut file: File) {
-       let rslt = read_file_to_string(&mut file);
-    if let Ok(contents) = rslt {
-      if contents.len() == 0 {
-        self.lines = 0;
+    match read_file_to_string(&mut file) {
+      Ok(contents) => {
+        // count lines in contents
+        let mut count = if contents.is_empty() { 0 } else { 1 };
+        count += contents.chars().filter(|&c| c == '\n').count();
+        self.lines = count;
+        self.out.do_output(name, count);
       }
-      else {
-        self.lines = 1;
-      }
-      for ch in contents.chars() {
-        if ch == '\n' {
-          self.lines += 1;
-        }
-      }
-      self.out.do_output(name, self.lines);
-    } else {
-      print!("\n  could not read {:?}", name);
+      Err(_) => eprintln!("could not read {:?}", name),
     }
   }
+
   fn lines(&self) -> usize {
     self.lines
   }
 }
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use tempfile::NamedTempFile;
-    use std::io::{Write};
+  use super::*; // brings in ComputeImpl and Output
+  use std::cell::RefCell;
+  use std::fs::File;
+  use std::io::Write;
+  use std::rc::Rc;
+  use tempfile::NamedTempFile;
 
-    struct NoopOutput;
+  /// A test‐output that records the last (name, lines) it was asked to print.
+  struct TestOutput {
+    record: Rc<RefCell<Option<(String, usize)>>>,
+  }
 
-    impl Output for NoopOutput {
-      fn new() -> Self {
-        NoopOutput
-      }
-      fn do_output(&self, _name: &str, _lines: usize) {
-        // noop
-      }
+  impl TestOutput {
+    fn new(record: Rc<RefCell<Option<(String, usize)>>>) -> Self {
+      TestOutput { record }
     }
+  }
 
-    /// Helper to write `contents` into a NamedTempFile and
-    /// return a fresh File handle opened at the start.
-    fn make_file(contents: &str) -> std::fs::File {
-        let mut tmp = NamedTempFile::new().expect("failed to create temp file");
-        write!(tmp, "{}", contents).expect("failed to write to temp file");
-        tmp.flush().expect("failed to flush temp file");
-        // Re-open so that the read pointer is at the start
-        tmp.reopen().expect("failed to reopen temp file")
+  impl Output for TestOutput {
+    fn do_output(&self, name: &str, lines: usize) {
+      *self.record.borrow_mut() = Some((name.to_string(), lines));
     }
+  }
 
-    #[test]
-    fn empty_file_has_zero_lines() {
-        let file = make_file("");
-        let mut comp = ComputeImpl::<NoopOutput>::new();
-        comp.do_compute("empty", file);
-        assert_eq!(comp.lines(), 0);
-    }
+  /// Helper: write `contents` into a temp file, then reopen so reading starts at 0.
+  fn make_file(contents: &str) -> File {
+    let mut tmp = NamedTempFile::new().expect("create temp file");
+    write!(tmp, "{}", contents).expect("write temp file");
+    tmp.flush().expect("flush temp file");
+    tmp.reopen().expect("reopen temp file")
+  }
 
-    #[test]
-    fn file_without_newlines_has_one_line() {
-        let file = make_file("just one line");
-        let mut comp = ComputeImpl::<NoopOutput>::new();
-        comp.do_compute("single", file);
-        assert_eq!(comp.lines(), 1);
-    }
+  #[test]
+  fn empty_file_emits_zero() {
+    let record = Rc::new(RefCell::new(None));
+    let out = TestOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(out));
 
-    #[test]
-    fn file_with_multiple_lines_counts_correctly() {
-        // Three logical lines separated by two '\n's, no trailing newline
-        let file = make_file("line1\nline2\nline3");
-        let mut comp = ComputeImpl::<NoopOutput>::new();
-        comp.do_compute("three", file);
-        assert_eq!(comp.lines(), 3);
-    }
+    let file = make_file("");
+    comp.do_compute("empty", file);
 
-    #[test]
-    fn file_with_trailing_newline_counts_empty_line() {
-        // Two content lines + trailing '\n' → counts as 3 lines
-        let file = make_file("foo\nbar\n");
-        let mut comp = ComputeImpl::<NoopOutput>::new();
-        comp.do_compute("trailing", file);
-        assert_eq!(comp.lines(), 3);
-    }
+    assert_eq!(comp.lines(), 0);
+    assert_eq!(*record.borrow(), Some(("empty".to_string(), 0)));
+  }
+
+  #[test]
+  fn single_line_emits_one() {
+    let record = Rc::new(RefCell::new(None));
+    let out = TestOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(out));
+
+    let file = make_file("just one line");
+    comp.do_compute("single", file);
+
+    assert_eq!(comp.lines(), 1);
+    assert_eq!(*record.borrow(), Some(("single".to_string(), 1)));
+  }
+
+  #[test]
+  fn multiple_lines_counted_correctly() {
+    let record = Rc::new(RefCell::new(None));
+    let out = TestOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(out));
+
+    let file = make_file("a\nb\nc");
+    comp.do_compute("multi", file);
+
+    assert_eq!(comp.lines(), 3);
+    assert_eq!(*record.borrow(), Some(("multi".to_string(), 3)));
+  }
+
+  #[test]
+  fn trailing_newline_adds_empty_line() {
+    let record = Rc::new(RefCell::new(None));
+    let out = TestOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(out));
+
+    let file = make_file("x\ny\n");
+    comp.do_compute("trail", file);
+
+    assert_eq!(comp.lines(), 3);
+    assert_eq!(*record.borrow(), Some(("trail".to_string(), 3)));
+  }
 }
