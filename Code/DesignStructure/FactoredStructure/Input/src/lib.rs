@@ -25,6 +25,8 @@ impl Input {
     let rslt = open_file_for_read(name);
     if let Ok(file) = rslt {
       Some(file)
+
+      
     } else {
       print!("\n  can't open file {:?}", name);
       None
