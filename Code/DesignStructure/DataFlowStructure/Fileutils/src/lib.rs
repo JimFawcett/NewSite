@@ -57,16 +57,12 @@ mod tests {
     let test_string = "test string";
 
     // Write using the filename
-    open_file_for_write(file_name)
-      .expect("open for write failed");
-    write_string_to_file(test_string, file_name)
-      .expect("write string failed");
+    open_file_for_write(file_name).expect("open for write failed");
+    write_string_to_file(test_string, file_name).expect("write string failed");
 
     // Read back
-    let mut rfile = open_file_for_read(file_name)
-      .expect("open for read failed");
-    let r_string = read_file_to_string(&mut rfile)
-      .expect("read to string failed");
+    let mut rfile = open_file_for_read(file_name).expect("open for read failed");
+    let r_string = read_file_to_string(&mut rfile).expect("read to string failed");
 
     assert_eq!(r_string, test_string);
   }
@@ -77,16 +73,12 @@ mod tests {
     let test_string = "test string";
 
     // Open for writing and write using handle
-    let wfile = open_file_for_write(file_name)
-      .expect("open for write failed");
-    write_string_to_file_handle(test_string, wfile)
-      .expect("write string failed");
+    let wfile = open_file_for_write(file_name).expect("open for write failed");
+    write_string_to_file_handle(test_string, wfile).expect("write string failed");
 
     // Read back
-    let mut rfile = open_file_for_read(file_name)
-      .expect("open for read failed");
-    let r_string = read_file_to_string(&mut rfile)
-      .expect("read to string failed");
+    let mut rfile = open_file_for_read(file_name).expect("open for read failed");
+    let r_string = read_file_to_string(&mut rfile).expect("read to string failed");
 
     assert_eq!(r_string, test_string);
   }
