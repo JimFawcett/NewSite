@@ -41,7 +41,12 @@ impl Compute for ComputeImpl {
   fn do_compute(&mut self, name: &str, mut file: File) {
     let rslt = read_file_to_string(&mut file);
     if let Ok(contents) = rslt {
-      self.lines = 1;
+      if contents.len() == 0 {
+        self.lines = 0;
+      }
+      else {
+        self.lines = 1;
+      }
       for ch in contents.chars() {
         if ch == '\n' {
           self.lines += 1;
