@@ -87,7 +87,12 @@ impl Basic {
     if let Some(file) = &mut self.file {
       let rslt = read_file_to_string(file);
       if let Ok(contents) = rslt {
-        self.lines = 1;
+        if contents.len() == 0 {
+          self.lines = 0;
+        }
+        else {
+          self.lines = 1;
+        }
         for ch in contents.chars() {
           if ch == '\n' {
             self.lines += 1;
@@ -105,6 +110,7 @@ impl Basic {
 }
 /*---------------------------------------------------------
   Executive processing
+    cargo run -q <filename1>, <filename2>, ... -q
 */
 fn main() {
   print!("\n  -- counting lines in files --\n");
