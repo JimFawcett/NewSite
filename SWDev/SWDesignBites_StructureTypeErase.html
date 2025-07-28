@@ -221,22 +221,20 @@
 /////////////////////////////////////////////////////////////
 /*
   Note:
-    Executive creates trait objects for Output and Compute
-    and wires them into a dataflow pipeline with InputImpl.
-    None of the other components use concrete types. 
+    Executive only creates Input instance.  The rest of
+    the pipeline self installs, e.g., Input creates Compute,
+    and Compute creates Output.
 */
-// executive/src/main.rs
-use compute::ComputeImpl;
-use input::InputImpl;
-use output::OutputImpl;
+use compute::*;
+use input::*;
+use output::*;
 
 fn main() {
-  println!(&quot;&#92;n-- Type-Erasure Pipeline via dyn --&#92;n&quot;);
 
-  // Create trait objects and wire up the pipeline
-  let output: Box&lt;dyn compute::Output&gt; = Box::new(OutputImpl::new());
-  let compute: Box&lt;dyn input::Compute&gt; = Box::new(ComputeImpl::new(output));
-  let mut input: InputImpl = InputImpl::new(compute);
+  print!(&quot;&#92;n  -- TypeErasureDataFlowStructure::Executive --&#92;n&quot;);
+
+  type Comp = ComputeImpl&lt;OutputImpl&gt;;
+  let mut input = Input::&lt;Comp&gt;::new();
 
   // Use it generically:
   let mut total = 0;
@@ -248,31 +246,31 @@ fn main() {
     &quot;../Fileutils/src/lib.rs&quot;
   ] {
     total += input.do_input(path);
-    println!();
   }
 
-  println!(&quot;total lines: {}&quot;, total);
-  println!(&quot;&#92;nThat's all Folks!&#92;n&quot;);
-}            </code></pre>
+  print!(&quot;&#92;n  total lines: {}&quot;, total);
+
+  print!(&quot;&#92;n&#92;n  That's all Folks!&#92;n&#92;n&quot;);
+}</code></pre>
           </div>
           <div slot="second" style="padding-right:0.4rem;">
             <pre><code class="language-term">> cargo run -q
 
--- Type‑Erasure Pipeline via dyn --
+  -- TypeErasureDataFlowStructure::Executive --
 
-./src/main.rs => 41 lines
+  file "./src/main.rs": 39 lines
 
-../Input/src/lib.rs => 116 lines
+  file "../Input/src/lib.rs": 109 lines
 
-../Compute/src/lib.rs => 139 lines
+  file "../Compute/src/lib.rs": 63 lines
 
-../Output/src/lib.rs => 62 lines
+  file "../Output/src/lib.rs": 26 lines
 
-../Fileutils/src/lib.rs => 86 lines
+  file "../Fileutils/src/lib.rs": 94 lines
 
-total lines: 444
+  total lines: 331
 
-That's all Folks!
+  That's all Folks!
 
 </code></pre>
               <div style="width:100%; float:right; font-weight:bold; text-align: right; padding-right:1rem; padding-bottom:0.5rem;">
@@ -337,106 +335,99 @@ output = { path = "../Output" }
       processing.
     - Returns line count if successful
 */
-// input/src/lib.rs
 use file_utils::open_file_for_read;
-use std::fs::File;
+use std::fs::*;
 
-/// Down-stream abstraction: Input only needs to know about &quot;Compute&quot; behavior.
 pub trait Compute {
+  fn new() -&gt; Self;
   fn do_compute(&mut self, name: &str, file: File);
   fn lines(&self) -&gt; usize;
 }
 
-/// The Input implementation only "owns" a Box&lt;dyn Compute&gt;.
-pub struct InputImpl {
+#[derive(Debug)]
+pub struct Input&lt;T: Compute&gt; {
   name: String,
-  compute: Box&lt;dyn Compute&gt;,
+  compute: T,
 }
-
-impl InputImpl {
-  /// Caller wires in any Compute-impl with factory function new.
-  pub fn new(compute: Box&lt;dyn Compute&gt;) -&gt; Self {
-    InputImpl {
+impl&lt;T: Compute&gt; Default for Input&lt;T&gt; {
+  fn default() -&gt; Self {
+    Self::new()
+  }
+}
+impl&lt;T: Compute&gt; Input&lt;T&gt; {
+  pub fn new() -&gt; Input&lt;T&gt; {
+    Input {
       name: String::new(),
-      compute,
+      compute: T::new(),
     }
   }
-
-  /// Opens the file, hands it to compute, and returns the line count.
   pub fn do_input(&mut self, name: &str) -&gt; usize {
+    let mut lines: usize = 0;
     self.name = name.to_string();
-    if let Ok(file) = open_file_for_read(name) {
+    let rslt = open_file_for_read(name);
+    if let Ok(file) = rslt {
       self.compute.do_compute(name, file);
-      self.compute.lines()
+      lines = self.compute.lines();
     } else {
-      eprintln!(&quot;can't open {:?}&quot;, name);
-      0
+      print!(&quot;&#92;n  can't open file {:?}&quot;, name);
     }
+    lines
   }
 }
 
 #[cfg(test)]
 mod tests {
-  use super::*; // brings in Compute and InputImpl
-  use std::cell::RefCell;
-  use std::fs::File;
+  use super::*;
   use std::io::Write;
-  use std::rc::Rc;
   use tempfile::NamedTempFile;
 
-  /// A test-stub Compute that records the last name it was handed,
-  /// and returns a preconfigured `desired` line count.
-  struct TestCompute {
-    last: Rc&lt;RefCell&lt;Option&lt;String&gt;&gt;&gt;,
-    desired: usize,
+  /// A Compute stub: tracks if do_compute() was invoked,
+  /// and always reports 42 lines.
+  struct StubCompute {
+    called: bool,
+    return_lines: usize,
   }
 
-  impl Compute for TestCompute {
-    fn do_compute(&mut self, name: &str, _file: File) {
-      *self.last.borrow_mut() = Some(name.to_string());
+  impl Compute for StubCompute {
+    fn new() -&gt; Self {
+      StubCompute {
+        called: false,
+        return_lines: 42,
+      }
     }
+
+    fn do_compute(&mut self, _name: &str, _file: File) {
+      self.called = true;
+    }
+
     fn lines(&self) -&gt; usize {
-      self.desired
+      self.return_lines
     }
   }
 
   #[test]
-  fn missing_file_returns_zero_and_compute_not_called() {
-    let last = Rc::new(RefCell::new(None));
-    let stub = TestCompute {
-      last: Rc::clone(&last),
-      desired: 42,
-    };
-    let mut inp = InputImpl::new(Box::new(stub));
-
-    let count = inp.do_input(&quot;definitely_not_a_file.rs&quot;);
-    assert_eq!(count, 0, &quot;should return 0 for missing file&quot;);
-    assert!(last.borrow().is_none(), &quot;compute should not be called&quot;);
+  fn missing_file_returns_zero_and_skips_compute() {
+    let mut inp: Input&lt;StubCompute&gt; = Input::new();
+    let count = inp.do_input(&quot;definitely_not_a_file.txt&quot;);
+    assert_eq!(count, 0, &quot;should return 0 when file open fails&quot;);
+    assert!(!inp.compute.called, &quot;do_compute must not be called&quot;);
   }
 
   #[test]
-  fn existing_file_calls_compute_and_returns_desired() {
-    let last = Rc::new(RefCell::new(None));
-    let stub = TestCompute {
-      last: Rc::clone(&last),
-      desired: 7,
-    };
-    let mut inp = InputImpl::new(Box::new(stub));
-
-    // create a real temp file so open succeeds
+  fn existing_file_invokes_compute_and_returns_stub_value() {
+    // create a real temp file so open_file_for_read succeeds
     let mut tmp = NamedTempFile::new().expect(&quot;create temp file&quot;);
-    write!(tmp, &quot;ignored contents&quot;).expect(&quot;write temp file&quot;);
+    write!(tmp, &quot;ignored contents&quot;).expect(&quot;write to temp file&quot;);
     tmp.flush().expect(&quot;flush temp file&quot;);
-    let path = tmp.path().to_str().unwrap().to_string();
+    let path = tmp.path().to_str().unwrap();
 
-    let count = inp.do_input(&path);
-    assert_eq!(count, 7, &quot;should return stub's desired count&quot;);
+    let mut inp: Input&lt;StubCompute&gt; = Input::new();
+    let count = inp.do_input(path);
 
-    // verify that compute.do_compute was called with the same path
-    assert_eq!(
-      last.borrow().as_ref(),
-      Some(&path),
-      &quot;compute should be called with the file name&quot;
+    assert_eq!(count, 42, &quot;should return the stub's return_lines value&quot;);
+    assert!(
+      inp.compute.called,
+      &quot;do_compute must be called for existing file&quot;
     );
   }
 }</code></pre>
@@ -445,27 +436,27 @@ mod tests {
             <pre><code class="language-rust">> cargo build --lib
    Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Fileutils)
    Compiling input v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Input)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.20s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.23s
 C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Input
 > cargo test --lib
    Compiling windows_x86_64_msvc v0.52.6
    Compiling getrandom v0.3.3
    Compiling cfg-if v1.0.1
-   Compiling fastrand v2.3.0
    Compiling once_cell v1.21.3
+   Compiling fastrand v2.3.0
    Compiling windows-targets v0.52.6
    Compiling windows-sys v0.59.0
    Compiling tempfile v3.20.0
    Compiling input v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Input)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.47s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.06s
      Running unittests src\lib.rs (target\debug\deps\input-f4e2ad4738f6bc68.exe)
 
 running 2 tests
-test tests::missing_file_returns_zero_and_compute_not_called ... ok
-test tests::existing_file_calls_compute_and_returns_desired ... ok
+test tests::missing_file_returns_zero_and_skips_compute ... ok
+test tests::existing_file_invokes_compute_and_returns_stub_value ... ok
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-  </code></pre>
+</code></pre>
   <div style="width:100%; float:right; font-weight:bold; text-align: right; padding-right:1rem; padding-bottom:0.5rem;">
     Cargo.toml
   </div>
@@ -481,7 +472,7 @@ edition = "2018"
 file_utils = { path = "../Fileutils" }
 
 [dev-dependencies]
-tempfile = "3"        // tempfile crate from crates.io
+tempfile = "3"        # tempfile crate from crates.io
 </code></pre>
             <div style="margin: 0.5rem 1.5rem; line-height:1.0rem; font-size:0.9rem;">
               <div style="height: 1.0rem;"></div>
@@ -531,101 +522,115 @@ tempfile = "3"        // tempfile crate from crates.io
     - attempts to read file to string and count its lines
     - sends results to Output
 */
-// compute/src/lib.rs
 use file_utils::read_file_to_string;
 use input::Compute;
-use std::fs::File; // import the trait from input
+use std::fs::*;
 
-/// Down-stream abstraction: Compute only needs to know about &quot;Output&quot;.
 pub trait Output {
+  fn new() -&gt; Self;
   fn do_output(&self, name: &str, lines: usize);
 }
 
-/// Concrete Compute implementation, type-erased over any Output.
-pub struct ComputeImpl {
+#[derive(Debug)]
+pub struct ComputeImpl&lt;Out: Output&gt; {
   lines: usize,
-  out: Box&lt;dyn Output&gt;,
+  out: Out,
 }
-
-impl ComputeImpl {
-  /// Caller wires in any Output-impl.
-  pub fn new(out: Box&lt;dyn Output&gt;) -&gt; Self {
-    ComputeImpl { lines: 0, out }
-  }
-}
-
-impl Compute for ComputeImpl {
-  fn do_compute(&mut self, name: &str, mut file: File) {
-    match read_file_to_string(&mut file) {
-      Ok(contents) =&gt; {
-        // count lines in contents
-        let mut count = if contents.is_empty() { 0 } else { 1 };
-        count += contents.chars().filter(|&c| c == '&#92;n').count();
-        self.lines = count;
-        self.out.do_output(name, count);
-      }
-      Err(_) =&gt; eprintln!(&quot;could not read {:?}&quot;, name),
+impl&lt;Out: Output&gt; Compute for ComputeImpl&lt;Out&gt; {
+  fn new() -&gt; ComputeImpl&lt;Out&gt; {
+    ComputeImpl {
+      lines: 0,
+      out: Out::new(),
     }
   }
-
+  fn do_compute(&mut self, name: &str, mut file: File) {
+    let rslt = read_file_to_string(&mut file);
+    if let Ok(contents) = rslt {
+      if contents.is_empty() {
+        self.lines = 0;
+      } else {
+        self.lines = 1;
+      }
+      for ch in contents.chars() {
+        if ch == '&#92;n' {
+          self.lines += 1;
+        }
+      }
+      self.out.do_output(name, self.lines);
+    } else {
+      print!(&quot;&#92;n  could not read {:?}&quot;, name);
+    }
+  }
   fn lines(&self) -&gt; usize {
     self.lines
   }
 }
 #[cfg(test)]
 mod tests {
-  use super::*; // brings in ComputeImpl and Output
+  use super::*;
   use std::cell::RefCell;
   use std::fs::File;
   use std::io::Write;
   use std::rc::Rc;
   use tempfile::NamedTempFile;
 
-  /// A test-output that records the last (name, lines) it was asked to print.
-  struct TestOutput {
-    record: Rc&lt;RefCell&lt;Option&lt;(String, usize)&gt;&gt;&gt;,
+  /// A stub Output that records the last (name, lines) it was given.
+  struct StubOutput {
+    last: Rc&lt;RefCell&lt;Option&lt;(String, usize)&gt;&gt;&gt;,
   }
 
-  impl TestOutput {
-    fn new(record: Rc&lt;RefCell&lt;Option&lt;(String, usize)&gt;&gt;&gt;) -&gt; Self {
-      TestOutput { record }
+  impl Output for StubOutput {
+    fn new() -&gt; Self {
+      // We never call this in tests; we construct StubOutput by hand.
+      unreachable!(&quot;StubOutput::new should not be used in tests&quot;);
     }
-  }
 
-  impl Output for TestOutput {
     fn do_output(&self, name: &str, lines: usize) {
-      *self.record.borrow_mut() = Some((name.to_string(), lines));
+      *self.last.borrow_mut() = Some((name.to_string(), lines));
     }
   }
 
-  /// Helper: write `contents` into a temp file, then reopen so reading starts at 0.
+  /// Write `contents` into a temp file and reopen it so reads start at the beginning.
   fn make_file(contents: &str) -&gt; File {
     let mut tmp = NamedTempFile::new().expect(&quot;create temp file&quot;);
-    write!(tmp, &quot;{}&quot;, contents).expect(&quot;write temp file&quot;);
+    write!(tmp, &quot;{}&quot;, contents).expect(&quot;write to temp file&quot;);
     tmp.flush().expect(&quot;flush temp file&quot;);
     tmp.reopen().expect(&quot;reopen temp file&quot;)
   }
 
   #[test]
-  fn empty_file_emits_zero() {
+  fn empty_file_emits_zero_and_reports_zero() {
     let record = Rc::new(RefCell::new(None));
-    let out = TestOutput::new(Rc::clone(&record));
-    let mut comp = ComputeImpl::new(Box::new(out));
+    let stub = StubOutput {
+      last: Rc::clone(&record),
+    };
+    // Construct ComputeImpl directly, bypassing ComputeImpl::new()
+    let mut comp = ComputeImpl {
+      lines: 0,
+      out: stub,
+    };
 
     let file = make_file(&quot;&quot;);
     comp.do_compute(&quot;empty&quot;, file);
 
+    // internal count
     assert_eq!(comp.lines(), 0);
+    // output called with (&quot;empty&quot;, 0)
     assert_eq!(*record.borrow(), Some((&quot;empty&quot;.to_string(), 0)));
   }
 
   #[test]
-  fn single_line_emits_one() {
+  fn no_newline_emits_one_and_reports_one() {
     let record = Rc::new(RefCell::new(None));
-    let out = TestOutput::new(Rc::clone(&record));
-    let mut comp = ComputeImpl::new(Box::new(out));
+    let stub = StubOutput {
+      last: Rc::clone(&record),
+    };
+    let mut comp = ComputeImpl {
+      lines: 0,
+      out: stub,
+    };
 
-    let file = make_file(&quot;just one line&quot;);
+    let file = make_file(&quot;single line&quot;);
     comp.do_compute(&quot;single&quot;, file);
 
     assert_eq!(comp.lines(), 1);
@@ -635,10 +640,15 @@ mod tests {
   #[test]
   fn multiple_lines_counted_correctly() {
     let record = Rc::new(RefCell::new(None));
-    let out = TestOutput::new(Rc::clone(&record));
-    let mut comp = ComputeImpl::new(Box::new(out));
+    let stub = StubOutput {
+      last: Rc::clone(&record),
+    };
+    let mut comp = ComputeImpl {
+      lines: 0,
+      out: stub,
+    };
 
-    let file = make_file(&quot;a&#92;nb&#92;nc&quot;);
+    let file = make_file(&quot;l1&#92;nl2&#92;nl3&quot;);
     comp.do_compute(&quot;multi&quot;, file);
 
     assert_eq!(comp.lines(), 3);
@@ -648,10 +658,15 @@ mod tests {
   #[test]
   fn trailing_newline_adds_empty_line() {
     let record = Rc::new(RefCell::new(None));
-    let out = TestOutput::new(Rc::clone(&record));
-    let mut comp = ComputeImpl::new(Box::new(out));
+    let stub = StubOutput {
+      last: Rc::clone(&record),
+    };
+    let mut comp = ComputeImpl {
+      lines: 0,
+      out: stub,
+    };
 
-    let file = make_file(&quot;x&#92;ny&#92;n&quot;);
+    let file = make_file(&quot;a&#92;nb&#92;n&quot;);
     comp.do_compute(&quot;trail&quot;, file);
 
     assert_eq!(comp.lines(), 3);
@@ -663,30 +678,31 @@ mod tests {
             <pre><code class="language-term">> cargo build --lib
    Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Fileutils)
    Compiling input v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Input)
-   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Compute)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.33s
-C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Compute
+   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\compute)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.30s
+C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\compute
 > cargo test --lib
    Compiling windows_x86_64_msvc v0.52.6
    Compiling getrandom v0.3.3
    Compiling cfg-if v1.0.1
-   Compiling fastrand v2.3.0
    Compiling once_cell v1.21.3
+   Compiling fastrand v2.3.0
    Compiling windows-targets v0.52.6
    Compiling windows-sys v0.59.0
    Compiling tempfile v3.20.0
-   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Compute)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.60s
+   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\compute)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.53s
      Running unittests src\lib.rs (target\debug\deps\compute-076bb42754ebb50e.exe)
 
 running 4 tests
-test tests::empty_file_emits_zero ... ok
-test tests::single_line_emits_one ... ok
-test tests::trailing_newline_adds_empty_line ... ok
+test tests::empty_file_emits_zero_and_reports_zero ... ok
 test tests::multiple_lines_counted_correctly ... ok
+test tests::no_newline_emits_one_and_reports_one ... ok
+test tests::trailing_newline_adds_empty_line ... ok
 
 test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-            </code></pre>
+
+</code></pre>
   <div style="width:100%; float:right; font-weight:bold; text-align: right; padding-right:1rem; padding-bottom:0.5rem;">
     Cargo.toml
   </div>
@@ -710,11 +726,12 @@ tempfile = "3"
               <strong style="margin-bottom: 0rem;">Comments:</strong>
               <ul class="tights" style="margin: 0rem 1.5rem;">
                 <li>
-                  The Comp library defines the type Compute with two data members, lines and out, 
-                  a trait object for Compute, stored in the heap. 
+                  The Comp library defines the type ComputeImpl with two data members, lines and out, 
+                  a generic parameter that is required to implement the Output trait, as specified by 
+                  <c-s>ComputeImpl&lt;Out: Output&gt;</c-s>. 
                 </li>
                 <li>
-                  It provides thre functions <c-s>fn new(out: Box&lt;dyn Output&gt;)</c-s>,  
+                  It provides thre functions <c-s>fn new()</c-s>,  
                   <c-s>fn do_compute(&mut self, name: &str, mut file: File)</c-s>
                   and <c-s>fn lines(&self) -> usize</c-s>.
                 </li>
@@ -733,7 +750,7 @@ tempfile = "3"
                 </li>
                 <li>
                   This library defines unit tests for counting lines in a file, considering several
-                  cases indicated with comments.
+                  cases indicated with function name and comments.
                 </li>
               </ul>
             </div>
