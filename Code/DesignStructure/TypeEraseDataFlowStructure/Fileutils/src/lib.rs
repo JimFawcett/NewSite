@@ -50,44 +50,41 @@ pub fn write_string_to_file(s: &str, file_name: &str) -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use tempfile::NamedTempFile;
 
+  /// Test the filename-based API: write_string_to_file + open_file_for_read + read_file_to_string
   #[test]
-  fn file_name_write_read() {
-    let file_name = "temp.txt";
-    let test_string = "test string";
+  fn write_and_read_via_filename() {
+    // Create a temporary file and get its path as a String
+    let tmp = NamedTempFile::new().expect("failed to create temp file");
+    let path = tmp.path().to_str().unwrap().to_owned();
 
-    // Write using the filename
-    open_file_for_write(file_name)
-      .expect("open for write failed");
-    write_string_to_file(test_string, file_name)
-      .expect("write string failed");
+    let test_string = "hello via filename";
+    // Write via the file_name API
+    write_string_to_file(test_string, &path).expect("write_string_to_file failed");
 
     // Read back
-    let mut rfile = open_file_for_read(file_name)
-      .expect("open for read failed");
-    let r_string = read_file_to_string(&mut rfile)
-      .expect("read to string failed");
+    let mut f = open_file_for_read(&path).expect("open_file_for_read failed");
+    let contents = read_file_to_string(&mut f).expect("read_file_to_string failed");
 
-    assert_eq!(r_string, test_string);
+    assert_eq!(contents, test_string);
   }
 
+  /// Test the handle-based API: open_file_for_write + write_string_to_file_handle + open/read
   #[test]
-  fn file_handle_write_read() {
-    let file_name = "temp.txt";
-    let test_string = "test string";
+  fn write_and_read_via_handle() {
+    let tmp = NamedTempFile::new().expect("failed to create temp file");
+    let path = tmp.path().to_str().unwrap().to_owned();
 
-    // Open for writing and write using handle
-    let wfile = open_file_for_write(file_name)
-      .expect("open for write failed");
-    write_string_to_file_handle(test_string, wfile)
-      .expect("write string failed");
+    let test_string = "hello via handle";
+    // Open for write, then write via handle
+    let wfile = open_file_for_write(&path).expect("open_file_for_write failed");
+    write_string_to_file_handle(test_string, wfile).expect("write_string_to_file_handle failed");
 
     // Read back
-    let mut rfile = open_file_for_read(file_name)
-      .expect("open for read failed");
-    let r_string = read_file_to_string(&mut rfile)
-      .expect("read to string failed");
+    let mut f2 = open_file_for_read(&path).expect("open_file_for_read failed");
+    let contents2 = read_file_to_string(&mut f2).expect("read_file_to_string failed");
 
-    assert_eq!(r_string, test_string);
+    assert_eq!(contents2, test_string);
   }
 }
