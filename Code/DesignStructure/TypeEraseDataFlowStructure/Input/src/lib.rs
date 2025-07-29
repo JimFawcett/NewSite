@@ -14,7 +14,7 @@ use file_utils::open_file_for_read;
 use std::fs::*;
 
 pub trait Compute {
-  fn new() -> Self;
+  fn new() -> Self;  // factory function
   fn do_compute(&mut self, name: &str, file: File);
   fn lines(&self) -> usize;
 }
@@ -33,7 +33,7 @@ impl<T: Compute> Input<T> {
   pub fn new() -> Input<T> {
     Input {
       name: String::new(),
-      compute: T::new(),
+      compute: T::new(),    // factory function
     }
   }
   pub fn do_input(&mut self, name: &str) -> usize {

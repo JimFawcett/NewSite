@@ -18,7 +18,7 @@ fn main() {
   print!("\n  -- TypeErasureDataFlowStructure::Executive --\n");
 
   type Comp = ComputeImpl<OutputImpl>;
-  let mut input = Input::<Comp>::new();
+  let mut input = Input::<Comp>::new();  // factory function
 
   // Use it generically:
   let mut total = 0;
