@@ -24,8 +24,6 @@ fn main() {
   let mut args = env::args().skip(1);
   let plugin = args.next().unwrap_or_else(|| "console".into());
 
-  // plugin = "console".to_string();
-
   // 2) Instantiate the right boxed Output
   let out: Box<dyn ComputeOutput> = match plugin.as_str() {
     "console" => Box::new(console_output::ConsoleOutput::new()),
@@ -57,10 +55,4 @@ fn main() {
     total += input.do_input(path);
   }
   println!("\ntotal lines: {:?}\n", total);
-
-  // // 4) Process all remaining CLI args as file paths
-  // for path in args {
-  //     let count = input.do_input(&path);
-  //     println!("→ counted {} lines in {}", count, path);
-  // }
 }
