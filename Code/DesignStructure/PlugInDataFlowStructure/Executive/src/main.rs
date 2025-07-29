@@ -24,6 +24,7 @@ fn main() {
   let app = inp.get_app();
   app.set_output(Box::new(out)); // use of trait object
 
+
   let name = "../Executive/src/main.rs";
   let srclines = inp.do_input(name);
   lines += srclines;

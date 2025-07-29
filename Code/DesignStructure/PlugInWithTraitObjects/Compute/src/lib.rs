@@ -52,10 +52,90 @@ impl Compute for ComputeImpl {
 
 // Re‑export Compute trait under its old name if you wish:
 pub use input::Compute as ComputeTrait;
+
 #[cfg(test)]
 mod tests {
+  use super::*; // brings in ComputeImpl, Output, Compute
+  use std::cell::RefCell;
+  use std::fs::File;
+  use std::io::Write;
+  use std::rc::Rc;
+  use tempfile::NamedTempFile;
+
+  /// A stub Output that records the last (name, lines) it was asked to output.
+  struct StubOutput {
+    record: Rc<RefCell<Option<(String, usize)>>>,
+  }
+
+  impl StubOutput {
+    fn new(record: Rc<RefCell<Option<(String, usize)>>>) -> Self {
+      StubOutput { record }
+    }
+  }
+
+  impl Output for StubOutput {
+    fn do_output(&self, name: &str, lines: usize) {
+      *self.record.borrow_mut() = Some((name.to_string(), lines));
+    }
+  }
+
+  /// Write `contents` to a temp file and reopen it for reading from the start.
+  fn make_file(contents: &str) -> File {
+    let mut tmp = NamedTempFile::new().expect("create temp file");
+    write!(tmp, "{}", contents).expect("write temp file");
+    tmp.flush().expect("flush temp file");
+    tmp.reopen().expect("reopen temp file")
+  }
+
   #[test]
-  fn it_works() {
-    assert_eq!(2 + 2, 4);
+  fn empty_file_emits_zero_and_reports_zero() {
+    let record = Rc::new(RefCell::new(None));
+    let stub = StubOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(stub));
+
+    let file = make_file("");
+    comp.do_compute("empty.txt", file);
+
+    assert_eq!(comp.lines(), 0);
+    assert_eq!(*record.borrow(), Some(("empty.txt".to_string(), 0)));
+  }
+
+  #[test]
+  fn single_line_emits_one_and_reports_one() {
+    let record = Rc::new(RefCell::new(None));
+    let stub = StubOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(stub));
+
+    let file = make_file("just one line");
+    comp.do_compute("single.txt", file);
+
+    assert_eq!(comp.lines(), 1);
+    assert_eq!(*record.borrow(), Some(("single.txt".to_string(), 1)));
+  }
+
+  #[test]
+  fn multiple_lines_counted_correctly() {
+    let record = Rc::new(RefCell::new(None));
+    let stub = StubOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(stub));
+
+    let file = make_file("a\nb\nc");
+    comp.do_compute("multi.txt", file);
+
+    assert_eq!(comp.lines(), 3);
+    assert_eq!(*record.borrow(), Some(("multi.txt".to_string(), 3)));
+  }
+
+  #[test]
+  fn trailing_newline_counts_empty_line() {
+    let record = Rc::new(RefCell::new(None));
+    let stub = StubOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(stub));
+
+    let file = make_file("x\ny\n");
+    comp.do_compute("trail.txt", file);
+
+    assert_eq!(comp.lines(), 3);
+    assert_eq!(*record.borrow(), Some(("trail.txt".to_string(), 3)));
   }
 }
