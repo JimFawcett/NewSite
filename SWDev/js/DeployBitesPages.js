@@ -11,9 +11,9 @@ function buildPages() {
     "<div class='darkItem listheader' onclick='togglePages()'>SW Deploy Bites Pages</div>\
     <div class='menuBody'>\
       <a href='SWDeployBites_Intro.html'>Introduction</a>\
-      <a class='undef' href='javascript:;'>Process</a>\
+      <a href='SWDeployBites_Process.html'>Process</a>\
+      <a href='SWDeployBites_Git.html'>Config Mgmt</a>\
       <a class='undef' href='javascript:;'>Scripting</a>\
-      <a class='undef' href='javascript:;'>Config Mgmt</a>\
       <a class='undef' href='javascript:;'>Containers</a>\
       <a class='undef' href='javascript:;'>Platforms</a>\
       <a class='undef' href='javascript:;'>Publication</a>\
