@@ -5,8 +5,7 @@
 /////////////////////////////////////////////////////////////
 /*
   Note:
-    Executive creates Input and Output instances.  Comp
-    instance is created by Inupt.
+    Executive creates Input, Comp, and Output instances.
 
     cargo run -- console
       or
