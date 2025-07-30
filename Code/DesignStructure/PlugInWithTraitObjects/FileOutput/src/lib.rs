@@ -27,8 +27,56 @@ impl ComputeOutput for FileOutput {
 }
 #[cfg(test)]
 mod tests {
-  #[test]
-  fn it_works() {
-    assert_eq!(2 + 2, 4);
-  }
+    use super::*;
+    use compute::Output as ComputeOutput;
+    use tempfile::NamedTempFile;
+    use std::fs;
+    use std::io::Read;
+
+    /// Helper to read the entire contents of a file into a String.
+    fn read_file_to_string(path: &str) -> String {
+        let mut s = String::new();
+        let mut f = fs::File::open(path).expect("failed to open output file for reading");
+        f.read_to_string(&mut s).expect("failed to read output file");
+        s
+    }
+
+    #[test]
+    fn new_creates_file_and_do_output_writes_expected_line() {
+        // Create a temporary file and get its path
+        let tmp = NamedTempFile::new().expect("failed to create temp file");
+        let path = tmp.path().to_str().unwrap();
+
+        // Instantiate FileOutput on that path
+        let fo = FileOutput::new(path).expect("FileOutput::new failed");
+
+        // Write a test line
+        fo.do_output("test.rs", 7);
+
+        // Read back the file contents
+        let contents = read_file_to_string(path);
+
+        // Expect exactly one line in the format: "name -> lines\n"
+        assert_eq!(contents, "test.rs -> 7 lines\n");
+    }
+
+    #[test]
+    fn multiple_do_output_appends_lines() {
+        let tmp = NamedTempFile::new().expect("failed to create temp file");
+        let path = tmp.path().to_str().unwrap();
+
+        let fo = FileOutput::new(path).expect("FileOutput::new failed");
+
+        fo.do_output("a.rs", 1);
+        fo.do_output("b.rs", 2);
+        fo.do_output("c.rs", 3);
+
+        let contents = read_file_to_string(path);
+        let expected = "\
+a.rs -> 1 lines
+b.rs -> 2 lines
+c.rs -> 3 lines
+";
+        assert_eq!(contents, expected);
+    }
 }

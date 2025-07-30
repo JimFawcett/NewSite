@@ -143,8 +143,7 @@
                 in the way it displays output, based on user input.
               </li>
               <li>
-                It also means that Executive instantiates the Output type and delivers that to ComputeImpl
-                via a <c-s>get_app()</c-s> method of the Input type.
+                It also means that Executive instantiates the Output type and delivers that to ComputeImpl.
               </li>
               <li>
                 The Rust data model requires that to be a trait object created on the heap (wrapped in a Box).
@@ -188,8 +187,7 @@
             </t-b>
             <t-b>
               Implementation gets a bit more complicated because <c-s>Executive</c-s> has to create an instance of
-              the desired type and give it to <c-s>ComputeImpl</c-s>.  It depends on <c-s>Input</c-s> to provide
-              access via an <c-s>get_app(&mut self)</c-s> method.
+              the desired type and give it to <c-s>ComputeImpl</c-s>.  
             </t-b>
             <hr />
             <pros-cons>
@@ -227,8 +225,58 @@
           <!-- </div> -->
         </div>
         <div style="height:0.5rem;"></div>
-
-        <div style="height:1.0rem;"></div>
+        <div id="pnotes" style="height:0.75rem;"></div>
+        <div style="padding:0.5rem 1.0rem; border:1px solid var(--dark);">
+          <strong>Project Notes:</strong>
+          <t-b style="margin-left:1.0rem; margin-top:0.5rem;">
+            Plugin structures use trait objects:
+            <ul class="tight">
+              <li>
+                A trait object is an instance of a concrete type stored in the heap using a statement like this:
+                <inset>
+                  <c-s>let comp : Box&lt;dyn CompTrait&gt; = Box::new(ConcreteType::new());</c-s>
+                </inset> 
+                where <c-s>ConcreteType</c-s> is required to imlement <c-s>CompTrait</c-s>.
+              </li>
+              <li>
+                Two important things happen here:
+                <ol class="tight" style="font-size:0.95rem;">
+                  <li>
+                    The type used on the right hand side can be chosen at run-time. You will see an 
+                    example of that in the Executive, below. All of the other structure types discussed 
+                    previously use types that must be defined at compile-time. 
+                  </li>
+                  <li>
+                    The instance on the left, <c-s>comp</c-s>, has knowledge of only the <c-s>CompTrait</c-s>, 
+                    not the <c-s>ConcreteType</c-s>.
+                  </li>
+                </ol>
+              </li>
+            </ul>
+          </t-b>
+          <t-b style="margin-left:1.0rem;">
+            Plugins support choosing a component at run-time. In this example, we will select, using command line 
+            arguments, the output component type. One writes line counts to the user&apos;s console, the other 
+            writes to a file.
+          </t-b>
+          <t-b style="margin-left:0.0rem; margin-top:0.5rem;">
+            <strong style="margin-bottom: 0rem;">Citations:</strong>
+            <t-b style="margin-left:1.0rem; margin-bottom:0rem; margin-top:0.5rem;">
+              ChatGPT 4o was used to:
+              <ul class="tight">
+                <li>
+                  help establish dataflow wiring between components and corresponding 
+                  complex trait object syntax.
+                </li>
+                <li>
+                  write all of the unit tests for each of the libraries in this project. 
+                </li>
+              </ul>
+            </t-b>
+          </t-b>
+          <div style="height:0.5rem;"></div>
+        </div>
+        <div style="height:1.5rem;"></div>
         <div id="executive" style="padding:0rem 1.5rem;">
           <span style="float:left; font-weight:bold">Executive</span>
           <span style="float:right; font-weight:bold">Output</span>
@@ -570,7 +618,7 @@ tempfile = "3"        # tempfile crate from crates.io
         <splitter-container style="width:100%">
           <div slot="first" style="padding-left:0.3rem;">
             <pre><code class="language-rust">/////////////////////////////////////////////////////////////
-// TypeErasureDataFlowStructure::Compute::lib.rs           //
+// PlugInWithTraitObjects::Compute::lib.rs                 //
 //   - Attempts to read opened file to string, count lines //
 // Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
 /////////////////////////////////////////////////////////////
@@ -582,76 +630,78 @@ tempfile = "3"        # tempfile crate from crates.io
 */
 use file_utils::read_file_to_string;
 use input::Compute;
-use std::fs::*;
+use std::fs::File;
+// use output::console_output as OutputTrait;  // downstream abstraction from output crate
 
+/// The trait you expect from any Output plugin.
 pub trait Output {
-  fn new() -&gt; Self;
   fn do_output(&self, name: &str, lines: usize);
 }
 
-#[derive(Debug)]
-pub struct ComputeImpl&lt;Out: Output&gt; {
+/// Your ComputeImpl just holds a boxed Output.
+pub struct ComputeImpl {
   lines: usize,
-  out: Out,
+  out: Box&lt;dyn Output&gt;,
 }
-impl&lt;Out: Output&gt; Compute for ComputeImpl&lt;Out&gt; {
-  fn new() -&gt; ComputeImpl&lt;Out&gt; {
-    ComputeImpl {
-      lines: 0,
-      out: Out::new(),
-    }
+
+impl ComputeImpl {
+  /// `out` is any implementor of OutputTrait.
+  pub fn new(out: Box&lt;dyn Output&gt;) -&gt; Self {
+    ComputeImpl { lines: 0, out }
   }
+}
+
+impl Compute for ComputeImpl {
   fn do_compute(&mut self, name: &str, mut file: File) {
-    let rslt = read_file_to_string(&mut file);
-    if let Ok(contents) = rslt {
-      if contents.is_empty() {
-        self.lines = 0;
-      } else {
-        self.lines = 1;
+    match read_file_to_string(&mut file) {
+      Ok(contents) =&gt; {
+        // count lines
+        let mut count = if contents.is_empty() { 0 } else { 1 };
+        count += contents.chars().filter(|&c| c == '&#92;n').count();
+        self.lines = count;
+        self.out.do_output(name, count);
       }
-      for ch in contents.chars() {
-        if ch == '&#92;n' {
-          self.lines += 1;
-        }
-      }
-      self.out.do_output(name, self.lines);
-    } else {
-      print!(&quot;&#92;n  could not read {:?}&quot;, name);
+      Err(e) =&gt; eprintln!(&quot;&#92;ncompute failed to read {:?}: {}&#92;n&quot;, name, e),
     }
   }
   fn lines(&self) -&gt; usize {
     self.lines
   }
 }
+
+// Re-export Compute trait under its old name if you wish:
+pub use input::Compute as ComputeTrait;
+
 #[cfg(test)]
 mod tests {
-  use super::*;
+  use super::*; // brings in ComputeImpl, Output, Compute
   use std::cell::RefCell;
   use std::fs::File;
   use std::io::Write;
   use std::rc::Rc;
   use tempfile::NamedTempFile;
 
-  /// A stub Output that records the last (name, lines) it was given.
+  /// A stub Output that records the last (name, lines) it was asked to output.
   struct StubOutput {
-    last: Rc&lt;RefCell&lt;Option&lt;(String, usize)&gt;&gt;&gt;,
+    record: Rc&lt;RefCell&lt;Option&lt;(String, usize)&gt;&gt;&gt;,
+  }
+
+  impl StubOutput {
+    fn new(record: Rc&lt;RefCell&lt;Option&lt;(String, usize)&gt;&gt;&gt;) -&gt; Self {
+      StubOutput { record }
+    }
   }
 
   impl Output for StubOutput {
-    fn new() -&gt; Self {
-      // We never call this in tests; we construct StubOutput by hand.
-      unreachable!(&quot;StubOutput::new should not be used in tests&quot;);
-    }
-
     fn do_output(&self, name: &str, lines: usize) {
-      *self.last.borrow_mut() = Some((name.to_string(), lines));
+      *self.record.borrow_mut() = Some((name.to_string(), lines));
     }
   }
 
-  /// Write `contents` into a temp file and reopen it so reads start at the beginning.
+  /// Write `contents` to a temp file and reopen it for reading from the start.
   fn make_file(contents: &str) -&gt; File {
     let mut tmp = NamedTempFile::new().expect(&quot;create temp file&quot;);
-    write!(tmp, &quot;{}&quot;, contents).expect(&quot;write to temp file&quot;);
+    write!(tmp, &quot;{}&quot;, contents).expect(&quot;write temp file&quot;);
     tmp.flush().expect(&quot;flush temp file&quot;);
     tmp.reopen().expect(&quot;reopen temp file&quot;)
   }
@@ -659,107 +709,83 @@ mod tests {
   #[test]
   fn empty_file_emits_zero_and_reports_zero() {
     let record = Rc::new(RefCell::new(None));
-    let stub = StubOutput {
-      last: Rc::clone(&record),
-    };
-    // Construct ComputeImpl directly, bypassing ComputeImpl::new()
-    let mut comp = ComputeImpl {
-      lines: 0,
-      out: stub,
-    };
+    let stub = StubOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(stub));
 
     let file = make_file(&quot;&quot;);
-    comp.do_compute(&quot;empty&quot;, file);
+    comp.do_compute(&quot;empty.txt&quot;, file);
 
-    // internal count
     assert_eq!(comp.lines(), 0);
-    // output called with (&quot;empty&quot;, 0)
-    assert_eq!(*record.borrow(), Some((&quot;empty&quot;.to_string(), 0)));
+    assert_eq!(*record.borrow(), Some((&quot;empty.txt&quot;.to_string(), 0)));
   }
 
   #[test]
-  fn no_newline_emits_one_and_reports_one() {
+  fn single_line_emits_one_and_reports_one() {
     let record = Rc::new(RefCell::new(None));
-    let stub = StubOutput {
-      last: Rc::clone(&record),
-    };
-    let mut comp = ComputeImpl {
-      lines: 0,
-      out: stub,
-    };
+    let stub = StubOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(stub));
 
-    let file = make_file(&quot;single line&quot;);
-    comp.do_compute(&quot;single&quot;, file);
+    let file = make_file(&quot;just one line&quot;);
+    comp.do_compute(&quot;single.txt&quot;, file);
 
     assert_eq!(comp.lines(), 1);
-    assert_eq!(*record.borrow(), Some((&quot;single&quot;.to_string(), 1)));
+    assert_eq!(*record.borrow(), Some((&quot;single.txt&quot;.to_string(), 1)));
   }
 
   #[test]
   fn multiple_lines_counted_correctly() {
     let record = Rc::new(RefCell::new(None));
-    let stub = StubOutput {
-      last: Rc::clone(&record),
-    };
-    let mut comp = ComputeImpl {
-      lines: 0,
-      out: stub,
-    };
+    let stub = StubOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(stub));
 
-    let file = make_file(&quot;l1&#92;nl2&#92;nl3&quot;);
-    comp.do_compute(&quot;multi&quot;, file);
+    let file = make_file(&quot;a&#92;nb&#92;nc&quot;);
+    comp.do_compute(&quot;multi.txt&quot;, file);
 
     assert_eq!(comp.lines(), 3);
-    assert_eq!(*record.borrow(), Some((&quot;multi&quot;.to_string(), 3)));
+    assert_eq!(*record.borrow(), Some((&quot;multi.txt&quot;.to_string(), 3)));
   }
 
   #[test]
-  fn trailing_newline_adds_empty_line() {
+  fn trailing_newline_counts_empty_line() {
     let record = Rc::new(RefCell::new(None));
-    let stub = StubOutput {
-      last: Rc::clone(&record),
-    };
-    let mut comp = ComputeImpl {
-      lines: 0,
-      out: stub,
-    };
+    let stub = StubOutput::new(Rc::clone(&record));
+    let mut comp = ComputeImpl::new(Box::new(stub));
 
-    let file = make_file(&quot;a&#92;nb&#92;n&quot;);
-    comp.do_compute(&quot;trail&quot;, file);
+    let file = make_file(&quot;x&#92;ny&#92;n&quot;);
+    comp.do_compute(&quot;trail.txt&quot;, file);
 
     assert_eq!(comp.lines(), 3);
-    assert_eq!(*record.borrow(), Some((&quot;trail&quot;.to_string(), 3)));
+    assert_eq!(*record.borrow(), Some((&quot;trail.txt&quot;.to_string(), 3)));
   }
 }</code></pre>
           </div>
           <div slot="second" style="padding-right:0.4rem;">
             <pre><code class="language-term">> cargo build --lib
-   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Fileutils)
-   Compiling input v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Input)
-   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\compute)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.30s
-C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\compute
+   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Fileutils)
+   Compiling input v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Input)
+   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Compute)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.49s
+C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Compute
 > cargo test --lib
    Compiling windows_x86_64_msvc v0.52.6
    Compiling getrandom v0.3.3
    Compiling cfg-if v1.0.1
-   Compiling once_cell v1.21.3
    Compiling fastrand v2.3.0
+   Compiling once_cell v1.21.3
    Compiling windows-targets v0.52.6
    Compiling windows-sys v0.59.0
    Compiling tempfile v3.20.0
-   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\compute)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.53s
-     Running unittests src\lib.rs (target\debug\deps\compute-076bb42754ebb50e.exe)
+   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Compute)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.58s
+     Running unittests src\lib.rs (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\target\debug\deps\compute-061f996749009d21.exe)
 
 running 4 tests
 test tests::empty_file_emits_zero_and_reports_zero ... ok
+test tests::trailing_newline_counts_empty_line ... ok
 test tests::multiple_lines_counted_correctly ... ok
-test tests::no_newline_emits_one_and_reports_one ... ok
-test tests::trailing_newline_adds_empty_line ... ok
+test tests::single_line_emits_one_and_reports_one ... ok
 
 test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
 </code></pre>
   <div style="width:100%; float:right; font-weight:bold; text-align: right; padding-right:1rem; padding-bottom:0.5rem;">
     Cargo.toml
@@ -767,14 +793,12 @@ test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
  <pre><code class="language-tern">[package]
 name = "compute"
 version = "0.1.0"
-authors = ["James W. Fawcett <jfawcett@twcny.rr.com>"]
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition = "2021"
 
 [dependencies]
-input = { path = "../Input" }
+# console_output = { path = "../ConsoleOutput" }
 file_utils = { path = "../Fileutils" }
+input = { path = "../Input" }
 
 [dev-dependencies]
 tempfile = "3"
@@ -816,81 +840,101 @@ tempfile = "3"
           </div>
         </splitter-container>
         <div style="height:3.0rem;"></div>
-        <div id="output" style="padding:0rem 1.5rem;">
-          <span style="float:left; font-weight:bold">Output Library</span>
-          <span style="float:right; font-weight:bold">Build</span>
+        <div id="consoleoutput" style="padding:0rem 1.5rem;">
+          <span style="float:left; font-weight:bold">Console Output Library</span>
+          <span style="float:right; font-weight:bold">Build and Test</span>
         </div>
         <splitter-container style="width:100%">
           <div slot="first" style="padding-left:0.3rem;">
             <pre><code class="language-rust">/////////////////////////////////////////////////////////////
-// TypeErasureDataFlowStructure::Output::lib.rs            //
+// PlugInWithTraitObjects::ConsoleOutput::lib.rs           //
 //   - Sends results to console                            //
 // Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
 /////////////////////////////////////////////////////////////
 
-use compute::Output;
+use compute::Output as ComputeOutput;
 
-#[derive(Debug)]
-pub struct OutputImpl {}
-impl Output for OutputImpl {
-  fn new() -&gt; OutputImpl {
-    OutputImpl {}
+/// A trivial console printer
+pub struct ConsoleOutput;
+
+impl ConsoleOutput {
+  pub fn new() -&gt; Self {
+    ConsoleOutput
   }
+}
+
+impl Default for ConsoleOutput {
+  fn default() -&gt; ConsoleOutput {
+    Self::new()
+  }
+}
+
+impl ComputeOutput for ConsoleOutput {
   fn do_output(&self, name: &str, lines: usize) {
-    print!(&quot;&#92;n  file {:?}: {:?} lines&#92;n&quot;, name, lines);
+    println!(&quot;&#92;n{}: {} lines&quot;, name, lines);
   }
 }
 #[cfg(test)]
 mod tests {
   use super::*;
+  use compute::Output as ComputeOutput;
+  use std::any::{Any, TypeId};
 
-  /// `new()` + `Debug` should yield the type name.
+  /// new() and default() both produce the same ConsoleOutput type.
   #[test]
-  fn new_and_debug() {
-    let out = OutputImpl::new();
-    // The derived Debug for an empty struct prints exactly &quot;OutputImpl&quot;
-    assert_eq!(format!(&quot;{:?}&quot;, out), &quot;OutputImpl&quot;);
+  fn new_and_default_same_type() {
+    let a = ConsoleOutput::new();
+    let b: ConsoleOutput = ConsoleOutput::default();
+
+    // `type_id()` comes from the Any trait, so import it.
+    assert_eq!(TypeId::of::&lt;ConsoleOutput&gt;(), a.type_id());
+    assert_eq!(TypeId::of::&lt;ConsoleOutput&gt;(), b.type_id());
   }
 
-  /// `do_output()` returns unit and never panics.
+  /// do_output() returns the unit value and never panics.
   #[test]
   fn do_output_returns_unit() {
-    let out = OutputImpl::new();
-    // We don't capture stdout here; we just ensure it runs successfully and returns ()
-    let ret = out.do_output(&quot;example.rs&quot;, 123);
+    let out = ConsoleOutput::new();
+    let ret = out.do_output(&quot;example.rs&quot;, 7);
+    assert_eq!(ret, ());
+  }
+
+  /// It still works via a Box&lt;dyn ComputeOutput&gt; trait object.
+  #[test]
+  fn trait_object_dispatches() {
+    let obj: Box&lt;dyn ComputeOutput&gt; = Box::new(ConsoleOutput::new());
+    let ret = obj.do_output(&quot;foo.rs&quot;, 13);
     assert_eq!(ret, ());
   }
 }</code></pre>
           </div>
           <div slot="second" style="padding-right:0.4rem;">
             <pre><code class="language-term">> cargo build --lib
-   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Fileutils)
-   Compiling input v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Input)
-   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Compute)
-   Compiling output v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Output)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.34s
-C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Output
+   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Fileutils)
+   Compiling input v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Input)
+   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Compute)
+   Compiling console_output v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\ConsoleOutput)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.45s
+C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\ConsoleOutput
 > cargo test --lib
-   Compiling output v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\TypeEraseDataFlowStructure\Output)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.38s
-     Running unittests src\lib.rs (target\debug\deps\output-e8639558e699949f.exe)
+   Compiling console_output v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\ConsoleOutput)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.23s
+     Running unittests src\lib.rs (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\target\debug\deps\console_output-3f714d74054ccfe7.exe)
 
-running 2 tests
+running 3 tests
 test tests::do_output_returns_unit ... ok
-test tests::new_and_debug ... ok
+test tests::new_and_default_same_type ... ok
+test tests::trait_object_dispatches ... ok
 
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 </code></pre>
   <div style="width:100%; float:right; font-weight:bold; text-align: right; padding-right:1rem; padding-bottom:0.5rem;">
     Cargo.toml
   </div>
  <pre><code class="language-tern">[package]
-name = "output"
+name = "console_output"
 version = "0.1.0"
-authors = ["James W. Fawcett <jfawcett@twcny.rr.com>"]
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition = "2021"
 
 [dependencies]
 compute = { path = "../Compute" }
@@ -900,19 +944,174 @@ compute = { path = "../Compute" }
               <strong style="margin-bottom: 0rem;">Comments:</strong>
               <ul class="tights" style="margin: 0rem 1.5rem;">
                 <li>
-                  Output library defines the type OutputImpl with no data members. 
+                  ConsoleOutput library defines the type ConsoleOutput with no data members. 
                 </li>
                 <li>
-                  It provides two functions <c-s>new()</c-s> and <c-s>fn do_output(&mut self, name: &str, lines: usize)</c-s>.
+                  It provides two functions <c-s>new()</c-s> and <c-s>fn do_output(&self, name: &str, lines: usize)</c-s>.
                 </li>
                 <li>
                   <c-s>do_output</c-s> displays a file name and its line count.
                 </li>
                 <li>
-                  This library implements 2 simple unit tests.
+                  This library implements 3 unit tests.
                 </li>
                 <li>
-                  Output depends only on Compute, as show in its Cargo.toml file.
+                  Output depends only on Compute, to implement the Output trait, as show in its Cargo.toml file.
+                </li>
+              </ul>
+            </div>
+            <div style="height:1.5rem;"></div>
+          </div>
+        </splitter-container>
+        <div style="height:3.0rem;"></div>
+        <div id="fileoutput" style="padding:0rem 1.5rem;">
+          <span style="float:left; font-weight:bold">File Output Library</span>
+          <span style="float:right; font-weight:bold">Build and Test</span>
+        </div>
+        <splitter-container style="width:100%">
+          <div slot="first" style="padding-left:0.3rem;">
+            <pre><code class="language-rust">/////////////////////////////////////////////////////////////
+// PlugInWithTraitObjects::FileOutput::lib.rs              //
+//   - Sends results to console                            //
+// Jim Fawcett, https://JimFawcett.github.io, 04 Mar 2021  //
+/////////////////////////////////////////////////////////////
+
+use compute::Output as ComputeOutput;
+use std::fs::File;
+use std::io::Write;
+
+/// Writes each output line into a file.
+pub struct FileOutput {
+  file: File,
+}
+
+impl FileOutput {
+  pub fn new(path: &str) -&gt; std::io::Result&lt;Self&gt; {
+    let f = File::create(path)?;
+    Ok(FileOutput { file: f })
+  }
+}
+
+impl ComputeOutput for FileOutput {
+  fn do_output(&self, name: &str, lines: usize) {
+    writeln!(&self.file, &quot;{} -&gt; {} lines&quot;, name, lines).expect(&quot;failed to write to output file&quot;);
+  }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use compute::Output as ComputeOutput;
+    use tempfile::NamedTempFile;
+    use std::fs;
+    use std::io::Read;
+
+    /// Helper to read the entire contents of a file into a String.
+    fn read_file_to_string(path: &str) -&gt; String {
+        let mut s = String::new();
+        let mut f = fs::File::open(path).expect(&quot;failed to open output file for reading&quot;);
+        f.read_to_string(&mut s).expect(&quot;failed to read output file&quot;);
+        s
+    }
+
+    #[test]
+    fn new_creates_file_and_do_output_writes_expected_line() {
+        // Create a temporary file and get its path
+        let tmp = NamedTempFile::new().expect(&quot;failed to create temp file&quot;);
+        let path = tmp.path().to_str().unwrap();
+
+        // Instantiate FileOutput on that path
+        let fo = FileOutput::new(path).expect(&quot;FileOutput::new failed&quot;);
+
+        // Write a test line
+        fo.do_output(&quot;test.rs&quot;, 7);
+
+        // Read back the file contents
+        let contents = read_file_to_string(path);
+
+        // Expect exactly one line in the format: &quot;name -&gt; lines&#92;n&quot;
+        assert_eq!(contents, &quot;test.rs -&gt; 7 lines&#92;n&quot;);
+    }
+
+    #[test]
+    fn multiple_do_output_appends_lines() {
+        let tmp = NamedTempFile::new().expect(&quot;failed to create temp file&quot;);
+        let path = tmp.path().to_str().unwrap();
+
+        let fo = FileOutput::new(path).expect(&quot;FileOutput::new failed&quot;);
+
+        fo.do_output(&quot;a.rs&quot;, 1);
+        fo.do_output(&quot;b.rs&quot;, 2);
+        fo.do_output(&quot;c.rs&quot;, 3);
+
+        let contents = read_file_to_string(path);
+        let expected = &quot;&#92;
+a.rs -&gt; 1 lines
+b.rs -&gt; 2 lines
+c.rs -&gt; 3 lines
+&quot;;
+        assert_eq!(contents, expected);
+    }
+}</code></pre>
+          </div>
+          <div slot="second" style="padding-right:0.4rem;">
+            <pre><code class="language-term">> cargo build --lib
+   Compiling file_utils v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Fileutils)
+   Compiling input v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Input)
+   Compiling compute v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Compute)
+   Compiling file_output v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\FileOutput)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.51s
+C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\FileOutput
+> cargo test --lib
+   Compiling windows_x86_64_msvc v0.52.6
+   Compiling getrandom v0.3.3
+   Compiling cfg-if v1.0.1
+   Compiling fastrand v2.3.0
+   Compiling once_cell v1.21.3
+   Compiling windows-targets v0.52.6
+   Compiling windows-sys v0.59.0
+   Compiling tempfile v3.20.0
+   Compiling file_output v0.1.0 (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\FileOutput)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.29s
+     Running unittests src\lib.rs (C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\target\debug\deps\file_output-c072502cc8920022.exe)
+
+running 2 tests
+test tests::new_creates_file_and_do_output_writes_expected_line ... ok
+test tests::multiple_do_output_appends_lines ... ok        
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+</code></pre>
+  <div style="width:100%; float:right; font-weight:bold; text-align: right; padding-right:1rem; padding-bottom:0.5rem;">
+    Cargo.toml
+  </div>
+ <pre><code class="language-tern">[package]
+name = "file_output"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+compute = { path = "../Compute" }
+
+[dev-dependencies]
+tempfile = "3"
+</code></pre>
+            <div style="margin: 0.5rem 1.5rem; line-height:1.0rem; font-size:0.9rem;">
+              <div style="height: 1.0rem;"></div>
+              <strong style="margin-bottom: 0rem;">Comments:</strong>
+              <ul class="tights" style="margin: 0rem 1.5rem;">
+                <li>
+                  ConsoleOutput library defines the type ConsoleOutput with no data members. 
+                </li>
+                <li>
+                  It provides two functions <c-s>new()</c-s> and <c-s>fn do_output(&self, name: &str, lines: usize)</c-s>.
+                </li>
+                <li>
+                  <c-s>do_output</c-s> displays a file name and its line count.
+                </li>
+                <li>
+                  This library implements 3 unit tests.
+                </li>
+                <li>
+                  Output depends only on Compute, to implement the Output trait, as show in its Cargo.toml file.
                 </li>
               </ul>
             </div>
@@ -1136,10 +1335,13 @@ tempfile = "3"
         <a href="#top">top</a>
         <a href="#intro">introduction</a>
         <a href="#structure">structure</a>
+        <a href="#pnotes">project notes</a>
         <a href="#executive">executive</a>
         <a href="#input">input</a>
         <a href="#compute">compute</a>
-        <a href="#output">output</a>
+        <a href="#consoleoutput">console output</a>
+        <a href="#fileoutput">file output</a>
+        <a href="#fileutils">fileutils</a>
         <a href="#epilogue">epilogue</a>
         <a href="#bottom">bottom</a>
       </div>
