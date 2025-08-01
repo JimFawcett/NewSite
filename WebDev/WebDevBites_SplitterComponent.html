@@ -67,6 +67,35 @@
       vertical-align: top;
       line-height: 1rem;
     }
+    inset.code {
+      display:block;
+      line-height: 1.25rem;
+    }
+  </style>
+  <style>
+    #github table#methods {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+      font-family: system-ui, sans-serif;
+    }
+    #github table#methods td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.75rem 0.75rem 0.75rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+    #github table#methods th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+    }
+    #github table#methods .code {
+      font-family: monospace;
+      background: #eef;
+      /* padding: 0.25rem 0.75rem 0.75rem 0.75rem; */
+      border-radius: 3px;
+    }
   </style>
 </head>
 <body id="github" onload="load()">
@@ -136,9 +165,124 @@
         </div>
       </div>
     </splitter-container>
-    <div style="height:1rem;"></div>
-    <h3>Source Code</h3>
-  <div style="padding:1rem; padding-left:0rem;">
+    <div style="height:1.5rem;"></div>
+    <h3 id="webcomponents">1.0 - W3C Web Components</h3>
+    <t-b>
+      Splitter is a W3C Web Component. Web components use the technologies:
+      <ul class="tight">
+        <li>
+          <strong>Custom Elements:</strong>
+          <inset>
+            New HTML tags with custom behavior and lifecycle events. W3C requires custom tags to 
+            use hypenated tag names to avoid conflict with existing and future standard tags. 
+            <hr>
+            Spliltter uses the tag: <c-s>&lt;splitter-container&gt;</c-s>
+          </inset>
+       </li>
+       <li>
+         <strong>Shadow DOM:</strong>
+         <inset>
+           The Document Object Model (DOM) is a tree of nodes representing html markup. JavaScript can add 
+           new elements and subtrees to its page&apos;s DOM to create special effects. Web components 
+           encapsulate a component&apos;s structure, style, and behavior in an isolated DOM structure called 
+           the Shadow DOM.
+           <hr>
+           Shadow DOMs prevent the external page&apos;s styles and JavaScript from affecting a component&apos;s 
+           styles and events, except in ways specifically permitted by the Shadow DOM&apos;s code.
+         </inset>
+       </li>
+       <li>
+        <strong>HTML Templates</strong>
+        <inset>
+          HTML Templates are chuncks of HTML markup that are cloned and instantiated by JavaScript.
+          <hr>
+          JavaScript has traditionally created markup using:
+          <inset class="code">
+            <c-s>
+              const el = document.createElement('tag-name');<br>
+              document.body.appendChild(el);
+            </c-s>
+          </inset>
+          Templates replace sequences of JavaScript function calls with a chunk of markup.
+        </inset>
+       </li>
+      </ul>
+    </t-b>
+    <t-b>
+      The splitter component does not explicitly use a template. Instead it uses:
+      <inset class="code">
+        <c-s>
+          shadow.innerHTML = '<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;markup here<br>
+          '
+        </c-s>
+      </inset>
+      since that markup block is used only once. Templates are typically used to capture small snips of 
+      markup that are applied multiple times.
+    </t-b>
+    <t-b>
+      W3C Components need to be registered with the browser instance to become active 
+      elements of a page&apos;s markup. That is done with:
+      <inset class="code">
+        <c-s>Elements.define('splitter-container', SplitterContainer)</c-s>
+      </inset>
+      The first argument defines the tag name, and the second is the name of
+      the component&apos;s constructor.
+    </t-b>
+    <div style="height:0.75rem;"></div>
+    <h3 id="methods">2.- </h3>
+  <table id="methods">
+    <colgroup>
+      <col style="width: 13rem;" />
+      <col style="width: auto;" />
+      <col style="width: 13rem;" />
+      <col style="width: 13rem;" />
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Method / Feature</th>
+        <th>Description</th>
+        <th>When Called</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="code">constructor()</td>
+        <td>Initial setup of the element. Typically attach shadow DOM, initialize internal state.</td>
+        <td>Immediately upon creation (before insertion into document).</td>
+        <td>Must call <span class="code">super()</span> first. Avoid DOM-dependent operations here.</td>
+      </tr>
+      <tr>
+        <td class="code">connectedCallback()</td>
+        <td>Invoked when the element is inserted into the document’s DOM.</td>
+        <td>After the element becomes part of the live document tree.</td>
+        <td>Start observers, fetch data, perform rendering that depends on being in DOM.</td>
+      </tr>
+      <tr>
+        <td class="code">disconnectedCallback()</td>
+        <td>Cleanup when the element is removed from the DOM.</td>
+        <td>When the element is detached from the document.</td>
+        <td>Remove event listeners, cancel timers, etc.</td>
+      </tr>
+      <tr>
+        <td class="code">attributeChangedCallback(name, oldValue, newValue)</td>
+        <td>Responds to changes in specified attributes.</td>
+        <td>Each time one of the observed attributes changes.</td>
+        <td>Requires declaring <span class="code">static get observedAttributes()</span>; compare old vs new to avoid redundant work.</td>
+      </tr>
+      <tr>
+        <td class="code">static get observedAttributes()</td>
+        <td>Returns the array of attribute names to monitor for changes.</td>
+        <td>Read by the browser to know which attribute mutations trigger <span class="code">attributeChangedCallback</span>.</td>
+        <td>Must be static. Example: <span class="code">['foo', 'bar']</span>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+    <h3 id="source">2.0 - Splitter Source Code</h3>
+  <div style="padding:1rem; padding-left:0rem; float:left;">
     <figure-sizer id="fig1" style="width:max-content;">
       <div class="caption" onclick="smaller('fig1')">Figure 1. Splitter Component Code</div>
       <div class="content" onclick="bigger('fig1')">
@@ -284,6 +428,9 @@ customElements.define('splitter-container', SplitterContainer);</code></pre>
       </div>
     </figure-sizer>
   </div>
+    <t-b>
+      Splitter web component code is shown in Figure 1.
+    </t-b>
     <div style="height:15em;"></div>
   </content-block>
   <div id="bottomMenu">

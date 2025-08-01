@@ -11,6 +11,11 @@ function buildPages() {
     "<div class='darkItem listheader' onclick='togglePages()'>WebDev Bites Pages</div>\
     <div class='menuBody'>\
       <a href='WebDevBites_Survey.html'>Survey</a>\
+      <a href='WebDevBites_Html.html'>HTML</a>\
+      <a href='WebDevBites_Css.html'>CSS Styles</a>\
+      <a href='WebDevBites_JavaScript.html'>JavaScript</a>\
+      <a href='WebDevBites_WebComponents.html'>Web Components</a>\
+      <hr style='margin-top:0.75rem; margin-bottom:0.5rem;'>\
       <a href='WebDevBites_Clickables.html'>Clickables</a>\
       <a href='WebDevBites_CodeViewer.html'>CodeViewer</a>\
       <a href='WebDevBites_FigureSizer.html'>FigureSizer</a>\
