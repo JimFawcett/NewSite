@@ -20,8 +20,8 @@
   <script src="../js/ContentMenus.js"></script>
   <script src="../js/SitePagesForTools.js"></script>
   <link rel="stylesheet" href="../css/FigureSizer.css" />
-  <script src="../js/FigureSizer.js"></script>
-  <script src="js/SplitterComponent.js"></script>
+  <!-- <script src="../js/FigureSizer.js"></script> -->
+  <script src="../js/WebComponents.js"></script>
   <link rel="stylesheet" href="../css/link-nav.css" />
   <link rel="stylesheet" href="../css/content-links.css" />
   <script src="../js/cookies.js"></script>
@@ -37,6 +37,9 @@
   <style>
     splitter-container {
       --dark: maroon;
+    }
+    .content code {
+      display: block;
     }
     .indent {
       margin-left:2rem;
@@ -282,7 +285,154 @@
 
 
     <h3 id="source">2.0 - Splitter Source Code</h3>
-  <div style="padding:1rem; padding-left:0rem; float:left;">
+
+  <pre title-bg-color="#bbb" bg-color="var(--light)" width="25rem" height="max-content" style="float:left;">
+    <div slot="title">
+      <span>Fig 1. - Splitter Component Code</span>
+    </div>
+    <div slot="content"><pre><code class="language-term">//-----------------------------------------------
+// usage example
+//-----------------------------------------------
+// &lt;!-- usage: defaults to 50/50 split --&gt;
+// &lt;splitter-container style=&quot;height:300px;&quot;&gt;
+//   &lt;div slot=&quot;first&quot;&gt;.left content.&lt;/div&gt;
+//   &lt;div slot=&quot;second&quot;&gt;.right content.&lt;/div&gt;
+// &lt;/splitter-container&gt;
+
+// &lt;!-- usage: left pane starts at 200px wide --&gt;
+// &lt;splitter-container left-width=&quot;200px&quot; style=&quot;height:300px;&quot;&gt;
+//   &lt;div slot=&quot;first&quot;&gt;.left content.&lt;/div&gt;
+//   &lt;div slot=&quot;second&quot;&gt;.right content.&lt;/div&gt;
+// &lt;/splitter-container&gt;
+//-----------------------------------------------
+
+// SplitterComponent.js
+
+class SplitterContainer extends HTMLElement {
+  static get observedAttributes() {
+    return ['left-width'];
+  }
+
+  constructor() {
+    super();
+    this._step    = 100;   // click-resize step in px
+    this._minPane = 30;    // minimum pane width in px
+
+    const shadow = this.attachShadow({ mode: 'open' });
+    shadow.innerHTML = `
+      &lt;style&gt;
+        :host { display: block; width:100%; }
+        .container {
+          display: flex;
+          width:100%; height:100%; overflow:hidden;
+          border:3px solid var(--dark,#333);
+        }
+        .pane {
+          background:#eee; overflow:auto; user-select:none;
+        }
+        .pane.first {
+          width: var(--left-width,50%);
+          flex: 0 0 auto;
+        }
+        .pane.second {
+          flex: 1 1 auto;
+        }
+        .splitter {
+          flex: 0 0 10px;
+          margin: 0 0.25rem;
+          background: var(--dark,#333);
+          cursor: col-resize;
+          user-select: none;
+        }
+      &lt;/style&gt;
+      &lt;div class=&quot;container&quot;&gt;
+        &lt;div class=&quot;pane first&quot;&gt;&lt;slot name=&quot;first&quot;&gt;&lt;/slot&gt;&lt;/div&gt;
+        &lt;div class=&quot;splitter&quot;&gt;&lt;/div&gt;
+        &lt;div class=&quot;pane second&quot;&gt;&lt;slot name=&quot;second&quot;&gt;&lt;/slot&gt;&lt;/div&gt;
+      &lt;/div&gt;
+    `;
+  }
+
+  connectedCallback() {
+    this._applyLeftWidth();
+    this._initDrag();
+    this._initClickResize();
+  }
+
+  attributeChangedCallback(name, oldVal, newVal) {
+    if (name === 'left-width') this._applyLeftWidth();
+  }
+
+  _applyLeftWidth() {
+    const raw = this.getAttribute('left-width');
+    if (raw != null) {
+      const cleaned = raw.trim().replace(/;$/, '');
+      this.style.setProperty('--left-width', cleaned);
+    } else {
+      this.style.removeProperty('--left-width');
+    }
+  }
+
+  _initDrag() {
+    const splitter  = this.shadowRoot.querySelector('.splitter');
+    const firstPane = this.shadowRoot.querySelector('.pane.first');
+
+    splitter.addEventListener('pointerdown', e =&gt; {
+      e.preventDefault();
+      const startX        = e.clientX;
+      const startWidth    = firstPane.getBoundingClientRect().width;
+      const hostWidth     = this.getBoundingClientRect().width;
+      const splitterWidth = splitter.getBoundingClientRect().width;
+      const minW = this._minPane;
+      const maxW = hostWidth - splitterWidth - this._minPane;
+
+      const onMove = ev =&gt; {
+        let newW = startWidth + (ev.clientX - startX);
+        newW = Math.min(Math.max(newW, minW), maxW);
+        firstPane.style.width = `${newW}px`;
+      };
+      const onUp = () =&gt; {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup',   onUp);
+      };
+
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup',   onUp);
+    });
+  }
+
+  _initClickResize() {
+    const firstPane  = this.shadowRoot.querySelector('.pane.first');
+    const secondPane = this.shadowRoot.querySelector('.pane.second');
+    const splitter   = this.shadowRoot.querySelector('.splitter');
+
+    const clampWidth = w =&gt; {
+      const hostWidth     = this.getBoundingClientRect().width;
+      const splitterWidth = splitter.getBoundingClientRect().width;
+      const minW = this._minPane;
+      const maxW = hostWidth - splitterWidth - this._minPane;
+      return Math.min(Math.max(w, minW), maxW);
+    };
+
+    // expand on left-pane click
+    firstPane.addEventListener('click', () =&gt; {
+      const curW = firstPane.getBoundingClientRect().width;
+      firstPane.style.width = `${clampWidth(curW + this._step)}px`;
+    });
+
+    // shrink on right-pane click
+    secondPane.addEventListener('click', () =&gt; {
+      const curW = firstPane.getBoundingClientRect().width;
+      firstPane.style.width = `${clampWidth(curW - this._step)}px`;
+    });
+  }
+}
+
+customElements.define('splitter-container', SplitterContainer);</code></pre></div>
+  </text-viewer>
+
+
+  <!-- <div style="padding:1rem; padding-left:0rem; float:left;">
     <figure-sizer id="fig1" style="width:max-content;">
       <div class="caption" onclick="smaller('fig1')">Figure 1. Splitter Component Code</div>
       <div class="content" onclick="bigger('fig1')">
@@ -427,7 +577,7 @@ class SplitterContainer extends HTMLElement {
 customElements.define('splitter-container', SplitterContainer);</code></pre>
       </div>
     </figure-sizer>
-  </div>
+  </div> -->
     <t-b>
       Splitter web component code is shown in Figure 1.
     </t-b>

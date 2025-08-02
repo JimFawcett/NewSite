@@ -7,6 +7,7 @@ class TextViewer extends HTMLElement {
     const hasBgAttr = this.hasAttribute('bg-color');
     const componentBg = hasBgAttr ? this.getAttribute('bg-color') : 'white';
     const wrapperBg = 'var(--light, white)';
+    const titleBg = this.getAttribute('title-bg-color') || 'transparent';
 
     // Shadow DOM
     this.shadowRoot.innerHTML = `
@@ -21,7 +22,7 @@ class TextViewer extends HTMLElement {
         }
         .component {
           border: 2px solid var(--dark, #333);
-          padding: 0.5rem 0.75rem;
+          padding: 0.5rem 0.5rem 0rem 0.5rem;
           display: flex;
           flex-direction: column;
           user-select: none;
@@ -39,7 +40,7 @@ class TextViewer extends HTMLElement {
           font-weight: bold;
           cursor: pointer;
           max-width: 100%;
-          margin-bottom: 12px;
+          margin-bottom: 2px;
           line-height: 1.0rem;
           flex-wrap: wrap;
           word-wrap: break-word;
@@ -47,16 +48,28 @@ class TextViewer extends HTMLElement {
           white-space: normal;
           color: var(--dark, #333);
           font-size: 1rem;
+          background-color: ${titleBg};
+          padding: 0.5rem 0.5rem;
         }
         .content {
           font-family: system-ui, sans-serif;
           font-size: 1rem;
           line-height: 1.3;
           white-space: pre; /* preserve spacing */
-          padding-bottom: 1.0rem;
           overflow-x: auto;
           word-break: normal;
           cursor: pointer;
+          padding-bottom: 0rem;
+        }
+        .content pre {
+          margin: 0;                 /* avoid additional spacing */
+          white-space: pre;          /* preserve formatting */
+          overflow: visible;         /* let parent handle scroll */
+        }
+
+        .content code {
+          display: block;            /* behave like block for Prism */
+          white-space: inherit;      /* inherit from <pre> */
         }
       </style>
 
@@ -79,21 +92,68 @@ class TextViewer extends HTMLElement {
       this._adjustWidth(1 / step);
     });
 
-    // Content click: expand width only if content is currently overflowing horizontally
+  //   this.contentEl.addEventListener('click', (e) => {
+  //     // Debug: see what measurements are at click time
+  //     const scrollW = this.contentEl.scrollWidth;
+  //     const clientW = this.contentEl.clientWidth;
+  //     console.debug('TextViewer overflow check:', { scrollW, clientW });
+
+  //     // Guard: only expand if there is meaningful horizontal overflow
+  //     if (scrollW - clientW > 1) {
+  //       this._adjustWidth(step);
+  //     }
+  //   });
+
     this.contentEl.addEventListener('click', () => {
-      // check overflow in the content area
-      if (this.contentEl.scrollWidth > this.contentEl.clientWidth + 1) {
-        this._adjustWidth(step);
-      }
+      this._adjustWidth(step);
     });
   }
+  
+  MAX_WIDTH_FACTOR = 0.8; // use 0.8 for 80vw; use 0.008 for 0.8 * 1vw if you really meant 0.8px per vw
 
   _adjustWidth(factor) {
     const rect = this.componentEl.getBoundingClientRect();
     const currentWidth = parseFloat(this.componentEl.style.width) || rect.width;
-    const newWidth = Math.max(10, currentWidth * factor);
+    let newWidth = Math.max(10, currentWidth * factor);
+    this.componentEl.style.width = `${newWidth}px`;
+
+    // Cap to 80% of viewport width:
+    const viewportCap = window.innerWidth * MAX_WIDTH_FACTOR;
+    if (newWidth > viewportCap) {
+      newWidth = viewportCap;
+    }
+
     this.componentEl.style.width = `${newWidth}px`;
   }
+
+    // this.contentEl.addEventListener('click', () => {
+    //   const hasOverflow = this.contentEl.scrollWidth - this.contentEl.clientWidth > 1;
+    //   if (hasOverflow) {
+    //     this._adjustWidth(step);
+    //   }
+    //   // requestAnimationFrame(() => {
+    //   //   const hasOverflow = this.contentEl.scrollWidth - this.contentEl.clientWidth > 1;
+    //   //   if (hasOverflow) {
+    //   //     this._adjustWidth(step);
+    //   //   }
+    //   // });
+    // });
+
+    // // Content click: expand width only if horizontal overflow exists
+    // this.contentEl.addEventListener('click', () => {
+    //   // if (this.contentEl.scrollWidth > this.contentEl.clientWidth + 1) {
+    //   //   this._adjustWidth(step);
+    //   // }
+    //   this._adjustWidth(step);
+    // });
+  // }
+  // _adjustWidth(factor) {
+  //   const rect = this.componentEl.getBoundingClientRect();
+  //   const currentWidth = parseFloat(this.componentEl.style.width) || rect.width;
+  //   const newWidth = Math.max(10, currentWidth * factor);
+  //   this.componentEl.style.width = `${newWidth}px`;
+  // }
 }
+
 
 customElements.define('text-viewer', TextViewer);
