@@ -8,6 +8,7 @@ class ImageViewer extends HTMLElement {
     this.imgWidth = this.getAttribute('img-width') || '400';
     const hasBgAttr = this.hasAttribute('bg-color');
     const componentBg = hasBgAttr ? this.getAttribute('bg-color') : 'white';
+    const titleBg = this.getAttribute('title-bg-color') || 'transparent';
 
     // Wrapper background uses --light fallback to white
     const wrapperBg = 'var(--light, white)';
@@ -43,13 +44,15 @@ class ImageViewer extends HTMLElement {
           font-weight: bold;
           cursor: pointer;
           max-width: 100%;
-          margin-bottom: 12px;
+          margin-bottom: 8px;
           line-height: 1.0rem;
           flex-wrap: wrap;
           word-wrap: break-word;
           overflow-wrap: break-word;
           white-space: wrap;
           color: var(--dark, #333); /* title text uses --dark or fallback */
+          background-color: ${titleBg};
+          padding: 0.25rem 0.5rem;
         }
 
         .image {
@@ -57,6 +60,12 @@ class ImageViewer extends HTMLElement {
           flex: 0 0 auto;
           cursor: pointer;
           transition: transform 0.2s ease-in-out;
+        }
+
+        img {
+          display: block;
+          height: auto;
+          /* removed max-width so explicit width adjustments take effect */
         }
       </style>
 
@@ -79,7 +88,7 @@ class ImageViewer extends HTMLElement {
   }
 
   resizeImage(scaleFactor) {
-    let currentWidth = parseFloat(window.getComputedStyle(this.imageElement).width);
+    const currentWidth = parseFloat(window.getComputedStyle(this.imageElement).width);
     this.imageElement.style.width = `${currentWidth * scaleFactor}px`;
   }
 }
