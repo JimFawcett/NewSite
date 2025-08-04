@@ -89,6 +89,7 @@ window.onmessage = function (event) {
 
     case 'clear':
       closeMenus();
+      hideElement('goto')
       break;
 
     // case 'controls':
