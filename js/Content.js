@@ -178,6 +178,8 @@ function makeMsg(key, value) {
   - Page embedded in iframe receives those messages
     here and generates an approprate action, often
     displaying a menu or form.
+
+  - NOTE: overridden by handler in contentMessages.js
 */
 window.onmessage = function (e) {
   console.log('in msg loop: msg = ' + e.data);
@@ -302,7 +304,7 @@ window.onmessage = function (e) {
       }
       break;    
     case 'goto':
-      // alert('GoTo msg');
+      alert('GoTo msg');
       showGoToMenu(); 
       break; 
     case 'close-goto':
@@ -313,7 +315,7 @@ window.onmessage = function (e) {
   }
 }
 function showGoToMenu() {
-  alert('goto');
+  // alert('goto');
   let gte = document.getElementById('goto');
   let gtm = document.createElement('div');
   gtm.innerHtml = "style='display:flex; flexwrap:nowrap; position:relative; bottom:1rem; right:2rem;'>\
