@@ -1,0 +1,1 @@
+C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\target\debug\libinput.rlib: C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Fileutils\src\lib.rs C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Input\src\lib.rs
