@@ -25,7 +25,7 @@ ${rawHTML.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}
       const popup = window.open("", "CssPopup", "width=600,height=400");
       if (popup) {
         popup.document.write(`
-          <pre style="white-space: pre-wrap; font-family: monospace;">
+          <pre style="white-space: pre-wrap; overflow: auto; font-family: monospace; font-size: 0.95rem;">
 ${cssText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}
           </pre>
         `);
