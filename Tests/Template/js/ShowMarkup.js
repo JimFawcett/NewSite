@@ -8,7 +8,7 @@
     const rawHTML = demo.innerHTML;
 
     if (!muWindow || muWindow.closed) {
-      muWindow = window.open("", "MarkupPopup", "width=600,height=600");
+      muWindow = window.open("", "MarkupPopup", "width=900, height=600");
       muWindow.document.write(`
         <pre style="white-space: pre-wrap; overflow: auto; font-family: monospace; font-size: 0.95rem;">
 ${rawHTML.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}
@@ -41,7 +41,7 @@ ${rawHTML.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}
     const cssText = await response.text();
 
     if (!stWindow || stWindow.closed) {
-      stWindow = window.open("", "CssPopup", "width=600,height=400");
+      stWindow = window.open("", "CssPopup", "width=750, height=400");
       stWindow.document.write(`
         <pre style="white-space: pre-wrap; overflow: auto; font-family: monospace; font-size: 0.95rem;">
 ${cssText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}
