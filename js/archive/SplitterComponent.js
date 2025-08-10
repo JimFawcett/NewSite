@@ -29,15 +29,11 @@ class SplitterContainer extends HTMLElement {
     const shadow = this.attachShadow({ mode: 'open' });
     shadow.innerHTML = `
       <style>
-        :host { 
-          display: block; width:100%;
-          box-sizing: border-box; 
-        }
+        :host { display: block; width:100%; }
         .container {
-          box-sizing: border-box;
           display: flex;
           width:100%; height:100%; overflow:hidden;
-          border:2px solid var(--dark,#333);
+          border:3px solid var(--dark,#333);
         }
         .pane {
           background:#eee; overflow:auto; user-select:none;
