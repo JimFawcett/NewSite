@@ -7,7 +7,7 @@ function loadInputs() {
 
     htmlInput.value = 'FlowModel.html';
     cssInput.value  = 'css/FlowModel.css';
-    jsInput.value   = 'none';
+    jsInput.value   = '';
 }
 function loadPanes() {
   const loadBtn = document.getElementById('loadBtn');
