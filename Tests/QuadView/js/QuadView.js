@@ -7,7 +7,7 @@ function loadInputs() {
 
     htmlInput.value = 'FlowModel.html';
     cssInput.value  = 'css/FlowModel.css';
-    jsInput.value   = '';
+    jsInput.value   = 'css/QuadView.css';
 }
 function loadPanes() {
   const loadBtn = document.getElementById('loadBtn');
