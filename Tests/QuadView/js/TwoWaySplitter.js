@@ -1,12 +1,23 @@
 // TwoWaySplitter.js
 class TwoWaySplitter extends HTMLElement {
   static get observedAttributes() {
-    return ['split-x','split-y','step','bar-size','min-pane','controls'];
+    return [
+      'split-x','split-y','step','bar-size','min-pane','controls',
+      // optional tweaks:
+      'controls-size',     // px, size of each control grid cell
+      'controls-font'      // px, font-size for button glyphs
+    ];
   }
 
   constructor() {
     super();
     this.attachShadow({mode:'open'});
+
+    // Encapsulated UI defaults (internal; not exposed unless you use attributes)
+    this._ui = {
+      controlsCell: 42,  // px – default control grid cell (was 32)
+      controlsFontPx: 0  // 0 = auto (0.6 * cell). Will be computed in template.
+    };
 
     // State
     this._state = {
@@ -21,24 +32,38 @@ class TwoWaySplitter extends HTMLElement {
     this._ro = new ResizeObserver(() => this._apply());
 
     // Shadow DOM
+    const autoFontPx = Math.round((this._ui.controlsCell) * 0.6);
+    const initialFontPx = this._ui.controlsFontPx || autoFontPx;
+
     this.shadowRoot.innerHTML = `
       <style>
         :host {
           display: block;
           position: relative;
+
+          /* splitter variables */
           --split-x: ${this._state.splitX};
           --split-y: ${this._state.splitY};
           --bar: ${this._state.bar}px;
+
+          /* colors */
           --accent: #3b82f6;
           --bar-bg: #ddd;
           --bar-hover: #bbb;
           --nub-bg: #666;
           --nub-hover: #333;
+
+          /* controls palette */
           --controls-bg: rgba(255,255,255,0.9);
           --controls-border: #999;
           --btn-bg: #f5f5f5;
           --btn-hover: #e9e9e9;
           --btn-active: #ddd;
+
+          /* controls sizing (encapsulated defaults) */
+          --controls-cell: ${this._ui.controlsCell}px;
+          --controls-font: ${initialFontPx}px;
+
           min-height: 200px;
         }
         .wrap {
@@ -92,11 +117,12 @@ class TwoWaySplitter extends HTMLElement {
           border-radius: 10px;
           padding: 6px;
           display: grid;
-          grid-template-columns: 32px 32px 32px;
-          grid-template-rows: 32px 32px 32px;
+          grid-template-columns: repeat(3, var(--controls-cell));
+          grid-template-rows:    repeat(3, var(--controls-cell));
           gap: 4px;
           z-index: 2;
           user-select: none;
+          font-size: var(--controls-font);
         }
         .btn {
           border: 1px solid #ccc;
@@ -105,7 +131,7 @@ class TwoWaySplitter extends HTMLElement {
           display: grid;
           place-items: center;
           cursor: pointer;
-          font-size: 14px;
+          font-size: inherit;  /* inherits from .controls */
           line-height: 1;
         }
         .btn:hover { background: var(--btn-hover); }
@@ -127,12 +153,12 @@ class TwoWaySplitter extends HTMLElement {
         <div class="hbar" part="hbar" tabindex="0" aria-label="Horizontal splitter" role="separator" aria-orientation="horizontal"></div>
         <div class="nub"  part="nub"  tabindex="0" aria-label="Move both splitters"></div>
 
-        <div class="controls" part="controls">
-          <button class="btn up"    title="Move horizontal bar up"    aria-label="Up">▲</button>
-          <button class="btn left"  title="Move vertical bar left"    aria-label="Left">◀</button>
-          <button class="btn home"  title="Reset to defaults"         aria-label="Home">H</button>
-          <button class="btn right" title="Move vertical bar right"   aria-label="Right">▶</button>
-          <button class="btn down"  title="Move horizontal bar down"  aria-label="Down">▼</button>
+        <div class="controls" class="controls" part="controls">
+          <button class="btn up"    part="btn up"    title="Move horizontal bar up"    aria-label="Up">▲</button>
+          <button class="btn left"  part="btn left"  title="Move vertical bar left"    aria-label="Left">◀</button>
+          <button class="btn home"  part="btn home"  title="Reset to defaults"         aria-label="Home">H</button>
+          <button class="btn right" part="btn right" title="Move vertical bar right"   aria-label="Right">▶</button>
+          <button class="btn down"  part="btn down"  title="Move horizontal bar down"  aria-label="Down">▼</button>
         </div>
       </div>
     `;
@@ -195,7 +221,15 @@ class TwoWaySplitter extends HTMLElement {
     this._els.down .addEventListener('click', ()=>this._nudge('y', +1));
     this._els.home .addEventListener('click', ()=>this.resetSplits());
 
+    // Apply defaults & reflect optional attributes if present
     this._apply();
+    if (this.hasAttribute('controls-size')) {
+      this._setControlsSize(this._numAttr('controls-size', this._ui.controlsCell));
+    }
+    if (this.hasAttribute('controls-font')) {
+      this._setControlsFont(this._numAttr('controls-font', 0));
+    }
+
     this._ro.observe(this);
   }
 
@@ -223,6 +257,12 @@ class TwoWaySplitter extends HTMLElement {
         this._state.minPanePx = this._numAttr('min-pane', this._state.minPanePx); break;
       case 'controls':
         if (this._els?.ctrls) this._els.ctrls.style.display = (this.getAttribute('controls') === 'off') ? 'none' : '';
+        break;
+      case 'controls-size':
+        this._setControlsSize(this._numAttr('controls-size', this._ui.controlsCell));
+        break;
+      case 'controls-font':
+        this._setControlsFont(this._numAttr('controls-font', 0));
         break;
     }
   }
@@ -313,6 +353,14 @@ class TwoWaySplitter extends HTMLElement {
     this.style.setProperty('--split-x', this._state.splitX);
     this.style.setProperty('--split-y', this._state.splitY);
     this.style.setProperty('--bar', `${this._state.bar}px`);
+    // ensure encapsulated UI vars are set on host (shadow reads them)
+    if (!this.style.getPropertyValue('--controls-cell')) {
+      this.style.setProperty('--controls-cell', `${this._ui.controlsCell}px`);
+    }
+    if (!this.style.getPropertyValue('--controls-font')) {
+      const autoPx = Math.round(this._ui.controlsCell * 0.6);
+      this.style.setProperty('--controls-font', `${autoPx}px`);
+    }
   }
 
   _bounds(){ return this.getBoundingClientRect(); }
@@ -320,6 +368,30 @@ class TwoWaySplitter extends HTMLElement {
     const v = this.getAttribute(name);
     const n = v === null ? NaN : Number(v);
     return Number.isFinite(n) ? n : fallback;
+  }
+
+  // --- Optional tweak handlers (internal, encapsulated) ---
+  _setControlsSize(px){
+    if (!Number.isFinite(px) || px <= 0) return;
+    this._ui.controlsCell = px;
+    // update CSS var on host; shadow uses it in grid template
+    this.style.setProperty('--controls-cell', `${px}px`);
+    // if author hasn't specified a font explicitly, keep font auto-tied to cell
+    if (!this.hasAttribute('controls-font')) {
+      const autoPx = Math.round(px * 0.6);
+      this.style.setProperty('--controls-font', `${autoPx}px`);
+    }
+  }
+  _setControlsFont(px){
+    if (!Number.isFinite(px) || px <= 0) {
+      // treat invalid as "auto"
+      const cell = this._ui.controlsCell;
+      const autoPx = Math.round(cell * 0.6);
+      this.style.setProperty('--controls-font', `${autoPx}px`);
+      return;
+    }
+    this._ui.controlsFontPx = px;
+    this.style.setProperty('--controls-font', `${px}px`);
   }
 
   // Public props

@@ -1,10 +1,14 @@
+// TwoWaySplitter.js
 class TwoWaySplitter extends HTMLElement {
   static get observedAttributes() {
     return ['split-x','split-y','step','bar-size','min-pane','controls'];
   }
+
   constructor() {
     super();
     this.attachShadow({mode:'open'});
+
+    // State
     this._state = {
       splitX: this._numAttr('split-x', 50), // percent
       splitY: this._numAttr('split-y', 50), // percent
@@ -12,11 +16,11 @@ class TwoWaySplitter extends HTMLElement {
       bar:    this._numAttr('bar-size', 8), // px
       minPanePx: this._numAttr('min-pane', 48)
     };
-    // Remember onload defaults for "Home"/reset
     this._defaults = { splitX: this._state.splitX, splitY: this._state.splitY };
-
     this._drag = { mode: null, startX:0, startY:0, startSplitX:0, startSplitY:0 };
     this._ro = new ResizeObserver(() => this._apply());
+
+    // Shadow DOM
     this.shadowRoot.innerHTML = `
       <style>
         :host {
@@ -43,7 +47,7 @@ class TwoWaySplitter extends HTMLElement {
           grid-template-columns: calc(var(--split-x) * 1%) var(--bar) 1fr;
           grid-template-rows:    calc(var(--split-y) * 1%) var(--bar) 1fr;
           overflow: hidden;
-          outline: none; /* host keyboard focus */
+          outline: none;
         }
         .pane { min-width: 0; min-height: 0; overflow: auto; }
         .tl { grid-area: 1 / 1; }
@@ -132,6 +136,22 @@ class TwoWaySplitter extends HTMLElement {
         </div>
       </div>
     `;
+
+    // Single, capture-phase key handler bound on the host
+    this._onKeyDown = (e) => {
+      const k = e.key;
+      if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home'].includes(k)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      switch (k) {
+        case 'ArrowLeft':  this._nudge('x', -1); break;
+        case 'ArrowRight': this._nudge('x', +1); break;
+        case 'ArrowUp':    this._nudge('y', -1); break;
+        case 'ArrowDown':  this._nudge('y', +1); break;
+        case 'Home':       this.resetSplits();   break;
+      }
+    };
   }
 
   connectedCallback() {
@@ -148,6 +168,9 @@ class TwoWaySplitter extends HTMLElement {
       home: this.shadowRoot.querySelector('.home'),
     };
 
+    // Make host keyboard-focusable if not specified by author
+    if (!this.hasAttribute('tabindex')) this.tabIndex = 0;
+
     if (this.getAttribute('controls') === 'off') {
       this._els.ctrls.style.display = 'none';
     }
@@ -159,36 +182,11 @@ class TwoWaySplitter extends HTMLElement {
     window.addEventListener('pointermove', (e)=>this._onMove(e));
     window.addEventListener('pointerup',   ()=>this._endDrag());
 
-    // Unified keyboard handler (arrows nudge like buttons; Home resets)
-    const keyHandler = (e) => {
-      if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home'].includes(e.key)) return;
-      e.preventDefault();
-      switch(e.key){
-        case 'ArrowLeft': this._nudge('x', -1); break;
-        case 'ArrowRight':this._nudge('x', +1); break;
-        case 'ArrowUp':   this._nudge('y', -1); break;
-        case 'ArrowDown': this._nudge('y', +1); break;
-        case 'Home':      this.resetSplits();   break;
-      }
-    };
-    // // Keyboard works when any of these have focus, and also on the overall region
-    // [this._els.vbar, this._els.hbar, this._els.nub, this._els.root, this].forEach(el=>{
-    //   el.addEventListener('keydown', keyHandler);
-    // });
-    // AFTER: one listener
-    this._els.root.addEventListener('keydown', (e) => {
-      if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home'].includes(e.key)) return;
-      e.preventDefault();
-      e.stopPropagation(); // prevent bubbling to host (and any other listeners)
-
-      switch (e.key) {
-        case 'ArrowLeft':  this._nudge('x', -1); break;
-        case 'ArrowRight': this._nudge('x', +1); break;
-        case 'ArrowUp':    this._nudge('y', -1); break;
-        case 'ArrowDown':  this._nudge('y', +1); break;
-        case 'Home':       this.resetSplits();   break;
-      }
-    });
+    // Keyboard: bind once on the host, capture phase (prevents double-steps)
+    if (!this._keysBound) {
+      this.addEventListener('keydown', this._onKeyDown, { capture: true });
+      this._keysBound = true;
+    }
 
     // Buttons
     this._els.left .addEventListener('click', ()=>this._nudge('x', -1));
@@ -203,26 +201,35 @@ class TwoWaySplitter extends HTMLElement {
 
   disconnectedCallback() {
     this._ro.disconnect();
+    if (this._keysBound) {
+      this.removeEventListener('keydown', this._onKeyDown, { capture: true });
+      this._keysBound = false;
+    }
   }
 
-  attributeChangedCallback(name, oldVal, newVal) {
-    if (oldVal === newVal) return;
+  attributeChangedCallback(name, _oldVal, _newVal) {
     switch(name){
-      case 'split-x': this._setSplitX(this._numAttr('split-x', this._state.splitX)); break;
-      case 'split-y': this._setSplitY(this._numAttr('split-y', this._state.splitY)); break;
-      case 'step':    this._state.stepPx = this._numAttr('step', this._state.stepPx); break;
-      case 'bar-size':this._state.bar    = this._numAttr('bar-size', this._state.bar); this.style.setProperty('--bar', `${this._state.bar}px`); break;
-      case 'min-pane':this._state.minPanePx = this._numAttr('min-pane', this._state.minPanePx); break;
+      case 'split-x':
+        this._setSplitX(this._numAttr('split-x', this._state.splitX)); break;
+      case 'split-y':
+        this._setSplitY(this._numAttr('split-y', this._state.splitY)); break;
+      case 'step':
+        this._state.stepPx = this._numAttr('step', this._state.stepPx); break;
+      case 'bar-size':
+        this._state.bar    = this._numAttr('bar-size', this._state.bar);
+        this.style.setProperty('--bar', `${this._state.bar}px`);
+        break;
+      case 'min-pane':
+        this._state.minPanePx = this._numAttr('min-pane', this._state.minPanePx); break;
       case 'controls':
-        if (this._els?.ctrls) this._els.ctrls.style.display = (newVal === 'off') ? 'none' : '';
+        if (this._els?.ctrls) this._els.ctrls.style.display = (this.getAttribute('controls') === 'off') ? 'none' : '';
         break;
     }
   }
 
-  // Dragging
+  // --- Dragging ---
   _startDrag(e, mode){
     e.preventDefault();
-    // Capture on the actual target if available
     if (e.currentTarget?.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
     const rect = this._bounds();
     this._drag = {
@@ -244,7 +251,7 @@ class TwoWaySplitter extends HTMLElement {
   }
   _endDrag(){ this._drag.mode = null; }
 
-  // Nudging with buttons/keys
+  // --- Nudging with buttons/keys ---
   _nudge(axis, dir){
     const rect = this._bounds();
     if (axis === 'x') {
@@ -256,14 +263,14 @@ class TwoWaySplitter extends HTMLElement {
     }
   }
 
-  // Reset to onload defaults (Home)
+  // --- Reset to onload defaults (Home) ---
   resetSplits(){
     this._setSplitX(this._defaults.splitX);
     this._setSplitY(this._defaults.splitY);
     this.dispatchEvent(new CustomEvent('reset', {detail:{splitX:this._state.splitX, splitY:this._state.splitY}}));
   }
 
-  // Clamp helpers
+  // --- Clamp helpers ---
   _minMaxX(){
     const {width} = this._bounds();
     const min = this._state.minPanePx;
