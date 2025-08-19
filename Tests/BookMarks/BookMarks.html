@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>BookmarkList Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Your library from earlier, placed at js/BookMarks.js -->
+  <script src="js/BookMarks.js" defer></script>
+
+  <style>
+    :root { --gap: 0.75rem; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 1rem;
+      font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color: #222; background: #fafafa;
+    }
+    header, footer { margin-bottom: 1rem; }
+    header h1 { font-size: 1.25rem; margin: 0 0 0.25rem 0; }
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--gap);
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: #fff; border: 1px solid #e5e5e5; border-radius: 10px;
+      padding: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .controls {
+      display: grid; gap: 0.5rem;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+    }
+    .controls label { grid-column: 1 / -1; display: block; font-weight: 600; }
+    .controls input[type="url"] {
+      grid-column: 1 / 2; width: 100%; padding: 0.5rem 0.6rem;
+      border: 1px solid #ccc; border-radius: 8px;
+    }
+    .controls button {
+      padding: 0.5rem 0.75rem; border: 1px solid #ccc; border-radius: 8px;
+      background: #f6f6f6; cursor: pointer;
+    }
+    .controls button:hover { background: #eee; }
+    .status {
+      min-height: 1.2em; color: #0a7; font-weight: 600;
+      transition: opacity 180ms ease; opacity: 0;
+      grid-column: 1 / -1;
+    }
+    .status.show { opacity: 1; }
+    h2 { font-size: 1rem; margin: 0 0 0.5rem 0; }
+    .quick ul {
+      margin: 0.5rem 0 0; padding: 0 0 0 1rem;
+    }
+    .quick a { text-decoration: none; }
+    .quick a:hover { text-decoration: underline; }
+    footer { color: #666; font-size: 0.9rem; }
+    noscript { color: #b00; font-weight: 600; }
+  </style>
+
+  <script defer>
+    // Demo wiring for the BookmarkList library
+    document.addEventListener('DOMContentLoaded', () => {
+      const statusEl = document.getElementById('status');
+      const urlInput  = document.getElementById('url');
+      const addBtn    = document.getElementById('add');
+      const addCurr   = document.getElementById('add-current');
+      const quickList = document.getElementById('quick-add');
+
+      if (!window.BookmarkList) {
+        statusEl.textContent = 'Error: BookMarks.js failed to load.';
+        statusEl.classList.add('show');
+        return;
+      }
+
+      // Create the list in the #bookmarks container
+      const bookmarks = new BookmarkList('#bookmarks', {
+        storageKey: 'demo-bookmarks',
+        max: 200
+      });
+      // Expose for console debugging if you like
+      window.demoBookmarks = bookmarks;
+
+      function flash(msg, ok = true) {
+        statusEl.textContent = msg;
+        statusEl.style.color = ok ? '#0a7' : '#b00';
+        statusEl.classList.add('show');
+        setTimeout(() => statusEl.classList.remove('show'), 1200);
+      }
+
+      function addUrl(raw) {
+        const val = (raw || '').trim();
+        if (!val) return flash('Enter a URL to add.', false);
+        try {
+          // BookmarkList will normalize relative URLs against the current page
+          bookmarks.add(val);
+          flash('Added: ' + val);
+          urlInput.value = '';
+        } catch (e) {
+          flash('Invalid URL', false);
+        }
+      }
+
+      addBtn.addEventListener('click', () => addUrl(urlInput.value));
+      urlInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') addUrl(urlInput.value);
+      });
+      addCurr.addEventListener('click', () => addUrl(location.href));
+
+      // Quick-add demo links
+      quickList.addEventListener('click', (e) => {
+        const a = e.target.closest('a[data-url]');
+        if (!a) return;
+        e.preventDefault();
+        addUrl(a.dataset.url);
+      });
+    });
+  </script>
+</head>
+<body>
+  <header>
+    <h1>BookmarkList Demo</h1>
+    <p>Type a URL or use the quick links to add bookmarks. Duplicates are moved to the top.</p>
+    <noscript>This demo requires JavaScript to run.</noscript>
+  </header>
+
+  <main class="layout">
+    <!-- Controls -->
+    <section class="card">
+      <h2>Add URLs</h2>
+      <div class="controls" role="form" aria-label="Add bookmark">
+        <label for="url">URL</label>
+        <input id="url" type="url" placeholder="https://example.com/page.html" spellcheck="false" />
+        <button id="add" type="button" title="Add typed URL">Add URL</button>
+        <button id="add-current" type="button" title="Add the current page">Add Current Page</button>
+        <div id="status" class="status" aria-live="polite"></div>
+      </div>
+
+      <div class="quick">
+        <h2>Quick add samples</h2>
+        <ul id="quick-add">
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript"
+                 data-url="https://developer.mozilla.org/en-US/docs/Web/JavaScript">MDN — JavaScript</a></li>
+          <li><a href="https://en.wikipedia.org/wiki/URL"
+                 data-url="https://en.wikipedia.org/wiki/URL">Wikipedia — URL</a></li>
+          <li><a href="https://example.com/docs/page.html?ref=demo"
+                 data-url="https://example.com/docs/page.html?ref=demo">Example — Docs page</a></li>
+          <li><a href="https://example.com/docs/page.html?ref=demo#section"
+                 data-url="https://example.com/docs/page.html?ref=demo#section">Example — Same page (with hash)</a></li>
+        </ul>
+        <p style="margin-top:0.5rem;color:#666">
+          Tip: Add the last two links in any order—notice the second one moves the first to the top.
+        </p>
+      </div>
+    </section>
+
+    <!-- Live list -->
+    <section class="card">
+      <h2>Bookmarks</h2>
+      <div id="bookmarks" aria-live="polite"></div>
+      <p style="margin-top:0.5rem;color:#666">
+        The list persists in <code>localStorage</code> under the key <code>demo-bookmarks</code>.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    This is a simple demo page. The “Remove all” control and per-item “Remove” buttons are rendered by the
+    <code>BookmarkList</code> component from <code>js/BookMarks.js</code>.
+  </footer>
+</body>
+</html>
