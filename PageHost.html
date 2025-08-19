@@ -36,12 +36,9 @@
       box-sizing: border-box;
     }
     #pgframe {
-      /* height:calc(100vh - 3rem); */
-      /* flex:1; */
       width:100%;
       height:calc(100vh - var(--headerht));
       margin:0rem;
-      /* padding: 0rem 0.25rem; */
       padding: 0rem 0.0rem;
       border:4px solid var(--light);
       border-top:none;
@@ -72,7 +69,6 @@
       margin-left:4.5rem;
     }
     .topButton {
-      /* background-color: lightgreen; */
       border:2px solid var(--dark);
       border-radius: 10px;
       width:max-content;
@@ -134,35 +130,9 @@
     }
   </script>
   <script>
-    // function loadIfPageHost() {
-    //   const loc = window.location;
-    //   if(loc === window.top.location) {
-    //     // window.location = "PageHost.html?src=" + loc;
-    //   }
-    //   else {
-    //     // window.location = loc;
-    //   }
-    // }
     function load() {
-      // loadIfPageHost();
       processQueryString();
-      // setfs();
-      // let explorer = getCookie('explorer');
-      // if(isDefined(explorer)) {
-      //   frm = document.getElementById(pgframe);
-      //   frm.src = explorer;
-      // }
-      var dummy;
     }
-    // function setfs() {
-    //   const fsb = document.getElementById('fullscreen');
-    //   fsb.addEventListener("click", () => {
-    //     const element = document.documentElement; // Use the root element for full screen
-    //       element.requestFullscreen().catch((err) => {
-    //       console.log(`Error attempting to enable full-screen mode: ${err.message}`);
-    //     });
-    //   });  
-    // }
     function startfs() {
       const element = document.documentElement;
       element.requestFullscreen().catch((err) => {
@@ -184,30 +154,6 @@
     function togglerf() {}  // recent files
     function togglebm() {}  // bookmarks
   </script>
-  <!-- <script>
-    function getParameterByName(name, url = window.location.href) {
-      name = name.replace(/[\[\]]/g, '\\$&');
-      var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
-      results = regex.exec(url);
-      if (!results) return null;
-      if (!results[2]) return '';
-      return decodeURIComponent(results[2].replace(/\+/g, ' '));
-    }
-  
-    /*-- query string redirect processing --*/
-    function processQueryString() {
-    var url = window.location.href;
-    var src = getParameterByName("src", url);
-    if (isDefined(src)) { 
-      /*-- redirect to specified page --*/
-      let pf = document.getElementById("pgframe");
-      if (isDefined(src)) {
-        pf.src = src;
-        src = null;
-      }
-    }    
-  }  
-</script> -->
 </head>
 <body onload="load()">
   <header>
@@ -216,6 +162,10 @@
     <button id="fullscreen" class="clickable topButton" onclick="togglefs()">Full Screen</button>
     <button id="recent" class="clickable topButton undef statusLight" onclick="togglerf()">recent files</button>
     <button id="bookmarks" class="clickable topButton undef statusLight" onclick="togglebm()">bookmarks</button>
+    <button id="zoomout" class="clickable topButton " onclick="PageZoom.out()">Zoom -</button>
+    <button id="zoomreset" class="clickable topButton " onclick="PageZoom.reset()">Reset</button>
+    <button id="zoomin" class="clickable topButton " onclick="PageZoom.in()">Zoom +</button>
+
     <!-- <button id="sections" class="clickable topButton undef statusLight" onclick="togglebm()">sections</button>
     <button id="pages" class="clickable topButton undef" onclick="togglebm()">pages</button> -->
     <!-- <button id="scroll" class="clickable topButton undef" onclick="togglebm()" style="width:10em;">persistent scroll</button> -->
@@ -226,6 +176,132 @@
     /* this call has to be here, not in onload processing */
     handleIframeTransition();
   </script>
+<!-- Put this at the end of <body> or in a JS file -->
+<!-- Drop this anywhere after the <iframe id="pgframe"> exists -->
+<script>
+(() => {
+  'use strict';
+
+  // -------- Config --------
+  const IFRA_ID = 'pgframe';
+  const MIN = 0.5, MAX = 2.0, STEP = 0.1;
+  const STORE_PREFIX = 'iframeZoom::';
+
+  // -------- State --------
+  let scale = 1;
+
+  // Build a per-src storage key so each page can remember its own zoom
+  function storeKeyFor(src) {
+    return STORE_PREFIX + (src || '');
+  }
+
+  // Read saved scale for current iframe src
+  function loadSaved(ifr) {
+    try {
+      const key = storeKeyFor(ifr.src);
+      const saved = parseFloat(localStorage.getItem(key));
+      return Number.isFinite(saved) ? saved : 1;
+    } catch { return 1; }
+  }
+
+  function saveScale(ifr, value) {
+    try {
+      localStorage.setItem(storeKeyFor(ifr.src), String(value));
+    } catch {}
+  }
+
+  // Attempt to get same-origin iframe document (null if cross-origin)
+  function getIframeDoc(ifr) {
+    try {
+      return ifr.contentDocument || (ifr.contentWindow && ifr.contentWindow.document) || null;
+    } catch { return null; } // SecurityError -> cross-origin
+  }
+
+  // Core: apply zoom to iframe (prefer inside the iframe; else scale the element)
+  function applyIframeZoom(next) {
+    const ifr = document.getElementById(IFRA_ID);
+    if (!ifr) return;
+
+    scale = Math.min(MAX, Math.max(MIN, parseFloat(Number(next).toFixed(2))));
+    saveScale(ifr, scale);
+
+    const idoc = getIframeDoc(ifr);
+
+    if (idoc && idoc.documentElement) {
+      // Same-origin: zoom the iframe's page itself
+      const html = idoc.documentElement;
+      // Prefer CSS zoom when supported (affects layout)
+      if (CSS.supports && CSS.supports('zoom', String(scale))) {
+        html.style.zoom = scale;
+        html.style.transform = '';
+        html.style.transformOrigin = '';
+        html.style.width = '';
+        // Optional: also scale body if needed
+        if (idoc.body) idoc.body.style.zoom = '';
+      } else {
+        // Firefox fallback: transform the <html> node
+        html.style.zoom = '';
+        html.style.transformOrigin = '0 0';
+        html.style.transform = `scale(${scale})`;
+        // Ensure the content still fits the iframe viewport
+        html.style.width = `calc(100% / ${scale})`;
+      }
+      // The outer <iframe> element stays 100% size
+      ifr.style.transform = '';
+      ifr.style.transformOrigin = '';
+      ifr.style.width = '';
+      ifr.style.height = '';
+    } else {
+      // Cross-origin: cannot touch inner DOM. Scale the <iframe> element itself.
+      ifr.style.transformOrigin = '0 0';
+      ifr.style.transform = `scale(${scale})`;
+      // Keep the visible area the same size while scaling
+      ifr.style.width  = `calc(100% / ${scale})`;
+      ifr.style.height = `calc(100% / ${scale})`;
+    }
+  }
+
+  // Public helpers
+  function zoomIn()     { applyIframeZoom(scale + STEP); }
+  function zoomOut()    { applyIframeZoom(scale - STEP); }
+  function zoomReset()  { applyIframeZoom(1); }
+  function zoomApply(x) { applyIframeZoom(x); }
+
+  // Expose simple globals for inline onclick or external code
+  window.zoomIn = zoomIn;
+  window.zoomOut = zoomOut;
+  window.zoomReset = zoomReset;
+  window.IframeZoom = { in: zoomIn, out: zoomOut, reset: zoomReset, apply: zoomApply, get: () => scale };
+
+  // Re-apply zoom whenever the iframe loads (e.g., src changes)
+  function hookIframe() {
+    const ifr = document.getElementById(IFRA_ID);
+    if (!ifr) return;
+    ifr.addEventListener('load', () => {
+      // Load saved value for this src, then apply
+      scale = loadSaved(ifr);
+      applyIframeZoom(scale);
+    });
+    // Initialize once for current content
+    scale = loadSaved(ifr);
+    applyIframeZoom(scale);
+  }
+
+  // Optional: wire buttons if present (ids: zoomin / zoomout / zoomreset)
+  function wireButtonsIfPresent() {
+    document.getElementById('zoomin')?.addEventListener('click', zoomIn);
+    document.getElementById('zoomout')?.addEventListener('click', zoomOut);
+    document.getElementById('zoomreset')?.addEventListener('click', zoomReset);
+  }
+
+  // Start
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => { hookIframe(); wireButtonsIfPresent(); });
+  } else {
+    hookIframe(); wireButtonsIfPresent();
+  }
+})();
+</script>
 </body>
 </html>
 
