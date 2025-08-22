@@ -7,7 +7,6 @@ class ImageViewer extends HTMLElement {
       this.imgSrc = this.getAttribute('img-src') || '';
       this.imgWidth = this.getAttribute('img-width') || '400';
       this.bgColor = this.getAttribute('bg-color') || 'white';
-
       // Create shadow DOM structure
       this.shadowRoot.innerHTML = `
           <style>
@@ -28,7 +27,7 @@ class ImageViewer extends HTMLElement {
                   font-weight: bold;
                   cursor: pointer;
                   max-width: 100%;
-                  margin-bottom: 12px;
+                  margin-bottom: 8px;
                   line-height: 1.0rem;
                   flex-wrap: wrap;
                   word-wrap: break-word;
