@@ -544,7 +544,7 @@ function bigger(img) {
           <a style="text-decoration:underline;" onclick="postHostMsg(makeMsg('reload', null))">Reload</a>
         </div>
         <div style="height:1.5rem;"></div>
-        <button class="loadButton" style="border:1px solid var(--dark); padding:0.25rem 1rem; width:max-content;" onclick="postParentMsg(makeMsg('picklist'))">Load Panel</button>
+        <button class="loadButton" style="border:1px solid var(--dark); padding:0.25rem 1rem; width:max-content;" onclick="postParentMsg(makeMsg('picklist'))">Examples +</button>
       </div>
     `;
 
