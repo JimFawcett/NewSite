@@ -12,7 +12,7 @@ function buildPages() {
     <div class='menuBody'>\
       <a href='WebDevBites_Survey.html'>Survey</a>\
       <a href='WebDevBites_Html.html'>HTML</a>\
-      <a href='WebDevBites_HtmlDOM.html'>HTML DOM</a>\
+      <a href='WebDevBites_HtmlDom.html'>HTML DOM</a>\
       <a href='WebDevBites_Css.html'>CSS Styles</a>\
       <a href='WebDevBites_JavaScript.html'>JavaScript</a>\
       <a href='WebDevBites_WebComponents.html'>Web Components</a>\
