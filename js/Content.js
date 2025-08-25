@@ -539,7 +539,7 @@ function bigger(img) {
         <div style="height:1.5rem;"></div>
         <button
           class="loadButton"
-          style="align-self:flex-start; width:fit-content; max-width:10rem; padding:0.25rem 1rem; border:1px solid var(--dark); border-radius:5px"
+          style="align-self:flex-start; width:fit-content; max-width:10rem; padding:0.25rem 1rem; font-size: 1rem; border:1px solid var(--dark); border-radius:5px"
           onclick="postParentMsg(makeMsg('picklist'))"
         >
           Examples+
