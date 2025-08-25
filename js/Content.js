@@ -554,6 +554,11 @@ function bigger(img) {
     } else {
       console.warn(`createSiteNavMenu: no element found with ID "${containerId}"`);
     }
+    // Close the whole Page Actions container when the pointer leaves it
+    container.addEventListener('mouseleave', () => {
+      hideElement(containerId);         // your existing helper
+      // postMsg('close-goto');         // optional if other frames need to know
+    });
   }
 
   // Automatically build on load
