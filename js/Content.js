@@ -39,6 +39,7 @@ function postFileName() {
   let fn = parseUrl.pathname.split('/').pop();
   window.parent.postMessage(fn, '*');
   postMsg('loaded');
+  postHostMsg(makeMsg('url', location.href));
 }
 function getUrl() {
   let url = getCookie('url');
