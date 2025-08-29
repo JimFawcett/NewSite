@@ -7,7 +7,7 @@ function loadInputs() {
 
     htmlInput.value = 'FlowModel.html';
     cssInput.value  = 'css/FlowModel.css';
-    jsInput.value   = 'css/Example.css';
+    jsInput.value   = 'Comments.txt';
 }
 function loadPanes() {
   const loadBtn = document.getElementById('loadBtn');
