@@ -16,6 +16,7 @@ function buildPages() {
       <a href='WebDevBites_Css.html'>CSS Styles</a>\
       <a href='WebDevBites_JavaScript.html'>JavaScript</a>\
       <a href='WebDevBites_WebComponents.html'>Web Components</a>\
+      <a href='WebDevBites_Glossary.html'>Glossary</a>\
       <hr style='margin-top:0.75rem; margin-bottom:0.5rem;'>\
       <a href='WebDevBites_Clickables.html'>Clickables</a>\
       <a href='WebDevBites_CodeViewer.html'>CodeViewer</a>\
@@ -33,7 +34,6 @@ function buildPages() {
       <a href='WebDevBites_SplitterComponent.html'>Splitter Component</a>\
       <a href='WebDevBites_UrlCookie.html'>Url Cookie</a>\
       <a class='undef' href='javascript:;'>more</a>\
-      <a href='WebDevBites_Glossary.html'>Glossary</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
