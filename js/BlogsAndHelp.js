@@ -151,6 +151,10 @@ function buildRes() {
     res.innerHTML =
     "<div class='darkItem menuHeader' onclick='hideRes()'>Resources</div>\
     <div onmouseleave='hideRes()' class='menuBody'>\
+      <div class='category'>-stories-</div>\
+      <a class='undef' href='javascript:;'>Site</a>\
+      <a href='../Rust/ExploreRust.html?src=RustStory_Prologue.html'>Rust</a>\
+      <a href='../Cpp/ExploreCpp.html?src=CppStory_Prologue.html'>C++</a>\
       <div class='category'>-documents-</div>\
       <details style='margin-left:0.5rem;'>\
         <summary>ChatGPT Topics</summary>\
