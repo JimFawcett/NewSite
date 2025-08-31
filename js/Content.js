@@ -518,28 +518,28 @@ function bigger(img) {
 
         <div>For this <strong>page:</strong></div>
         <div class="indent">
-          <a style="text-decoration:underline;" onclick="history.back()">Back</a>,
-          <a style="text-decoration:underline;" onclick="history.forward()">Forward</a>,
-          <a style="text-decoration:underline;" onclick="location.reload()">Reload</a>
+          <a style="cursor: pointer; text-decoration:underline;" onclick="history.back()">Back</a>,
+          <a style="cursor: pointer; text-decoration:underline;" onclick="history.forward()">Forward</a>,
+          <a style="cursor: pointer; text-decoration:underline;" onclick="location.reload()">Reload</a>
         </div>
 
         <div>For this <strong>Explorer:</strong></div>
         <div class="indent">
-          <a style="text-decoration:underline;" onclick="postParentMsg(makeMsg('back', null))">Back</a>, 
-          <a style="text-decoration:underline;" onclick="postParentMsg(makeMsg('forward', null">Forward</a>, 
-          <a style="text-decoration:underline;" onclick="postParentMsg(makeMsg('reload', null))">Reload</a>
+          <a style="cursor: pointer; text-decoration:underline;" onclick="postParentMsg(makeMsg('back', null))">Back</a>, 
+          <a style="cursor: pointer; text-decoration:underline;" onclick="postParentMsg(makeMsg('forward', null">Forward</a>, 
+          <a style="cursor: pointer; text-decoration:underline;" onclick="postParentMsg(makeMsg('reload', null))">Reload</a>
         </div>
 
         <div>For <strong>Page Host:</strong></div>
         <div class="indent">
-          <a style="text-decoration:underline;" onclick="postHostMsg(makeMsg('back', null))">Back</a>,
-          <a style="text-decoration:underline;" onclick="postHostMsg(makeMsg('forward', null))">Forward</a>,
-          <a style="text-decoration:underline;" onclick="postHostMsg(makeMsg('reload', null))">Reload</a>
+          <a style="cursor: pointer; text-decoration:underline;" onclick="postHostMsg(makeMsg('back', null))">Back</a>,
+          <a style="cursor: pointer; text-decoration:underline;" onclick="postHostMsg(makeMsg('forward', null))">Forward</a>,
+          <a style="cursor: pointer; text-decoration:underline;" onclick="postHostMsg(makeMsg('reload', null))">Reload</a>
         </div>
         <div style="height:1.5rem;"></div>
         <button
           class="loadButton"
-          style="align-self:flex-start; width:fit-content; max-width:10rem; padding:0.25rem 1rem; font-size: 1rem; border:1px solid var(--dark); border-radius:5px"
+          style="cursor: pointer; align-self:flex-start; width:fit-content; max-width:10rem; padding:0.25rem 1rem; font-size: 1rem; border:1px solid var(--dark); border-radius:5px"
           onclick="postParentMsg(makeMsg('picklist'))"
         >
           Examples+
