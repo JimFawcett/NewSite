@@ -1,5 +1,5 @@
 /*
- * PagesTest.js - Builds thread page list
+ * WebDevBitesPages.js - Builds thread page list
  * ver 1.0 - 19 Dec 2024
  * Jim Fawcett
  */
