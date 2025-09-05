@@ -18,22 +18,16 @@ function buildPages() {
       <a href='WebDevBites_WebComponents.html'>Web Components</a>\
       <a href='WebDevBites_Glossary.html'>Glossary</a>\
       <hr style='margin-top:0.75rem; margin-bottom:0.5rem;'>\
-      <a href='WebDevBites_Clickables.html'>Clickables</a>\
-      <a href='WebDevBites_CodeViewer.html'>CodeViewer</a>\
-      <a href='WebDevBites_FigureSizer.html'>FigureSizer</a>\
-      <a href='WebDevBites_ImageViewerComponent.html'>ImageViewer</a>\
-      <a href='WebDevBites_FlexExplorer.html'>FileExplorer</a>\
-      <a href='WebDevBites_GridExplorerComponent.html'>GridExplorer</a>\
-      <a href='WebDevBites_LinkNavigator.html'>LinkNavigator</a>\
-      <a href='WebDevBites_PanelTransitionsWithOverlay.html'>PanelTransitions</a>\
-      <a href='WebDevBites_PassingObjectMsgs.html'>PassMsgs</a>\
-      <a href='WebDevBites_PopUpWindow.html'>PopUpWindow</a>\
-      <a href='WebDevBites_PositionElements.html'>Position Elements</a>\
-      <a href='WebDevBites_QueryString.html'>QueryString</a>\
-      <a href='WebDevBites_ScrollingMenus.html'>Scrolling Menus</a>\
-      <a href='WebDevBites_SplitterComponent.html'>Splitter Component</a>\
-      <a href='WebDevBites_UrlCookie.html'>Url Cookie</a>\
-      <a class='undef' href='javascript:;'>more</a>\
+      <a target='_blank' href='../Tests/DropDownList/DropDownList.html'>Drop Down List</a>\
+      <a target='_blank' href='../Tests/BookMarks/BookMarks.html'>BookMarks</a>\
+      <a target='_blank' href='../Tests/ImageViewerComponent/ImageViewerComponent.html'>Image Viewer</a>\
+      <a target='_blank' href='../Tests/TextViewerComponent/TextViewerComponent.html'>Text Viewer</a>\
+      <a target='_blank' href='../Tests/link-navigator/LinkNavigator.html'>Link Navigator</a>\
+      <a target='_blank' href='../Tests/PassingObjectMsgs/ObjectMessages.html'>Passing Msgs</a>\
+      <a target='_blank' href='../Tests/QueryString/QueryString.html'>QueryString</a>\
+      <a target='_blank' href='../Tests/SplitterComponent/SplitterComponent.html'>Splitter Component</a>\
+      <a target='_blank' href='../Tests/StackedContent/StackedContent.html'>Stacking Content Boxes</a>\
+      <a target='_blank' href='../Tests/urlCookie/urlToCookie.html'>Saving urls</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
