@@ -46,65 +46,34 @@
   </style>
 <script>
 (() => {
+  // Helpers for rem <-> px
   const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize);
-  const STEP = 4 * remPx;  // 4rem
-  const MIN  = 2 * remPx;  // 2rem
+  const STEP = 4 * remPx; // 4rem in px
+  const MIN  = 2 * remPx; // 2rem in px
 
-  // Row content-box width (no padding, no border)
-  function rowContentWidth(row) {
-    const cs = getComputedStyle(row);
-    // clientWidth includes padding; subtract it to get content-box width
-    const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-    return row.clientWidth - pad;
-  }
-
-  // Space between the two items (supports either margins or CSS gap)
-  function betweenWidth(row, left, right) {
-    const cs = getComputedStyle(row);
-    const gap = parseFloat(cs.columnGap || cs.gap || 0);
-    if (gap) return gap;  // using CSS gap
-    // fallback: measure actual gap created by margins
-    const L = left.getBoundingClientRect();
-    const R = right.getBoundingClientRect();
-    return Math.max(0, R.left - L.right);
-  }
-
-  // Read current basis (px), fallback to content-box width
+  // Read the current flex-basis (px), falling back to rendered width
   function basisPx(el) {
     const b = el.style.flexBasis;
     if (b && b.endsWith('px')) return parseFloat(b);
-    const cs = getComputedStyle(el);
-    const outer = el.getBoundingClientRect().width;
-    const pads  = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-    const brdrs = parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
-    return outer - pads - brdrs; // content-box width
+    return el.getBoundingClientRect().width;
   }
 
-  function initPair(row, left, right) {
-    // Lock sizing to bases we control
+  // Initialize one left/right pair: lock current sizes and add handlers
+  function initPair(left, right) {
+    const lw = left.getBoundingClientRect().width;
+    const rw = right.getBoundingClientRect().width;
+
     [left, right].forEach(el => {
       el.style.flexGrow = '0';
       el.style.flexShrink = '0';
-      el.style.minWidth = `${MIN}px`;
     });
-
-    // Compute total content width available to the two items
-    const total = rowContentWidth(row) - betweenWidth(row, left, right);
-
-    // Preserve the initial ratio, but force the sum to exactly fill the row
-    const lw = basisPx(left);
-    const rw = basisPx(right);
-    const sum = lw + rw || 1; // guard div-by-zero
-    const leftTarget  = total * (lw / sum);
-    const rightTarget = total - leftTarget;
-
-    left.style.flexBasis  = `${leftTarget}px`;
-    right.style.flexBasis = `${rightTarget}px`;
+    left.style.flexBasis  = `${lw}px`;
+    right.style.flexBasis = `${rw}px`;
 
     function adjust(growEl, shrinkEl) {
       const g = basisPx(growEl);
       const s = basisPx(shrinkEl);
-      if ((s - STEP) < MIN) return;  // prevent shrinking below 2rem
+      if ((s - STEP) < MIN) return;            // don't let the shrinking panel go < 2rem
       growEl.style.flexBasis   = `${g + STEP}px`;
       shrinkEl.style.flexBasis = `${s - STEP}px`;
     }
@@ -113,17 +82,14 @@
     right.addEventListener('click', () => adjust(right, left));
   }
 
-  function wireUpAll() {
+  // Find each row with a left/right pair and wire it up (now using classes)
+  document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.content').forEach(row => {
       const left  = row.querySelector('.left-panel');
       const right = row.querySelector('.right-panel');
-      if (left && right) initPair(row, left, right);
+      if (left && right) initPair(left, right);
     });
-  }
-
-  document.addEventListener('DOMContentLoaded', wireUpAll);
-  // Optional: keep edges aligned if the window resizes
-  window.addEventListener('resize', wireUpAll);
+  });
 })();
 </script>
   <script>
@@ -156,44 +122,21 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       overflow-y: auto;
       overflow-x: hidden;
-      user-select: none;
-      /* border: 5px solid green; */
+      border: 5px solid green;
     }
   </style>
   <style>
-:root {
-  /* Default height for content rows; tweak as you like */
-  --contenth: 28dvh;   /* e.g., 28% of viewport height */
-  --headerh: 2rem;     /* keep if you still use it elsewhere */
-}
-
-.section {
-  display: flex;
-  flex-direction: column;
-  /* remove: height: var(--sectionh); */
-  margin: 0rem;
-}
-
-.content {
-  display: flex;
-  flex-direction: row;
-
-  /* key bits: control content block height directly */
-  flex: 0 0 var(--contenth);   /* sets the block height */
-  /* or: height: var(--contenth); flex: 0 0 auto; */
-
-  margin: 0rem;
-  width: 100%;
-  /* border: 2px solid purple; */
-
-  /* optional: scrolling if content overflows vertically */
-  overflow-y: auto;
-}
-
-/* Optional nicety: gaps instead of side margins on panels */
-.content { gap: 0.35rem; }
-.left-panel, .right-panel { box-sizing: border-box; margin: 0; }
-
+    :root {
+      --sectionh: calc(33dvh - 3rem);
+      --headerh: 2rem;
+    }
+    .section {
+      display:flex; 
+      flex-direction: column; 
+      height:var(--sectionh);
+      /* border: 1px solid #666;  */
+      margin: 0rem; 
+    }
     .header {
       padding:0.5rem 1rem;
       margin-bottom: 0.5rem;
@@ -203,32 +146,27 @@
     .header h3 {
       margin: 0.1rem 0rem;
     }
-    /* .content {
+    .content {
       display:flex; 
       flex-direction: row; 
       flex: 1;
       margin: 0rem; height:calc(100% - var(--headerh));
       width:calc(100%);
-      height:20rem;
-      border: 1px solid #666; 
-    } */
+      border: 4px solid purple; 
+    }
     .left-panel {
       flex: 1; 
       margin: 0rem 0.35rem 0rem 0rem; 
       padding:0.25rem 0.75rem;
-      /* box-shadow: 6px 6px 6px #aaa; */
+      box-shadow: 6px 6px 6px #aaa;
       border: 1px solid #666; 
     }
     .right-panel {
       flex: 1; 
       margin: 0rem 0rem 0rem 0.35rem; 
       padding:0.25rem 0.75rem;
-      /* box-shadow: 6px 6px 6px #aaa; */
-      border: 1px solid #666; 
-    }
-    .left-panel, .right-panel {
-      box-sizing: border-box;
-      margin:0rem;
+      box-shadow: 6px 6px 6px #aaa;
+      border: 4px solid green; 
     }
     .one-panel {
       flex: 1; 
@@ -254,8 +192,8 @@
         right panel
       </div>
     </div>
-  <!-- </div>
-  <div class="section"> -->
+  </div>
+  <div class="section">
     <!-- <div class="header">
       header<br>
       another line
