@@ -4,23 +4,31 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>x-two-panel — Classic Test</title>
+
+  <!-- Link to google fonts -->
   <!-- Noto Sans: 400 & 500 -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500&display=swap" rel="stylesheet">
-
-  <!-- Comic Neue: 400 & 700 (next available above 400) -->
+  <!-- Comic Neue: 400 & 700 -->
   <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+  <!-- JetBrains Mono: 400 & 700 -->
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <!-- monospace code font -->
-  <style>
+
+<style>
     * { box-sizing: border-box; }
-    body { margin: 0; font: 18px/1.3 "Noto Sans", Arial, sans-serif; padding: 1rem; background:#f6f7fb; color:#1f2328; }
-    .demo { border:1px solid #d9dbe7; border-radius:12px; background:#fff; padding:1rem; }
-    .btn { border:1px solid #aaa; background:#fff; padding:.5rem 1.0rem; border-radius:999px; cursor:pointer; font-size:.9rem; }
-    .btn + .btn { margin-left:.4rem; }
-    .stack { display:flex; flex-wrap:wrap; gap:.4rem; margin:.25rem 0 1rem; }
-    .comicish { font-family: "Comic Neue", system-ui, -apple-system, Segoe UI, sans-serif; }
-  </style>
-  <style>
+    body { 
+      margin: 0; 
+      font: 18px/1.3 "Noto Sans", Arial, sans-serif; 
+      padding: 1rem; 
+      background:#f6f7fb; 
+      color:#1f2328; 
+    }
+    .demo { 
+      border:1px solid #aaa; 
+      border-radius:10px; 
+      background:#fff; 
+      padding:0rem 1rem 1rem; 
+    }
     div.toolbar {
       margin: 0.5rem 0rem;
     }
@@ -28,53 +36,92 @@
       padding:0.15rem 0.75rem;
     }
     x-two-panel { --two-panel-pad: 0rem; }
+
     .left-panel, .right-panel {
-      border:2px solid black; padding:0.25rem 1rem;
+      border:none; padding:0;
+    }
+    x-two-panel::part(left-panel),
+    x-two-panel::part(right-panel) {
+      border: 2px solid black; padding:0.25rem 1rem;
       font-family: "Comic Neue", Arial, sans-serif;
     }
-    #panel { --two-left:25rem; };
+    #panel { --two-left:calc(50% - var(--two-gap) / 2); } 
+      /* equal sized panels by default, 
+         replace with
+         #panel { --two-left:25rem; };
+         to set left panel width to 25rem.
+         Get same thing with left="25rem" attribute
+         in two-panel.  
+      */
+
+    /* Global defaults for all two-panels */
+    x-two-panel {
+      --two-height: 70vh;            /* same as height="60vh" */
+      --two-panel-pad: 0.5rem 0rem;  /* inner padding for each panel */
+      --two-gap: 0.50rem;            /* same as attribute: gap="0.25rem" */
+      --two-step: 6rem;              /* default widen/narrow increment */
+      --two-min-left: 8rem;          /* left never below this */
+      --two-min-right: 8rem;         /* right never below this (affects widen cap) */
+    }
+
+    .left-slot, .right-slot {
+      border: none;
+      /* won't fill left and right panels unless 
+         content grows large enough */
+    }
+
+    /* Per-instance overrides */
+    #panel.slim {
+      --two-gap: .25rem;
+      --two-step: 1.5rem;
+      --two-min-right: 6rem;
+    }
+    /* Keep panel's own scroller from showing a horizontal bar */
+    x-two-panel::part(right-scroller) {
+      overflow-x: hidden;   /* still allows vertical scroll if needed */
+    }
+
+    /* (Optional: apply to both panels) */
+    x-two-panel::part(left-scroller),
+    x-two-panel::part(right-scroller) { overflow-x: hidden; }
+
+    /* Code block fills panel width, supports scrolling */
+    .code-demo {
+      display: block;
+      width: 100%;          
+      max-width: 100%;
+      overflow-x: auto;     /* show a scrollbar on this element */
+      white-space: pre;     /* keep long lines unwrapped */
+      padding: 0.25rem;
+      background-color: #333;
+      color: #eee;
+      border-radius: 8px;
+    }
+    /* Code block covers only code content, no scrolling */
+    .code-demo-tight {
+      display: block;
+      font-family: 'JetBrains Mono'; 
+      font-size: 0.85rem; 
+      width: max-content;
+      white-space: pre; 
+      /* overflow-x:auto; no scrolling */
+      padding: 0.25rem;
+      background-color: #333;
+      color: #eee;
+      border-radius: 8px;
+    }
   </style>
-<style>
-  /* Global defaults for all two-panels */
-  x-two-panel {
-    --two-gap: 0.25rem;         /* same as gap="0.5rem" */
-    --two-height: 60vh;       /* same as height="60vh" */
-    --two-panel-pad: 0.5rem 0rem;   /* inner padding for each panel */
-
-    /* NEW: behavior knobs via CSS vars */
-    --two-step: 6rem;         /* default widen/narrow increment */
-    --two-min-left: 8rem;     /* left never below this */
-    --two-min-right: 8rem;    /* right never below this (affects widen cap) */
-    /* --two-max-left: 48rem; */ /* optional hard ceiling for left */
-  }
-
-  .left-panel, .right-panel {
-    height: 25rem;
-  }
-
-  /* Per-instance overrides */
-  #panel.slim {
-    --two-gap: .25rem;
-    --two-step: 1.5rem;
-    --two-min-right: 6rem;
-  }
-  .code-demo {
-    font-family: 'JetBrains Mono'; 
-    font-size: 0.85rem; 
-    width: max-content;
-    white-space: pre; 
-    overflow-x:auto;
-    padding: 0.25rem;
-    background-color: #333;
-    color: #eee;
-    border-radius: 8px;
-  }
-</style>
+  <style>
+    tm-b, t-b .note {
+      display:block; 
+      border:3px dotted red; 
+      padding:0.5rem 1rem;
+    }
+  </style>
 </head>
 <body>
   <h1>Two-Panel — Classic Script Test</h1>
   <div class="demo">
-    <!-- Side-by-side by default: 1fr | 1fr -->
     <h3>Controls</h3>
     <!-- Toolbar targets the panel by id -->
     <div class="toolbar">
@@ -86,14 +133,19 @@
       <!-- <button data-two="set-left"   data-two-for="#panel" data-left="24rem">Left = 24rem</button>
       <button data-two="set-gap"    data-two-for="#panel" data-gap="2rem">Gap = 2rem</button> -->
     </div>
-    <x-two-panel id="panel" data-left-fixed>  <!-- can use gap= here -->
-      <div slot="left" class="left-panel">
+    <x-two-panel id="panel" left="25rem" data-left-fixed>  <!-- can use gap= here -->
+      <div slot="left" class="left-slot">
         <p>Buttons are handled by the component; no client JS required.</p>
+        <tm-b class="note">
+          Factor styles in this document into stylesheet which will
+          be used by all applications with two-panel and styles
+          that are specific to this demo application.
+        </tm-b>
       </div>
-      <div slot="right" class="right-panel">
+      <div slot="right" class="right-slot">
         <h3>Right Panel</h3>
-        <p>Panels should be side-by-side. Click buttons to adjust the left width.</p>
-        <p class="code-demo">
+        <p>Panels are side-by-side. Click buttons at top-left to adjust the left width.</p>
+        <p class="code-demo-tight">
   function demo() {
     /* This is a demo function */   
   }
