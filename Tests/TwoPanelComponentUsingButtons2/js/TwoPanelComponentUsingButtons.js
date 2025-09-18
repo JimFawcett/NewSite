@@ -1,14 +1,14 @@
-/* x-two-panel.external.scroller.js — classic <script>, no modules
+/* x-two-panel.external.scroller.cssvars.js — classic <script>, no modules
    - Side-by-side panels (equal columns by default).
-   - Inner ".scroller" handles overflow (prevents corner clipping).
-   - External controls ONLY via buttons/links with [data-two] + data-two-for="#id" (or aria-controls).
+   - Inner ".scroller" handles overflow (prevents rounded-corner clipping).
+   - External controls ONLY via [data-two] + data-two-for="#id" (or aria-controls).
      Actions: narrow, widen, toggle-left, reset, set-left, set-gap
    - reset() restores whatever left/gap were set in markup.
-   - Step size: per-button data-step wins; else host step="…"; else 2rem (or 5% when left is %).
-   - Symmetric bounds:
-       • min-left (default 4rem)
-       • min-right (default 4rem)
-       • max-left (default "auto" = container − gap − min-right)
+   - STEP / BOUNDS sources (precedence: button > CSS var > attribute > default):
+       • step:        data-step  > --two-step       > step attr       > 2rem (or 5% if left is %)
+       • min-left:    --two-min-left                > min-left attr   > 4rem
+       • min-right:   --two-min-right               > min-right attr  > 4rem
+       • max-left:    --two-max-left (px/rem/%)     > max-left attr   > auto (= container-gap-minRight)
 */
 
 (function () {
@@ -38,6 +38,12 @@
     var fs = parseFloat(getComputedStyle(doc.documentElement).fontSize);
     return isFinite(fs) && fs > 0 ? fs : 16;
   }
+  function readVarPx(host, name) {
+    var raw = getComputedStyle(host).getPropertyValue(name).trim();
+    if (!raw) return null;                      // variable not set
+    var p = parseLen(raw);
+    return convert(p.n, p.unit, 'px', host);
+  }
   function gapPx(el) {
     var raw = (getComputedStyle(el).getPropertyValue('--two-gap') || '0px').trim();
     var m = raw.match(/^(-?\d*\.?\d+)\s*(px|rem|%)$/i);
@@ -57,19 +63,33 @@
   function convert(value, fromUnit, toUnit, el) {
     if (fromUnit === toUnit) return value;
     var rfs = rootFontSize(el);
+    // rem <-> px
     if (fromUnit === 'rem' && toUnit === 'px') return value * rfs;
     if (fromUnit === 'px'  && toUnit === 'rem') return value / rfs;
-    var avail = availablePx(el) || 1; // for % conversions
+
+    // % <-> px relative to *available* width (host - gap)
+    var avail = availablePx(el) || 1;
     if (fromUnit === '%' && toUnit === 'px') return (value / 100) * avail;
     if (fromUnit === 'px' && toUnit === '%')  return (value / avail) * 100;
+
+    // % <-> rem via px
     if (fromUnit === '%' && toUnit === 'rem') return ((value / 100) * avail) / rfs;
     if (fromUnit === 'rem' && toUnit === '%') return (value * rfs / avail) * 100;
+
     return value;
   }
-  function readBoundPx(host, attrName, fallbackPx) {
-    if (!host.hasAttribute(attrName)) return fallbackPx;
+  function readAttrPx(host, attrName) {
+    if (!host.hasAttribute(attrName)) return null;
     var v = host.getAttribute(attrName).trim().toLowerCase();
-    if (v === 'auto' && attrName === 'max-left') return Math.max(0, availablePx(host) - readBoundPx(host, 'min-right', convert(4, 'rem', 'px', host)));
+    if (attrName === 'max-left' && v === 'auto') {
+      // "auto" => container - gap - min-right (attr or CSS var or default)
+      var minRightPx = readVarPx(host, '--two-min-right');
+      if (minRightPx == null) {
+        var a = host.getAttribute('min-right');
+        minRightPx = a ? convert(parseLen(a).n, parseLen(a).unit, 'px', host) : convert(4, 'rem', 'px', host);
+      }
+      return Math.max(0, availablePx(host) - minRightPx);
+    }
     var p = parseLen(v);
     return convert(p.n, p.unit, 'px', host);
   }
@@ -127,21 +147,31 @@
   XTwoPanel.prototype.attributeChangedCallback = function () { this._applyAll(); };
 
   XTwoPanel.prototype._applyAll = function () {
+    // height
     var height = (this.getAttribute('height') || '').trim();
     if (height) this.style.setProperty('--two-height', height);
     else this.style.removeProperty('--two-height');
 
+    // gap
     var gap = (this.getAttribute('gap') || '').trim();
     if (gap) this.style.setProperty('--two-gap', gap);
     else this.style.removeProperty('--two-gap');
 
+    // left
     var left = (this.getAttribute('left') || '').trim();
     if (left) {
       this.style.setProperty('--two-left', left);
-      this.setAttribute('data-left-fixed', '');
+      if (!this.hasAttribute('data-left-fixed')) {
+        this.setAttribute('data-left-fixed', '');
+        this._managedLeftFlag = true;         // we added it
+      }
     } else {
       this.style.removeProperty('--two-left');
-      this.removeAttribute('data-left-fixed'); // 1fr | 1fr
+      // Only remove the flag if WE added it previously
+      if (this._managedLeftFlag) {
+        this.removeAttribute('data-left-fixed');
+        this._managedLeftFlag = false;
+      }
     }
   };
 
@@ -165,7 +195,7 @@
     else this.removeAttribute('gap');
   };
 
-  // Symmetric stepping: clamp to [min-left, max-left], with max-left defaulting to (container - gap - min-right)
+  // Symmetric stepping with CSS-var/attr-configurable bounds
   XTwoPanel.prototype.step = function (sign, stepOverride) {
     var cur = this.getAttribute('left');
     if (!cur) {
@@ -179,30 +209,48 @@
     var unit   = parsed.unit;
     var leftPx = convert(parsed.n, unit, 'px', this);
 
-    // step in px
-    var fallbackStep = this.getAttribute('step') || (unit === '%' ? '5%' : '2rem');
-    var s = parseLen(stepOverride || fallbackStep);
-    var deltaPx = convert(s.n, s.unit, 'px', this);
+    // ----- step in px (button > CSS var > attr > default)
+    var deltaPx;
+    if (stepOverride) {
+      var so = parseLen(stepOverride);
+      deltaPx = convert(so.n, so.unit, 'px', this);
+    } else {
+      var cssStepPx = readVarPx(this, '--two-step'); // may be null
+      if (cssStepPx != null) {
+        deltaPx = cssStepPx;
+      } else if (this.hasAttribute('step')) {
+        var sp = parseLen(this.getAttribute('step'));
+        deltaPx = convert(sp.n, sp.unit, 'px', this);
+      } else {
+        // default depends on current unit (match earlier UX)
+        var def = (unit === '%') ? parseLen('5%') : parseLen('2rem');
+        deltaPx = convert(def.n, def.unit, 'px', this);
+      }
+    }
 
-    // bounds in px
-    var defaultMinLeftPx  = convert(4, 'rem', 'px', this);
-    var defaultMinRightPx = convert(4, 'rem', 'px', this);
+    // ----- bounds in px (CSS var > attr > default)
+    var defMinLeftPx  = convert(4, 'rem', 'px', this);
+    var defMinRightPx = convert(4, 'rem', 'px', this);
 
-    var minLeftPx  = readBoundPx(this, 'min-left',  defaultMinLeftPx);
-    var minRightPx = readBoundPx(this, 'min-right', defaultMinRightPx);
+    var cssMinLeftPx  = readVarPx(this, '--two-min-left');
+    var cssMinRightPx = readVarPx(this, '--two-min-right');
+    var cssMaxLeftPx  = readVarPx(this, '--two-max-left');
+
+    var minLeftPx  = (cssMinLeftPx  != null) ? cssMinLeftPx  : (readAttrPx(this, 'min-left')  ?? defMinLeftPx);
+    var minRightPx = (cssMinRightPx != null) ? cssMinRightPx : (readAttrPx(this, 'min-right') ?? defMinRightPx);
 
     var containerMinusGap = availablePx(this);
-    var containerMaxLeftPx = Math.max(0, containerMinusGap - minRightPx); // ensure right ≥ min-right
+    var autoMaxLeftPx     = Math.max(0, containerMinusGap - minRightPx);
 
-    var userMaxPx = readBoundPx(this, 'max-left', containerMaxLeftPx);
-    var maxLeftPx = Math.min(containerMaxLeftPx, userMaxPx);
-
+    var userMaxPx = (cssMaxLeftPx != null) ? cssMaxLeftPx : (readAttrPx(this, 'max-left') ?? autoMaxLeftPx);
+    var maxLeftPx = Math.min(autoMaxLeftPx, userMaxPx); // never exceed container − gap − minRight
     if (maxLeftPx < minLeftPx) maxLeftPx = minLeftPx;
 
+    // ----- apply step & clamp
     var nextLeftPx = leftPx + sign * deltaPx;
     nextLeftPx = Math.max(minLeftPx, Math.min(maxLeftPx, nextLeftPx));
 
-    // back to current unit
+    // back to current unit (preserve units)
     var nextVal = convert(nextLeftPx, 'px', unit, this);
     var out;
     if (unit === '%') out = nextVal.toFixed(3) + '%';
