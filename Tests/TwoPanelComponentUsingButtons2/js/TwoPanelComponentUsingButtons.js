@@ -16,7 +16,7 @@
 :host{display:block;--two-gap:1rem;--two-height:max-content}\
 .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:var(--two-gap);height:var(--two-height);width:100%;box-sizing:border-box;overflow:visible;background:var(--two-bg,transparent);border:var(--two-border,none);border-radius:0;padding:var(--two-pad,0)}\
 :host([data-left-fixed]) .wrap{grid-template-columns:minmax(0,var(--two-left)) minmax(0,1fr)}\
-.panel{min-width:0;min-height:0;overflow:visible;box-sizing:border-box;background:var(--two-panel-bg,#fff);border:var(--two-panel-border,1px solid #ececf2);border-radius:10px}\
+.panel{min-width:0;min-height:0;overflow:visible;box-sizing:border-box;background:var(--two-panel-bg,#fff);border:var(--two-panel-border,1px solid #ececf2);border-radius:6px}\
 .scroller{min-width:0;min-height:0;height:100%;overflow:auto;padding:var(--two-panel-pad,.25rem);box-sizing:border-box}\
 :host([collapsed-left]) .wrap{grid-template-columns:1fr}\
 :host([collapsed-left]) .left{display:none}';
