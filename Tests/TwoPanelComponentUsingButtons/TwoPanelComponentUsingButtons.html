@@ -237,5 +237,51 @@
     </x-two-panel>
   </div>
   <script src="js/TwoPanelComponentUsingButtons.js"></script>
+
+  <!-- Linux Firefox height shim: place AFTER your other scripts -->
+  <script>
+  (function () {
+    var ua = navigator.userAgent || "";
+    var isFirefox = /Firefox\/\d+/.test(ua);
+    var isLinux   = /Linux/.test(ua);
+    if (!isFirefox || !isLinux) return;
+
+    function applyHeights(root) {
+      root.querySelectorAll('.left-slot details').forEach(function (d) {
+        var summary = d.querySelector('summary');
+        var fill    = d.querySelector('.fill');
+        if (!summary || !fill) return;
+
+        var styles = getComputedStyle(d);
+        var pt = parseFloat(styles.paddingTop)    || 0;
+        var pb = parseFloat(styles.paddingBottom) || 0;
+
+        var avail = d.clientHeight - summary.offsetHeight - pt - pb;
+        if (avail > 0) fill.style.height = avail + 'px';
+      });
+    }
+
+    function wire(root) {
+      var ro = new ResizeObserver(function(){ applyHeights(root); });
+      root.querySelectorAll('.left-slot details, x-two-panel').forEach(function(el){
+        try { ro.observe(el); } catch(e) {}
+      });
+      root.querySelectorAll('.left-slot details').forEach(function(d){
+        d.addEventListener('toggle', function(){ applyHeights(root); });
+      });
+      window.addEventListener('resize', function(){ applyHeights(root); });
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(function(){ applyHeights(root); });
+      }
+      applyHeights(root);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function(){ wire(document); });
+    } else {
+      wire(document);
+    }
+  })();
+  </script>
 </body>
 </html>
