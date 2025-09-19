@@ -71,21 +71,6 @@
       flex: 1 1 auto;
       min-height:0rem;
     }
-    /* Works in Firefox, Chrome, Safari, etc. */
-    .left-slot details > summary + * {
-      display: flex;
-      flex-direction: column;
-      flex: 1 1 auto;
-      min-height: 0;            /* critical for flex children to be allowed to shrink */
-    }
-
-    /* Your existing pieces still apply */
-    /* .left-slot { display:flex; flex-direction:column; min-height:0; }
-    .left-slot details { display:flex; flex-direction:column; flex:1 1 auto; min-height:0; }
-    .left-slot details > summary { flex:0 0 auto; }
-    .left-slot details .fill { flex:1 1 auto; min-height:0; overflow:auto; }
-    .left-slot details .fill iframe { width:100%; height:100%; display:block; border:0; } */
-
 
     .left-slot details > summary {
       flex: 0 0 auto;
@@ -111,6 +96,37 @@
       width: 100%;
       height: 100%;
       border: 0rem;
+    }
+
+    /* Apply ONLY in engines that don't support ::details-content (Firefox) */
+    @supports not selector(details::details-content) {
+      /* Turn details into a two-row grid: summary + content */
+      .left-slot details {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        min-height: 0;              /* allow second row to actually shrink/grow */
+      }
+      .left-slot details > summary {
+        grid-row: 1;
+      }
+
+      /* Stretch the box right after <summary> … down the page */
+      /* We can’t select the anonymous details box itself, but we *can*
+        target descendants inside it (your .fill). */
+      .left-slot details > summary + * .fill {
+        height: 100%;               /* fill the 2nd grid row */
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: auto;             /* keep scrolling within the details area */
+      }
+
+      /* Make the iframe fill that stretched area */
+      .left-slot details > summary + * .fill iframe {
+        height: 100%;
+        width: 100%;
+        display: block;
+      }
     }
 
     /* Per-instance overrides */
