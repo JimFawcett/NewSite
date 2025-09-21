@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>x-two-panel — Test</title>
+  <link rel="stylesheet" href="../../css/Content.css">
+  <!-- placed at bottom of page -->
+  <!-- <script src="js/TwoPanelComponentUsingButtons.js" defer></script> -->
+
+  <!-- Link to google fonts -->
+  <!-- Noto Sans: 400 & 500 -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Comic Neue: 400 & 700 -->
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+  <!-- JetBrains Mono: 400 & 700 -->
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <!-- monospace code font -->
+
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      /* global variable shared between DOM and Shadow DOM */
+      --app-panel-height: 70vh;
+    }
+
+    body { 
+      margin: 0; 
+      font: 18px/1.3 "Noto Sans", Arial, sans-serif; 
+      padding: 1rem; 
+      background:#f6f7fb; 
+      color:#1f2328; 
+    }
+    .demo { 
+      border:1px solid #aaa; 
+      border-radius:10px; 
+      background:#fff; 
+      padding:0rem 1rem 1rem; 
+    }
+    div.toolbar {
+      margin: 0.5rem 0rem;
+    }
+    div.toolbar button {
+      padding:0.15rem 0.75rem;
+    }
+
+    /* style component */
+    x-two-panel {
+      --two-height: var(--app-panel-height);
+      --two-panel-pad: 0rem;
+    }
+
+    /* style component panels */
+    x-two-panel::part(left-panel),
+    x-two-panel::part(right-panel) {
+      border: 2px solid black; padding:0.25rem 1rem;
+      font-family: "Comic Neue", Arial, sans-serif;
+    }
+
+    .left-slot {
+      height: calc(var(--app-panel-height) - 2rem);
+      display:flex;
+      flex-direction: column;
+      min-height: 0rem;
+    }
+
+    .left-slot details {
+      display:flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height:0rem;
+    }
+
+    .left-slot details > summary {
+      flex: 0 0 auto;
+    }
+
+    .left-slot details::details-content {
+      display:flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0rem;
+    }
+
+    .left-slot details .fill {
+      flex: 1 1 auto;
+      min-height: 0rem;
+      overflow: auto;
+      border: 0;
+      /* border:4px solid purple; */
+    }
+
+    .left-slot details .fill iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0rem;
+    }
+
+    /* Apply ONLY in engines that don't support ::details-content (Firefox) */
+    @supports not selector(details::details-content) {
+      /* Turn details into a two-row grid: summary + content */
+      .left-slot details {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        min-height: 0;              /* allow second row to actually shrink/grow */
+      }
+      .left-slot details > summary {
+        grid-row: 1;
+      }
+
+      /* Stretch the box right after <summary> … down the page */
+      /* We can’t select the anonymous details box itself, but we *can*
+        target descendants inside it (your .fill). */
+      .left-slot details > summary + * .fill {
+        height: 100%;               /* fill the 2nd grid row */
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: auto;             /* keep scrolling within the details area */
+      }
+
+      /* Make the iframe fill that stretched area */
+      .left-slot details > summary + * .fill iframe {
+        height: 100%;
+        width: 100%;
+        display: block;
+      }
+    }
+
+    @supports not selector(details::details-content) {
+      .left-slot,
+      .left-slot details,
+      .left-slot details > summary + * .fill {
+        min-height: 0 !important;
+      }
+    }
+
+    /* Firefox-only (safe on Win11 too); avoid disturbing Blink/WebKit */
+    @-moz-document url-prefix() {
+      /* Make each shadow panel a flex column with a definite grow lane */
+      x-two-panel::part(left-panel),
+      x-two-panel::part(right-panel) {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;      /* critical for Firefox flex shrink/grow */
+      }
+
+      /* Let the scrollers fill by flex growth, not % height */
+      x-two-panel::part(left-scroller),
+      x-two-panel::part(right-scroller) {
+        height: auto !important;   /* stop relying on 100% */
+        flex: 1 1 auto;            /* fill remaining panel height */
+        min-height: 0;             /* allow content to shrink */
+        overflow: auto;            /* keep your scroll behavior */
+      }
+    }
+
+    /* Per-instance overrides */
+    #panel.slim {
+      --two-gap: .25rem;
+      --two-step: 1.5rem;
+      --two-min-right: 6rem;
+    }
+
+    /* Code block fills panel width, supports scrolling */
+    .code-demo {
+      display: block;
+      width: 100%;          
+      max-width: 100%;
+      overflow-x: auto;
+      white-space: pre;
+      padding: 0.25rem;
+      background-color: #333;
+      color: #eee;
+      border-radius: 8px;
+    }
+    /* Code block covers only code content, no scrolling */
+    .code-demo-tight {
+      display: block;
+      font-family: 'JetBrains Mono'; 
+      font-size: 0.85rem; 
+      width: max-content;
+      white-space: pre; 
+      padding: 0.25rem;
+      background-color: #333;
+      color: #eee;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body id="github">
+  <h1>Two-Panel Component Test</h1>
+  <div class="demo">
+    <tm-b><a href="../../PageHost.html?src=WebDev/ExploreWebDev.html">Home</a></tm-b>
+    <!-- Toolbar targets the panel by id -->
+    <div class="toolbar">
+      <button data-two="narrow"     data-two-for="#panel" data-step="6rem">Narrow</button>
+      <button data-two="reset"      data-two-for="#panel">Reset</button>
+      <button data-two="widen"      data-two-for="#panel" data-step="6rem">Widen</button>
+      <button data-two="toggle-left"data-two-for="#panel">Toggle Left</button>
+    </div>
+    <!-- data-left-fixed holds left width constant when container resizes -->
+    <x-two-panel id="panel" left="25rem" data-left-fixed>  <!-- can use gap= here -->
+      <div slot="left" class="left-slot">
+        <p>Buttons are handled by the component; no client JS required.</p>
+        <div class="notes" style="margin-bottom: 0.75rem;">
+          <t-b>
+            x-two-panel component defines default styles that can be 
+            overridden by panel attributes or CSS styling.
+          </t-b>
+          <t-b style="margin-bottom:0rem;">
+            The complete public interface is defined in the README.md file 
+            linked below.
+          </t-b>
+        </div>
+        <t-b>
+          <a target="_blank" href="./x-two-panel-README.md.txt">README.md</a>
+        </t-b>
+        <details>
+          <summary class="darkItem">Two-Panel Public Interface</summary>
+          <div class="fill">
+            <iframe src="x-two-panel-README.md.txt"></iframe>
+          </div>
+        </details>
+      </div>
+      <div slot="right" class="right-slots">
+        <h3>Right Panel</h3>
+        <p>Panels are side-by-side. Click buttons at top-left to adjust the left width.</p>
+        <p class="code-demo-tight">
+  function demo() {
+    /* This is a demo function */   
+  }
+        </p>
+      </div>
+    </x-two-panel>
+  </div>
+  <script src="js/TwoPanelComponentUsingButtons.js"></script>
+
+  <!-- Linux Firefox height shim: place AFTER your other scripts -->
+  <script>
+  (function () {
+    var ua = navigator.userAgent || "";
+    var isFirefox = /Firefox\/\d+/.test(ua);
+    var isLinux   = /Linux/.test(ua);
+    if (!isFirefox || !isLinux) return;
+
+    function applyHeights(root) {
+      root.querySelectorAll('.left-slot details').forEach(function (d) {
+        var summary = d.querySelector('summary');
+        var fill    = d.querySelector('.fill');
+        if (!summary || !fill) return;
+
+        var styles = getComputedStyle(d);
+        var pt = parseFloat(styles.paddingTop)    || 0;
+        var pb = parseFloat(styles.paddingBottom) || 0;
+
+        var avail = d.clientHeight - summary.offsetHeight - pt - pb;
+        if (avail > 0) fill.style.height = avail + 'px';
+      });
+    }
+
+    function wire(root) {
+      var ro = new ResizeObserver(function(){ applyHeights(root); });
+      root.querySelectorAll('.left-slot details, x-two-panel').forEach(function(el){
+        try { ro.observe(el); } catch(e) {}
+      });
+      root.querySelectorAll('.left-slot details').forEach(function(d){
+        d.addEventListener('toggle', function(){ applyHeights(root); });
+      });
+      window.addEventListener('resize', function(){ applyHeights(root); });
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(function(){ applyHeights(root); });
+      }
+      applyHeights(root);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function(){ wire(document); });
+    } else {
+      wire(document);
+    }
+  })();
+  </script>
+</body>
+</html>
