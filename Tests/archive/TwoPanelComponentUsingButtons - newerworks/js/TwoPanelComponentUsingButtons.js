@@ -14,12 +14,12 @@
 */
 
 (function () {
-var CSS_TEXT = '\
+  var CSS_TEXT = '\
 :host{display:block}\
 .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:var(--two-gap,0.50rem);height:var(--two-height,max-content);width:100%;box-sizing:border-box;overflow:visible;background:var(--two-bg,transparent);border:var(--two-border,none);border-radius:0;padding:var(--two-pad,0)}\
 :host([data-left-fixed]) .wrap{grid-template-columns:minmax(0,var(--two-left,calc(50% - var(--two-gap,0.50rem)/2))) minmax(0,1fr)}\
-.panel{min-width:0;min-height:0;overflow:visible;box-sizing:border-box;background:var(--two-panel-bg,#fff);border:var(--two-panel-border,1px solid #ececf2);border-radius:10px;display:flex;flex-direction:column;min-height:0}\
-.scroller{min-width:0;min-height:0;height:auto;flex:1 1 auto;overflow-y:auto;overflow-x:var(--two-scroller-overflow-x,hidden);padding:var(--two-panel-pad,0.5rem 0rem);box-sizing:border-box}\
+.panel{min-width:0;min-height:0;overflow:visible;box-sizing:border-box;background:var(--two-panel-bg,#fff);border:var(--two-panel-border,1px solid #ececf2);border-radius:10px}\
+.scroller{min-width:0;min-height:0;height:100%;overflow-y:auto;overflow-x:var(--two-scroller-overflow-x,hidden);padding:var(--two-panel-pad,0.5rem 0rem);box-sizing:border-box}\
 :host([collapsed-left]) .wrap{grid-template-columns:1fr}\
 :host([collapsed-left]) .left{display:none}\
 ::slotted(.left-panel),::slotted(.right-panel){border:none;padding:0}\

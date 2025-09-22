@@ -1,29 +1,25 @@
-/* x-two-panel.external.scroller.cssvars.js — classic <script>, no modules
-   - External controls only (buttons with [data-two] + data-two-for="#id").
-   - Slotted content lives in inner ".scroller" (avoids rounded-corner clipping).
-   - Fallback defaults moved into the component:
-       --two-gap: 0.50rem
-       --two-panel-pad: 0.5rem 0rem
-       --two-step: 6rem   (unless left is %, then default is 5%)
-       --two-min-left: 8rem
-       --two-min-right: 8rem
-     (Apps can override these by setting the same CSS vars on x-two-panel.)
-   - Equal columns when fixed-left and no --two-left provided:
-       var(--two-left, calc(50% - var(--two-gap, 0.50rem)/2))
-   - NOT porting --two-height; default remains max-content.
+/* x-two-panel.external.scroller.js — classic <script>, no modules
+   - Side-by-side panels (equal columns by default).
+   - Inner ".scroller" handles overflow (prevents corner clipping).
+   - External controls ONLY via buttons/links with [data-two] + data-two-for="#id" (or aria-controls).
+     Actions: narrow, widen, toggle-left, reset, set-left, set-gap
+   - reset() restores whatever left/gap were set in markup.
+   - Step size: per-button data-step wins; else host step="…"; else 2rem (or 5% when left is %).
+   - Symmetric bounds:
+       • min-left (default 4rem)
+       • min-right (default 4rem)
+       • max-left (default "auto" = container − gap − min-right)
 */
 
 (function () {
-var CSS_TEXT = '\
-:host{display:block}\
-.wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:var(--two-gap,0.50rem);height:var(--two-height,max-content);width:100%;box-sizing:border-box;overflow:visible;background:var(--two-bg,transparent);border:var(--two-border,none);border-radius:0;padding:var(--two-pad,0)}\
-:host([data-left-fixed]) .wrap{grid-template-columns:minmax(0,var(--two-left,calc(50% - var(--two-gap,0.50rem)/2))) minmax(0,1fr)}\
-.panel{min-width:0;min-height:0;overflow:visible;box-sizing:border-box;background:var(--two-panel-bg,#fff);border:var(--two-panel-border,1px solid #ececf2);border-radius:10px;display:flex;flex-direction:column;min-height:0}\
-.scroller{min-width:0;min-height:0;height:auto;flex:1 1 auto;overflow-y:auto;overflow-x:var(--two-scroller-overflow-x,hidden);padding:var(--two-panel-pad,0.5rem 0rem);box-sizing:border-box}\
+  var CSS_TEXT = '\
+:host{display:block;--two-gap:1rem;--two-height:max-content}\
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:var(--two-gap);height:var(--two-height);width:100%;box-sizing:border-box;overflow:visible;background:var(--two-bg,transparent);border:var(--two-border,none);border-radius:0;padding:var(--two-pad,0)}\
+:host([data-left-fixed]) .wrap{grid-template-columns:minmax(0,var(--two-left)) minmax(0,1fr)}\
+.panel{min-width:0;min-height:0;overflow:visible;box-sizing:border-box;background:var(--two-panel-bg,#fff);border:var(--two-panel-border,1px solid #ececf2);border-radius:10px}\
+.scroller{min-width:0;min-height:0;height:100%;overflow:auto;padding:var(--two-panel-pad,.25rem);box-sizing:border-box}\
 :host([collapsed-left]) .wrap{grid-template-columns:1fr}\
-:host([collapsed-left]) .left{display:none}\
-::slotted(.left-panel),::slotted(.right-panel){border:none;padding:0}\
-::slotted(.left-slot),::slotted(.right-slot){border:none}';
+:host([collapsed-left]) .left{display:none}';
 
   // ---------- helpers ----------
   function attachStyles(shadowRoot, cssText) {
@@ -42,17 +38,17 @@ var CSS_TEXT = '\
     var fs = parseFloat(getComputedStyle(doc.documentElement).fontSize);
     return isFinite(fs) && fs > 0 ? fs : 16;
   }
-  function readVarPx(host, name) {
-    var raw = getComputedStyle(host).getPropertyValue(name).trim();
-    if (!raw) return null;                      // variable not set
-    var p = parseLen(raw);
-    return convert(p.n, p.unit, 'px', host);
-  }
   function gapPx(el) {
-    // read using the same fallback as CSS: var(--two-gap, 0.50rem)
-    var raw = getComputedStyle(el).getPropertyValue('--two-gap').trim() || '0.50rem';
-    var p = parseLen(raw);
-    return convert(p.n, p.unit, 'px', el);
+    var raw = (getComputedStyle(el).getPropertyValue('--two-gap') || '0px').trim();
+    var m = raw.match(/^(-?\d*\.?\d+)\s*(px|rem|%)$/i);
+    var n = m ? parseFloat(m[1]) : parseFloat(raw) || 0;
+    var unit = m ? m[2].toLowerCase() : 'px';
+    var rfs = rootFontSize(el);
+    var hostW = el.getBoundingClientRect().width || 1;
+    if (unit === 'px')  return n;
+    if (unit === 'rem') return n * rfs;
+    if (unit === '%')   return (n / 100) * hostW;
+    return n;
   }
   function availablePx(el) {
     var hostW = el.getBoundingClientRect().width || 1;
@@ -61,33 +57,19 @@ var CSS_TEXT = '\
   function convert(value, fromUnit, toUnit, el) {
     if (fromUnit === toUnit) return value;
     var rfs = rootFontSize(el);
-    // rem <-> px
     if (fromUnit === 'rem' && toUnit === 'px') return value * rfs;
     if (fromUnit === 'px'  && toUnit === 'rem') return value / rfs;
-
-    // % <-> px relative to *available* width (host - gap)
-    var avail = availablePx(el) || 1;
+    var avail = availablePx(el) || 1; // for % conversions
     if (fromUnit === '%' && toUnit === 'px') return (value / 100) * avail;
     if (fromUnit === 'px' && toUnit === '%')  return (value / avail) * 100;
-
-    // % <-> rem via px
     if (fromUnit === '%' && toUnit === 'rem') return ((value / 100) * avail) / rfs;
     if (fromUnit === 'rem' && toUnit === '%') return (value * rfs / avail) * 100;
-
     return value;
   }
-  function readAttrPx(host, attrName) {
-    if (!host.hasAttribute(attrName)) return null;
+  function readBoundPx(host, attrName, fallbackPx) {
+    if (!host.hasAttribute(attrName)) return fallbackPx;
     var v = host.getAttribute(attrName).trim().toLowerCase();
-    if (attrName === 'max-left' && v === 'auto') {
-      // "auto" => container - gap - min-right (attr/CSS var/default)
-      var minRightPx = readVarPx(host, '--two-min-right');
-      if (minRightPx == null) {
-        var a = host.getAttribute('min-right');
-        minRightPx = a ? convert(parseLen(a).n, parseLen(a).unit, 'px', host) : convert(8, 'rem', 'px', host);
-      }
-      return Math.max(0, availablePx(host) - minRightPx);
-    }
+    if (v === 'auto' && attrName === 'max-left') return Math.max(0, availablePx(host) - readBoundPx(host, 'min-right', convert(4, 'rem', 'px', host)));
     var p = parseLen(v);
     return convert(p.n, p.unit, 'px', host);
   }
@@ -145,30 +127,21 @@ var CSS_TEXT = '\
   XTwoPanel.prototype.attributeChangedCallback = function () { this._applyAll(); };
 
   XTwoPanel.prototype._applyAll = function () {
-    // height (no new default; still max-content unless page sets --two-height or height attr)
     var height = (this.getAttribute('height') || '').trim();
     if (height) this.style.setProperty('--two-height', height);
     else this.style.removeProperty('--two-height');
 
-    // gap (attribute maps to CSS var; CSS var from page can override if attribute omitted)
     var gap = (this.getAttribute('gap') || '').trim();
     if (gap) this.style.setProperty('--two-gap', gap);
     else this.style.removeProperty('--two-gap');
 
-    // left (preserve user-provided data-left-fixed flag)
     var left = (this.getAttribute('left') || '').trim();
     if (left) {
       this.style.setProperty('--two-left', left);
-      if (!this.hasAttribute('data-left-fixed')) {
-        this.setAttribute('data-left-fixed', '');
-        this._managedLeftFlag = true; // we added it
-      }
+      this.setAttribute('data-left-fixed', '');
     } else {
       this.style.removeProperty('--two-left');
-      if (this._managedLeftFlag) {
-        this.removeAttribute('data-left-fixed');
-        this._managedLeftFlag = false;
-      }
+      this.removeAttribute('data-left-fixed'); // 1fr | 1fr
     }
   };
 
@@ -192,7 +165,7 @@ var CSS_TEXT = '\
     else this.removeAttribute('gap');
   };
 
-  // Symmetric stepping with CSS-var/attr-configurable bounds
+  // Symmetric stepping: clamp to [min-left, max-left], with max-left defaulting to (container - gap - min-right)
   XTwoPanel.prototype.step = function (sign, stepOverride) {
     var cur = this.getAttribute('left');
     if (!cur) {
@@ -206,48 +179,30 @@ var CSS_TEXT = '\
     var unit   = parsed.unit;
     var leftPx = convert(parsed.n, unit, 'px', this);
 
-    // STEP (button > CSS var > attr > default)
-    var deltaPx;
-    if (stepOverride) {
-      var so = parseLen(stepOverride);
-      deltaPx = convert(so.n, so.unit, 'px', this);
-    } else {
-      var cssStepPx = readVarPx(this, '--two-step'); // e.g., 6rem as px
-      if (cssStepPx != null) {
-        deltaPx = cssStepPx;
-      } else if (this.hasAttribute('step')) {
-        var sp = parseLen(this.getAttribute('step'));
-        deltaPx = convert(sp.n, sp.unit, 'px', this);
-      } else {
-        // default: keep 5% when in %, else 6rem per your requested default
-        var def = (unit === '%') ? parseLen('5%') : parseLen('6rem');
-        deltaPx = convert(def.n, def.unit, 'px', this);
-      }
-    }
+    // step in px
+    var fallbackStep = this.getAttribute('step') || (unit === '%' ? '5%' : '2rem');
+    var s = parseLen(stepOverride || fallbackStep);
+    var deltaPx = convert(s.n, s.unit, 'px', this);
 
-    // BOUNDS (CSS var > attr > default)
-    var defMinLeftPx  = convert(8, 'rem', 'px', this);
-    var defMinRightPx = convert(8, 'rem', 'px', this);
+    // bounds in px
+    var defaultMinLeftPx  = convert(4, 'rem', 'px', this);
+    var defaultMinRightPx = convert(4, 'rem', 'px', this);
 
-    var cssMinLeftPx  = readVarPx(this, '--two-min-left');
-    var cssMinRightPx = readVarPx(this, '--two-min-right');
-    var cssMaxLeftPx  = readVarPx(this, '--two-max-left');
-
-    var minLeftPx  = (cssMinLeftPx  != null) ? cssMinLeftPx  : (readAttrPx(this, 'min-left')  ?? defMinLeftPx);
-    var minRightPx = (cssMinRightPx != null) ? cssMinRightPx : (readAttrPx(this, 'min-right') ?? defMinRightPx);
+    var minLeftPx  = readBoundPx(this, 'min-left',  defaultMinLeftPx);
+    var minRightPx = readBoundPx(this, 'min-right', defaultMinRightPx);
 
     var containerMinusGap = availablePx(this);
-    var autoMaxLeftPx     = Math.max(0, containerMinusGap - minRightPx);
+    var containerMaxLeftPx = Math.max(0, containerMinusGap - minRightPx); // ensure right ≥ min-right
 
-    var userMaxPx = (cssMaxLeftPx != null) ? cssMaxLeftPx : (readAttrPx(this, 'max-left') ?? autoMaxLeftPx);
-    var maxLeftPx = Math.min(autoMaxLeftPx, userMaxPx);
+    var userMaxPx = readBoundPx(this, 'max-left', containerMaxLeftPx);
+    var maxLeftPx = Math.min(containerMaxLeftPx, userMaxPx);
+
     if (maxLeftPx < minLeftPx) maxLeftPx = minLeftPx;
 
-    // apply step & clamp
     var nextLeftPx = leftPx + sign * deltaPx;
     nextLeftPx = Math.max(minLeftPx, Math.min(maxLeftPx, nextLeftPx));
 
-    // back to current unit (preserve unit)
+    // back to current unit
     var nextVal = convert(nextLeftPx, 'px', unit, this);
     var out;
     if (unit === '%') out = nextVal.toFixed(3) + '%';
