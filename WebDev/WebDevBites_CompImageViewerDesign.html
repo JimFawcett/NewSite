@@ -130,6 +130,8 @@
       <button data-two="reset"      data-two-for="#buttons-panel">Reset</button>
       <button data-two="widen"      data-two-for="#buttons-panel" data-step="6rem">Widen</button>
       <button data-two="toggle-left"data-two-for="#buttons-panel">Toggle Left</button>
+      <button id="next-mark" data-two-for="#buttons-panel">Next</button>
+      <button id="prev-mark" data-two-for="#buttons-panel">Prev</button>
     </div>
     <!-- data-left-fixed holds left width constant when container resizes -->
     <x-two-panel id="buttons-panel" class="with-buttons" height="calc(100dvh - 13.25rem)" left="15rem" data-left-fixed>
@@ -317,12 +319,123 @@ customElements.define('image-viewer', ImageViewer);
     <div id="goto" class="hidden">url</div>
   </div>
   <a id="bottom"></a>
-  <script src="js/WebDevBitesPages.js"></script>
+  <script src="js/WebDevCompPages.js"></script>
   <script>buildPages()</script>
   <script>createSiteNavMenu('goto')</script>
   <script src="../js/link-nav.js" defer></script>
   <script>
-    setCookie('#pages', 5, 10);
+    setCookie('#pages', 1, 10);
   </script>
+<script>
+customElements.whenDefined('x-two-panel').then(() => {
+  const btnNext = document.getElementById('next-mark');
+  const btnPrev = document.getElementById('prev-mark');
+
+  if (!btnNext && !btnPrev) return;
+
+  // Resolve target panel from the button’s data-two-for / aria-controls
+  function resolvePanel(fromBtn) {
+    const sel = fromBtn?.getAttribute('data-two-for') || fromBtn?.getAttribute('aria-controls');
+    if (!sel) return document.querySelector('x-two-panel');
+    if (sel.charAt(0) === '#') return document.getElementById(sel.slice(1));
+    try { return document.querySelector(sel); } catch { return null; }
+  }
+  function getRightScroller(panel) {
+    return panel?.shadowRoot?.querySelector?.('[part="right-scroller"]') || null;
+  }
+  function getMarks(panel) {
+    const arr = [];
+    panel.querySelectorAll('[slot="right"]').forEach(c => {
+      c.querySelectorAll('.mark').forEach(m => arr.push(m));
+    });
+    return arr;
+  }
+  function thresholdPx(panel, scroller) {
+    const raw = (panel.getAttribute('mark-offset') || '5rem').trim();
+    const m = raw.match(/^(-?\d*\.?\d+)\s*(px|rem|%)?$/i);
+    const n = m ? parseFloat(m[1]) : 0;
+    const unit = (m && m[2]) ? m[2].toLowerCase() : 'px';
+    if (unit === 'px')  return n;
+    if (unit === 'rem') return n * (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16);
+    if (unit === '%')   return (n / 100) * (scroller?.clientHeight || 1);
+    return n;
+  }
+  // Current index: prefer component’s active mark; fallback to geometry
+  function currentMarkIndex(panel, scroller, marks) {
+    let idx = marks.findIndex(m => m.getAttribute('data-active-mark') === 'true' || m.classList.contains('active-mark'));
+    if (idx !== -1) return idx;
+    const scTop = scroller.getBoundingClientRect().top;
+    let firstBelow = -1;
+    for (let i = 0; i < marks.length; i++) {
+      if (marks[i].getBoundingClientRect().top >= scTop) { firstBelow = i; break; }
+    }
+    if (firstBelow === -1) return marks.length - 1;   // scrolled past all
+    return Math.max(0, firstBelow - 1);               // use mark just above top
+  }
+  function scrollToMark(panel, scroller, mark, behavior = 'smooth') {
+    const scRect = scroller.getBoundingClientRect();
+    const mRect  = mark.getBoundingClientRect();
+    const tPx    = thresholdPx(panel, scroller);
+    // Place the mark near the top, just inside threshold band
+    const desiredOffset = Math.max(0, Math.min(tPx, 8));
+    const delta = (mRect.top - scRect.top) - desiredOffset;
+    const targetTop = Math.max(0, Math.min(
+      scroller.scrollTop + delta,
+      scroller.scrollHeight - scroller.clientHeight
+    ));
+    scroller.scrollTo({ top: targetTop, left: 0, behavior });
+  }
+  function updateButtonsFor(panel, btnPrev, btnNext) {
+    const scroller = getRightScroller(panel);
+    const marks = getMarks(panel);
+    if (!scroller || marks.length === 0) {
+      if (btnPrev) btnPrev.disabled = true;
+      if (btnNext) btnNext.disabled = true;
+      return;
+    }
+    const cur = currentMarkIndex(panel, scroller, marks);
+    const atFirst = (cur <= 0);
+    const atLast  = (cur >= marks.length - 1);
+    if (btnPrev) btnPrev.disabled = atFirst;
+    if (btnNext) btnNext.disabled = atLast;
+  }
+  function attachStateSyncFor(button) {
+    const panel = resolvePanel(button);
+    const scroller = getRightScroller(panel);
+    if (!panel || !scroller) return;
+    const sync = () => updateButtonsFor(panel, btnPrev, btnNext);
+    scroller.addEventListener('scroll', sync, { passive: true });
+    scroller.addEventListener('click',  sync, false); // catch click-to-select changes
+    window.addEventListener('resize',   sync, { passive: true });
+    // Initial after layout/slotting/fonts
+    requestAnimationFrame(() => requestAnimationFrame(sync));
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(sync));
+  }
+
+  // Wire both buttons (they can point to the same panel)
+  if (btnPrev) attachStateSyncFor(btnPrev);
+  if (btnNext) attachStateSyncFor(btnNext);
+
+  function advance(button, delta) {
+    const panel    = resolvePanel(button);
+    const scroller = getRightScroller(panel);
+    const marks    = getMarks(panel);
+    if (!panel || !scroller || !marks.length) return;
+
+    const cur = currentMarkIndex(panel, scroller, marks);
+    let target = cur + delta;
+
+    // NO WRAP: clamp to edges; if already at edge and trying to go further, do nothing
+    if (target < 0 || target > (marks.length - 1)) return;
+    scrollToMark(panel, scroller, marks[target], 'smooth');
+
+    // Update disabled state after the planned scroll finishes
+    setTimeout(() => updateButtonsFor(panel, btnPrev, btnNext), 250);
+  }
+
+  btnNext && btnNext.addEventListener('click', () => advance(btnNext, +1));
+  btnPrev && btnPrev.addEventListener('click', () => advance(btnPrev, -1));
+});
+</script>
 </body>
 </html>
