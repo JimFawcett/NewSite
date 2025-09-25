@@ -57,331 +57,298 @@
 </head>
 <body id="github">
   <h1>Two-Panel Component Test</h1>
-  <div class="demo">
-    <tm-b><a href="../../PageHost.html?src=WebDev/ExploreWebDev.html">Home</a></tm-b>
+  <div class="demo" style="height:calc(100dvh - 10rem);">
+    <!-- <tm-b><a href="../../PageHost.html?src=WebDev/ExploreWebDev.html">Home</a></tm-b> -->
     <!-- Toolbar targets the panel by id -->
     <div class="toolbar">
       <button data-two="narrow"     data-two-for="#buttons-panel" data-step="6rem">Narrow</button>
       <button data-two="reset"      data-two-for="#buttons-panel">Reset</button>
       <button data-two="widen"      data-two-for="#buttons-panel" data-step="6rem">Widen</button>
       <button data-two="toggle-left"data-two-for="#buttons-panel">Toggle Left</button>
+      <button id="next-mark" data-two-for="#buttons-panel">Next</button>
+      <button id="prev-mark" data-two-for="#buttons-panel">Prev</button>
     </div>
     <!-- data-left-fixed holds left width constant when container resizes -->
-    <x-two-panel id="#buttons-panel" class="with-buttons" left="25rem" data-left-fixed>  <!-- can use gap= here -->
+    <x-two-panel id="buttons-panel" class="with-buttons" height="calc(100dvh - 13.25rem)" left="15rem" data-left-fixed>
       <div slot="left" class="left-slot">
         <div id="mark1" class="marked-box">
-          This will be a description of the first part. That consists of 
-          everything above the second marker.
+          <h4>Component Class</h4>
+          <t-b>
+            The tag <c-s><code>&lt;image-viewer&gt;</code></c-s> creates an instance of the
+            ImageViewer class. The class&apos;s first element is a ShadowDOM that isolates 
+            the component&apos;s elements and their styles.
+          </t-b>
+          <t-b>
+            That prevents an application&apos;s styles from affecting the component internals.
+            Attributes allow an application to affect selected styles defined by the designer.
+          </t-b>
         </div>
         <div id="mark2" class="marked-box">
-          This will be a description of the second part.
+          <h4>Shadow DOM</h4>
+          <t-b>
+            A W3C web component is defined entirely in JavaScript as illustrated in the right 
+            panel.
+          </t-b>
+          <t-b>
+            The shadowDOM provides HTML markup and styling for the component using a JavaScript 
+            expression &quot;<c-s><code>
+              this.shadowRoot.innerHTML = `[markup goes here]`;
+          </t-b>
+          </code></c-s>.
         </div>
         <div id="mark3" class="marked-box">
-          This will be a description of the third part.
+          <h4>Structure</h4>
+          <t-b>
+            This markup defines the structure of the image-viewer component. The outer div 
+            provides padding to keep content from touching the image-viewer when it is 
+            floated to the left or right.
+          </t-b>
+          <t-b>
+            The next div provides the visible part of the component, e.g., its title and 
+            image. Note that the img src and width are provided by attributes the  
+            application supplies in the <c-s><code>&lt;image-viewer&gt;</code></c-s> 
+            declaration.
+          </t-b>
+        </div>
+        <div id="mark4" class="marked-box">
+          <h4>Listeners</h4>
+          <t-b>
+            The primary purpose of this component is to enlarge or diminish the size of 
+            an image using button clicks on image (enlarge) or title (diminish).
+          </t-b>
+          <t-b>
+            The first listener awaits clicks on the title which contracts the image. 
+            The second awaits clicks on the image then enlarges it.
+          </t-b>
+          <t-b>
+            The final piece registers the <c-s><code>&lt;image-viewer&gt;</code></c-s> with 
+            this component class. That causes the browser&apos;s rendering engine to create 
+            an instance of the ImageViewer class for each occurance of the tag.
+          </t-b>
         </div>
       </div>
       <div slot="right" class="right-slots">
         <div class="code-box">
-          <h3>TwoPanelComponentUsingButtons</h3>
-          <p>Source code for Component</p>
           <pre class="code-demo"><code><div class="mark">&nbsp;</div>
-/* x-two-panel.external.scroller.cssvars.js - classic &lt;script&gt;, no modules
-    - External controls only (buttons with [data-two] + data-two-for=&quot;#id&quot;).
-    - Slotted content lives in inner &quot;.scroller&quot; (avoids rounded-corner clipping).
-    - Fallback defaults moved into the component:
-        --two-gap: 0.50rem
-        --two-panel-pad: 0.5rem 0rem
-        --two-step: 6rem   (unless left is %, then default is 5%)
-        --two-min-left: 8rem
-        --two-min-right: 8rem
-      (Apps can override these by setting the same CSS vars on x-two-panel.)
-    - Equal columns when fixed-left and no --two-left provided:
-        var(--two-left, calc(50% - var(--two-gap, 0.50rem)/2))
-    - NOT porting --two-height; default remains max-content.
-*/
-        <div class="mark">&nbsp;</div>
-(function () {
-  var CSS_TEXT = '&#92;
-:host{display:block}&#92;
-.wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:var(--two-gap,0.50rem);height:var(--two-height,max-content);width:100%;box-sizing:border-box;overflow:visible;background:var(--two-bg,transparent);border:var(--two-border,none);border-radius:0;padding:var(--two-pad,0)}&#92;
-:host([data-left-fixed]) .wrap{grid-template-columns:minmax(0,var(--two-left,calc(50% - var(--two-gap,0.50rem)/2))) minmax(0,1fr)}&#92;
-.panel{min-width:0;min-height:0;overflow:visible;box-sizing:border-box;background:var(--two-panel-bg,#fff);border:var(--two-panel-border,1px solid #ececf2);border-radius:10px}&#92;
-.scroller{min-width:0;min-height:0;height:100%;overflow-y:auto;overflow-x:var(--two-scroller-overflow-x,hidden);padding:var(--two-panel-pad,0.5rem 0rem);box-sizing:border-box}&#92;
-:host([collapsed-left]) .wrap{grid-template-columns:1fr}&#92;
-:host([collapsed-left]) .left{display:none}&#92;
-::slotted(.left-panel),::slotted(.right-panel){border:none;padding:0}&#92;
-::slotted(.left-slot),::slotted(.right-slot){border:none}';
-        <div class="mark">&nbsp;</div>
-  // ---------- helpers ----------
-  function attachStyles(shadowRoot, cssText) {
-    var style = document.createElement('style');
-    style.textContent = cssText;
-    shadowRoot.appendChild(style);
-  }
-  function parseLen(s) {
-    var m = String(s || '').trim().match(/^(-?&#92;d*&#92;.?&#92;d+)&#92;s*(px|rem|%)$/i);
-    if (!m) return { n: parseFloat(s) || 0, unit: 'px' };
-    return { n: parseFloat(m[1]), unit: m[2].toLowerCase() };
-  }
-  function rootFontSize(el) {
-    var root = (el.getRootNode && el.getRootNode()) || document;
-    var doc = root instanceof Document ? root : document;
-    var fs = parseFloat(getComputedStyle(doc.documentElement).fontSize);
-    return isFinite(fs) && fs &gt; 0 ? fs : 16;
-  }
-  function readVarPx(host, name) {
-    var raw = getComputedStyle(host).getPropertyValue(name).trim();
-    if (!raw) return null;                      // variable not set
-    var p = parseLen(raw);
-    return convert(p.n, p.unit, 'px', host);
-  }
-  function gapPx(el) {
-    // read using the same fallback as CSS: var(--two-gap, 0.50rem)
-    var raw = getComputedStyle(el).getPropertyValue('--two-gap').trim() || '0.50rem';
-    var p = parseLen(raw);
-    return convert(p.n, p.unit, 'px', el);
-  }
-  function availablePx(el) {
-    var hostW = el.getBoundingClientRect().width || 1;
-    return Math.max(0, hostW - gapPx(el));
-  }
-  function convert(value, fromUnit, toUnit, el) {
-    if (fromUnit === toUnit) return value;
-    var rfs = rootFontSize(el);
-    // rem &lt;-&gt; px
-    if (fromUnit === 'rem' && toUnit === 'px') return value * rfs;
-    if (fromUnit === 'px'  && toUnit === 'rem') return value / rfs;
+class ImageViewer extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
 
-    // % &lt;-&gt; px relative to *available* width (host - gap)
-    var avail = availablePx(el) || 1;
-    if (fromUnit === '%' && toUnit === 'px') return (value / 100) * avail;
-    if (fromUnit === 'px' && toUnit === '%')  return (value / avail) * 100;
+    // Get attributes
+    this.imgSrc = this.getAttribute('img-src') || '';
+    this.imgWidth = this.getAttribute('img-width') || '400';
+    const hasBgAttr = this.hasAttribute('bg-color');
+    const componentBg = hasBgAttr ? this.getAttribute('bg-color') : 'white';
+    const titleBg = this.getAttribute('title-bg-color') || 'transparent';
 
-    // % &lt;-&gt; rem via px
-    if (fromUnit === '%' && toUnit === 'rem') return ((value / 100) * avail) / rfs;
-    if (fromUnit === 'rem' && toUnit === '%') return (value * rfs / avail) * 100;
+    // Wrapper background uses --light fallback to white
+    const wrapperBg = 'var(--light, white)';
 
-    return value;
-  }
-  function readAttrPx(host, attrName) {
-    if (!host.hasAttribute(attrName)) return null;
-    var v = host.getAttribute(attrName).trim().toLowerCase();
-    if (attrName === 'max-left' && v === 'auto') {
-      // &quot;auto&quot; =&gt; container - gap - min-right (attr/CSS var/default)
-      var minRightPx = readVarPx(host, '--two-min-right');
-      if (minRightPx == null) {
-        var a = host.getAttribute('min-right');
-        minRightPx = a ? convert(parseLen(a).n, parseLen(a).unit, 'px', host) : convert(8, 'rem', 'px', host);
-      }
-      return Math.max(0, availablePx(host) - minRightPx);
-    }
-    var p = parseLen(v);
-    return convert(p.n, p.unit, 'px', host);
-  }
-  function closestControl(target) { return target.closest ? target.closest('[data-two]') : null; }
-  function resolveHost(sel) {
-    if (!sel) return null;
-    if (sel.charAt(0) === '#') return document.getElementById(sel.slice(1));
-    try { return document.querySelector(sel); } catch (_) { return null; }
+<div class="mark">&nbsp;</div>
+    // Shadow DOM markup
+    this.shadowRoot.innerHTML = `
+      &lt;style&gt;
+        :host {
+          display: inline-block; /* allow float and shrink to content */
+        }
+
+        .wrapper {
+          padding: 1rem; /* outer padding to keep text off the border when floated */
+          box-sizing: border-box;
+          background-color: ${wrapperBg};
+        }
+
+        .component {
+          border: 2px solid var(--dark, #333); /* use client's --dark or fallback */
+          padding: 0.5rem;
+          display: flex;
+          flex-direction: column;
+          user-select: none;
+          width: min-content;
+          box-shadow: 5px 5px 5px #999;
+          box-sizing: border-box;
+          background-color: ${componentBg};
+        }
+
+        .title {
+          display: flex;
+          font-family: &quot;Comic Sans MS&quot;, cursive, sans-serif;
+          font-weight: bold;
+          cursor: pointer;
+          max-width: 100%;
+          margin-bottom: 8px;
+          line-height: 1.0rem;
+          flex-wrap: wrap;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          white-space: wrap;
+          color: var(--dark, #333); /* title text uses --dark or fallback */
+          background-color: ${titleBg};
+          padding: 0.25rem 0.5rem;
+        }
+
+        .image {
+          display: block;
+          flex: 0 0 auto;
+          cursor: pointer;
+          transition: transform 0.2s ease-in-out;
+        }
+
+        img {
+          display: block;
+          height: auto;
+          /* removed max-width so explicit width adjustments take effect */
+        }
+      &lt;/style&gt;
+<div class="mark">&nbsp;</div>
+      &lt;div class=&quot;wrapper&quot;&gt;
+        &lt;div class=&quot;component&quot;&gt;
+          &lt;div class=&quot;title&quot; part=&quot;title&quot;&gt;&lt;slot&gt;&lt;/slot&gt;&lt;/div&gt;
+          &lt;div class=&quot;image&quot;&gt;
+            &lt;img id=&quot;img&quot; src=&quot;${this.imgSrc}&quot; width=&quot;${this.imgWidth}&quot;&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    `;
+<div class="mark">&nbsp;</div>
+    // Event listeners
+    this.titleElement = this.shadowRoot.querySelector('.title');
+    this.imageElement = this.shadowRoot.querySelector('#img');
+
+    this.titleElement.addEventListener('click', () =&gt; this.resizeImage(1 / 1.2));
+    this.imageElement.addEventListener('click', () =&gt; this.resizeImage(1.2));
   }
 
-  // ---------- custom element ----------
-  function XTwoPanel() {
-    var self = Reflect.construct(HTMLElement, [], new.target);
-    self._root = self.attachShadow({ mode: 'open' });
-
-    attachStyles(self._root, CSS_TEXT);
-    var wrap = document.createElement('div');
-    wrap.className = 'wrap';
-    wrap.setAttribute('part', 'wrap');
-    wrap.setAttribute('role', 'group');
-    wrap.setAttribute('aria-label', 'Two panel');
-    wrap.innerHTML =
-      '&lt;section class=&quot;panel left&quot;  part=&quot;left-panel&quot;&gt;'+
-        '&lt;div class=&quot;scroller&quot; part=&quot;left-scroller&quot;&gt;&lt;slot name=&quot;left&quot;&gt;&lt;/slot&gt;&lt;/div&gt;'+
-      '&lt;/section&gt;'+
-      '&lt;section class=&quot;panel right&quot; part=&quot;right-panel&quot;&gt;'+
-        '&lt;div class=&quot;scroller&quot; part=&quot;right-scroller&quot;&gt;&lt;slot name=&quot;right&quot;&gt;&lt;/slot&gt;&lt;/div&gt;'+
-      '&lt;/section&gt;';
-    self._root.appendChild(wrap);
-
-    self._wrap = wrap;
-    self._leftPanel  = wrap.querySelector('.left');
-
-    // capture initial attributes for reset()
-    self._initCaptured = false;
-    self._init = { left: null, gap: null };
-
-    return self;
+  resizeImage(scaleFactor) {
+    const currentWidth = parseFloat(window.getComputedStyle(this.imageElement).width);
+    this.imageElement.style.width = `${currentWidth * scaleFactor}px`;
   }
-  XTwoPanel.prototype = Object.create(HTMLElement.prototype);
-  XTwoPanel.prototype.constructor = XTwoPanel;
+}
 
-  Object.defineProperty(XTwoPanel, 'observedAttributes', {
-    get: function () { return ['left', 'gap', 'height', 'step', 'min-left', 'max-left', 'min-right']; }
-  });
+customElements.define('image-viewer', ImageViewer);
 
-  XTwoPanel.prototype.connectedCallback = function () {
-    if (!this._initCaptured) {
-      this._init.left = this.hasAttribute('left') ? this.getAttribute('left') : null;
-      this._init.gap  = this.hasAttribute('gap')  ? this.getAttribute('gap')  : null;
-      this._initCaptured = true;
-    }
-    this._applyAll();
-  };
-  XTwoPanel.prototype.attributeChangedCallback = function () { this._applyAll(); };
 
-  XTwoPanel.prototype._applyAll = function () {
-    // height (no new default; still max-content unless page sets --two-height or height attr)
-    var height = (this.getAttribute('height') || '').trim();
-    if (height) this.style.setProperty('--two-height', height);
-    else this.style.removeProperty('--two-height');
 
-    // gap (attribute maps to CSS var; CSS var from page can override if attribute omitted)
-    var gap = (this.getAttribute('gap') || '').trim();
-    if (gap) this.style.setProperty('--two-gap', gap);
-    else this.style.removeProperty('--two-gap');
 
-    // left (preserve user-provided data-left-fixed flag)
-    var left = (this.getAttribute('left') || '').trim();
-    if (left) {
-      this.style.setProperty('--two-left', left);
-      if (!this.hasAttribute('data-left-fixed')) {
-        this.setAttribute('data-left-fixed', '');
-        this._managedLeftFlag = true; // we added it
-      }
-    } else {
-      this.style.removeProperty('--two-left');
-      if (this._managedLeftFlag) {
-        this.removeAttribute('data-left-fixed');
-        this._managedLeftFlag = false;
-      }
-    }
-  };
 
-  // ----- public API for external controls -----
-  XTwoPanel.prototype.setLeft = function (value) {
-    this.removeAttribute('collapsed-left');
-    this.setAttribute('left', value);
-  };
-  XTwoPanel.prototype.setGap = function (value) {
-    this.setAttribute('gap', value);
-  };
-  XTwoPanel.prototype.toggleLeft = function () {
-    if (this.hasAttribute('collapsed-left')) this.removeAttribute('collapsed-left');
-    else this.setAttribute('collapsed-left', '');
-  };
-  XTwoPanel.prototype.reset = function () {
-    this.removeAttribute('collapsed-left');
-    if (this._init.left !== null) this.setAttribute('left', this._init.left);
-    else this.removeAttribute('left');
-    if (this._init.gap !== null) this.setAttribute('gap', this._init.gap);
-    else this.removeAttribute('gap');
-  };
 
-  // Symmetric stepping with CSS-var/attr-configurable bounds
-  XTwoPanel.prototype.step = function (sign, stepOverride) {
-    var cur = this.getAttribute('left');
-    if (!cur) {
-      var pxNow = this._leftPanel.getBoundingClientRect().width;
-      var rem = (pxNow / rootFontSize(this)).toFixed(3) + 'rem';
-      this.setAttribute('left', rem);
-      cur = rem;
-    }
-
-    var parsed = parseLen(cur);
-    var unit   = parsed.unit;
-    var leftPx = convert(parsed.n, unit, 'px', this);
-
-    // STEP (button &gt; CSS var &gt; attr &gt; default)
-    var deltaPx;
-    if (stepOverride) {
-      var so = parseLen(stepOverride);
-      deltaPx = convert(so.n, so.unit, 'px', this);
-    } else {
-      var cssStepPx = readVarPx(this, '--two-step'); // e.g., 6rem as px
-      if (cssStepPx != null) {
-        deltaPx = cssStepPx;
-      } else if (this.hasAttribute('step')) {
-        var sp = parseLen(this.getAttribute('step'));
-        deltaPx = convert(sp.n, sp.unit, 'px', this);
-      } else {
-        // default: keep 5% when in %, else 6rem per your requested default
-        var def = (unit === '%') ? parseLen('5%') : parseLen('6rem');
-        deltaPx = convert(def.n, def.unit, 'px', this);
-      }
-    }
-
-    // BOUNDS (CSS var &gt; attr &gt; default)
-    var defMinLeftPx  = convert(8, 'rem', 'px', this);
-    var defMinRightPx = convert(8, 'rem', 'px', this);
-
-    var cssMinLeftPx  = readVarPx(this, '--two-min-left');
-    var cssMinRightPx = readVarPx(this, '--two-min-right');
-    var cssMaxLeftPx  = readVarPx(this, '--two-max-left');
-
-    var minLeftPx  = (cssMinLeftPx  != null) ? cssMinLeftPx  : (readAttrPx(this, 'min-left')  ?? defMinLeftPx);
-    var minRightPx = (cssMinRightPx != null) ? cssMinRightPx : (readAttrPx(this, 'min-right') ?? defMinRightPx);
-
-    var containerMinusGap = availablePx(this);
-    var autoMaxLeftPx     = Math.max(0, containerMinusGap - minRightPx);
-
-    var userMaxPx = (cssMaxLeftPx != null) ? cssMaxLeftPx : (readAttrPx(this, 'max-left') ?? autoMaxLeftPx);
-    var maxLeftPx = Math.min(autoMaxLeftPx, userMaxPx);
-    if (maxLeftPx &lt; minLeftPx) maxLeftPx = minLeftPx;
-
-    // apply step & clamp
-    var nextLeftPx = leftPx + sign * deltaPx;
-    nextLeftPx = Math.max(minLeftPx, Math.min(maxLeftPx, nextLeftPx));
-
-    // back to current unit (preserve unit)
-    var nextVal = convert(nextLeftPx, 'px', unit, this);
-    var out;
-    if (unit === '%') out = nextVal.toFixed(3) + '%';
-    else if (unit === 'rem') out = nextVal.toFixed(3) + 'rem';
-    else out = Math.round(nextVal) + 'px';
-
-    this.setAttribute('left', out);
-    this.removeAttribute('collapsed-left');
-  };
-
-  if (!customElements.get('x-two-panel')) {
-    customElements.define('x-two-panel', XTwoPanel);
-  }
-
-  // ---------- global external-controls handler ----------
-  if (!window.__X_TWO_PANEL_EXTERNAL_WIRED__) {
-    document.addEventListener('click', function (ev) {
-      var ctrl = closestControl(ev.target);
-      if (!ctrl) return;
-
-      var sel = ctrl.getAttribute('data-two-for') || ctrl.getAttribute('aria-controls');
-      var host = resolveHost(sel);
-      if (!host || host.tagName.toLowerCase() !== 'x-two-panel') return;
-
-      var action = (ctrl.dataset.two || '').toLowerCase();
-      switch (action) {
-        case 'narrow':        host.step(-1, ctrl.dataset.step); break;
-        case 'widen':         host.step(+1, ctrl.dataset.step); break;
-        case 'toggle-left':   host.toggleLeft(); break;
-        case 'reset':         host.reset(); break;
-        case 'set-left':
-          if (ctrl.dataset.left || ctrl.dataset.value) host.setLeft(ctrl.dataset.left || ctrl.dataset.value);
-          break;
-        case 'set-gap':
-          if (ctrl.dataset.gap) host.setGap(ctrl.dataset.gap);
-          break;
-        case 'collapse-left': host.setAttribute('collapsed-left',''); break;
-        case 'expand-left':   host.removeAttribute('collapsed-left'); break;
-      }
-    }, true);
-    window.__X_TWO_PANEL_EXTERNAL_WIRED__ = true;
-  }
-})();        </code></pre>
+        </code></pre>
         </div>
       </div>
     </x-two-panel>
   </div>
   <script src="js/TwoPanelComponentWithMarkersAndClick.js"></script>
+<script>
+customElements.whenDefined('x-two-panel').then(() => {
+  const btnNext = document.getElementById('next-mark');
+  const btnPrev = document.getElementById('prev-mark');
+
+  if (!btnNext && !btnPrev) return;
+
+  // Resolve target panel from the button’s data-two-for / aria-controls
+  function resolvePanel(fromBtn) {
+    const sel = fromBtn?.getAttribute('data-two-for') || fromBtn?.getAttribute('aria-controls');
+    if (!sel) return document.querySelector('x-two-panel');
+    if (sel.charAt(0) === '#') return document.getElementById(sel.slice(1));
+    try { return document.querySelector(sel); } catch { return null; }
+  }
+  function getRightScroller(panel) {
+    return panel?.shadowRoot?.querySelector?.('[part="right-scroller"]') || null;
+  }
+  function getMarks(panel) {
+    const arr = [];
+    panel.querySelectorAll('[slot="right"]').forEach(c => {
+      c.querySelectorAll('.mark').forEach(m => arr.push(m));
+    });
+    return arr;
+  }
+  function thresholdPx(panel, scroller) {
+    const raw = (panel.getAttribute('mark-offset') || '5rem').trim();
+    const m = raw.match(/^(-?\d*\.?\d+)\s*(px|rem|%)?$/i);
+    const n = m ? parseFloat(m[1]) : 0;
+    const unit = (m && m[2]) ? m[2].toLowerCase() : 'px';
+    if (unit === 'px')  return n;
+    if (unit === 'rem') return n * (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16);
+    if (unit === '%')   return (n / 100) * (scroller?.clientHeight || 1);
+    return n;
+  }
+  // Current index: prefer component’s active mark; fallback to geometry
+  function currentMarkIndex(panel, scroller, marks) {
+    let idx = marks.findIndex(m => m.getAttribute('data-active-mark') === 'true' || m.classList.contains('active-mark'));
+    if (idx !== -1) return idx;
+    const scTop = scroller.getBoundingClientRect().top;
+    let firstBelow = -1;
+    for (let i = 0; i < marks.length; i++) {
+      if (marks[i].getBoundingClientRect().top >= scTop) { firstBelow = i; break; }
+    }
+    if (firstBelow === -1) return marks.length - 1;   // scrolled past all
+    return Math.max(0, firstBelow - 1);               // use mark just above top
+  }
+  function scrollToMark(panel, scroller, mark, behavior = 'smooth') {
+    const scRect = scroller.getBoundingClientRect();
+    const mRect  = mark.getBoundingClientRect();
+    const tPx    = thresholdPx(panel, scroller);
+    // Place the mark near the top, just inside threshold band
+    const desiredOffset = Math.max(0, Math.min(tPx, 8));
+    const delta = (mRect.top - scRect.top) - desiredOffset;
+    const targetTop = Math.max(0, Math.min(
+      scroller.scrollTop + delta,
+      scroller.scrollHeight - scroller.clientHeight
+    ));
+    scroller.scrollTo({ top: targetTop, left: 0, behavior });
+  }
+  function updateButtonsFor(panel, btnPrev, btnNext) {
+    const scroller = getRightScroller(panel);
+    const marks = getMarks(panel);
+    if (!scroller || marks.length === 0) {
+      if (btnPrev) btnPrev.disabled = true;
+      if (btnNext) btnNext.disabled = true;
+      return;
+    }
+    const cur = currentMarkIndex(panel, scroller, marks);
+    const atFirst = (cur <= 0);
+    const atLast  = (cur >= marks.length - 1);
+    if (btnPrev) btnPrev.disabled = atFirst;
+    if (btnNext) btnNext.disabled = atLast;
+  }
+  function attachStateSyncFor(button) {
+    const panel = resolvePanel(button);
+    const scroller = getRightScroller(panel);
+    if (!panel || !scroller) return;
+    const sync = () => updateButtonsFor(panel, btnPrev, btnNext);
+    scroller.addEventListener('scroll', sync, { passive: true });
+    scroller.addEventListener('click',  sync, false); // catch click-to-select changes
+    window.addEventListener('resize',   sync, { passive: true });
+    // Initial after layout/slotting/fonts
+    requestAnimationFrame(() => requestAnimationFrame(sync));
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(sync));
+  }
+
+  // Wire both buttons (they can point to the same panel)
+  if (btnPrev) attachStateSyncFor(btnPrev);
+  if (btnNext) attachStateSyncFor(btnNext);
+
+  function advance(button, delta) {
+    const panel    = resolvePanel(button);
+    const scroller = getRightScroller(panel);
+    const marks    = getMarks(panel);
+    if (!panel || !scroller || !marks.length) return;
+
+    const cur = currentMarkIndex(panel, scroller, marks);
+    let target = cur + delta;
+
+    // NO WRAP: clamp to edges; if already at edge and trying to go further, do nothing
+    if (target < 0 || target > (marks.length - 1)) return;
+    scrollToMark(panel, scroller, marks[target], 'smooth');
+
+    // Update disabled state after the planned scroll finishes
+    setTimeout(() => updateButtonsFor(panel, btnPrev, btnNext), 250);
+  }
+
+  btnNext && btnNext.addEventListener('click', () => advance(btnNext, +1));
+  btnPrev && btnPrev.addEventListener('click', () => advance(btnPrev, -1));
+});
+</script>
 </body>
 </html>
