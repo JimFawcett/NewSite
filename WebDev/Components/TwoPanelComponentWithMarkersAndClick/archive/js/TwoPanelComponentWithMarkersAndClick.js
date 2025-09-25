@@ -1,20 +1,22 @@
-/* TwoPanelComponent.autoMarkSync.offset.click.js — classic <script>, no modules
+/* TwoPanelComponent.autoMarkSync.offset.click.autoscroll.activeMark.js — classic <script>, no modules
    Features:
      • <x-two-panel> custom element
      • Public API: attributes [left, gap, height, step, min-left, max-left, min-right,
                                click-controls, no-mark-sync, mark-offset]
-                     methods setLeft(), setGap(), toggleLeft(), reset(), step(sign[, stepOverride])
+                   methods    setLeft(), setGap(), toggleLeft(), reset(), step(sign[, stepOverride]),
+                              scrollRightToTop()
      • Optional click-controls (set attribute `click-controls` or data-click-controls)
      • External control buttons via [data-two] + data-two-for="#id"
      • Linux Firefox height shim (per-instance)
      • Mark/Description sync:
          - ON by default; disable with `no-mark-sync`
-         - Map by order OR set data-mark-map="explicit" and use
-           .mark[data-for="leftId"] ↔ <div id="leftId" class="marked-box">
+         - Order mapping or explicit mapping via data-mark-map="explicit" and .mark[data-for="leftId"]
          - Custom selectors: data-desc-selector / data-mark-selector
          - mark-offset (px|rem|%) threshold near top before switching (default 5rem)
          - Direction-aware hysteresis: only switch when next/prev mark ENTERS the offset band
-         - NEW: Right-pane single-click selects the description for the mark near the click
+         - Right-pane single-click selects description for nearest-above mark
+     • Auto-scroll right pane to top on connect (default)
+     • NEW: Active .mark turns GREEN; others RED (inline style)
 */
 (function () {
   // ---------- helpers ----------
@@ -178,7 +180,7 @@
         'left','gap','height','step',
         'min-left','max-left','min-right',
         'click-controls','no-mark-sync',
-        'mark-offset' // NEW
+        'mark-offset' // threshold for mark sync
       ];
     }
   });
@@ -186,7 +188,7 @@
   XTwoPanel.prototype.connectedCallback = function () {
     if (!this._initCaptured) {
       this._init.left = this.hasAttribute('left') ? this.getAttribute('left') : null;
-      this._init.gap  = this.hasAttribute('gap')  ? this.getAttribute('gap') : null;
+      this._init.gap  = this.hasAttribute('gap')  ? this.getAttribute('gap')  : null;
       this._initCaptured = true;
     }
     this._applyAll();
@@ -201,6 +203,16 @@
     // Mark sync is ON by default unless explicitly disabled
     if (!this.hasAttribute('no-mark-sync')) {
       this._wireMarkSync();
+    }
+
+    // Auto-scroll right pane to top by default
+    var doScrollTop = () => {
+      var sc = this._root?.querySelector('[part="right-scroller"]');
+      if (sc) sc.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    };
+    requestAnimationFrame(() => requestAnimationFrame(doScrollTop));
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => requestAnimationFrame(doScrollTop));
     }
   };
 
@@ -322,9 +334,10 @@
     this.setAttribute('left', out);
     this.removeAttribute('collapsed-left');
   };
-  // Public helper
+
+  // Public helper to scroll right pane to top (also called automatically on connect)
   XTwoPanel.prototype.scrollRightToTop = function () {
-    const sc = this._root?.querySelector?.('[part="right-scroller"]');
+    var sc = this._root?.querySelector('[part="right-scroller"]');
     if (sc) sc.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
 
@@ -437,7 +450,6 @@
 
   // --- Mark/Description sync (default ON; disable with no-mark-sync) ---
   XTwoPanel.prototype._wireMarkSync = function (reinit) {
-    // On reinit, tear down previous listeners to avoid duplicates
     if (reinit && this.__markSync && this.__markSync.wired) {
       this._unwireMarkSync(false);
     } else if (this.__markSync && this.__markSync.wired && !reinit) {
@@ -457,6 +469,7 @@
     var leftBoxes = [];
     var marks     = [];
     var lastIdx   = -1;
+    var lastMarkIdx = -1;
     var rafId     = null;
 
     // Track scroll direction with a tiny deadzone
@@ -480,15 +493,37 @@
       });
     };
 
-    function setActive(idx) {
-      if (idx === lastIdx || idx == null || idx < 0) return;
-      lastIdx = idx;
-      for (var i=0; i<leftBoxes.length; ++i) {
-        var show = (i === idx);
-        var box  = leftBoxes[i];
-        box.style.display = show ? '' : 'none';
-        box.setAttribute('aria-hidden', show ? 'false' : 'true');
-        box.classList.toggle('active', show);
+    function colorizeAllRed() {
+      for (var i=0; i<marks.length; ++i) {
+        marks[i].style.backgroundColor = 'red';
+        marks[i].classList.remove('active-mark');
+        marks[i].removeAttribute('data-active-mark');
+      }
+    }
+    function setActivePair(boxIdx, markIdx) {
+      if (boxIdx == null || boxIdx < 0) return;
+
+      if (boxIdx !== lastIdx) {
+        lastIdx = boxIdx;
+        for (var i=0; i<leftBoxes.length; ++i) {
+          var show = (i === boxIdx);
+          var box  = leftBoxes[i];
+          box.style.display = show ? '' : 'none';
+          box.setAttribute('aria-hidden', show ? 'false' : 'true');
+          box.classList.toggle('active', show);
+        }
+      }
+
+      if (markIdx != null && markIdx >= 0 && markIdx < marks.length) {
+        if (lastMarkIdx !== -1 && marks[lastMarkIdx]) {
+          marks[lastMarkIdx].style.backgroundColor = 'red';
+          marks[lastMarkIdx].classList.remove('active-mark');
+          marks[lastMarkIdx].removeAttribute('data-active-mark');
+        }
+        marks[markIdx].style.backgroundColor = 'green';
+        marks[markIdx].classList.add('active-mark');
+        marks[markIdx].setAttribute('data-active-mark','true');
+        lastMarkIdx = markIdx;
       }
     }
 
@@ -520,14 +555,12 @@
       return n;
     }
 
-    // Index of first mark whose TOP is at or below the scroller top (entering from below)
     function indexFirstBelowTop(scTop) {
       for (var i = 0; i < marks.length; ++i) {
         if (marks[i].getBoundingClientRect().top >= scTop) return i;
       }
       return -1;
     }
-    // Index of last mark whose TOP is above the scroller top (entering from above)
     function indexLastAboveTop(scTop) {
       for (var i = marks.length - 1; i >= 0; --i) {
         if (marks[i].getBoundingClientRect().top < scTop) return i;
@@ -538,13 +571,15 @@
     // initial
     collectLeft();
     collectMarks();
+    colorizeAllRed();
     if (leftBoxes.length) {
-      leftBoxes.forEach(function (b) {
-        b.style.display = 'none';
-        b.setAttribute('aria-hidden','true');
-        b.classList.remove('active');
-      });
-      setActive(0); // stable initial state
+      for (var b=0; b<leftBoxes.length; ++b) {
+        leftBoxes[b].style.display = 'none';
+        leftBoxes[b].setAttribute('aria-hidden','true');
+        leftBoxes[b].classList.remove('active');
+      }
+      if (marks.length) setActivePair(0, 0);
+      else setActivePair(0, -1);
     }
 
     var requestUpdate = () => {
@@ -554,25 +589,25 @@
 
         var scRect    = rightScroll.getBoundingClientRect();
         var threshold = offsetPxFromAttr.call(this);
-        var dirDown   = pendingScrollTop > lastScrollTop + 0.5; // deadzone
+        var dirDown   = pendingScrollTop > lastScrollTop + 0.5;
         var dirUp     = pendingScrollTop < lastScrollTop - 0.5;
 
         if (dirDown || (!dirUp && lastIdx < 0)) {
-          // Downward (or first run): consider the next mark entering from below
           var nextIdx = indexFirstBelowTop(scRect.top);
           if (nextIdx !== -1) {
-            var dy = marks[nextIdx].getBoundingClientRect().top - scRect.top; // >= 0
+            var dy = marks[nextIdx].getBoundingClientRect().top - scRect.top;
             if (dy <= threshold) {
-              setActive(mapMarkToBox(marks[nextIdx], nextIdx));
+              var boxIdx = mapMarkToBox(marks[nextIdx], nextIdx);
+              setActivePair(boxIdx, nextIdx);
             }
           }
         } else if (dirUp) {
-          // Upward: consider the previous mark entering from above
           var prevIdx = indexLastAboveTop(scRect.top);
           if (prevIdx !== -1) {
-            var dyUp = scRect.top - marks[prevIdx].getBoundingClientRect().top; // >= 0
+            var dyUp = scRect.top - marks[prevIdx].getBoundingClientRect().top;
             if (dyUp <= threshold) {
-              setActive(mapMarkToBox(marks[prevIdx], prevIdx));
+              var boxIdx2 = mapMarkToBox(marks[prevIdx], prevIdx);
+              setActivePair(boxIdx2, prevIdx);
             }
           }
         }
@@ -581,7 +616,7 @@
       });
     };
 
-    // --- NEW: click-to-select in right pane ---
+    // click-to-select in right pane
     function pickIndexForClientY(clientY) {
       if (!marks.length) return -1;
       var bestAbove = -1, bestAboveDy = Infinity;
@@ -589,29 +624,25 @@
       for (var i = 0; i < marks.length; ++i) {
         var t = marks[i].getBoundingClientRect().top;
         var dy = t - clientY;
-        if (dy <= 0) { // above or at click
+        if (dy <= 0) { // above or at
           var a = -dy;
           if (a < bestAboveDy) { bestAboveDy = a; bestAbove = i; }
-        } else {       // below click
+        } else {
           if (dy < bestBelowDy) { bestBelowDy = dy; bestBelow = i; }
         }
       }
       return (bestAbove !== -1) ? bestAbove : bestBelow;
     }
-
     var onRightClick = (ev) => {
-      // Only left button, ignore multi-clicks and selections/interactive
       if (ev.button !== 0) return;
-      if (ev.detail && ev.detail > 1) return; // ignore double/triple
+      if (ev.detail && ev.detail > 1) return;
       var path = ev.composedPath ? ev.composedPath() : [ev.target];
       if (path.some(isInteractive) || hasSelection()) return;
-
-      // Prefer description selection over panel width stepping
       ev.stopPropagation();
-
       var idx = pickIndexForClientY(ev.clientY);
       if (idx >= 0) {
-        setActive(mapMarkToBox(marks[idx], idx));
+        var boxIdx = mapMarkToBox(marks[idx], idx);
+        setActivePair(boxIdx, idx);
       }
     };
 
@@ -619,11 +650,11 @@
     var onScroll   = () => { pendingScrollTop = rightScroll.scrollTop; requestUpdate(); };
     var onResize   = () => { requestUpdate(); };
     var onLeftSlot = () => { collectLeft(); requestUpdate(); };
-    var onRightSlot= () => { collectMarks(); requestUpdate(); };
+    var onRightSlot= () => { collectMarks(); colorizeAllRed(); requestUpdate(); };
 
     rightScroll.addEventListener('scroll', onScroll, { passive:true });
     window.addEventListener('resize', onResize, { passive:true });
-    rightScroll.addEventListener('click', onRightClick, false); // not passive; we stopPropagation
+    rightScroll.addEventListener('click', onRightClick, false);
 
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(requestUpdate);
@@ -645,7 +676,8 @@
       onRightSlot,
       onRightClick,
       ro,
-      leftBoxesRef: () => leftBoxes
+      leftBoxesRef: () => leftBoxes,
+      marksRef: () => marks
     };
   };
 
@@ -659,11 +691,17 @@
     try { ms.ro && ms.ro.disconnect && ms.ro.disconnect(); } catch(_){}
 
     var leftBoxes = ms.leftBoxesRef ? ms.leftBoxesRef() : [];
+    var marks = ms.marksRef ? ms.marksRef() : [];
     if (showAll) {
       leftBoxes.forEach(function (b) {
         b.style.display = '';
         b.setAttribute('aria-hidden','false');
         b.classList.remove('active');
+      });
+      marks.forEach(function (m) {
+        m.style.backgroundColor = 'red';
+        m.classList.remove('active-mark');
+        m.removeAttribute('data-active-mark');
       });
     }
     this.__markSync.wired = false;
