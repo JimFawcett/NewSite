@@ -1,10 +1,9 @@
-   /* TwoPanelComponent.autoMarkSync.offset.click.autoscroll.js — classic <script>, no modules
+/* TwoPanelComponent.autoMarkSync.offset.click.js — classic <script>, no modules
    Features:
      • <x-two-panel> custom element
      • Public API: attributes [left, gap, height, step, min-left, max-left, min-right,
                                click-controls, no-mark-sync, mark-offset]
-                   methods    setLeft(), setGap(), toggleLeft(), reset(), step(sign[, stepOverride]),
-                              scrollRightToTop()
+                     methods setLeft(), setGap(), toggleLeft(), reset(), step(sign[, stepOverride])
      • Optional click-controls (set attribute `click-controls` or data-click-controls)
      • External control buttons via [data-two] + data-two-for="#id"
      • Linux Firefox height shim (per-instance)
@@ -15,8 +14,7 @@
          - Custom selectors: data-desc-selector / data-mark-selector
          - mark-offset (px|rem|%) threshold near top before switching (default 5rem)
          - Direction-aware hysteresis: only switch when next/prev mark ENTERS the offset band
-         - Right-pane single-click selects the description for the nearest-above mark
-     • NEW: Right pane *auto-scrolls to top on connect by default* (no attribute required)
+         - NEW: Right-pane single-click selects the description for the mark near the click
 */
 (function () {
   // ---------- helpers ----------
@@ -180,7 +178,7 @@
         'left','gap','height','step',
         'min-left','max-left','min-right',
         'click-controls','no-mark-sync',
-        'mark-offset' // threshold for mark sync
+        'mark-offset' // NEW
       ];
     }
   });
@@ -188,7 +186,7 @@
   XTwoPanel.prototype.connectedCallback = function () {
     if (!this._initCaptured) {
       this._init.left = this.hasAttribute('left') ? this.getAttribute('left') : null;
-      this._init.gap  = this.hasAttribute('gap')  ? this.getAttribute('gap')  : null;
+      this._init.gap  = this.hasAttribute('gap')  ? this.getAttribute('gap') : null;
       this._initCaptured = true;
     }
     this._applyAll();
@@ -203,18 +201,6 @@
     // Mark sync is ON by default unless explicitly disabled
     if (!this.hasAttribute('no-mark-sync')) {
       this._wireMarkSync();
-    }
-
-    // NEW: auto-scroll right pane to top by default
-    var doScrollTop = () => {
-      var sc = this._root?.querySelector('[part="right-scroller"]');
-      if (sc) sc.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    };
-    // after layout & first slotting
-    requestAnimationFrame(() => requestAnimationFrame(doScrollTop));
-    // after fonts stabilize (optional extra nudge)
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(() => requestAnimationFrame(doScrollTop));
     }
   };
 
@@ -336,10 +322,9 @@
     this.setAttribute('left', out);
     this.removeAttribute('collapsed-left');
   };
-
-  // Public helper to scroll right pane to top (also called automatically on connect)
+  // Public helper
   XTwoPanel.prototype.scrollRightToTop = function () {
-    var sc = this._root?.querySelector('[part="right-scroller"]');
+    const sc = this._root?.querySelector?.('[part="right-scroller"]');
     if (sc) sc.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
 
@@ -596,7 +581,7 @@
       });
     };
 
-    // --- click-to-select in right pane ---
+    // --- NEW: click-to-select in right pane ---
     function pickIndexForClientY(clientY) {
       if (!marks.length) return -1;
       var bestAbove = -1, bestAboveDy = Infinity;
@@ -615,6 +600,7 @@
     }
 
     var onRightClick = (ev) => {
+      // Only left button, ignore multi-clicks and selections/interactive
       if (ev.button !== 0) return;
       if (ev.detail && ev.detail > 1) return; // ignore double/triple
       var path = ev.composedPath ? ev.composedPath() : [ev.target];
