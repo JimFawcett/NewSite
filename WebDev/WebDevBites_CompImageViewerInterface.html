@@ -56,6 +56,16 @@
       border-radius: 3px;
     }
   </style>
+  <style>
+    /* Fixed-layout table and code scroller for col #3 (drop-in fix) */
+    table.iv-api { border-collapse: collapse; width: 100%; table-layout: fixed; }
+    table.iv-api th, table.iv-api td { padding: .5rem; vertical-align: top; }
+    table.iv-api pre { margin: 0; }
+    table.iv-api td:nth-child(3) .codebox {
+      max-width: 100%; overflow-x: auto; overflow-y: hidden; display: block; padding: .25rem .35rem;
+    }
+    table.iv-api td:nth-child(3) pre { white-space: pre; }
+  </style>
 </head>
 <body id="github" onload="load()">
 
@@ -89,19 +99,154 @@
   </image-viewer> -->
 
   <tm-b>
-    Components are created using JavaScript to build a shadow DOM with a tree of HTML elements and attached styles.
-    The shadow DOM does not respond to application JavaScript queries and so encapsulates its internals.
-  </tm-b>
-  <t-b>
-    However, to be useful many components need to allow an application to observer and/or mutate some of its internal 
-    styles and state. The purpose of the component interface is to support those needs.
+    ImageViewer is a lightweight Web Component that displays an image with clickable 
+    body and title, 
+    rendered inside a Shadow DOM. It exposes a small set of attributes for source, 
+    sizing, and colors, and uses slots so you can provide optional heading/auxiliary 
+    content. 
+  </tm-b> 
+  <t-b> 
+    An image or title click toggles its size (±1.2x step) for quick emphasis. 
+    Fonts are imported for consistent code/content presentation. Internal structure 
+    uses a wrapper and component region; styles are encapsulated.
   </t-b>
-  <hr>
-  <tm-b>
-    This is the first in a sequence several pages that explore the functioning and design of a W3C web component 
-    that manages resize-able images.
-  </tm-b>
-  <image-viewer
+  <div style="height:0.75rem;"></div>
+  <h3 id="usage">1.0 - Use in Application</h3>
+
+  <image-viewer 
+    img-src="pictures/JavaScriptExecution.png" 
+    bg-color="var(--light)" 
+    title-bg-color="#ccc" 
+    img-width="350" 
+    style="float:right; margin-right:-1rem;"
+  >
+    Figure 1. Execution Model
+  </image-viewer>
+
+  <t-b>
+    W3C web components are used like any of the standard elements. The code below 
+    appears in a web page wherever the designer wants an image to appear.
+  </t-b>
+  <t-b>
+    The attributes are all optional, as the <c-s>image-viewer</c-s> component provides 
+    fallback values.
+  </t-b>
+  <pre style="position:relative; z-index: -1;"><code>  &lt;image-viewer 
+    img-src="pictures/JavaScriptExecution.png" 
+    bg-color="var(--light)" 
+    title-bg-color="#ccc" 
+    img-width="350" 
+    style="float:right; margin-right:-1rem;"
+  &gt;
+    Figure 1. Execution Model
+  &lt;/image-viewer&gt;
+  </code></pre>
+  <t-b>
+    The only additional requirement is to include the component script: 
+    <pre><code style="display:inline-block; white-space: nowrap; margin:0.5rem 1rem;">
+      &lt;script src="Components/ImageViewerComponent/js/ImageViewer.js" defer&gt;&lt;/script&gt;
+    </code></pre>
+    This provides the resize-able, titled image shown above.
+  </t-b>
+<h3 id="interface" style="margin:1.25rem 0rem 1rem;">2.0 - Image Viewer Interface</h3>
+<table class="iv-api" border="1">
+  <colgroup>
+    <col style="width: 10rem;">
+    <col style="width: 14rem;">
+    <col style="width: auto;">
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Interface surface</th>
+      <th>What it does</th>
+      <th>Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Attributes -->
+    <tr>
+      <td><code>img-src</code> (attribute)</td>
+      <td>Sets the image URL displayed by the viewer.</td>
+      <td><div class="codebox"><pre><code>&lt;image-viewer img-src="imgs/sunrise.jpg"&gt;&lt;/image-viewer&gt;</code></pre></div></td>
+    </tr>
+    <tr>
+      <td><code>img-width</code> (attribute)</td>
+      <td>Controls rendered width of the image (e.g., <code>600</code>, <code>75%</code>, <code>32rem</code>). Overflow-x defaults to auto; you can constrain the host.</td>
+      <td><div class="codebox"><pre><code>&lt;image-viewer img-src="imgs/map.png" img-width="720"&gt;&lt;/image-viewer&gt;</code></pre></div></td>
+    </tr>
+    <tr>
+      <td><code>bg-color</code> (attribute)</td>
+      <td>Background color of the viewer’s main area.</td>
+      <td><div class="codebox"><pre><code>&lt;image-viewer img-src="imgs/diagram.svg" bg-color="#111"&gt;&lt;/image-viewer&gt;</code></pre></div></td>
+    </tr>
+    <tr>
+      <td><code>title-bg-color</code> (attribute)</td>
+      <td>Background color for the title/header bar.</td>
+      <td><div class="codebox"><pre><code>&lt;image-viewer img-src="imgs/photo.jpg" title-bg-color="gold"&gt;&lt;/image-viewer&gt;</code></pre></div></td>
+    </tr>
+
+    <!-- Properties (reflections of attributes) -->
+    <tr>
+      <td><code>.imgSrc</code> (property)</td>
+      <td>Programmatic getter/setter for <code>img-src</code>. Updates the image when set.</td>
+      <td><div class="codebox"><pre><code>const iv = document.querySelector('image-viewer');
+iv.imgSrc = 'imgs/updated.jpg';</code></pre></div></td>
+    </tr>
+    <tr>
+      <td><code>.imgWidth</code> (property)</td>
+      <td>Getter/setter for <code>img-width</code>. Accepts number (px), percent, or CSS length.</td>
+      <td><div class="codebox"><pre><code>iv.imgWidth = '80%'; // or 800, '36rem'</code></pre></div></td>
+    </tr>
+    <tr>
+      <td><code>.bgColor</code> (property)</td>
+      <td>Getter/setter for <code>bg-color</code>. Repaints container background.</td>
+      <td><div class="codebox"><pre><code>iv.bgColor = '#222';</code></pre></div></td>
+    </tr>
+    <tr>
+      <td><code>.titleBgColor</code> (property)</td>
+      <td>Getter/setter for <code>title-bg-color</code>. Repaints header background.</td>
+      <td><div class="codebox"><pre><code>iv.titleBgColor = 'steelblue';</code></pre></div></td>
+    </tr>
+
+    <!-- Slots and parts -->
+    <tr>
+      <td>Slots: <code>(default)</code>, <code>wrapper</code>, <code>component</code></td>
+      <td>Project custom content (e.g., captions/notes). Your build uses wrapper/component structure to organize layout.</td>
+      <td><div class="codebox"><pre><code>&lt;image-viewer img-src="imgs/plan.png"&gt;
+  &lt;div slot="wrapper"&gt;Figure 1 — Floor Plan&lt;/div&gt;
+  &lt;em&gt;Scaled view&lt;/em&gt; &lt;!-- default slot --&gt;
+&lt;/image-viewer&gt;</code></pre></div></td>
+    </tr>
+
+    <!-- Behavior -->
+    <tr>
+      <td>Clickable title (behavior)</td>
+      <td>Clicking the title toggles its font-size by ~±1.2× steps for emphasis.</td>
+      <td><div class="codebox"><pre><code>&lt;image-viewer img-src="imgs/chart.png"&gt; 
+  &lt;span slot="wrapper"&gt;Sales Q3&lt;/span&gt;
+&lt;/image-viewer&gt;
+&lt;!-- Click the title bar to zoom the title text --&gt;</code></pre></div></td>
+    </tr>
+
+    <!-- Events (if any surfaced later, add here) -->
+    <tr>
+      <td>Events</td>
+      <td>No custom events specified in current build. (If later emit e.g. <code>image-load</code> or <code>title-toggle</code>, document them here.)</td>
+      <td><div class="codebox"><pre><code>// future:
+// iv.addEventListener('image-load', e =&gt; console.log(e.detail));</code></pre></div></td>
+    </tr>
+
+    <!-- Theming hooks -->
+    <tr>
+      <td>Host styling &amp; theming</td>
+      <td>Use attributes above or host CSS to size/position the component. Encapsulated styles live in Shadow DOM; expose parts/vars if needed.</td>
+      <td><div class="codebox"><pre><code>image-viewer {
+  display:block; max-width: 60rem; margin-inline:auto;
+}</code></pre></div></td>
+    </tr>
+  </tbody>
+</table>
+  
   <div style="height:15em;"></div>
   </content-block>
   <div id="bottomMenu">
