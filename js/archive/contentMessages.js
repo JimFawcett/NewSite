@@ -1,5 +1,5 @@
 /*---------------------------------------------------------
- * ContentMsg.js - Scripts for content messaging
+ * ContentMessages.js - Scripts for content messaging
  * ver 1.0 - 19 Feb 2025
  * Jim Fawcett
  */
@@ -11,12 +11,40 @@ function isDefined(elem) {
   return true;
 }
 /*---------------------------------------------------------
-  Post message to Parent
+  Build key value message
+*/
+function makeMsg(key, value) {
+  let msg = new Object();
+  msg.key = key;
+  msg.value = value;
+  return msg;
+}
+/*---------------------------------------------------------
+  Post message to Explorer Parent
   - content window posts to parent Explorer
 */
-function postMsg(msg) {
+function postParentMsg(msg) {
   window.parent.postMessage(msg, '*');
 }
+/*---------------------------------------------------------
+  Post message to Page Host
+*/
+function postHostMsg(msg) {
+  window.top.postMessage(msg, '*');
+}
+function copyUrlToClipboard() {
+  navigator.clipboard.writeText(window.location.href)
+    .then(() => console.log('URL copied to clipboard:', window.location.href))
+    .catch(err => console.error('Copy failed:', err));
+}
+function doUrl() {
+  postMsg(makeMsg('url'));
+  copyUrlToClipboard();
+  alert('url');
+}
+/*---------------------------------------------------------
+  Process messages to content pages
+*/
 window.onmessage = function (event) {
   console.log("Message received in iframe:" + event.data.key + ", " + event.data.value);
   switch(event.data.key) {
@@ -61,16 +89,20 @@ window.onmessage = function (event) {
 
     case 'clear':
       closeMenus();
+      hideElement('goto');
+      window.parent.postMessage({ key: 'reload-iframe' }, '*');
       break;
 
+      // case 'clear':
+      // closeMenus();
+      // hideElement('goto');
+      // // location.reload();
+      // // setTimeout(() => location.reload(), 0);
+      // location.replace(location.href);
+      // break;
+
     // case 'controls':
-    //   let cnt = document.getElementById('controls');
-    //   if(cnt.classList.contains('hidden')) {
-    //     cnt.classList.remove('hidden');
-    //   } else {
-    //     cnt.classList.add('hidden');
-    //   }
-    //   break;
+    // - handled by Explorer
 
     case 'about':
       let abt = document.getElementById('about');
@@ -91,7 +123,6 @@ window.onmessage = function (event) {
       break;
 
     case 'url':
-      // alert('url');
       let url = document.getElementById('url');
       if(url.classList.contains('hidden')) {
         url.classList.remove('hidden');
@@ -99,26 +130,30 @@ window.onmessage = function (event) {
       } else {
         url.classList.add('hidden');
       }
-      // alert('done');
       break;
 
     case 'goto':
-      // alert('url');
       let gtm = document.getElementById('goto');
       if(gtm.classList.contains('hidden')) {
         gtm.classList.remove('hidden');
-        // gtm.innerHTML='<a href=' + window.location.href + '>' + window.location.href + '</a>';
-        // gtm.innerHTML=
-        //   "<div style='display:flex; flex-direction:column; flexwrap:nowrap;'>"
-        //    + "<div>This Page:</div>"
-        //    + "<div>foobar</div><br>" 
-        //    + "</div>";
       } else {
         gtm.classList.add('hidden');
       }
-      // alert('done');
       break;
-      
+
+    case 'back':
+      history.back();
+      break;
+        
+    case 'forward':
+      history.forward();
+      break;
+        
+    case 'reload':
+      alert('reload');
+      location.reload();
+      break;
+        
     default:
       console.log('no match for message data');
   }
