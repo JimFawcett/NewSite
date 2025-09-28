@@ -23,11 +23,13 @@ function closeMenus() {
   }
   let secs = document.getElementById('sections');
   if(isDefined(secs)) {
-    secs.classList.add('hidden');
+    // secs.classList.add('hidden');
+    hideElement('sections');
   }
   let pgs = document.getElementById('pages');
   if(isDefined(pgs)) {
-    pgs.classList.add('hidden');
+    // pgs.classList.add('hidden');
+    hideElement('pages');
   }
 }
 /*---------------------------------------------------------
