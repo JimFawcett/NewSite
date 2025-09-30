@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html id="top">
 <!--
-  WebDevBites_Data.html
+  WebDevBites_CompImageViewerDesign.html — Option B (marks outside <code>)
 -->
 <head>
   <title>WebDev ImageViewer</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+
+  <!-- Site styles & libs -->
   <link rel="stylesheet" href="../css/reset.css" />
   <link rel="stylesheet" href="../css/ContentMenus.css" />
   <link rel="stylesheet" href="../css/Content.css" />
@@ -26,13 +28,14 @@
   <script src="../js/cookies.js"></script>
   <script src="../js/contentElements.js"></script>
   <script src="../js/contentMessages.js"></script>
-  <link rel="stylesheet" href="../css/prism.css" />
-  <script src="../js/prism.js"></script>
+  <!-- Component -->
   <script src="Components/TwoPanelComponentWithMarkersAndClick/js/TwoPanelComponentWithMarkersAndClick.js" defer></script>
+  <link rel="stylesheet" href="Components/TwoPanelComponentWithMarkersAndClick/css/TwoPanelComponentWithMarkersAndClick.css">
+
   <script>
     function loadInExplorer() {
       const loc = window.location;
-      if(loc === window.top.location) {
+      if (loc === window.top.location) {
         window.location = "ExploreWebDev.html?src=" + loc;
       }
     }
@@ -44,61 +47,81 @@
       setPersistantElements();
     }
   </script>
+
   <style>
-    .menuHeader {
-      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    .menuHeader { padding:0.0rem 0.5rem 0.25rem 0.5rem; }
+    code {
+      /* background: #eef; */
+      padding: 0 3px;
+      border-radius: 3px;
+    }
+    :root { --app-panel-height: 70vh; }
+    .demo { border:1px solid #aaa; border-radius:10px; background:#fff; padding:0rem 1rem 1rem; }
+    div.toolbar { margin: 0.5rem 0rem; }
+    div.toolbar button { padding:0.15rem 0.75rem; font-size: 1.05rem; }
+    table { border: 1px solid #999; }
+    table td { font-size:0.9rem; line-height: 0.8rem; border:none; }
+    div.marked-box h4 { padding-top: 0rem; margin-top:0rem; }
+
+    /* Right panel base font */
+    x-two-panel::part(right-scroller) { font-size: 1rem; }
+    x-two-panel [slot="right"] .code-box > pre.code-demo { font-size: 1rem; line-height: 1.5; }
+    x-two-panel [slot="right"] pre.code-demo > code       { font-size: 1rem; line-height: 1.5; }
+
+    /* Option B: marks are siblings outside <code> */
+    .code-box .mark {
+      display: block;
+      height: 0.15rem;              /* invisible anchor line */
+      background: transparent;
+      border: none;
+      outline: none;
+    }
+    .code-box .mark.active-mark {
+      /* keep class for green/red toggling if desired; invisible by default */
+      background: transparent;
     }
   </style>
   <style>
-    code {
+    pre code[class*="language-"] { background: transparent; }
+    x-two-panel::part(left-panel),
+    x-two-panel::part(right-panel) { background: transparent; }
+    /* inline code chips only, not Prism blocks */
+    code:not([class*="language-"]) {
       background: #eef;
       padding: 0 3px;
       border-radius: 3px;
     }
+
+    /* in Prism blocks, <pre> owns the background */
+    pre[class*="language-"] > code { background: transparent; }
+    /* somewhere in your CSS */
+    pre[class*="language-"]::after {
+      content: "";
+      display: block;
+      height: var(--code-bottom-gap, 0); /* set per block */
+      /* optional if you want the same dark fill as the container/theme */
+      background: inherit;
+    }
   </style>
+
+  <!-- load Prism & NormalizeWhitespace -->
+  <link rel="stylesheet" href="../css/prism.css">
+  <script src="../js/prism.js"></script>
+  <script src="../js/prism.js"></script>
+  <script>
+    // keep indentation; just trim leading & trailing blank lines
+    if (Prism.plugins.NormalizeWhitespace) {
+      Prism.plugins.NormalizeWhitespace.setDefaults({
+        'remove-trailing': false,
+        'remove-indent':   false,
+        'left-trim':       true,   // trims first line if it’s blank
+        'right-trim':      true    // trims last line if it’s blank
+      });
+    }
+  </script>
   <style>
-    :root {
-      /* global variable shared between DOM and Shadow DOM */
-      --app-panel-height: 70vh;
-    }
-    /* body { 
-      margin: 0; 
-      font: 18px/1.3 "Noto Sans", Arial, sans-serif; 
-      padding: 1rem; 
-      background:#f6f7fb; 
-      color:#1f2328; 
-    } */
-    .demo { 
-      border:1px solid #aaa; 
-      border-radius:10px; 
-      background:#fff; 
-      padding:0rem 1rem 1rem; 
-    }
-    div.toolbar {
-      margin: 0.5rem 0rem;
-    }
-    div.toolbar button {
-      padding:0.15rem 0.75rem;
-    }
-
-    table { border: 1px solid #999; }
-    table td {
-      font-size:0.9rem;
-      line-height: 0.8rem;
-      border:none;
-    }
-    div.marked-box h4 {
-      padding-top: 0rem;
-      margin-top:0rem;
-    }
-    /* 1) Set a base font-size on the right panel */
-    x-two-panel::part(right-scroller) { font-size: 1rem; }   /* or 15px, 0.9rem, etc. */
-
-    /* 2) Override the inner code rules that currently force 0.85rem */
-    x-two-panel [slot="right"] .code-box > pre.code-demo { font-size: 1rem; line-height: 1.5; }
-    x-two-panel [slot="right"] pre.code-demo > code       { font-size: 1rem; line-height: 1.5; }
+    .code-box { background-color: #2d2d2d; }
   </style>
-  <link rel="stylesheet" href="Components/TwoPanelComponentWithMarkersAndClick/css/TwoPanelComponentWithMarkersAndClick.css">
 </head>
 <body id="github" onload="load()">
 
@@ -111,12 +134,9 @@
 
   <content-block>
     <header>
-      <!--<a class="repoLink" href="https://github.com/JimFawcett">JimFawcett Repositories</a>-->
       <div id="pagetitle" class="header">
         <h2 id="title">WebDev Bites: ImageViewer Component Design</h2>
-        <h4 id="subtitle" class="indent">
-          W3C web component 
-        </h4>
+        <h4 id="subtitle" class="indent">W3C web component</h4>
       </div>
       <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
         <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--light); margin-top:0.25em; margin-left:1.5em;">About</a>
@@ -126,82 +146,88 @@
         <a class="repoLinks" target="_self" href="WebDevBites_CompImageViewerInterface.html" style="color:var(--light); margin-left:1.5em;">Interface</a>
       </div>
     </header>
-  <!-- <h1>Two-Panel Component Test</h1> -->
-   <div style="height:1rem;"></div>
-  <div class="demo" style="height:calc(100dvh - 10rem);">
-    <!-- <tm-b><a href="../../PageHost.html?src=WebDev/ExploreWebDev.html">Home</a></tm-b> -->
-    <!-- Toolbar targets the panel by id -->
-    <div class="toolbar">
-      <button data-two="narrow"     data-two-for="#buttons-panel" data-step="6rem">Narrow</button>
-      <button data-two="reset"      data-two-for="#buttons-panel">Reset</button>
-      <button data-two="widen"      data-two-for="#buttons-panel" data-step="6rem">Widen</button>
-      <button data-two="toggle-left"data-two-for="#buttons-panel">Toggle Left</button>
-      <button id="next-mark" data-two-for="#buttons-panel">Next</button>
-      <button id="prev-mark" data-two-for="#buttons-panel">Prev</button>
-    </div>
-    <!-- data-left-fixed holds left width constant when container resizes -->
-    <x-two-panel id="buttons-panel" class="with-buttons" height="calc(100dvh - 13.25rem)" left="15rem" data-left-fixed>
-      <div slot="left" class="left-slot">
-        <div id="mark1" class="marked-box">
-          <h4>Component Class</h4>
-          <t-b>
-            The tag <c-s><code>&lt;image-viewer&gt;</code></c-s> creates an instance of the
-            ImageViewer class. The class&apos;s first element is a ShadowDOM that isolates 
-            the component&apos;s elements and their styles.
-          </t-b>
-          <t-b>
-            That prevents an application&apos;s styles from affecting the component internals.
-            Attributes allow an application to affect selected styles defined by the designer.
-          </t-b>
-        </div>
-        <div id="mark2" class="marked-box">
-          <h4>Shadow DOM</h4>
-          <t-b>
-            A W3C web component is defined entirely in JavaScript as illustrated in the right 
-            panel.
-          </t-b>
-          <t-b>
-            The shadowDOM provides HTML markup and styling for the component using a JavaScript 
-            expression &quot;<c-s><code>
-              this.shadowRoot.innerHTML = `[markup goes here]`;
-          </t-b>
-          </code></c-s>.
-        </div>
-        <div id="mark3" class="marked-box">
-          <h4>Structure</h4>
-          <t-b>
-            This markup defines the structure of the image-viewer component. The outer div 
-            provides padding to keep content from touching the image-viewer when it is 
-            floated to the left or right.
-          </t-b>
-          <t-b>
-            The next div provides the visible part of the component, e.g., its title and 
-            image. Note that the img src and width are provided by attributes the  
-            application supplies in the <c-s><code>&lt;image-viewer&gt;</code></c-s> 
-            declaration.
-          </t-b>
-        </div>
-        <div id="mark4" class="marked-box">
-          <h4>Listeners</h4>
-          <t-b>
-            The primary purpose of this component is to enlarge or diminish the size of 
-            an image using button clicks on image (enlarge) or title (diminish).
-          </t-b>
-          <t-b>
-            The first listener awaits clicks on the title which contracts the image. 
-            The second awaits clicks on the image then enlarges it.
-          </t-b>
-          <t-b>
-            The final piece registers the <c-s><code>&lt;image-viewer&gt;</code></c-s> with 
-            this component class. That causes the browser&apos;s rendering engine to create 
-            an instance of the ImageViewer class for each occurance of the tag.
-          </t-b>
-        </div>
+
+    <div style="height:1rem;"></div>
+
+    <div class="demo" style="height:calc(100dvh - 10rem);">
+      <div class="toolbar">
+        <button data-two="narrow"      data-two-for="#buttons-panel" data-step="6rem">Narrow</button>
+        <button data-two="reset"       data-two-for="#buttons-panel">Reset</button>
+        <button data-two="widen"       data-two-for="#buttons-panel" data-step="6rem">Widen</button>
+        <button data-two="toggle-left" data-two-for="#buttons-panel">Toggle Left</button>
+        <button id="next-mark"         data-two-for="#buttons-panel">Next</button>
+        <button id="prev-mark"         data-two-for="#buttons-panel">Prev</button>
       </div>
-      <div slot="right" class="right-slots">
-        <div class="code-box">
-          <!-- <pre class="code-demo"><code class="language-javascript"><div class="mark">&nbsp;</div> -->
-          <pre class="code-demo"><code><div class="mark">&nbsp;</div>
+
+      <!-- data-left-fixed holds left width constant when container resizes -->
+      <x-two-panel id="buttons-panel" class="with-buttons" height="calc(100dvh - 13.25rem)" left="15rem" data-left-fixed>
+        <div slot="left" class="left-slot">
+          <div id="mark1" class="marked-box">
+            <h4>Component Class</h4>
+            <t-b>
+              The tag <c-s><code>&lt;image-viewer&gt;</code></c-s> creates an instance of the
+              ImageViewer class. The class&apos;s first element is a ShadowDOM that isolates 
+              the component&apos;s elements and their styles.
+            </t-b>
+            <t-b>
+              That prevents an application&apos;s styles from affecting the component internals.
+              Attributes allow an application to affect selected styles defined by the designer.
+            </t-b>
+          </div>
+
+          <div id="mark2" class="marked-box">
+            <h4>Shadow DOM</h4>
+            <t-b>
+              A W3C web component is defined entirely in JavaScript as illustrated in the right 
+              panel.
+            </t-b>
+            <t-b>
+              The shadowDOM provides HTML markup and styling for the component using a JavaScript 
+              expression &quot;<c-s><code>
+                this.shadowRoot.innerHTML = `[markup goes here]`;
+            </t-b>
+            </code></c-s>.
+          </div>
+
+          <div id="mark3" class="marked-box">
+            <h4>Structure</h4>
+            <t-b>
+              This markup defines the structure of the image-viewer component. The outer div 
+              provides padding to keep content from touching the image-viewer when it is 
+              floated to the left or right.
+            </t-b>
+            <t-b>
+              The next div provides the visible part of the component, e.g., its title and 
+              image. Note that the img src and width are provided by attributes the  
+              application supplies in the <c-s><code>&lt;image-viewer&gt;</code></c-s> 
+              declaration.
+            </t-b>
+          </div>
+
+          <div id="mark4" class="marked-box">
+            <h4>Listeners</h4>
+            <t-b>
+              The primary purpose of this component is to enlarge or diminish the size of 
+              an image using button clicks on image (enlarge) or title (diminish).
+            </t-b>
+            <t-b>
+              The first listener awaits clicks on the title which contracts the image. 
+              The second awaits clicks on the image then enlarges it.
+            </t-b>
+            <t-b>
+              The final piece registers the <c-s><code>&lt;image-viewer&gt;</code></c-s> with 
+              this component class. That causes the browser&apos;s rendering engine to create 
+              an instance of the ImageViewer class for each occurance of the tag.
+            </t-b>
+          </div>
+        </div>
+
+        <div slot="right" class="right-slots">
+          <div class="code-box">
+
+            <!-- Mark 1: before class declaration -->
+            <div class="mark" aria-hidden="true"></div>
+            <pre class="code-demo language-javascript"><code class="language-javascript">
 class ImageViewer extends HTMLElement {
   constructor() {
     super();
@@ -216,102 +242,114 @@ class ImageViewer extends HTMLElement {
 
     // Wrapper background uses --light fallback to white
     const wrapperBg = 'var(--light, white)';
-
-<div class="mark">&nbsp;</div>
-    // Shadow DOM markup
-    this.shadowRoot.innerHTML = `
-      &lt;style&gt;
-        :host {
-          display: inline-block; /* allow float and shrink to content */
-        }
-
-        .wrapper {
-          padding: 1rem; /* outer padding to keep text off the border when floated */
-          box-sizing: border-box;
-          background-color: ${wrapperBg};
-        }
-
-        .component {
-          border: 2px solid var(--dark, #333); /* use client's --dark or fallback */
-          padding: 0.5rem;
-          display: flex;
-          flex-direction: column;
-          user-select: none;
-          width: min-content;
-          box-shadow: 5px 5px 5px #999;
-          box-sizing: border-box;
-          background-color: ${componentBg};
-        }
-
-        .title {
-          display: flex;
-          font-family: &quot;Comic Sans MS&quot;, cursive, sans-serif;
-          font-weight: bold;
-          cursor: pointer;
-          max-width: 100%;
-          margin-bottom: 8px;
-          line-height: 1.0rem;
-          flex-wrap: wrap;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          white-space: wrap;
-          color: var(--dark, #333); /* title text uses --dark or fallback */
-          background-color: ${titleBg};
-          padding: 0.25rem 0.5rem;
-        }
-
-        .image {
-          display: block;
-          flex: 0 0 auto;
-          cursor: pointer;
-          transition: transform 0.2s ease-in-out;
-        }
-
-        img {
-          display: block;
-          height: auto;
-          /* removed max-width so explicit width adjustments take effect */
-        }
-      &lt;/style&gt;
-<div class="mark">&nbsp;</div>
-      &lt;div class=&quot;wrapper&quot;&gt;
-        &lt;div class=&quot;component&quot;&gt;
-          &lt;div class=&quot;title&quot; part=&quot;title&quot;&gt;&lt;slot&gt;&lt;/slot&gt;&lt;/div&gt;
-          &lt;div class=&quot;image&quot;&gt;
-            &lt;img id=&quot;img&quot; src=&quot;${this.imgSrc}&quot; width=&quot;${this.imgWidth}&quot;&gt;
-          &lt;/div&gt;
-        &lt;/div&gt;
-      &lt;/div&gt;
-    `;
-<div class="mark">&nbsp;</div>
-    // Event listeners
-    this.titleElement = this.shadowRoot.querySelector('.title');
-    this.imageElement = this.shadowRoot.querySelector('#img');
-
-    this.titleElement.addEventListener('click', () =&gt; this.resizeImage(1 / 1.2));
-    this.imageElement.addEventListener('click', () =&gt; this.resizeImage(1.2));
-  }
-
-  resizeImage(scaleFactor) {
-    const currentWidth = parseFloat(window.getComputedStyle(this.imageElement).width);
-    this.imageElement.style.width = `${currentWidth * scaleFactor}px`;
   }
 }
+            </code></pre>
 
+            <!-- Mark 2: before <style> inside template string -->
+            <div class="mark" aria-hidden="true"></div>
+            <pre class="code-demo"><code class="language-javascript">
+// Shadow DOM markup
+this.shadowRoot.innerHTML = `
+  &lt;style&gt;
+    :host {
+      display: inline-block; /* allow float and shrink to content */
+    }
+
+    .wrapper {
+      padding: 1rem; /* outer padding to keep text off the border when floated */
+      box-sizing: border-box;
+      background-color: ${wrapperBg};
+    }
+
+    .component {
+      border: 2px solid var(--dark, #333); /* use client's --dark or fallback */
+      padding: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      width: min-content;
+      box-shadow: 5px 5px 5px #999;
+      box-sizing: border-box;
+      background-color: ${componentBg};
+    }
+
+    .title {
+      display: flex;
+      font-family: &quot;Comic Sans MS&quot;, cursive, sans-serif;
+      font-weight: bold;
+      cursor: pointer;
+      max-width: 100%;
+      margin-bottom: 8px;
+      line-height: 1.0rem;
+      flex-wrap: wrap;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      white-space: wrap;
+      color: var(--dark, #333); /* title text uses --dark or fallback */
+      background-color: ${titleBg};
+      padding: 0.25rem 0.5rem;
+    }
+
+    .image {
+      display: block;
+      flex: 0 0 auto;
+      cursor: pointer;
+      transition: transform 0.2s ease-in-out;
+    }
+
+    img {
+      display: block;
+      height: auto;
+      /* removed max-width so explicit width adjustments take effect */
+    }
+  &lt;/style&gt;
+`;
+            </code></pre>
+
+            <!-- Mark 3: before HTML in template -->
+            <div class="mark" aria-hidden="true"></div>
+            <pre class="code-demo"><code class="language-javascript">
+this.shadowRoot.innerHTML += `
+  &lt;div class=&quot;wrapper&quot;&gt;
+    &lt;div class=&quot;component&quot;&gt;
+      &lt;div class=&quot;title&quot; part=&quot;title&quot;&gt;&lt;slot&gt;&lt;/slot&gt;&lt;/div&gt;
+      &lt;div class=&quot;image&quot;&gt;
+        &lt;img id=&quot;img&quot; src=&quot;${this.imgSrc}&quot; width=&quot;${this.imgWidth}&quot;&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+`;
+            </code></pre>
+
+            <!-- Mark 4: before listeners -->
+            <div class="mark" aria-hidden="true"></div>
+            <pre class="code-demo language-javascript" style="--code-bottom-gap:5rem;"><code class="language-javascript">
+// Event listeners
+this.titleElement = this.shadowRoot.querySelector('.title');
+this.imageElement = this.shadowRoot.querySelector('#img');
+
+this.titleElement.addEventListener('click', () =&gt; this.resizeImage(1 / 1.2));
+this.imageElement.addEventListener('click', () =&gt; this.resizeImage(1.2));
+}
+
+resizeImage(scaleFactor) {
+  const currentWidth = parseFloat(window.getComputedStyle(this.imageElement).width);
+  this.imageElement.style.width = `${currentWidth * scaleFactor}px`;
+}
 customElements.define('image-viewer', ImageViewer);
 
 
 
 
+            </code></pre>
 
-
-        </code></pre>
+          </div>
         </div>
-      </div>
-    </x-two-panel>
-  </div>
-    <!-- <div style="height:15em;"></div> -->
+      </x-two-panel>
+    </div>
   </content-block>
+
   <div id="bottomMenu">
     <div id="keys" class="hidden"></div>
     <div id="sections" class="hidden">
@@ -326,123 +364,112 @@ customElements.define('image-viewer', ImageViewer);
     <div id="goto" class="hidden">url</div>
   </div>
   <a id="bottom"></a>
+
   <script src="js/WebDevCompPages.js"></script>
   <script>buildPages()</script>
   <script>createSiteNavMenu('goto')</script>
   <script src="../js/link-nav.js" defer></script>
+  <script>setCookie('#pages', 1, 10);</script>
+
+  <!-- Next/Prev wiring (unchanged) -->
   <script>
-    setCookie('#pages', 1, 10);
+  customElements.whenDefined('x-two-panel').then(() => {
+    const btnNext = document.getElementById('next-mark');
+    const btnPrev = document.getElementById('prev-mark');
+
+    if (!btnNext && !btnPrev) return;
+
+    function resolvePanel(fromBtn) {
+      const sel = fromBtn?.getAttribute('data-two-for') || fromBtn?.getAttribute('aria-controls');
+      if (!sel) return document.querySelector('x-two-panel');
+      if (sel.charAt(0) === '#') return document.getElementById(sel.slice(1));
+      try { return document.querySelector(sel); } catch { return null; }
+    }
+    function getRightScroller(panel) {
+      return panel?.shadowRoot?.querySelector?.('[part="right-scroller"]') || null;
+    }
+    function getMarks(panel) {
+      const arr = [];
+      panel.querySelectorAll('[slot="right"]').forEach(c => {
+        c.querySelectorAll('.mark').forEach(m => arr.push(m));
+      });
+      return arr;
+    }
+    function thresholdPx(panel, scroller) {
+      const raw = (panel.getAttribute('mark-offset') || '5rem').trim();
+      const m = raw.match(/^(-?\d*\.?\d+)\s*(px|rem|%)?$/i);
+      const n = m ? parseFloat(m[1]) : 0;
+      const unit = (m && m[2]) ? m[2].toLowerCase() : 'px';
+      if (unit === 'px')  return n;
+      if (unit === 'rem') return n * (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16);
+      if (unit === '%')   return (n / 100) * (scroller?.clientHeight || 1);
+      return n;
+    }
+    function currentMarkIndex(panel, scroller, marks) {
+      let idx = marks.findIndex(m => m.getAttribute('data-active-mark') === 'true' || m.classList.contains('active-mark'));
+      if (idx !== -1) return idx;
+      const scTop = scroller.getBoundingClientRect().top;
+      let firstBelow = -1;
+      for (let i = 0; i < marks.length; i++) {
+        if (marks[i].getBoundingClientRect().top >= scTop) { firstBelow = i; break; }
+      }
+      if (firstBelow === -1) return marks.length - 1;
+      return Math.max(0, firstBelow - 1);
+    }
+    function scrollToMark(panel, scroller, mark, behavior = 'smooth') {
+      const scRect = scroller.getBoundingClientRect();
+      const mRect  = mark.getBoundingClientRect();
+      const tPx    = thresholdPx(panel, scroller);
+      const desiredOffset = Math.max(0, Math.min(tPx, 8));
+      const delta = (mRect.top - scRect.top) - desiredOffset;
+      const targetTop = Math.max(0, Math.min(
+        scroller.scrollTop + delta,
+        scroller.scrollHeight - scroller.clientHeight
+      ));
+      scroller.scrollTo({ top: targetTop, left: 0, behavior });
+    }
+    function updateButtonsFor(panel, btnPrev, btnNext) {
+      const scroller = getRightScroller(panel);
+      const marks = getMarks(panel);
+      if (!scroller || marks.length === 0) {
+        if (btnPrev) btnPrev.disabled = true;
+        if (btnNext) btnNext.disabled = true;
+        return;
+      }
+      const cur = currentMarkIndex(panel, scroller, marks);
+      const atFirst = (cur <= 0);
+      const atLast  = (cur >= marks.length - 1);
+      if (btnPrev) btnPrev.disabled = atFirst;
+      if (btnNext) btnNext.disabled = atLast;
+    }
+    function attachStateSyncFor(button) {
+      const panel = resolvePanel(button);
+      const scroller = getRightScroller(panel);
+      if (!panel || !scroller) return;
+      const sync = () => updateButtonsFor(panel, btnPrev, btnNext);
+      scroller.addEventListener('scroll', sync, { passive: true });
+      scroller.addEventListener('click',  sync, false);
+      window.addEventListener('resize',   sync, { passive: true });
+      requestAnimationFrame(() => requestAnimationFrame(sync));
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(sync));
+    }
+    if (btnPrev) attachStateSyncFor(btnPrev);
+    if (btnNext) attachStateSyncFor(btnNext);
+
+    function advance(button, delta) {
+      const panel    = resolvePanel(button);
+      const scroller = getRightScroller(panel);
+      const marks    = getMarks(panel);
+      if (!panel || !scroller || !marks.length) return;
+      const cur = currentMarkIndex(panel, scroller, marks);
+      let target = cur + delta;
+      if (target < 0 || target > (marks.length - 1)) return; // no wrap
+      scrollToMark(panel, scroller, marks[target], 'smooth');
+      setTimeout(() => updateButtonsFor(panel, btnPrev, btnNext), 250);
+    }
+    btnNext && btnNext.addEventListener('click', () => advance(btnNext, +1));
+    btnPrev && btnPrev.addEventListener('click', () => advance(btnPrev, -1));
+  });
   </script>
-<script>
-customElements.whenDefined('x-two-panel').then(() => {
-  const btnNext = document.getElementById('next-mark');
-  const btnPrev = document.getElementById('prev-mark');
-
-  if (!btnNext && !btnPrev) return;
-
-  // Resolve target panel from the button’s data-two-for / aria-controls
-  function resolvePanel(fromBtn) {
-    const sel = fromBtn?.getAttribute('data-two-for') || fromBtn?.getAttribute('aria-controls');
-    if (!sel) return document.querySelector('x-two-panel');
-    if (sel.charAt(0) === '#') return document.getElementById(sel.slice(1));
-    try { return document.querySelector(sel); } catch { return null; }
-  }
-  function getRightScroller(panel) {
-    return panel?.shadowRoot?.querySelector?.('[part="right-scroller"]') || null;
-  }
-  function getMarks(panel) {
-    const arr = [];
-    panel.querySelectorAll('[slot="right"]').forEach(c => {
-      c.querySelectorAll('.mark').forEach(m => arr.push(m));
-    });
-    return arr;
-  }
-  function thresholdPx(panel, scroller) {
-    const raw = (panel.getAttribute('mark-offset') || '5rem').trim();
-    const m = raw.match(/^(-?\d*\.?\d+)\s*(px|rem|%)?$/i);
-    const n = m ? parseFloat(m[1]) : 0;
-    const unit = (m && m[2]) ? m[2].toLowerCase() : 'px';
-    if (unit === 'px')  return n;
-    if (unit === 'rem') return n * (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16);
-    if (unit === '%')   return (n / 100) * (scroller?.clientHeight || 1);
-    return n;
-  }
-  // Current index: prefer component’s active mark; fallback to geometry
-  function currentMarkIndex(panel, scroller, marks) {
-    let idx = marks.findIndex(m => m.getAttribute('data-active-mark') === 'true' || m.classList.contains('active-mark'));
-    if (idx !== -1) return idx;
-    const scTop = scroller.getBoundingClientRect().top;
-    let firstBelow = -1;
-    for (let i = 0; i < marks.length; i++) {
-      if (marks[i].getBoundingClientRect().top >= scTop) { firstBelow = i; break; }
-    }
-    if (firstBelow === -1) return marks.length - 1;   // scrolled past all
-    return Math.max(0, firstBelow - 1);               // use mark just above top
-  }
-  function scrollToMark(panel, scroller, mark, behavior = 'smooth') {
-    const scRect = scroller.getBoundingClientRect();
-    const mRect  = mark.getBoundingClientRect();
-    const tPx    = thresholdPx(panel, scroller);
-    // Place the mark near the top, just inside threshold band
-    const desiredOffset = Math.max(0, Math.min(tPx, 8));
-    const delta = (mRect.top - scRect.top) - desiredOffset;
-    const targetTop = Math.max(0, Math.min(
-      scroller.scrollTop + delta,
-      scroller.scrollHeight - scroller.clientHeight
-    ));
-    scroller.scrollTo({ top: targetTop, left: 0, behavior });
-  }
-  function updateButtonsFor(panel, btnPrev, btnNext) {
-    const scroller = getRightScroller(panel);
-    const marks = getMarks(panel);
-    if (!scroller || marks.length === 0) {
-      if (btnPrev) btnPrev.disabled = true;
-      if (btnNext) btnNext.disabled = true;
-      return;
-    }
-    const cur = currentMarkIndex(panel, scroller, marks);
-    const atFirst = (cur <= 0);
-    const atLast  = (cur >= marks.length - 1);
-    if (btnPrev) btnPrev.disabled = atFirst;
-    if (btnNext) btnNext.disabled = atLast;
-  }
-  function attachStateSyncFor(button) {
-    const panel = resolvePanel(button);
-    const scroller = getRightScroller(panel);
-    if (!panel || !scroller) return;
-    const sync = () => updateButtonsFor(panel, btnPrev, btnNext);
-    scroller.addEventListener('scroll', sync, { passive: true });
-    scroller.addEventListener('click',  sync, false); // catch click-to-select changes
-    window.addEventListener('resize',   sync, { passive: true });
-    // Initial after layout/slotting/fonts
-    requestAnimationFrame(() => requestAnimationFrame(sync));
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(sync));
-  }
-
-  // Wire both buttons (they can point to the same panel)
-  if (btnPrev) attachStateSyncFor(btnPrev);
-  if (btnNext) attachStateSyncFor(btnNext);
-
-  function advance(button, delta) {
-    const panel    = resolvePanel(button);
-    const scroller = getRightScroller(panel);
-    const marks    = getMarks(panel);
-    if (!panel || !scroller || !marks.length) return;
-
-    const cur = currentMarkIndex(panel, scroller, marks);
-    let target = cur + delta;
-
-    // NO WRAP: clamp to edges; if already at edge and trying to go further, do nothing
-    if (target < 0 || target > (marks.length - 1)) return;
-    scrollToMark(panel, scroller, marks[target], 'smooth');
-
-    // Update disabled state after the planned scroll finishes
-    setTimeout(() => updateButtonsFor(panel, btnPrev, btnNext), 250);
-  }
-
-  btnNext && btnNext.addEventListener('click', () => advance(btnNext, +1));
-  btnPrev && btnPrev.addEventListener('click', () => advance(btnPrev, -1));
-});
-</script>
 </body>
 </html>
