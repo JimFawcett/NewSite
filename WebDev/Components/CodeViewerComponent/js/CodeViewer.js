@@ -10,7 +10,6 @@ class CodeViewer extends HTMLElement {
     super();
     this.attachShadow({ mode: 'open' });
 
-    // Template with inline CSS (shadow-safe; no external @import)
     this.shadowRoot.innerHTML = `
       <style>
         :host { display: inline-block; }
@@ -62,10 +61,13 @@ class CodeViewer extends HTMLElement {
           white-space: pre;                       /* no wrap */
           overflow-y: auto;                       /* vertical scroll when tall */
           overflow-x: var(--code-overflow-x, auto);
-          width: var(--code-width, auto);         /* attribute: width */
-          height: var(--code-height, auto);       /* attribute: height */
+          width: var(--code-width, auto);         /* attribute: width (initial only) */
+          height: var(--code-height, auto);
           box-sizing: border-box;
           transition: width 0.2s ease, font-size 0.2s ease;
+          user-select: none;
+          -webkit-user-select: none;
+          -moz-user-select: none;
         }
 
         /* Hide only the projection of slotted raw code */
@@ -86,61 +88,81 @@ class CodeViewer extends HTMLElement {
     this.preElement   = this.shadowRoot.querySelector('#code');
     this.codeSlot     = this.shadowRoot.querySelector('#code-slot');
 
-    // Internal state
-    this._fontRem = null;      // lazily set from computed value
-    this._clickTimer = null;   // debouncer for single vs double
-    this._clickDelay = 240;    // ms threshold to distinguish dblclick
+    // ---- State ----
+    // Font stepping — computed from actual root size to avoid a large first jump
+    this._fontRem = null;              // lazily init from computed (px / rootPx)
+    this._fontStepRem = 0.10;
+    this._fontMinRem  = 0.50;
 
-    // Bind events
+    // Width stepping — symmetric around first-interaction width
+    this._originWidthPx = null;        // set on first width action
+    this._stepsFromOrigin = 0;         // integer delta
+    this._stepPx = 40;                 // ≈5ch typical
+    this._minPx  = 240;                // guardrail
+
+    // Click handling (single vs double with event.detail)
+    this._clickDelay = 400;            // ms
+    this._bodyTimer = null;
+    this._titleTimer = null;
+
     this._bindEvents();
   }
 
   connectedCallback() {
-    this._applyStyleProps();      // map attributes → CSS vars
-    this._updateCodeFromSlot();   // load code
-    // If width attribute exists, convert it to an inline width on <pre> so we
-    // can adjust in pixels consistently afterward.
-    this._normalizeInitialWidth();
+    this._applyStyleProps();
+    this._updateCodeFromSlot();
   }
 
   attributeChangedCallback() {
     this._applyStyleProps();
   }
 
-  /* -------------------- Events -------------------- */
+  /* =================== Events =================== */
 
   _bindEvents() {
-    // We use click + dblclick debouncing so actions don't stack.
-    // BODY: single → width+, double → font+
-    this.preElement.addEventListener('click', (e) => this._debouncedSingle(e, () => this._incWidth()));
-    this.preElement.addEventListener('dblclick', (e) => this._onDouble(e, () => this._incFont()));
+    // Body: single → width+, double → font+
+    this._wireClickVsDouble(
+      this.preElement,
+      () => this._incWidth(),
+      () => this._incFont(),
+      'body'
+    );
 
-    // TITLE: single → width-, double → font-
-    this.titleElement.addEventListener('click', (e) => this._debouncedSingle(e, () => this._decWidth()));
-    this.titleElement.addEventListener('dblclick', (e) => this._onDouble(e, () => this._decFont()));
+    // Title: single → width-, double → font-
+    this._wireClickVsDouble(
+      this.titleElement,
+      () => this._decWidth(),
+      () => this._decFont(),
+      'title'
+    );
 
-    // Slot
     this.codeSlot.addEventListener('slotchange', () => this._updateCodeFromSlot());
   }
 
-  _debouncedSingle(event, fn) {
-    // If a dblclick happens, it fires after two clicks. We cancel the pending single.
-    if (this._clickTimer) clearTimeout(this._clickTimer);
-    this._clickTimer = setTimeout(() => {
-      this._clickTimer = null;
-      fn();
-    }, this._clickDelay);
+  _wireClickVsDouble(el, onSingle, onDouble, key) {
+    el.addEventListener('click', (e) => {
+      const timerKey = key === 'body' ? '_bodyTimer' : '_titleTimer';
+
+      if (e.detail === 1) {
+        if (this[timerKey]) clearTimeout(this[timerKey]);
+        this[timerKey] = setTimeout(() => {
+          this[timerKey] = null;
+          onSingle();
+        }, this._clickDelay);
+        return;
+      }
+
+      if (e.detail === 2) {
+        if (this[timerKey]) {
+          clearTimeout(this[timerKey]);
+          this[timerKey] = null;
+        }
+        onDouble();
+      }
+    });
   }
 
-  _onDouble(event, fn) {
-    if (this._clickTimer) {
-      clearTimeout(this._clickTimer);
-      this._clickTimer = null;
-    }
-    fn();
-  }
-
-  /* -------------------- Actions -------------------- */
+  /* =================== Actions =================== */
 
   _incWidth()  { this._bumpWidth(+1); }
   _decWidth()  { this._bumpWidth(-1); }
@@ -148,59 +170,55 @@ class CodeViewer extends HTMLElement {
   _decFont()   { this._bumpFont(-1); }
 
   _bumpWidth(direction) {
-    // Adjust width in px increments regardless of initial unit.
-    const stepPx = 40; // ~ 5ch at typical monospace sizes
-    const rect = this.preElement.getBoundingClientRect();
-    let w = rect.width;
+    // Lazily capture the true starting width at first width change.
+    if (this._originWidthPx == null) {
+      const rect = this.preElement.getBoundingClientRect();
+      this._originWidthPx = rect.width > 0 ? rect.width : 480;
+      this._stepsFromOrigin = 0;
+    }
 
-    w = w + direction * stepPx;
-    const minPx = 240; // ~ 20ch-ish, guardrail
-    if (w < minPx) w = minPx;
+    let nextSteps = this._stepsFromOrigin + direction;
+    let target = this._originWidthPx + nextSteps * this._stepPx;
 
-    this.preElement.style.width = `${Math.round(w)}px`;
+    // Enforce minimum; adjust steps to keep symmetry
+    if (target < this._minPx) {
+      target = this._minPx;
+      nextSteps = Math.ceil((target - this._originWidthPx) / this._stepPx);
+    }
+
+    this._stepsFromOrigin = nextSteps;
+    this.preElement.style.width = `${Math.round(target)}px`;
   }
 
   _bumpFont(direction) {
-    // Lazy init from computed style to respect author CSS
+    // Initialize from computed font-size using the actual document root size.
     if (this._fontRem === null) {
-      const cs = window.getComputedStyle(this.preElement);
-      const px = parseFloat(cs.fontSize || '16');
-      this._fontRem = px / 16; // assume root 16px; good enough for relative stepping
+      const prePx  = parseFloat(getComputedStyle(this.preElement).fontSize) || 16;
+      const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      this._fontRem = prePx / rootPx;
     }
-    const stepRem = 0.10;
-    this._fontRem = Math.max(0.50, +(this._fontRem + direction * stepRem).toFixed(2));
+
+    // Exact 0.10rem steps, with rounding to 3 decimals to avoid float drift.
+    const next = this._fontRem + direction * this._fontStepRem;
+    this._fontRem = Math.max(this._fontMinRem, Math.round(next * 1000) / 1000);
+
     this.preElement.style.fontSize = `${this._fontRem}rem`;
-    // Keep CSS var in sync for any external readers
+    // Keep CSS var in sync for external readers
     this.style.setProperty('--code-font-size', `${this._fontRem}rem`);
   }
 
-  _normalizeInitialWidth() {
-    // If author provided width attr (any unit), let it render,
-    // then write the computed pixel width back as inline style
-    // so subsequent clicks are predictable.
-    const attrWidth = this.getAttribute('width');
-    if (attrWidth) {
-      const rect = this.preElement.getBoundingClientRect();
-      if (rect.width > 0) {
-        this.preElement.style.width = `${Math.round(rect.width)}px`;
-      }
-    }
-  }
-
-  /* -------------------- Attrs → CSS vars -------------------- */
+  /* =========== Attributes → CSS Variables =========== */
 
   _applyStyleProps() {
-    // Map legacy attrs
-    const bg = this.getAttribute('background-color') || '#333';
-    const fg = this.getAttribute('color') || '#eee';
+    const bg  = this.getAttribute('background-color') || '#333';
+    const fg  = this.getAttribute('color') || '#eee';
     const fam = this.getAttribute('font-family') ||
       'ui-monospace, SFMono-Regular, Menlo, Consolas, "JetBrains Mono", monospace';
-    const fs = this.getAttribute('font-size') || '0.85rem';
-    const w  = this.getAttribute('width') || 'auto';
-    const h  = this.getAttribute('height') || 'auto';
-    const ox = (this.getAttribute('overflow-x') || 'auto').trim();
+    const fs  = this.getAttribute('font-size') || '0.85rem';
+    const w   = this.getAttribute('width') || 'auto';
+    const h   = this.getAttribute('height') || 'auto';
+    const ox  = (this.getAttribute('overflow-x') || 'auto').trim();
 
-    // Component surface vars
     const compBg  = this.getAttribute('bg-color') || 'white';
     const titleBg = this.getAttribute('title-bg-color') || 'transparent';
 
@@ -212,19 +230,18 @@ class CodeViewer extends HTMLElement {
     this.style.setProperty('--code-height', h);
     this.style.setProperty('--code-overflow-x', ox);
 
-    // For the box/border visuals you lost
     this.style.setProperty('--component-bg', compBg);
     this.style.setProperty('--title-bg', titleBg);
   }
 
-  /* -------------------- Slot → <pre> -------------------- */
+  /* =========== Slot → <pre> (escaped) =========== */
 
   _updateCodeFromSlot() {
     const nodes = this.codeSlot.assignedNodes({ flatten: true });
     let raw = '';
     for (const n of nodes) {
       if (n.nodeType === Node.ELEMENT_NODE && n.tagName === 'TEMPLATE') {
-        raw += n.innerHTML ?? '';              // preserves <style>…</style>, etc.
+        raw += n.innerHTML ?? '';
       } else if (n.nodeType === Node.ELEMENT_NODE) {
         raw += n.outerHTML ?? '';
       } else {

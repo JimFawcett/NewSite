@@ -367,13 +367,40 @@ window.onmessage = function (e) {
   }
 }
 
-function setbg(anchor) {
-  const collection = document.getElementsByClassName("clickable");
-  for(let i = 0; i < collection.length; i++) {
-    collection[i].style.color = 'var(--lpanel)';
+  function setbg(eOrElem) {
+    const el = eOrElem && eOrElem.currentTarget ? eOrElem.currentTarget : eOrElem;
+    // if (!(el instanceof Element)) return; // nothing to do
+
+    // Reset others
+    const collection = document.getElementsByClassName("clickable");
+    for (let i = 0; i < collection.length; i++) {
+      collection[i].style.color = 'var(--lpanel)';
+    }
+
+    // if (el.matches('button, input[type="button"]')) {
+    //   alert('button');
+    // }
+    el.style.color = 'var(--clickclr)';
   }
-  anchor.style.color = 'var(--clickclr)';
-}
+
+// function setbg(elem) {
+//   const collection = document.getElementsByClassName("clickable");
+//   for(let i = 0; i < collection.length; i++) {
+//     collection[i].style.color = 'var(--lpanel)';
+//   }
+//   if(elem.tagName === "BUTTON" || (elem.tagName === "INPUT" && elem.type ==="button")) {
+//     alert('button');
+//   }
+//   elem.style.color = 'var(--clickclr)';
+// }
+
+// function setbg(anchor) {
+//   const collection = document.getElementsByClassName("clickable");
+//   for(let i = 0; i < collection.length; i++) {
+//     collection[i].style.color = 'var(--lpanel)';
+//   }
+//   anchor.style.color = 'var(--clickclr)';
+// }
 
 /*-- querystring processing, see footing for redirect processing -----
   https://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript
