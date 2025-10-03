@@ -340,59 +340,6 @@
     var sc = this._root?.querySelector('[part="right-scroller"]');
     if (sc) sc.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
-  // --- navigation helpers (public) ---
-  XTwoPanel.prototype._rightScroller = function () {
-    return this._root && this._root.querySelector('[part="right-scroller"]');
-  };
-  XTwoPanel.prototype._rightSlot = function () {
-    return this._root && this._root.querySelector('slot[name="right"]');
-  };
-  XTwoPanel.prototype._collectMarks = function () {
-    const slot = this._rightSlot();
-    if (!slot) return [];
-    const out = [];
-    slot.assignedElements({ flatten: true }).forEach(node => {
-      if (node.matches && node.matches('.mark')) out.push(node);
-      if (node.querySelectorAll) node.querySelectorAll('.mark').forEach(m => out.push(m));
-    });
-    return out;
-  };
-  XTwoPanel.prototype._topInScroller = function (el, s) {
-    const er = el.getBoundingClientRect();
-    const sr = s.getBoundingClientRect();
-    return (er.top - sr.top) + s.scrollTop;
-  };
-  XTwoPanel.prototype.currentMarkIndex = function () {
-    const s = this._rightScroller(); const ms = this._collectMarks();
-    if (!s || ms.length === 0) return -1;
-    const y = s.scrollTop + 2;
-    let idx = 0;
-    for (let i = 0; i < ms.length; i++) {
-      const t = this._topInScroller(ms[i], s);
-      if (t <= y) idx = i; else break;
-    }
-    return idx;
-  };
-  XTwoPanel.prototype.scrollToMarkIndex = function (i, opts = { wrap:false }) {
-    const s = this._rightScroller(); const ms = this._collectMarks();
-    if (!s || ms.length === 0) return;
-    let idx = i;
-    if (opts.wrap) {
-      idx = ((i % ms.length) + ms.length) % ms.length;
-    } else {
-      idx = Math.max(0, Math.min(ms.length - 1, i));
-    }
-    s.scrollTo({ top: this._topInScroller(ms[idx], s), behavior: 'smooth' });
-    this.dispatchEvent(new CustomEvent('two:nav', { detail: { index: idx, count: ms.length }}));
-  };
-  XTwoPanel.prototype.nextMark = function (opts = { wrap:false }) {
-    const i = this.currentMarkIndex();
-    if (i >= 0) this.scrollToMarkIndex(i + 1, opts);
-  };
-  XTwoPanel.prototype.prevMark = function (opts = { wrap:false }) {
-    const i = this.currentMarkIndex();
-    if (i >= 0) this.scrollToMarkIndex(i - 1, opts);
-  };
 
   // ----- click controls (opt-in) -----
   XTwoPanel.prototype._enableClickControls = function (enable) {
@@ -803,11 +750,6 @@
           break;
         case 'collapse-left': host.setAttribute('collapsed-left',''); break;
         case 'expand-left':   host.removeAttribute('collapsed-left'); break;
-        case 'next':
-        case 'next-mark': host.nextMark({ wrap:false }); break;
-
-        case 'prev':
-        case 'prev-mark': host.prevMark({ wrap:false }); break;
       }
     }, true);
     window.__X_TWO_PANEL_EXTERNAL_WIRED__ = true;
