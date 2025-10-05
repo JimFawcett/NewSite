@@ -1,7 +1,7 @@
 /* TwoPanelComponentRefactored_NoMarks.js — classic <script> (no modules)
    Two‑array design with NO marks:
      • Custom element: <x-two-panel>
-     • Left/Right mapping is by INDEX only (no scroll coupling).
+     • Left/Right mapping is by INDEX only.
      • Public attributes: [left, gap, height, step, min-left, max-left, min-right, click-controls,
                            data-desc-selector, data-right-selector]
      • Public methods: setLeft(), setGap(), toggleLeft(), reset(), step(sign[, stepOverride]),
@@ -296,7 +296,7 @@
   // -------- define --------
   if(!customElements.get('x-two-panel')) customElements.define('x-two-panel', XTwoPanel);
 
-  // -------- external controls (global; click delegation) --------
+  // -------- external controls --------
   function closestControl(target){ return target.closest ? target.closest('[data-two]') : null; }
   function resolveHost(sel){ if(!sel) return null; if(sel.charAt(0)==='#') return document.getElementById(sel.slice(1)); try{ return document.querySelector(sel); }catch(_){ return null; } }
   function findScopedPanel(ctrl, sel){
@@ -331,70 +331,4 @@
     }, true);
     window.__X_TWO_PANEL_EXTERNAL_WIRED__REFAC2__ = true;
   }
-})();  // ← end of the component IIFE
-
-/* ---------------- Auto-disable Prev/Next at ends (standalone) ---------------- */
-(function(){
-  function isNav(btn){
-    var a = (btn.dataset.two||'').toLowerCase();
-    return a==='prev' || a==='prev-mark' || a==='next' || a==='next-mark';
-  }
-  function panelFor(btn){
-    var sel = btn.getAttribute('data-two-for') || btn.getAttribute('aria-controls');
-    if (sel) {
-      try { return sel[0]==='#' ? document.getElementById(sel.slice(1)) : document.querySelector(sel); }
-      catch(_) { return null; }
-    }
-    return (btn.closest && btn.closest('x-two-panel.with-buttons'))
-           || document.querySelector('x-two-panel.with-buttons')
-           || document.querySelector('x-two-panel');
-  }
-  function countPairs(host){
-    if (host && host._marks && host._marks.length) return host._marks.length|0; // mark-based variant (if any)
-    var L = (host && host._left  && host._left.length)  ? host._left.length  : 0; // index-based variant
-    var R = (host && host._right && host._right.length) ? host._right.length : 0;
-    return Math.min(L,R)|0;
-  }
-  function assocButtons(host){
-    var list = [];
-    var all = document.querySelectorAll('[data-two]');
-    for (var i=0;i<all.length;i++){
-      var b = all[i];
-      if (!isNav(b)) continue;
-      var p = panelFor(b);
-      if (p === host) list.push(b);
-    }
-    return list;
-  }
-  function sync(host, idx, count){
-    var btns = assocButtons(host);
-    for (var i=0;i<btns.length;i++){
-      var act = (btns[i].dataset.two||'').toLowerCase();
-      if (act==='prev' || act==='prev-mark') btns[i].disabled = (idx <= 0);
-      else if (act==='next' || act==='next-mark') btns[i].disabled = (count <= 0 || idx >= count-1);
-    }
-  }
-  function initHost(host){
-    if (!host) return;
-    host.addEventListener('two:nav', function(e){
-      var d = e.detail||{};
-      var idx = (d.index|0);
-      var cnt = (d.count!=null) ? (d.count|0) : countPairs(host);
-      sync(host, idx, cnt);
-    });
-    // initial sync
-    var kickoff = function(){
-      var idx = (typeof host.currentIndex==='function') ? (host.currentIndex()|0)
-              : (typeof host.currentMarkIndex==='function') ? (host.currentMarkIndex()|0) : 0;
-      sync(host, idx, countPairs(host));
-    };
-    if ('requestAnimationFrame' in window) requestAnimationFrame(kickoff); else kickoff();
-  }
-  function boot(){
-    var hosts = document.querySelectorAll('x-two-panel');
-    for (var i=0;i<hosts.length;i++) initHost(hosts[i]);
-  }
-  if (document.readyState === 'loading')
-    document.addEventListener('DOMContentLoaded', boot, { once:true });
-  else boot();
 })();
