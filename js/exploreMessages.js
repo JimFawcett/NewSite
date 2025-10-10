@@ -61,6 +61,12 @@ window.addEventListener("message", function (event) {
     case 'reload':
       location.reload();
       break;
+    // case 'clear':
+    //   alert('clear');
+    //   hideElement('picklist');
+    //   hideElement('bitelist');
+    //   hideElement('complist');
+    //   break;
     case 'picklist':
       showPickList();
       break;
@@ -175,5 +181,21 @@ function clearMenus() {
     gt.classList.add('hidden');
     setCookie('gt', false, 10);
   }
+  let pklst = document.getElementById('picklist');
+  if(isDefined(pklst)) {
+    // pgs.classList.add('hidden');
+    hideElement('picklist');
+  }
+  let cmplst = document.getElementById('complist');
+  if(isDefined(cmplst)) {
+    // pgs.classList.add('hidden');
+    hideElement('complist');
+  }
+  let btlst = document.getElementById('bitelist');
+  if(isDefined(btlst)) {
+    // pgs.classList.add('hidden');
+    hideElement('bitelist');
+  }
+
   postMsg(makeMsg('clear', null));
 }

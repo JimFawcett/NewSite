@@ -31,6 +31,22 @@ function closeMenus() {
     // pgs.classList.add('hidden');
     hideElement('pages');
   }
+  window.parent.postMessage(makeMsg(clear, null));
+  // let pklst = document.getElementById('picklist');
+  // if(isDefined(pklst)) {
+  //   // pgs.classList.add('hidden');
+  //   hideElement('picklist');
+  // }
+  // let cmplst = document.getElementById('complist');
+  // if(isDefined(cmplst)) {
+  //   // pgs.classList.add('hidden');
+  //   hideElement('complist');
+  // }
+  // let btlst = document.getElementById('bitelist');
+  // if(isDefined(btlst)) {
+  //   // pgs.classList.add('hidden');
+  //   hideElement('bitelist');
+  // }
 }
 /*---------------------------------------------------------
   Toggle about popup when using About button on bottom menu
