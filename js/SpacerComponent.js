@@ -1,34 +1,9 @@
 /*
-  H/V Spacers — Component v6
-  - Built-in pre-upgrade guard via :not(:defined) injected into <head> automatically.
-  - Inner‑text sizing supported (e.g., <h-s>2rem</h-s>, <v-s>24px</v-s>) without visual leak.
-  - Horizontal gap uses host width; vertical gap uses host height.
-  - NEW (h-s): optional visual thickness so host background/border can show.
-      • Attribute: thickness="<css length>"  (e.g., thickness="2px" or "0.25rem")
-      • CSS var:  --h-thickness
-      • Default: 0 (keeps inline layout tight, no baseline shift)
-  - Live updates when inner text changes (MutationObserver).
-  - Inherit color, background-color, and all font properties.
-  - Priority: size attribute → inner text → CSS var → default (1rem).
-  - Optional CSS vars: --h-space-size, --v-space-size (size); --h-thickness (visual height for h-s).
+  Horizontal and Vertical Spacer Components
+  - content may be stated in any of the conventional space metrics.
+  - space may be either declared as element content or as attributes.
 */
-
 (() => {
-  // Inject a pre-upgrade FOUC guard that hides literal inner text until elements are defined.
-  // :not(:defined) ensures the rule automatically stops applying after upgrade.
-  (function injectPreUpgradeGuard(){
-    const id = 'hv-space-pre-upgrade-guard';
-    if (document.getElementById(id)) return;
-    const style = document.createElement('style');
-    style.id = id;
-    style.textContent = [
-      'h-s:not(:defined),h-space:not(:defined),v-s:not(:defined),v-space:not(:defined){',
-      'font-size:0!important;color:transparent!important;line-height:0!important;',
-      '}'
-    ].join('');
-    const head = document.head || document.documentElement;
-    if (head.firstChild) head.insertBefore(style, head.firstChild); else head.appendChild(style);
-  })();
 
   const numberRE = new RegExp('^\s*\d+(?:\.\d+)?\s*$'); // 12 or 12.5 (no unit)
 
