@@ -152,7 +152,7 @@
       // Minimal styles (once)
       if (!document.getElementById('bm-inline-styles')) {
         const css = `
-          .bm-wrap { font: 14px/1.4 system-ui, sans-serif; }
+          .bm-wrap { font: 18px/1.4 system-ui, sans-serif; }
           .bm-list { list-style: none; margin: 0; padding: 0; }
           .bm-actions { padding: 0.25rem 0; border-bottom: 1px solid #ddd; margin-bottom: 0.25rem; }
           .bm-clear { cursor: pointer; }
