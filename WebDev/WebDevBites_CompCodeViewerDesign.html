@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html id="top">
 <!--
-  WebDevBites_CompCodeViewer.html
+  WebDevBites_CompImageViewerDesign.html — Option B (marks outside <code>)
 -->
 <head>
-  <title>WebDev Code Viewer</title>
+  <title>WebDev CodeViewer</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
@@ -26,13 +26,15 @@
   <script src="../js/cookies.js"></script>
   <script src="../js/contentElements.js"></script>
   <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
   <!-- Component -->
-  <script src="Components/TwoPanelComponentWithMarkersAndClick/js/TwoPanelComponentWithMarkersAndClick.js" defer></script>
-  <link rel="stylesheet" href="Components/TwoPanelComponentWithMarkersAndClick/css/TwoPanelComponentWithMarkersAndClick.css">
+  <script src="../js/TwoPanelComponentRefactored.js" defer></script>
+
   <script>
     function loadInExplorer() {
       const loc = window.location;
-      if(loc === window.top.location) {
+      if (loc === window.top.location) {
         window.location = "ExploreWebDev.html?src=" + loc;
       }
     }
@@ -44,18 +46,7 @@
       setPersistantElements();
     }
   </script>
-  <style>
-    .menuHeader {
-      padding:0.0rem 0.5rem 0.25rem 0.5rem;
-    }
-  </style>
-  <style>
-    code {
-      background: #eef;
-      padding: 0 3px;
-      border-radius: 3px;
-    }
-  </style>
+
   <style>
     .menuHeader { padding:0.0rem 0.5rem 0.25rem 0.5rem; }
     code {
@@ -63,59 +54,11 @@
       padding: 0 3px;
       border-radius: 3px;
     }
-    :root { --app-panel-height: 70vh; }
-    .demo { border:1px solid #aaa; border-radius:10px; background:#fff; padding:0rem 1rem 1rem; }
-    div.toolbar { margin: 0.5rem 0rem; }
-    div.toolbar button { padding:0.15rem 0.75rem; font-size: 1.05rem; }
-    table { border: 1px solid #999; }
-    table td { font-size:0.9rem; line-height: 0.8rem; border:none; }
-    div.marked-box h4 { padding-top: 0rem; margin-top:0rem; }
-
-    /* Right panel base font */
-    x-two-panel::part(right-scroller) { font-size: 1rem; }
-    x-two-panel [slot="right"] .code-box > pre.code-demo { font-size: 1rem; line-height: 1.5; }
-    x-two-panel [slot="right"] pre.code-demo > code       { font-size: 1rem; line-height: 1.5; }
-
-    /* Option B: marks are siblings outside <code> */
-    .code-box .mark {
-      display: block;
-      height: 0.15rem;              /* invisible anchor line */
-      background: transparent;
-      border: none;
-      outline: none;
-    }
-    .code-box .mark.active-mark {
-      /* keep class for green/red toggling if desired; invisible by default */
-      background: transparent;
-    }
   </style>
-  <style>
-    pre code[class*="language-"] { background: transparent; }
-    x-two-panel::part(left-panel),
-    x-two-panel::part(right-panel) { background: transparent; }
-    /* inline code chips only, not Prism blocks */
-    code:not([class*="language-"]) {
-      background: #eef;
-      padding: 0 3px;
-      border-radius: 3px;
-    }
-
-    /* in Prism blocks, <pre> owns the background */
-    pre[class*="language-"] > code { background: transparent; }
-    /* somewhere in your CSS */
-    pre[class*="language-"]::after {
-      content: "";
-      display: block;
-      height: var(--code-bottom-gap, 0); /* set per block */
-      /* optional if you want the same dark fill as the container/theme */
-      background: inherit;
-    }
-  </style>
-
   <!-- load Prism & NormalizeWhitespace -->
   <link rel="stylesheet" href="../css/prism.css">
   <script src="../js/prism.js"></script>
-  <script src="../js/prism.js"></script>
+  <!-- <script src="../js/prism.js"></script> -->
   <script>
     // keep indentation; just trim leading & trailing blank lines
     if (Prism.plugins.NormalizeWhitespace) {
@@ -128,8 +71,60 @@
     }
   </script>
   <style>
-    .code-box { background-color: #2d2d2d; }
+    html, body {
+      height: 100%;
+      width: 100%;
+    }
+    /* :root {
+      --dark: #12062d;
+      --light: #fefefa;
+    } */
+    body {
+      padding:0.5rem 1rem;
+      font-family: sans-serif;
+    }
+    demo {
+      display:flex;
+      flex-direction: row;
+      padding: 0.5rem 1rem;
+    }
+    left {
+      width: 32rem;
+      padding: 0.25rem 0.5rem;
+      border:1px solid black;
+    }
+    right {
+      display:inline-block;
+      /* padding: 0rem 0.5rem; */
+      min-width: 1rem;
+      border:1px solid black;
+      background-color: lightblue;
+    }
   </style>
+  <style>
+    :root { --two-gap: .75rem; --two-panel-border: 1px solid #d0d0d7; --two-panel-pad: .5rem; }
+    /* body { margin:0; font:20px/1.3 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#fafafa; } */
+    .page { max-width:1100px; margin:2rem auto; padding:0 1rem; }
+    .toolbar { display:flex; gap:.5rem; flex-wrap:wrap; margin:.5rem 0 .75rem; }
+    .toolbar button { padding:.3rem .75rem; border:1px solid #c8c8d0; border-radius:8px; background:#fff; }
+    .toolbar button:disabled { opacity:.55; border-color:#bbb; cursor:not-allowed; }
+    .left-item { padding-right: 0.5rem; }
+    .left-item h3 { font-size:0.9rem; }
+    .left-item h3 { margin:.1rem 0 .25rem; font-size:1rem; }
+    .code-card { background:#2d2d2d; color:#eee; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,.08); }
+    .code-card pre { margin:0; padding:.75rem 1rem; overflow:auto; font:0.95rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  </style>
+  <script>
+    // keep indentation; just trim leading & trailing blank lines
+    if (Prism.plugins.NormalizeWhitespace) {
+      Prism.plugins.NormalizeWhitespace.setDefaults({
+        'remove-trailing': false,
+        'remove-indent':   false,
+        'left-trim':       true,   // trims first line if it’s blank
+        'right-trim':      true    // trims last line if it’s blank
+      });
+    }
+  </script>
 </head>
 <body id="github" onload="load()">
 
@@ -137,17 +132,14 @@
   <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
     WebDevBites_CompCodeViewerDesign.html<br />
     copyright &copy; James Fawcett<br />
-    Revised: 10/03/2025
+    Revised: 0/14/2025
   </div>
 
   <content-block>
     <header>
-      <!--<a class="repoLink" href="https://github.com/JimFawcett">JimFawcett Repositories</a>-->
       <div id="pagetitle" class="header">
         <h2 id="title">WebDev Bites: CodeViewer Component Design</h2>
-        <h4 id="subtitle" class="indent">
-          resize-able code viewer 
-        </h4>
+        <h4 id="subtitle" class="indent">W3C web component</h4>
       </div>
       <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
         <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--light); margin-top:0.25em; margin-left:1.5em;">About</a>
@@ -157,25 +149,24 @@
         <a class="repoLinks" target="_self" href="WebDevBites_CompCodeViewerInterface.html" style="color:var(--light); margin-left:1.5em;">Interface</a>
       </div>
     </header>
+
     <div style="height:1rem;"></div>
 
-    <div class="demo" style="height:calc(100dvh - 10rem);">
+    <!-- <div class="demo" style="height:calc(100dvh - 10rem);"> -->
       <div class="toolbar">
         <button data-two="narrow"      data-two-for="#buttons-panel" data-step="6rem">Narrow</button>
         <button data-two="reset"       data-two-for="#buttons-panel">Reset</button>
         <button data-two="widen"       data-two-for="#buttons-panel" data-step="6rem">Widen</button>
         <button data-two="toggle-left" data-two-for="#buttons-panel">Toggle Left</button>
-        <!-- <button id="next-mark"         data-two-for="#buttons-panel">Next</button>
-        <button id="prev-mark"         data-two-for="#buttons-panel">Prev</button> -->
-        <button data-two="next-mark" data-two-for="#buttons-panel" id="next-mark">Next</button>
-        <button data-two="prev-mark" data-two-for="#buttons-panel" id="prev-mark">Prev</button>
+      <button id="prevBtn" data-two="prev" data-two-for="#panel">Prev</button>
+      <button id="nextBtn" data-two="next" data-two-for="#panel">Next</button>
       </div>
 
       <!-- data-left-fixed holds left width constant when container resizes -->
-      <x-two-panel id="buttons-panel" class="with-buttons" height="calc(100dvh - 13.25rem)" left="15rem" data-left-fixed>
+      <x-two-panel id="panel" class="with-buttons" left="20rem" height="calc(100dvh - 13.25rem)" left="15rem" data-left-fixed>
         <div slot="left" class="left-slot">
-          <div id="mark1" class="marked-box">
-            <h4>Component Class</h4>
+          <div class="left-item">
+            <h3>Component Class</h3>
             <t-b>
               The tag <c-s><code>&lt;image-viewer&gt;</code></c-s> creates an instance of the
               ImageViewer class. The class&apos;s first element is a ShadowDOM that isolates 
@@ -187,8 +178,8 @@
             </t-b>
           </div>
 
-          <div id="mark2" class="marked-box">
-            <h4>Shadow DOM</h4>
+          <div class="left-item">
+            <h3>Shadow DOM</h3>
             <t-b>
               A W3C web component is defined entirely in JavaScript as illustrated in the right 
               panel.
@@ -201,8 +192,8 @@
             </code></c-s>.
           </div>
 
-          <div id="mark3" class="marked-box">
-            <h4>Structure</h4>
+          <div class="left-item">
+            <h3>Structure</h3>
             <t-b>
               This markup defines the structure of the image-viewer component. The outer div 
               provides padding to keep content from touching the image-viewer when it is 
@@ -216,24 +207,8 @@
             </t-b>
           </div>
 
-          <div id="mark4" class="marked-box">
-            <h4>Listeners</h4>
-            <t-b>
-              The primary purpose of this component is to enlarge or diminish the size of 
-              an image using button clicks on image (enlarge) or title (diminish).
-            </t-b>
-            <t-b>
-              The first listener awaits clicks on the title which contracts the image. 
-              The second awaits clicks on the image then enlarges it.
-            </t-b>
-            <t-b>
-              The final piece registers the <c-s><code>&lt;image-viewer&gt;</code></c-s> with 
-              this component class. That causes the browser&apos;s rendering engine to create 
-              an instance of the ImageViewer class for each occurance of the tag.
-            </t-b>
-          </div>
-          <div id="mark5" class="marked-box">
-            <h4>Listeners</h4>
+          <div class="left-item">
+            <h3>Listeners</h3>
             <t-b>
               The primary purpose of this component is to enlarge or diminish the size of 
               an image using button clicks on image (enlarge) or title (diminish).
@@ -250,12 +225,9 @@
           </div>
         </div>
 
-        <div slot="right" class="right-slots">
-          <div class="code-box">
-
-            <!-- Mark 1: before class declaration -->
-            <div class="mark" aria-hidden="true"></div>
-            <pre class="code-demo language-javascript"><code class="language-javascript">
+        <div slot="right" class="right-slot">
+          <section class="right-item code-card">
+            <pre><code class="language-javascript">
   1 class CodeViewer extends HTMLElement {
   2   static get observedAttributes() {
   3     return [
@@ -342,10 +314,7 @@
  84           transition: width 0.2s ease;
  85           text-align: left;
  86         }
- 87       &lt;/style&gt;</code></pre>
- <!-- mark2 -->
-<div class="mark" aria-hidden="true"></div>
-<pre class="code-demo language-javascript"><code class="language-javascript">
+ 87       &lt;/style&gt;
  88
  89       &lt;div class=&quot;wrapper&quot;&gt;
  90         &lt;div class=&quot;component&quot; part=&quot;component&quot;&gt;
@@ -357,10 +326,7 @@
  96         &lt;/div&gt;
  97       &lt;/div&gt;
  98     `;
- 99</code></pre>
- <!-- mark3 -->
-<div class="mark" aria-hidden="true"></div>
-<pre class="code-demo language-javascript"><code class="language-javascript">
+ 99
 100     // Refs
 101     this.titleEl     = this.shadowRoot.querySelector('.title');
 102     this.preInternal = this.shadowRoot.querySelector('#pre-internal');
@@ -374,10 +340,7 @@
 110
 111     // Active display element (internal &lt;pre&gt; or slotted &lt;pre&gt;)
 112     this._displayEl = this.preInternal;
-113</code></pre>
-<!-- mark4 -->
-<div class="mark" aria-hidden="true"></div>
-<pre class="code-demo language-javascript" style="--code-bottom-gap:5rem;"><code class="language-javascript">
+113
 114     // Handlers
 115     this._onBodyClick  = this._onBodyClick.bind(this);
 116     this._onTitleClick = this._onTitleClick.bind(this);
@@ -473,17 +436,14 @@
 206       } else {
 207         raw += n.textContent ?? '';
 208       }
-209     }            </code></pre>
-<!-- mark5 -->
-<div class="mark" aria-hidden="true"></div>
-<pre class="code-demo language-javascript" style="--code-bottom-gap:5rem;"><code class="language-javascript">
+209     }
 210
-211     // 1 Optional: trim a fully blank first/last line
+211     // 1) Optional: trim a fully blank first/last line
 212     if (this.hasAttribute('trim')) {
 213       raw = raw.replace(/^&#92;s*&#92;n/, '').replace(/&#92;n&#92;s*$/, '');
 214     }
 215
-216     // 2 Optional: normalize common indentation (spaces/tabs) across non-empty lines
+216     // 2) Optional: normalize common indentation (spaces/tabs) across non-empty lines
 217     if (this.hasAttribute('normalize-indent')) {
 218       raw = this._stripCommonIndent(raw);
 219     }
@@ -672,11 +632,1231 @@
 402
 403 customElements.define('code-viewer', CodeViewer);
 </code></pre>
-          </div>
-        </div>
+          </section>
+          <section class="right-item code-card">
+<pre><code class="language-javascript">
+  1 class CodeViewer extends HTMLElement {
+  2   static get observedAttributes() {
+  3     return [
+  4       // visuals
+  5       'bg-color', 'title-bg-color', 'background-color', 'color',
+  6       // code sizing/typo
+  7       'width', 'height', 'overflow-x', 'font-family', 'font-size', 'code-padding',
+  8       // prism
+  9       'highlight', 'language',
+ 10       // conveniences
+ 11       'trim', 'normalize-indent'
+ 12     ];
+ 13   }
+ 14
+ 15   constructor() {
+ 16     super();
+ 17     this.attachShadow({ mode: 'open' });
+ 18
+ 19     this.shadowRoot.innerHTML = `
+ 20       &lt;style&gt;
+ 21         :host { display: inline-block; }
+ 22         .wrapper {
+ 23           padding: 1rem;
+ 24           box-sizing: border-box;
+ 25           background-color: var(--wrapper-bg, var(--light, white));
+ 26         }
+ 27         .component {
+ 28           border: 2px solid var(--dark, #333);
+ 29           padding: 0.5rem;
+ 30           display: flex;
+ 31           flex-direction: column;
+ 32           user-select: none; /* per your app */
+ 33           width: min-content;
+ 34           box-shadow: 5px 5px 5px #999;
+ 35           box-sizing: border-box;
+ 36           background-color: var(--component-bg, white);
+ 37         }
+ 38         .title {
+ 39           display: flex;
+ 40           font-family: &quot;Comic Sans MS&quot;, cursive, sans-serif;
+ 41           font-size: 1rem;              /* stable title size */
+ 42           font-weight: bold;
+ 43           cursor: pointer;
+ 44           max-width: 100%;
+ 45           margin-bottom: 8px;
+ 46           line-height: 1.0rem;
+ 47           flex-wrap: wrap;
+ 48           overflow-wrap: break-word;
+ 49           white-space: wrap;
+ 50           color: var(--dark, #333);
+ 51           background-color: var(--title-bg, transparent);
+ 52           padding: 0.125rem 0.5rem;      /* compact */
+ 53         }
+ 54         .code { display: block; flex: 0 0 auto; }
+ 55
+ 56         /* Default (non-Prism): show internal pre; hide slotted content */
+ 57         #pre-internal { display: block; cursor: pointer; }
+ 58         slot[name=&quot;code&quot;]::slotted(*) { display: none !important; }
+ 59
+ 60         /* Prism: hide internal pre; show slotted pre/code */
+ 61         :host([highlight=&quot;prism&quot;]) #pre-internal { display: none; }
+ 62         :host([highlight=&quot;prism&quot;]) slot[name=&quot;code&quot;]::slotted(pre),
+ 63         :host([highlight=&quot;prism&quot;]) slot[name=&quot;code&quot;]::slotted(code) {
+ 64           display: block !important;
+ 65           cursor: pointer;
+ 66         }
+ 67
+ 68         /* Internal pre defaults (non-Prism path) */
+ 69         #pre-internal {
+ 70           margin: 0;
+ 71           /* padding set dynamically to match Prism box */
+ 72           background-color: var(--code-bg, #333);
+ 73           color: var(--code-fg, #eee);
+ 74           border-radius: 4px;
+ 75           font-family: inherit;  /* overridden by attribute if provided */
+ 76           font-size: inherit;    /* overridden by attribute if provided */
+ 77           line-height: 1.4;
+ 78           white-space: pre;
+ 79           overflow-y: auto;
+ 80           overflow-x: var(--code-overflow-x, auto);
+ 81           width: var(--code-width, auto);
+ 82           height: var(--code-height, auto);
+ 83           box-sizing: border-box;
+ 84           transition: width 0.2s ease;
+ 85           text-align: left;
+ 86         }
+ 87       &lt;/style&gt;
+ 88
+ 89       &lt;div class=&quot;wrapper&quot;&gt;
+ 90         &lt;div class=&quot;component&quot; part=&quot;component&quot;&gt;
+ 91           &lt;div class=&quot;title&quot; part=&quot;title&quot;&gt;&lt;slot&gt;&lt;/slot&gt;&lt;/div&gt;
+ 92           &lt;div class=&quot;code&quot;&gt;
+ 93             &lt;pre id=&quot;pre-internal&quot;&gt;&lt;/pre&gt;
+ 94           &lt;/div&gt;
+ 95           &lt;slot name=&quot;code&quot; id=&quot;code-slot&quot;&gt;&lt;/slot&gt;
+ 96         &lt;/div&gt;
+ 97       &lt;/div&gt;
+ 98     `;
+ 99
+100     // Refs
+101     this.titleEl     = this.shadowRoot.querySelector('.title');
+102     this.preInternal = this.shadowRoot.querySelector('#pre-internal');
+103     this.slotEl      = this.shadowRoot.querySelector('#code-slot');
+104
+105     // Width stepping (single-click only)
+106     this._originWidthPx   = null;
+107     this._stepsFromOrigin = 0;
+108     this._stepPx          = 40;   // ≈ 5ch typical
+109     this._minPx           = 240;
+110
+111     // Active display element (internal &lt;pre&gt; or slotted &lt;pre&gt;)
+112     this._displayEl = this.preInternal;
+113
+114     // Handlers
+115     this._onBodyClick  = this._onBodyClick.bind(this);
+116     this._onTitleClick = this._onTitleClick.bind(this);
+117   }
+118
+119   /* lifecycle */
+120
+121   connectedCallback() {
+122     this._applyBoxColors();
+123     this._renderDefaultFromSlot();     // for non-Prism
+124     this._maybeSetupPrism();           // if Prism mode, ensure &lt;pre&gt;&lt;code&gt; + highlight
+125     this._resolveDisplayEl(true);      // sets _displayEl and normalizes its box
+126     this._applySizingToDisplay();
+127     this._applyTypographyToDisplay();
+128     this._bindEvents();
+129
+130     this.slotEl.addEventListener('slotchange', () =&gt; {
+131       this._renderDefaultFromSlot();
+132       this._maybeSetupPrism();
+133       const changed = this._resolveDisplayEl(true);
+134       if (changed) this._resetWidthStepping();
+135       this._applySizingToDisplay();
+136       this._applyTypographyToDisplay();
+137     });
+138   }
+139
+140   attributeChangedCallback() {
+141     this._applyBoxColors();
+142     this._maybeSetupPrism();
+143     const changed = this._resolveDisplayEl(true);
+144     if (changed) this._resetWidthStepping();
+145     this._applySizingToDisplay();
+146     this._applyTypographyToDisplay();
+147   }
+148
+149   /* events (single click only) */
+150
+151   _bindEvents() {
+152     this._displayEl.addEventListener('click', this._onBodyClick);
+153     this.titleEl.addEventListener('click', this._onTitleClick);
+154   }
+155
+156   _swapBodyListener(nextEl) {
+157     if (nextEl === this._displayEl) return;
+158     this._displayEl.removeEventListener('click', this._onBodyClick);
+159     this._displayEl = nextEl;
+160     this._displayEl.addEventListener('click', this._onBodyClick);
+161   }
+162
+163   _resetWidthStepping() {
+164     this._originWidthPx = null;
+165     this._stepsFromOrigin = 0;
+166   }
+167
+168   _onBodyClick()  { this._bumpWidth(+1); }
+169   _onTitleClick() { this._bumpWidth(-1); }
+170
+171   _bumpWidth(direction) {
+172     const el = this._displayEl;
+173     if (!el) return;
+174
+175     if (this._originWidthPx == null) {
+176       const rect = el.getBoundingClientRect();
+177       this._originWidthPx = rect.width &gt; 0 ? rect.width : 480;
+178       this._stepsFromOrigin = 0;
+179     }
+180
+181     let nextSteps = this._stepsFromOrigin + direction;
+182     let target = this._originWidthPx + nextSteps * this._stepPx;
+183
+184     if (target &lt; this._minPx) {
+185       target = this._minPx;
+186       nextSteps = Math.ceil((target - this._originWidthPx) / this._stepPx);
+187     }
+188
+189     this._stepsFromOrigin = nextSteps;
+190     el.style.width = `${Math.round(target)}px`;
+191   }
+192
+193   /* rendering paths */
+194
+195   _renderDefaultFromSlot() {
+196     if (this.getAttribute('highlight') === 'prism') return;
+197
+198     // Collect raw content from the slot
+199     const nodes = this.slotEl.assignedNodes({ flatten: true });
+200     let raw = '';
+201     for (const n of nodes) {
+202       if (n.nodeType === Node.ELEMENT_NODE && n.tagName === 'TEMPLATE') {
+203         raw += n.innerHTML ?? '';
+204       } else if (n.nodeType === Node.ELEMENT_NODE) {
+205         raw += n.outerHTML ?? '';
+206       } else {
+207         raw += n.textContent ?? '';
+208       }
+209     }
+210
+211     // 1) Optional: trim a fully blank first/last line
+212     if (this.hasAttribute('trim')) {
+213       raw = raw.replace(/^&#92;s*&#92;n/, '').replace(/&#92;n&#92;s*$/, '');
+214     }
+215
+216     // 2) Optional: normalize common indentation (spaces/tabs) across non-empty lines
+217     if (this.hasAttribute('normalize-indent')) {
+218       raw = this._stripCommonIndent(raw);
+219     }
+220
+221     // Show literally (escaped) in internal &lt;pre&gt;
+222     this.preInternal.textContent = raw;
+223   }
+224
+225   _maybeSetupPrism() {
+226     if (this.getAttribute('highlight') !== 'prism') return;
+227
+228     const lang = (this.getAttribute('language') || '').trim();
+229     const assigned = this.slotEl.assignedElements({ flatten: true });
+230     if (!assigned.length) return;
+231
+232     // Ensure &lt;pre&gt;&lt;code&gt; structure (convenience: allow &lt;code slot=&quot;code&quot;&gt;.&lt;/code&gt;)
+233     let preEl = assigned.find(n =&gt; n.tagName === 'PRE');
+234     let codeEl = assigned.find(n =&gt; n.tagName === 'CODE');
+235
+236     if (!preEl && codeEl) {
+237       preEl = document.createElement('pre');
+238       const hostParent = codeEl.parentNode;
+239       hostParent.replaceChild(preEl, codeEl);
+240       preEl.appendChild(codeEl);
+241     } else if (preEl && !preEl.querySelector('code')) {
+242       const wrap = document.createElement('code');
+243       while (preEl.firstChild) wrap.appendChild(preEl.firstChild);
+244       preEl.appendChild(wrap);
+245       codeEl = wrap;
+246     } else {
+247       if (preEl) codeEl = preEl.querySelector('code') || codeEl;
+248     }
+249
+250     // Optional: trim & normalize-indent for Prism too (affects codeEl text)
+251     if (codeEl) {
+252       let txt = codeEl.textContent ?? '';
+253
+254       if (this.hasAttribute('trim')) {
+255         txt = txt.replace(/^&#92;s*&#92;n/, '').replace(/&#92;n&#92;s*$/, '');
+256       }
+257       if (this.hasAttribute('normalize-indent')) {
+258         txt = this._stripCommonIndent(txt);
+259       }
+260
+261       codeEl.textContent = txt;
+262     }
+263
+264     // Language class on both &lt;pre&gt; and &lt;code&gt; so width in ch uses the same font
+265     if (lang) {
+266       const cls = `language-${lang}`;
+267       if (preEl && !preEl.classList.contains(cls)) preEl.classList.add(cls);
+268       if (codeEl && !codeEl.classList.contains(cls)) codeEl.classList.add(cls);
+269     }
+270
+271     // Highlight (if Prism is loaded)
+272     if (window.Prism) {
+273       const codes = [];
+274       assigned.forEach(el =&gt; {
+275         if (el.tagName === 'CODE') codes.push(el);
+276         codes.push(...el.querySelectorAll('code'));
+277       });
+278       if (codes.length === 0 && preEl) {
+279         window.Prism.highlightElement(preEl);
+280       } else {
+281         codes.forEach(c =&gt; window.Prism.highlightElement(c));
+282       }
+283     }
+284   }
+285
+286   /* choose and normalize the visible code element */
+287
+288   _resolveDisplayEl(normalize = false) {
+289     let next = this.preInternal;
+290     if (this.getAttribute('highlight') === 'prism') {
+291       const assigned = this.slotEl.assignedElements({ flatten: true });
+292       const pre = assigned.find(n =&gt; n.tagName === 'PRE');
+293       next = pre || assigned[0] || this.preInternal;
+294     }
+295
+296     const changed = next !== this._displayEl;
+297     this._swapBodyListener(next);
+298     if (normalize) this._harmonizeDisplayBoxMetrics(next);
+299     return changed;
+300   }
+301
+302   _harmonizeDisplayBoxMetrics(el) {
+303     if (!el) return;
+304     const pad = (this.getAttribute('code-padding') || '0.75rem 1rem').trim();
+305
+306     el.style.boxSizing  = 'border-box';
+307     el.style.margin     = '0';
+308     el.style.padding    = pad;
+309     el.style.lineHeight = '1.4';
+310     el.style.display    = 'block';
+311     el.style.cursor     = 'pointer';
+312     el.style.textAlign  = 'left';
+313
+314     // Ensure inner &lt;code&gt; (if any) doesn't center, and remove theme margins
+315     const inner = el.querySelector && el.querySelector('code');
+316     if (inner) {
+317       inner.style.display   = 'block';
+318       inner.style.textAlign = 'left';
+319       inner.style.margin    = '0';
+320     }
+321   }
+322
+323   /* styling helpers */
+324
+325   _applyBoxColors() {
+326     const compBg  = this.getAttribute('bg-color') || 'white';
+327     const titleBg = this.getAttribute('title-bg-color') || 'transparent';
+328     const codeBg  = this.getAttribute('background-color') || '#333';
+329     const codeFg  = this.getAttribute('color') || '#eee';
+330     this.style.setProperty('--component-bg', compBg);
+331     this.style.setProperty('--title-bg', titleBg);
+332     this.style.setProperty('--code-bg', codeBg);
+333     this.style.setProperty('--code-fg', codeFg);
+334   }
+335
+336   _applySizingToDisplay() {
+337     const width  = this.getAttribute('width');       // e.g., &quot;50ch&quot;, &quot;25rem&quot;, &quot;520px&quot;
+338     const height = this.getAttribute('height') || null;
+339     const ox     = (this.getAttribute('overflow-x') || 'auto').trim();
+340
+341     // Keep CSS vars in sync for internal path
+342     this.style.setProperty('--code-width', width || 'auto');
+343     this.style.setProperty('--code-height', height || 'auto');
+344     this.style.setProperty('--code-overflow-x', ox);
+345
+346     // Apply directly to the visible element (internal or slotted)
+347     const el = this._displayEl;
+348     if (!el) return;
+349     el.style.width = width ? width : '';
+350     el.style.height = height ? height : '';
+351     el.style.overflowX = ox;
+352   }
+353
+354   _applyTypographyToDisplay() {
+355     const fam = this.getAttribute('font-family');
+356     const fsz = this.getAttribute('font-size');
+357
+358     const el = this._displayEl;
+359     if (!el) return;
+360
+361     // In Prism mode, width is on &lt;pre&gt;, highlighting is on &lt;code&gt; - set both.
+362     const pre  = el.tagName === 'PRE' ? el : (el.closest && el.closest('pre')) || null;
+363     const code = (el.querySelector && el.querySelector('code')) || (el.tagName === 'CODE' ? el : null);
+364
+365     const targets = new Set([el]);
+366     if (pre)  targets.add(pre);
+367     if (code) targets.add(code);
+368
+369     targets.forEach(t =&gt; {
+370       if (fam && fam.trim()) t.style.fontFamily = fam; else t.style.removeProperty('font-family');
+371       if (fsz && fsz.trim()) t.style.fontSize   = fsz; else t.style.removeProperty('font-size');
+372     });
+373   }
+374
+375   /* utilities */
+376
+377   _stripCommonIndent(text) {
+378     // Split, but do NOT add or remove any extra newline beyond explicit trim step.
+379     const lines = text.split('&#92;n');
+380
+381     // Measure leading whitespace (spaces or tabs) on non-empty lines
+382     const indentLengths = [];
+383     for (const l of lines) {
+384       if (l.trim().length === 0) continue;
+385       const m = l.match(/^[ &#92;t]*/);
+386       indentLengths.push(m ? m[0].length : 0);
+387     }
+388     if (indentLengths.length === 0) return text;
+389
+390     // Find the smallest non-zero indent; if all are zero, nothing to strip
+391     const nonZero = indentLengths.filter(n =&gt; n &gt; 0);
+392     if (nonZero.length === 0) return text;
+393     const minIndent = Math.min(...nonZero);
+394
+395     // Remove up to minIndent leading whitespace from every line
+396     const re = new RegExp(`^[ &#92;&#92;t]{0,${minIndent}}`);
+397     const out = lines.map(l =&gt; l.replace(re, '')).join('&#92;n');
+398
+399     return out;
+400   }
+401 }
+402
+403 customElements.define('code-viewer', CodeViewer);
+</code></pre>
+          </section>
+          <section class="right-item code-card">
+<pre><code class="language-javascript">
+  1 class CodeViewer extends HTMLElement {
+  2   static get observedAttributes() {
+  3     return [
+  4       // visuals
+  5       'bg-color', 'title-bg-color', 'background-color', 'color',
+  6       // code sizing/typo
+  7       'width', 'height', 'overflow-x', 'font-family', 'font-size', 'code-padding',
+  8       // prism
+  9       'highlight', 'language',
+ 10       // conveniences
+ 11       'trim', 'normalize-indent'
+ 12     ];
+ 13   }
+ 14
+ 15   constructor() {
+ 16     super();
+ 17     this.attachShadow({ mode: 'open' });
+ 18
+ 19     this.shadowRoot.innerHTML = `
+ 20       &lt;style&gt;
+ 21         :host { display: inline-block; }
+ 22         .wrapper {
+ 23           padding: 1rem;
+ 24           box-sizing: border-box;
+ 25           background-color: var(--wrapper-bg, var(--light, white));
+ 26         }
+ 27         .component {
+ 28           border: 2px solid var(--dark, #333);
+ 29           padding: 0.5rem;
+ 30           display: flex;
+ 31           flex-direction: column;
+ 32           user-select: none; /* per your app */
+ 33           width: min-content;
+ 34           box-shadow: 5px 5px 5px #999;
+ 35           box-sizing: border-box;
+ 36           background-color: var(--component-bg, white);
+ 37         }
+ 38         .title {
+ 39           display: flex;
+ 40           font-family: &quot;Comic Sans MS&quot;, cursive, sans-serif;
+ 41           font-size: 1rem;              /* stable title size */
+ 42           font-weight: bold;
+ 43           cursor: pointer;
+ 44           max-width: 100%;
+ 45           margin-bottom: 8px;
+ 46           line-height: 1.0rem;
+ 47           flex-wrap: wrap;
+ 48           overflow-wrap: break-word;
+ 49           white-space: wrap;
+ 50           color: var(--dark, #333);
+ 51           background-color: var(--title-bg, transparent);
+ 52           padding: 0.125rem 0.5rem;      /* compact */
+ 53         }
+ 54         .code { display: block; flex: 0 0 auto; }
+ 55
+ 56         /* Default (non-Prism): show internal pre; hide slotted content */
+ 57         #pre-internal { display: block; cursor: pointer; }
+ 58         slot[name=&quot;code&quot;]::slotted(*) { display: none !important; }
+ 59
+ 60         /* Prism: hide internal pre; show slotted pre/code */
+ 61         :host([highlight=&quot;prism&quot;]) #pre-internal { display: none; }
+ 62         :host([highlight=&quot;prism&quot;]) slot[name=&quot;code&quot;]::slotted(pre),
+ 63         :host([highlight=&quot;prism&quot;]) slot[name=&quot;code&quot;]::slotted(code) {
+ 64           display: block !important;
+ 65           cursor: pointer;
+ 66         }
+ 67
+ 68         /* Internal pre defaults (non-Prism path) */
+ 69         #pre-internal {
+ 70           margin: 0;
+ 71           /* padding set dynamically to match Prism box */
+ 72           background-color: var(--code-bg, #333);
+ 73           color: var(--code-fg, #eee);
+ 74           border-radius: 4px;
+ 75           font-family: inherit;  /* overridden by attribute if provided */
+ 76           font-size: inherit;    /* overridden by attribute if provided */
+ 77           line-height: 1.4;
+ 78           white-space: pre;
+ 79           overflow-y: auto;
+ 80           overflow-x: var(--code-overflow-x, auto);
+ 81           width: var(--code-width, auto);
+ 82           height: var(--code-height, auto);
+ 83           box-sizing: border-box;
+ 84           transition: width 0.2s ease;
+ 85           text-align: left;
+ 86         }
+ 87       &lt;/style&gt;
+ 88
+ 89       &lt;div class=&quot;wrapper&quot;&gt;
+ 90         &lt;div class=&quot;component&quot; part=&quot;component&quot;&gt;
+ 91           &lt;div class=&quot;title&quot; part=&quot;title&quot;&gt;&lt;slot&gt;&lt;/slot&gt;&lt;/div&gt;
+ 92           &lt;div class=&quot;code&quot;&gt;
+ 93             &lt;pre id=&quot;pre-internal&quot;&gt;&lt;/pre&gt;
+ 94           &lt;/div&gt;
+ 95           &lt;slot name=&quot;code&quot; id=&quot;code-slot&quot;&gt;&lt;/slot&gt;
+ 96         &lt;/div&gt;
+ 97       &lt;/div&gt;
+ 98     `;
+ 99
+100     // Refs
+101     this.titleEl     = this.shadowRoot.querySelector('.title');
+102     this.preInternal = this.shadowRoot.querySelector('#pre-internal');
+103     this.slotEl      = this.shadowRoot.querySelector('#code-slot');
+104
+105     // Width stepping (single-click only)
+106     this._originWidthPx   = null;
+107     this._stepsFromOrigin = 0;
+108     this._stepPx          = 40;   // ≈ 5ch typical
+109     this._minPx           = 240;
+110
+111     // Active display element (internal &lt;pre&gt; or slotted &lt;pre&gt;)
+112     this._displayEl = this.preInternal;
+113
+114     // Handlers
+115     this._onBodyClick  = this._onBodyClick.bind(this);
+116     this._onTitleClick = this._onTitleClick.bind(this);
+117   }
+118
+119   /* lifecycle */
+120
+121   connectedCallback() {
+122     this._applyBoxColors();
+123     this._renderDefaultFromSlot();     // for non-Prism
+124     this._maybeSetupPrism();           // if Prism mode, ensure &lt;pre&gt;&lt;code&gt; + highlight
+125     this._resolveDisplayEl(true);      // sets _displayEl and normalizes its box
+126     this._applySizingToDisplay();
+127     this._applyTypographyToDisplay();
+128     this._bindEvents();
+129
+130     this.slotEl.addEventListener('slotchange', () =&gt; {
+131       this._renderDefaultFromSlot();
+132       this._maybeSetupPrism();
+133       const changed = this._resolveDisplayEl(true);
+134       if (changed) this._resetWidthStepping();
+135       this._applySizingToDisplay();
+136       this._applyTypographyToDisplay();
+137     });
+138   }
+139
+140   attributeChangedCallback() {
+141     this._applyBoxColors();
+142     this._maybeSetupPrism();
+143     const changed = this._resolveDisplayEl(true);
+144     if (changed) this._resetWidthStepping();
+145     this._applySizingToDisplay();
+146     this._applyTypographyToDisplay();
+147   }
+148
+149   /* events (single click only) */
+150
+151   _bindEvents() {
+152     this._displayEl.addEventListener('click', this._onBodyClick);
+153     this.titleEl.addEventListener('click', this._onTitleClick);
+154   }
+155
+156   _swapBodyListener(nextEl) {
+157     if (nextEl === this._displayEl) return;
+158     this._displayEl.removeEventListener('click', this._onBodyClick);
+159     this._displayEl = nextEl;
+160     this._displayEl.addEventListener('click', this._onBodyClick);
+161   }
+162
+163   _resetWidthStepping() {
+164     this._originWidthPx = null;
+165     this._stepsFromOrigin = 0;
+166   }
+167
+168   _onBodyClick()  { this._bumpWidth(+1); }
+169   _onTitleClick() { this._bumpWidth(-1); }
+170
+171   _bumpWidth(direction) {
+172     const el = this._displayEl;
+173     if (!el) return;
+174
+175     if (this._originWidthPx == null) {
+176       const rect = el.getBoundingClientRect();
+177       this._originWidthPx = rect.width &gt; 0 ? rect.width : 480;
+178       this._stepsFromOrigin = 0;
+179     }
+180
+181     let nextSteps = this._stepsFromOrigin + direction;
+182     let target = this._originWidthPx + nextSteps * this._stepPx;
+183
+184     if (target &lt; this._minPx) {
+185       target = this._minPx;
+186       nextSteps = Math.ceil((target - this._originWidthPx) / this._stepPx);
+187     }
+188
+189     this._stepsFromOrigin = nextSteps;
+190     el.style.width = `${Math.round(target)}px`;
+191   }
+192
+193   /* rendering paths */
+194
+195   _renderDefaultFromSlot() {
+196     if (this.getAttribute('highlight') === 'prism') return;
+197
+198     // Collect raw content from the slot
+199     const nodes = this.slotEl.assignedNodes({ flatten: true });
+200     let raw = '';
+201     for (const n of nodes) {
+202       if (n.nodeType === Node.ELEMENT_NODE && n.tagName === 'TEMPLATE') {
+203         raw += n.innerHTML ?? '';
+204       } else if (n.nodeType === Node.ELEMENT_NODE) {
+205         raw += n.outerHTML ?? '';
+206       } else {
+207         raw += n.textContent ?? '';
+208       }
+209     }
+210
+211     // 1) Optional: trim a fully blank first/last line
+212     if (this.hasAttribute('trim')) {
+213       raw = raw.replace(/^&#92;s*&#92;n/, '').replace(/&#92;n&#92;s*$/, '');
+214     }
+215
+216     // 2) Optional: normalize common indentation (spaces/tabs) across non-empty lines
+217     if (this.hasAttribute('normalize-indent')) {
+218       raw = this._stripCommonIndent(raw);
+219     }
+220
+221     // Show literally (escaped) in internal &lt;pre&gt;
+222     this.preInternal.textContent = raw;
+223   }
+224
+225   _maybeSetupPrism() {
+226     if (this.getAttribute('highlight') !== 'prism') return;
+227
+228     const lang = (this.getAttribute('language') || '').trim();
+229     const assigned = this.slotEl.assignedElements({ flatten: true });
+230     if (!assigned.length) return;
+231
+232     // Ensure &lt;pre&gt;&lt;code&gt; structure (convenience: allow &lt;code slot=&quot;code&quot;&gt;.&lt;/code&gt;)
+233     let preEl = assigned.find(n =&gt; n.tagName === 'PRE');
+234     let codeEl = assigned.find(n =&gt; n.tagName === 'CODE');
+235
+236     if (!preEl && codeEl) {
+237       preEl = document.createElement('pre');
+238       const hostParent = codeEl.parentNode;
+239       hostParent.replaceChild(preEl, codeEl);
+240       preEl.appendChild(codeEl);
+241     } else if (preEl && !preEl.querySelector('code')) {
+242       const wrap = document.createElement('code');
+243       while (preEl.firstChild) wrap.appendChild(preEl.firstChild);
+244       preEl.appendChild(wrap);
+245       codeEl = wrap;
+246     } else {
+247       if (preEl) codeEl = preEl.querySelector('code') || codeEl;
+248     }
+249
+250     // Optional: trim & normalize-indent for Prism too (affects codeEl text)
+251     if (codeEl) {
+252       let txt = codeEl.textContent ?? '';
+253
+254       if (this.hasAttribute('trim')) {
+255         txt = txt.replace(/^&#92;s*&#92;n/, '').replace(/&#92;n&#92;s*$/, '');
+256       }
+257       if (this.hasAttribute('normalize-indent')) {
+258         txt = this._stripCommonIndent(txt);
+259       }
+260
+261       codeEl.textContent = txt;
+262     }
+263
+264     // Language class on both &lt;pre&gt; and &lt;code&gt; so width in ch uses the same font
+265     if (lang) {
+266       const cls = `language-${lang}`;
+267       if (preEl && !preEl.classList.contains(cls)) preEl.classList.add(cls);
+268       if (codeEl && !codeEl.classList.contains(cls)) codeEl.classList.add(cls);
+269     }
+270
+271     // Highlight (if Prism is loaded)
+272     if (window.Prism) {
+273       const codes = [];
+274       assigned.forEach(el =&gt; {
+275         if (el.tagName === 'CODE') codes.push(el);
+276         codes.push(...el.querySelectorAll('code'));
+277       });
+278       if (codes.length === 0 && preEl) {
+279         window.Prism.highlightElement(preEl);
+280       } else {
+281         codes.forEach(c =&gt; window.Prism.highlightElement(c));
+282       }
+283     }
+284   }
+285
+286   /* choose and normalize the visible code element */
+287
+288   _resolveDisplayEl(normalize = false) {
+289     let next = this.preInternal;
+290     if (this.getAttribute('highlight') === 'prism') {
+291       const assigned = this.slotEl.assignedElements({ flatten: true });
+292       const pre = assigned.find(n =&gt; n.tagName === 'PRE');
+293       next = pre || assigned[0] || this.preInternal;
+294     }
+295
+296     const changed = next !== this._displayEl;
+297     this._swapBodyListener(next);
+298     if (normalize) this._harmonizeDisplayBoxMetrics(next);
+299     return changed;
+300   }
+301
+302   _harmonizeDisplayBoxMetrics(el) {
+303     if (!el) return;
+304     const pad = (this.getAttribute('code-padding') || '0.75rem 1rem').trim();
+305
+306     el.style.boxSizing  = 'border-box';
+307     el.style.margin     = '0';
+308     el.style.padding    = pad;
+309     el.style.lineHeight = '1.4';
+310     el.style.display    = 'block';
+311     el.style.cursor     = 'pointer';
+312     el.style.textAlign  = 'left';
+313
+314     // Ensure inner &lt;code&gt; (if any) doesn't center, and remove theme margins
+315     const inner = el.querySelector && el.querySelector('code');
+316     if (inner) {
+317       inner.style.display   = 'block';
+318       inner.style.textAlign = 'left';
+319       inner.style.margin    = '0';
+320     }
+321   }
+322
+323   /* styling helpers */
+324
+325   _applyBoxColors() {
+326     const compBg  = this.getAttribute('bg-color') || 'white';
+327     const titleBg = this.getAttribute('title-bg-color') || 'transparent';
+328     const codeBg  = this.getAttribute('background-color') || '#333';
+329     const codeFg  = this.getAttribute('color') || '#eee';
+330     this.style.setProperty('--component-bg', compBg);
+331     this.style.setProperty('--title-bg', titleBg);
+332     this.style.setProperty('--code-bg', codeBg);
+333     this.style.setProperty('--code-fg', codeFg);
+334   }
+335
+336   _applySizingToDisplay() {
+337     const width  = this.getAttribute('width');       // e.g., &quot;50ch&quot;, &quot;25rem&quot;, &quot;520px&quot;
+338     const height = this.getAttribute('height') || null;
+339     const ox     = (this.getAttribute('overflow-x') || 'auto').trim();
+340
+341     // Keep CSS vars in sync for internal path
+342     this.style.setProperty('--code-width', width || 'auto');
+343     this.style.setProperty('--code-height', height || 'auto');
+344     this.style.setProperty('--code-overflow-x', ox);
+345
+346     // Apply directly to the visible element (internal or slotted)
+347     const el = this._displayEl;
+348     if (!el) return;
+349     el.style.width = width ? width : '';
+350     el.style.height = height ? height : '';
+351     el.style.overflowX = ox;
+352   }
+353
+354   _applyTypographyToDisplay() {
+355     const fam = this.getAttribute('font-family');
+356     const fsz = this.getAttribute('font-size');
+357
+358     const el = this._displayEl;
+359     if (!el) return;
+360
+361     // In Prism mode, width is on &lt;pre&gt;, highlighting is on &lt;code&gt; - set both.
+362     const pre  = el.tagName === 'PRE' ? el : (el.closest && el.closest('pre')) || null;
+363     const code = (el.querySelector && el.querySelector('code')) || (el.tagName === 'CODE' ? el : null);
+364
+365     const targets = new Set([el]);
+366     if (pre)  targets.add(pre);
+367     if (code) targets.add(code);
+368
+369     targets.forEach(t =&gt; {
+370       if (fam && fam.trim()) t.style.fontFamily = fam; else t.style.removeProperty('font-family');
+371       if (fsz && fsz.trim()) t.style.fontSize   = fsz; else t.style.removeProperty('font-size');
+372     });
+373   }
+374
+375   /* utilities */
+376
+377   _stripCommonIndent(text) {
+378     // Split, but do NOT add or remove any extra newline beyond explicit trim step.
+379     const lines = text.split('&#92;n');
+380
+381     // Measure leading whitespace (spaces or tabs) on non-empty lines
+382     const indentLengths = [];
+383     for (const l of lines) {
+384       if (l.trim().length === 0) continue;
+385       const m = l.match(/^[ &#92;t]*/);
+386       indentLengths.push(m ? m[0].length : 0);
+387     }
+388     if (indentLengths.length === 0) return text;
+389
+390     // Find the smallest non-zero indent; if all are zero, nothing to strip
+391     const nonZero = indentLengths.filter(n =&gt; n &gt; 0);
+392     if (nonZero.length === 0) return text;
+393     const minIndent = Math.min(...nonZero);
+394
+395     // Remove up to minIndent leading whitespace from every line
+396     const re = new RegExp(`^[ &#92;&#92;t]{0,${minIndent}}`);
+397     const out = lines.map(l =&gt; l.replace(re, '')).join('&#92;n');
+398
+399     return out;
+400   }
+401 }
+402
+403 customElements.define('code-viewer', CodeViewer);</code></pre>
+          </section>
+          <section class="right-item code-card">
+<pre><code class="language-javascript">
+  1 class CodeViewer extends HTMLElement {
+  2   static get observedAttributes() {
+  3     return [
+  4       // visuals
+  5       'bg-color', 'title-bg-color', 'background-color', 'color',
+  6       // code sizing/typo
+  7       'width', 'height', 'overflow-x', 'font-family', 'font-size', 'code-padding',
+  8       // prism
+  9       'highlight', 'language',
+ 10       // conveniences
+ 11       'trim', 'normalize-indent'
+ 12     ];
+ 13   }
+ 14
+ 15   constructor() {
+ 16     super();
+ 17     this.attachShadow({ mode: 'open' });
+ 18
+ 19     this.shadowRoot.innerHTML = `
+ 20       &lt;style&gt;
+ 21         :host { display: inline-block; }
+ 22         .wrapper {
+ 23           padding: 1rem;
+ 24           box-sizing: border-box;
+ 25           background-color: var(--wrapper-bg, var(--light, white));
+ 26         }
+ 27         .component {
+ 28           border: 2px solid var(--dark, #333);
+ 29           padding: 0.5rem;
+ 30           display: flex;
+ 31           flex-direction: column;
+ 32           user-select: none; /* per your app */
+ 33           width: min-content;
+ 34           box-shadow: 5px 5px 5px #999;
+ 35           box-sizing: border-box;
+ 36           background-color: var(--component-bg, white);
+ 37         }
+ 38         .title {
+ 39           display: flex;
+ 40           font-family: &quot;Comic Sans MS&quot;, cursive, sans-serif;
+ 41           font-size: 1rem;              /* stable title size */
+ 42           font-weight: bold;
+ 43           cursor: pointer;
+ 44           max-width: 100%;
+ 45           margin-bottom: 8px;
+ 46           line-height: 1.0rem;
+ 47           flex-wrap: wrap;
+ 48           overflow-wrap: break-word;
+ 49           white-space: wrap;
+ 50           color: var(--dark, #333);
+ 51           background-color: var(--title-bg, transparent);
+ 52           padding: 0.125rem 0.5rem;      /* compact */
+ 53         }
+ 54         .code { display: block; flex: 0 0 auto; }
+ 55
+ 56         /* Default (non-Prism): show internal pre; hide slotted content */
+ 57         #pre-internal { display: block; cursor: pointer; }
+ 58         slot[name=&quot;code&quot;]::slotted(*) { display: none !important; }
+ 59
+ 60         /* Prism: hide internal pre; show slotted pre/code */
+ 61         :host([highlight=&quot;prism&quot;]) #pre-internal { display: none; }
+ 62         :host([highlight=&quot;prism&quot;]) slot[name=&quot;code&quot;]::slotted(pre),
+ 63         :host([highlight=&quot;prism&quot;]) slot[name=&quot;code&quot;]::slotted(code) {
+ 64           display: block !important;
+ 65           cursor: pointer;
+ 66         }
+ 67
+ 68         /* Internal pre defaults (non-Prism path) */
+ 69         #pre-internal {
+ 70           margin: 0;
+ 71           /* padding set dynamically to match Prism box */
+ 72           background-color: var(--code-bg, #333);
+ 73           color: var(--code-fg, #eee);
+ 74           border-radius: 4px;
+ 75           font-family: inherit;  /* overridden by attribute if provided */
+ 76           font-size: inherit;    /* overridden by attribute if provided */
+ 77           line-height: 1.4;
+ 78           white-space: pre;
+ 79           overflow-y: auto;
+ 80           overflow-x: var(--code-overflow-x, auto);
+ 81           width: var(--code-width, auto);
+ 82           height: var(--code-height, auto);
+ 83           box-sizing: border-box;
+ 84           transition: width 0.2s ease;
+ 85           text-align: left;
+ 86         }
+ 87       &lt;/style&gt;
+ 88
+ 89       &lt;div class=&quot;wrapper&quot;&gt;
+ 90         &lt;div class=&quot;component&quot; part=&quot;component&quot;&gt;
+ 91           &lt;div class=&quot;title&quot; part=&quot;title&quot;&gt;&lt;slot&gt;&lt;/slot&gt;&lt;/div&gt;
+ 92           &lt;div class=&quot;code&quot;&gt;
+ 93             &lt;pre id=&quot;pre-internal&quot;&gt;&lt;/pre&gt;
+ 94           &lt;/div&gt;
+ 95           &lt;slot name=&quot;code&quot; id=&quot;code-slot&quot;&gt;&lt;/slot&gt;
+ 96         &lt;/div&gt;
+ 97       &lt;/div&gt;
+ 98     `;
+ 99
+100     // Refs
+101     this.titleEl     = this.shadowRoot.querySelector('.title');
+102     this.preInternal = this.shadowRoot.querySelector('#pre-internal');
+103     this.slotEl      = this.shadowRoot.querySelector('#code-slot');
+104
+105     // Width stepping (single-click only)
+106     this._originWidthPx   = null;
+107     this._stepsFromOrigin = 0;
+108     this._stepPx          = 40;   // ≈ 5ch typical
+109     this._minPx           = 240;
+110
+111     // Active display element (internal &lt;pre&gt; or slotted &lt;pre&gt;)
+112     this._displayEl = this.preInternal;
+113
+114     // Handlers
+115     this._onBodyClick  = this._onBodyClick.bind(this);
+116     this._onTitleClick = this._onTitleClick.bind(this);
+117   }
+118
+119   /* lifecycle */
+120
+121   connectedCallback() {
+122     this._applyBoxColors();
+123     this._renderDefaultFromSlot();     // for non-Prism
+124     this._maybeSetupPrism();           // if Prism mode, ensure &lt;pre&gt;&lt;code&gt; + highlight
+125     this._resolveDisplayEl(true);      // sets _displayEl and normalizes its box
+126     this._applySizingToDisplay();
+127     this._applyTypographyToDisplay();
+128     this._bindEvents();
+129
+130     this.slotEl.addEventListener('slotchange', () =&gt; {
+131       this._renderDefaultFromSlot();
+132       this._maybeSetupPrism();
+133       const changed = this._resolveDisplayEl(true);
+134       if (changed) this._resetWidthStepping();
+135       this._applySizingToDisplay();
+136       this._applyTypographyToDisplay();
+137     });
+138   }
+139
+140   attributeChangedCallback() {
+141     this._applyBoxColors();
+142     this._maybeSetupPrism();
+143     const changed = this._resolveDisplayEl(true);
+144     if (changed) this._resetWidthStepping();
+145     this._applySizingToDisplay();
+146     this._applyTypographyToDisplay();
+147   }
+148
+149   /* events (single click only) */
+150
+151   _bindEvents() {
+152     this._displayEl.addEventListener('click', this._onBodyClick);
+153     this.titleEl.addEventListener('click', this._onTitleClick);
+154   }
+155
+156   _swapBodyListener(nextEl) {
+157     if (nextEl === this._displayEl) return;
+158     this._displayEl.removeEventListener('click', this._onBodyClick);
+159     this._displayEl = nextEl;
+160     this._displayEl.addEventListener('click', this._onBodyClick);
+161   }
+162
+163   _resetWidthStepping() {
+164     this._originWidthPx = null;
+165     this._stepsFromOrigin = 0;
+166   }
+167
+168   _onBodyClick()  { this._bumpWidth(+1); }
+169   _onTitleClick() { this._bumpWidth(-1); }
+170
+171   _bumpWidth(direction) {
+172     const el = this._displayEl;
+173     if (!el) return;
+174
+175     if (this._originWidthPx == null) {
+176       const rect = el.getBoundingClientRect();
+177       this._originWidthPx = rect.width &gt; 0 ? rect.width : 480;
+178       this._stepsFromOrigin = 0;
+179     }
+180
+181     let nextSteps = this._stepsFromOrigin + direction;
+182     let target = this._originWidthPx + nextSteps * this._stepPx;
+183
+184     if (target &lt; this._minPx) {
+185       target = this._minPx;
+186       nextSteps = Math.ceil((target - this._originWidthPx) / this._stepPx);
+187     }
+188
+189     this._stepsFromOrigin = nextSteps;
+190     el.style.width = `${Math.round(target)}px`;
+191   }
+192
+193   /* rendering paths */
+194
+195   _renderDefaultFromSlot() {
+196     if (this.getAttribute('highlight') === 'prism') return;
+197
+198     // Collect raw content from the slot
+199     const nodes = this.slotEl.assignedNodes({ flatten: true });
+200     let raw = '';
+201     for (const n of nodes) {
+202       if (n.nodeType === Node.ELEMENT_NODE && n.tagName === 'TEMPLATE') {
+203         raw += n.innerHTML ?? '';
+204       } else if (n.nodeType === Node.ELEMENT_NODE) {
+205         raw += n.outerHTML ?? '';
+206       } else {
+207         raw += n.textContent ?? '';
+208       }
+209     }
+210
+211     // 1) Optional: trim a fully blank first/last line
+212     if (this.hasAttribute('trim')) {
+213       raw = raw.replace(/^&#92;s*&#92;n/, '').replace(/&#92;n&#92;s*$/, '');
+214     }
+215
+216     // 2) Optional: normalize common indentation (spaces/tabs) across non-empty lines
+217     if (this.hasAttribute('normalize-indent')) {
+218       raw = this._stripCommonIndent(raw);
+219     }
+220
+221     // Show literally (escaped) in internal &lt;pre&gt;
+222     this.preInternal.textContent = raw;
+223   }
+224
+225   _maybeSetupPrism() {
+226     if (this.getAttribute('highlight') !== 'prism') return;
+227
+228     const lang = (this.getAttribute('language') || '').trim();
+229     const assigned = this.slotEl.assignedElements({ flatten: true });
+230     if (!assigned.length) return;
+231
+232     // Ensure &lt;pre&gt;&lt;code&gt; structure (convenience: allow &lt;code slot=&quot;code&quot;&gt;.&lt;/code&gt;)
+233     let preEl = assigned.find(n =&gt; n.tagName === 'PRE');
+234     let codeEl = assigned.find(n =&gt; n.tagName === 'CODE');
+235
+236     if (!preEl && codeEl) {
+237       preEl = document.createElement('pre');
+238       const hostParent = codeEl.parentNode;
+239       hostParent.replaceChild(preEl, codeEl);
+240       preEl.appendChild(codeEl);
+241     } else if (preEl && !preEl.querySelector('code')) {
+242       const wrap = document.createElement('code');
+243       while (preEl.firstChild) wrap.appendChild(preEl.firstChild);
+244       preEl.appendChild(wrap);
+245       codeEl = wrap;
+246     } else {
+247       if (preEl) codeEl = preEl.querySelector('code') || codeEl;
+248     }
+249
+250     // Optional: trim & normalize-indent for Prism too (affects codeEl text)
+251     if (codeEl) {
+252       let txt = codeEl.textContent ?? '';
+253
+254       if (this.hasAttribute('trim')) {
+255         txt = txt.replace(/^&#92;s*&#92;n/, '').replace(/&#92;n&#92;s*$/, '');
+256       }
+257       if (this.hasAttribute('normalize-indent')) {
+258         txt = this._stripCommonIndent(txt);
+259       }
+260
+261       codeEl.textContent = txt;
+262     }
+263
+264     // Language class on both &lt;pre&gt; and &lt;code&gt; so width in ch uses the same font
+265     if (lang) {
+266       const cls = `language-${lang}`;
+267       if (preEl && !preEl.classList.contains(cls)) preEl.classList.add(cls);
+268       if (codeEl && !codeEl.classList.contains(cls)) codeEl.classList.add(cls);
+269     }
+270
+271     // Highlight (if Prism is loaded)
+272     if (window.Prism) {
+273       const codes = [];
+274       assigned.forEach(el =&gt; {
+275         if (el.tagName === 'CODE') codes.push(el);
+276         codes.push(...el.querySelectorAll('code'));
+277       });
+278       if (codes.length === 0 && preEl) {
+279         window.Prism.highlightElement(preEl);
+280       } else {
+281         codes.forEach(c =&gt; window.Prism.highlightElement(c));
+282       }
+283     }
+284   }
+285
+286   /* choose and normalize the visible code element */
+287
+288   _resolveDisplayEl(normalize = false) {
+289     let next = this.preInternal;
+290     if (this.getAttribute('highlight') === 'prism') {
+291       const assigned = this.slotEl.assignedElements({ flatten: true });
+292       const pre = assigned.find(n =&gt; n.tagName === 'PRE');
+293       next = pre || assigned[0] || this.preInternal;
+294     }
+295
+296     const changed = next !== this._displayEl;
+297     this._swapBodyListener(next);
+298     if (normalize) this._harmonizeDisplayBoxMetrics(next);
+299     return changed;
+300   }
+301
+302   _harmonizeDisplayBoxMetrics(el) {
+303     if (!el) return;
+304     const pad = (this.getAttribute('code-padding') || '0.75rem 1rem').trim();
+305
+306     el.style.boxSizing  = 'border-box';
+307     el.style.margin     = '0';
+308     el.style.padding    = pad;
+309     el.style.lineHeight = '1.4';
+310     el.style.display    = 'block';
+311     el.style.cursor     = 'pointer';
+312     el.style.textAlign  = 'left';
+313
+314     // Ensure inner &lt;code&gt; (if any) doesn't center, and remove theme margins
+315     const inner = el.querySelector && el.querySelector('code');
+316     if (inner) {
+317       inner.style.display   = 'block';
+318       inner.style.textAlign = 'left';
+319       inner.style.margin    = '0';
+320     }
+321   }
+322
+323   /* styling helpers */
+324
+325   _applyBoxColors() {
+326     const compBg  = this.getAttribute('bg-color') || 'white';
+327     const titleBg = this.getAttribute('title-bg-color') || 'transparent';
+328     const codeBg  = this.getAttribute('background-color') || '#333';
+329     const codeFg  = this.getAttribute('color') || '#eee';
+330     this.style.setProperty('--component-bg', compBg);
+331     this.style.setProperty('--title-bg', titleBg);
+332     this.style.setProperty('--code-bg', codeBg);
+333     this.style.setProperty('--code-fg', codeFg);
+334   }
+335
+336   _applySizingToDisplay() {
+337     const width  = this.getAttribute('width');       // e.g., &quot;50ch&quot;, &quot;25rem&quot;, &quot;520px&quot;
+338     const height = this.getAttribute('height') || null;
+339     const ox     = (this.getAttribute('overflow-x') || 'auto').trim();
+340
+341     // Keep CSS vars in sync for internal path
+342     this.style.setProperty('--code-width', width || 'auto');
+343     this.style.setProperty('--code-height', height || 'auto');
+344     this.style.setProperty('--code-overflow-x', ox);
+345
+346     // Apply directly to the visible element (internal or slotted)
+347     const el = this._displayEl;
+348     if (!el) return;
+349     el.style.width = width ? width : '';
+350     el.style.height = height ? height : '';
+351     el.style.overflowX = ox;
+352   }
+353
+354   _applyTypographyToDisplay() {
+355     const fam = this.getAttribute('font-family');
+356     const fsz = this.getAttribute('font-size');
+357
+358     const el = this._displayEl;
+359     if (!el) return;
+360
+361     // In Prism mode, width is on &lt;pre&gt;, highlighting is on &lt;code&gt; - set both.
+362     const pre  = el.tagName === 'PRE' ? el : (el.closest && el.closest('pre')) || null;
+363     const code = (el.querySelector && el.querySelector('code')) || (el.tagName === 'CODE' ? el : null);
+364
+365     const targets = new Set([el]);
+366     if (pre)  targets.add(pre);
+367     if (code) targets.add(code);
+368
+369     targets.forEach(t =&gt; {
+370       if (fam && fam.trim()) t.style.fontFamily = fam; else t.style.removeProperty('font-family');
+371       if (fsz && fsz.trim()) t.style.fontSize   = fsz; else t.style.removeProperty('font-size');
+372     });
+373   }
+374
+375   /* utilities */
+376
+377   _stripCommonIndent(text) {
+378     // Split, but do NOT add or remove any extra newline beyond explicit trim step.
+379     const lines = text.split('&#92;n');
+380
+381     // Measure leading whitespace (spaces or tabs) on non-empty lines
+382     const indentLengths = [];
+383     for (const l of lines) {
+384       if (l.trim().length === 0) continue;
+385       const m = l.match(/^[ &#92;t]*/);
+386       indentLengths.push(m ? m[0].length : 0);
+387     }
+388     if (indentLengths.length === 0) return text;
+389
+390     // Find the smallest non-zero indent; if all are zero, nothing to strip
+391     const nonZero = indentLengths.filter(n =&gt; n &gt; 0);
+392     if (nonZero.length === 0) return text;
+393     const minIndent = Math.min(...nonZero);
+394
+395     // Remove up to minIndent leading whitespace from every line
+396     const re = new RegExp(`^[ &#92;&#92;t]{0,${minIndent}}`);
+397     const out = lines.map(l =&gt; l.replace(re, '')).join('&#92;n');
+398
+399     return out;
+400   }
+401 }
+402
+403 customElements.define('code-viewer', CodeViewer);            </code></pre>
+          </section>
+        <!-- </div> -->
       </x-two-panel>
     </div>
   </content-block>
+
   <div id="bottomMenu">
     <div id="keys" class="hidden"></div>
     <div id="sections" class="hidden">
@@ -691,12 +1871,18 @@
     <div id="goto" class="hidden">url</div>
   </div>
   <a id="bottom"></a>
-  <script src="js/WebDevBitesPages.js"></script>
+  <script src="js/WebDevCompPages.js"></script>
   <script>buildPages()</script>
   <script>createSiteNavMenu('goto')</script>
   <script src="../js/link-nav.js" defer></script>
   <script>
-    setCookie('#pages', 5, 10);
+    setCookie('#pages', 4, 10);
   </script>
+
+  <!-- <script src="js/WebDevCompPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>setCookie('#pages', 4, 10);</script> -->
 </body>
 </html>
