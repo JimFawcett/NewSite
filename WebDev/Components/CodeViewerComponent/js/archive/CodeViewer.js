@@ -1,103 +1,4 @@
-/* ============================================================================
-  <code-viewer> — Reorganized for clarity & maintainability
-  - Behavior preserved from the original.
-  - Structure: constants → template → class with sections.
-  - Single update pipeline (_updateAll) used by lifecycle + attribute changes.
-============================================================================ */
-
-/* ----------------------------- Constants ---------------------------------- */
-
-const CV_STYLE = /* css */ `
-  :host { display: inline-block; }
-
-  .wrapper {
-    padding: 1rem;
-    box-sizing: border-box;
-    background-color: var(--wrapper-bg, var(--light, white));
-  }
-
-  .component {
-    border: 2px solid var(--dark, #333);
-    padding: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    user-select: none; /* per your app */
-    width: min-content;
-    box-shadow: 5px 5px 5px #999;
-    box-sizing: border-box;
-    background-color: var(--component-bg, white);
-  }
-
-  .title {
-    display: flex;
-    font-family: "Comic Sans MS", cursive, sans-serif;
-    font-size: 1rem;            /* stable title size */
-    font-weight: bold;
-    cursor: pointer;
-    max-width: 100%;
-    margin-bottom: 8px;
-    line-height: 1.0rem;
-    flex-wrap: wrap;
-    overflow-wrap: break-word;
-    white-space: wrap;
-    color: var(--dark, #333);
-    background-color: var(--title-bg, transparent);
-    padding: 0.125rem 0.5rem;   /* compact */
-  }
-
-  .code { display: block; flex: 0 0 auto; }
-
-  /* Default (non-Prism): show internal pre; hide slotted content */
-  #pre-internal { display: block; cursor: pointer; }
-  slot[name="code"]::slotted(*) { display: none !important; }
-
-  /* Prism: hide internal pre; show slotted pre/code */
-  :host([highlight="prism"]) #pre-internal { display: none; }
-  :host([highlight="prism"]) slot[name="code"]::slotted(pre),
-  :host([highlight="prism"]) slot[name="code"]::slotted(code) {
-    display: block !important;
-    cursor: pointer;
-  }
-
-  /* Internal pre defaults (non-Prism path) */
-  #pre-internal {
-    margin: 0;
-    /* padding set dynamically to match Prism box */
-    background-color: var(--code-bg, #333);
-    color: var(--code-fg, #eee);
-    border-radius: 4px;
-    font-family: inherit;  /* overridden by attribute if provided */
-    font-size: inherit;    /* overridden by attribute if provided */
-    line-height: 1.4;
-    white-space: pre;
-    overflow-y: auto;
-    overflow-x: var(--code-overflow-x, auto);
-    width: var(--code-width, auto);
-    height: var(--code-height, auto);
-    box-sizing: border-box;
-    transition: width 0.2s ease;
-    text-align: left;
-  }
-`;
-
-const CV_TEMPLATE = /* html */ `
-  <style>${CV_STYLE}</style>
-  <div class="wrapper">
-    <div class="component" part="component">
-      <div class="title" part="title"><slot></slot></div>
-      <div class="code">
-        <pre id="pre-internal"></pre>
-      </div>
-      <slot name="code" id="code-slot"></slot>
-    </div>
-  </div>
-`;
-
-/* ============================================================================
-  Component
-============================================================================ */
 class CodeViewer extends HTMLElement {
-  /* ------------------------ Observed attributes --------------------------- */
   static get observedAttributes() {
     return [
       // visuals
@@ -111,116 +12,161 @@ class CodeViewer extends HTMLElement {
     ];
   }
 
-  /* ------------------------------ Setup ----------------------------------- */
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
-    this.shadowRoot.innerHTML = CV_TEMPLATE;
+
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display: inline-block; }
+        .wrapper {
+          padding: 1rem;
+          box-sizing: border-box;
+          background-color: var(--wrapper-bg, var(--light, white));
+        }
+        .component {
+          border: 2px solid var(--dark, #333);
+          padding: 0.5rem;
+          display: flex;
+          flex-direction: column;
+          user-select: none; /* per your app */
+          width: min-content;
+          box-shadow: 5px 5px 5px #999;
+          box-sizing: border-box;
+          background-color: var(--component-bg, white);
+        }
+        .title {
+          display: flex;
+          font-family: "Comic Sans MS", cursive, sans-serif;
+          font-size: 1rem;              /* stable title size */
+          font-weight: bold;
+          cursor: pointer;
+          max-width: 100%;
+          margin-bottom: 8px;
+          line-height: 1.0rem;
+          flex-wrap: wrap;
+          overflow-wrap: break-word;
+          white-space: wrap;
+          color: var(--dark, #333);
+          background-color: var(--title-bg, transparent);
+          padding: 0.125rem 0.5rem;      /* compact */
+        }
+        .code { display: block; flex: 0 0 auto; }
+
+        /* Default (non-Prism): show internal pre; hide slotted content */
+        #pre-internal { display: block; cursor: pointer; }
+        slot[name="code"]::slotted(*) { display: none !important; }
+
+        /* Prism: hide internal pre; show slotted pre/code */
+        :host([highlight="prism"]) #pre-internal { display: none; }
+        :host([highlight="prism"]) slot[name="code"]::slotted(pre),
+        :host([highlight="prism"]) slot[name="code"]::slotted(code) {
+          display: block !important;
+          cursor: pointer;
+        }
+
+        /* Internal pre defaults (non-Prism path) */
+        #pre-internal {
+          margin: 0;
+          /* padding set dynamically to match Prism box */
+          background-color: var(--code-bg, #333);
+          color: var(--code-fg, #eee);
+          border-radius: 4px;
+          font-family: inherit;  /* overridden by attribute if provided */
+          font-size: inherit;    /* overridden by attribute if provided */
+          line-height: 1.4;
+          white-space: pre;
+          overflow-y: auto;
+          overflow-x: var(--code-overflow-x, auto);
+          width: var(--code-width, auto);
+          height: var(--code-height, auto);
+          box-sizing: border-box;
+          transition: width 0.2s ease;
+          text-align: left;
+        }
+      </style>
+
+      <div class="wrapper">
+        <div class="component" part="component">
+          <div class="title" part="title"><slot></slot></div>
+          <div class="code">
+            <pre id="pre-internal"></pre>
+          </div>
+          <slot name="code" id="code-slot"></slot>
+        </div>
+      </div>
+    `;
 
     // Refs
-    this._els = {
-      title: this.shadowRoot.querySelector('.title'),
-      preInternal: this.shadowRoot.querySelector('#pre-internal'),
-      slot: this.shadowRoot.querySelector('#code-slot'),
-    };
+    this.titleEl     = this.shadowRoot.querySelector('.title');
+    this.preInternal = this.shadowRoot.querySelector('#pre-internal');
+    this.slotEl      = this.shadowRoot.querySelector('#code-slot');
 
     // Width stepping (single-click only)
-    this._originWidthPx = null;
+    this._originWidthPx   = null;
     this._stepsFromOrigin = 0;
-    this._stepPx = 40;        // ≈ 5ch typical
-    this._minPx  = 240;
+    this._stepPx          = 40;   // ≈ 5ch typical
+    this._minPx           = 240;
 
     // Active display element (internal <pre> or slotted <pre>)
-    this._displayEl = this._els.preInternal;
+    this._displayEl = this.preInternal;
 
-    // Bind handlers once
+    // Handlers
     this._onBodyClick  = this._onBodyClick.bind(this);
     this._onTitleClick = this._onTitleClick.bind(this);
-    this._onSlotChange = this._onSlotChange.bind(this);
   }
 
-  /* ---------------------------- Lifecycle --------------------------------- */
+  /* lifecycle */
+
   connectedCallback() {
-    // Initial render/update cycle
-    this._updateAll({ resetWidth: true, normalizeBox: true });
+    this._applyBoxColors();
+    this._renderDefaultFromSlot();     // for non-Prism
+    this._maybeSetupPrism();           // if Prism mode, ensure <pre><code> + highlight
+    this._resolveDisplayEl(true);      // sets _displayEl and normalizes its box
+    this._applySizingToDisplay();
+    this._applyTypographyToDisplay();
+    this._bindEvents();
 
-    // React to slot content changes
-    this._els.slot.addEventListener('slotchange', this._onSlotChange);
-
-    // Bind UI events (title toggles width down; body toggles width up)
-    this._bindDisplayListeners();
-    this._els.title.addEventListener('click', this._onTitleClick);
-  }
-
-  disconnectedCallback() {
-    // Clean up event listeners
-    this._unbindDisplayListeners();
-    this._els.title.removeEventListener('click', this._onTitleClick);
-    this._els.slot.removeEventListener('slotchange', this._onSlotChange);
+    this.slotEl.addEventListener('slotchange', () => {
+      this._renderDefaultFromSlot();
+      this._maybeSetupPrism();
+      const changed = this._resolveDisplayEl(true);
+      if (changed) this._resetWidthStepping();
+      this._applySizingToDisplay();
+      this._applyTypographyToDisplay();
+    });
   }
 
   attributeChangedCallback() {
-    // Attributes affect visuals/typography/highlighting → run the pipeline
-    this._updateAll({ maybeResetWidth: true, normalizeBox: true });
-  }
-
-  /* --------------------------- Public-ish flow ---------------------------- */
-  /**
-   * Central update pipeline used by lifecycle & attribute changes.
-   * Options:
-   *   - resetWidth: force width stepping baseline reset
-   *   - maybeResetWidth: reset only if display element changed
-   *   - normalizeBox: re-harmonize padding/box metrics of the visible element
-   */
-  _updateAll({ resetWidth = false, maybeResetWidth = false, normalizeBox = false } = {}) {
     this._applyBoxColors();
-
-    // Non-prism path renders internal <pre> from slot. Prism path normalizes slot.
-    this._renderDefaultFromSlotIfNeeded();
     this._maybeSetupPrism();
-
-    // Choose which element is visible and optionally normalize its box
-    const changed = this._resolveDisplayEl(normalizeBox);
-
-    // Reset width stepping if requested or if the visible element changed
-    if (resetWidth || (maybeResetWidth && changed)) this._resetWidthStepping();
-
-    // Apply width/height/overflow + typography to the currently visible element
+    const changed = this._resolveDisplayEl(true);
+    if (changed) this._resetWidthStepping();
     this._applySizingToDisplay();
     this._applyTypographyToDisplay();
   }
 
-  /* ----------------------------- Events ----------------------------------- */
-  _bindDisplayListeners() {
-    if (!this._displayEl) return;
-    this._displayEl.addEventListener('click', this._onBodyClick);
-  }
+  /* events (single click only) */
 
-  _unbindDisplayListeners() {
-    if (!this._displayEl) return;
-    this._displayEl.removeEventListener('click', this._onBodyClick);
+  _bindEvents() {
+    this._displayEl.addEventListener('click', this._onBodyClick);
+    this.titleEl.addEventListener('click', this._onTitleClick);
   }
 
   _swapBodyListener(nextEl) {
     if (nextEl === this._displayEl) return;
-    this._unbindDisplayListeners();
+    this._displayEl.removeEventListener('click', this._onBodyClick);
     this._displayEl = nextEl;
-    this._bindDisplayListeners();
+    this._displayEl.addEventListener('click', this._onBodyClick);
   }
-
-  _onSlotChange() {
-    // Slot content changed → re-run pipeline
-    this._updateAll({ maybeResetWidth: true, normalizeBox: true });
-  }
-
-  // Click body to widen; click title to narrow (single-step)
-  _onBodyClick()  { this._bumpWidth(+1); }
-  _onTitleClick() { this._bumpWidth(-1); }
 
   _resetWidthStepping() {
     this._originWidthPx = null;
     this._stepsFromOrigin = 0;
   }
+
+  _onBodyClick()  { this._bumpWidth(+1); }
+  _onTitleClick() { this._bumpWidth(-1); }
 
   _bumpWidth(direction) {
     const el = this._displayEl;
@@ -244,15 +190,13 @@ class CodeViewer extends HTMLElement {
     el.style.width = `${Math.round(target)}px`;
   }
 
-  /* --------------------------- Render paths -------------------------------- */
-  /**
-   * Non-Prism mode: gather slot content (raw/template/text), optionally trim and
-   * normalize indent, then place literal text into internal <pre>.
-   */
-  _renderDefaultFromSlotIfNeeded() {
+  /* rendering paths */
+
+  _renderDefaultFromSlot() {
     if (this.getAttribute('highlight') === 'prism') return;
 
-    const nodes = this._els.slot.assignedNodes({ flatten: true });
+    // Collect raw content from the slot
+    const nodes = this.slotEl.assignedNodes({ flatten: true });
     let raw = '';
     for (const n of nodes) {
       if (n.nodeType === Node.ELEMENT_NODE && n.tagName === 'TEMPLATE') {
@@ -264,28 +208,28 @@ class CodeViewer extends HTMLElement {
       }
     }
 
+    // 1) Optional: trim a fully blank first/last line
     if (this.hasAttribute('trim')) {
       raw = raw.replace(/^\s*\n/, '').replace(/\n\s*$/, '');
     }
+
+    // 2) Optional: normalize common indentation (spaces/tabs) across non-empty lines
     if (this.hasAttribute('normalize-indent')) {
       raw = this._stripCommonIndent(raw);
     }
 
-    this._els.preInternal.textContent = raw;
+    // Show literally (escaped) in internal <pre>
+    this.preInternal.textContent = raw;
   }
 
-  /**
-   * Prism mode: ensure <pre><code> presence, apply trim/indent, language classes,
-   * and trigger Prism highlighting when available.
-   */
   _maybeSetupPrism() {
     if (this.getAttribute('highlight') !== 'prism') return;
 
     const lang = (this.getAttribute('language') || '').trim();
-    const assigned = this._els.slot.assignedElements({ flatten: true });
+    const assigned = this.slotEl.assignedElements({ flatten: true });
     if (!assigned.length) return;
 
-    // Ensure <pre><code>
+    // Ensure <pre><code> structure (convenience: allow <code slot="code">…</code>)
     let preEl = assigned.find(n => n.tagName === 'PRE');
     let codeEl = assigned.find(n => n.tagName === 'CODE');
 
@@ -303,33 +247,34 @@ class CodeViewer extends HTMLElement {
       if (preEl) codeEl = preEl.querySelector('code') || codeEl;
     }
 
-    // Apply convenience transforms to code text as needed
+    // Optional: trim & normalize-indent for Prism too (affects codeEl text)
     if (codeEl) {
       let txt = codeEl.textContent ?? '';
+
       if (this.hasAttribute('trim')) {
         txt = txt.replace(/^\s*\n/, '').replace(/\n\s*$/, '');
       }
       if (this.hasAttribute('normalize-indent')) {
         txt = this._stripCommonIndent(txt);
       }
+
       codeEl.textContent = txt;
     }
 
-    // Language class on both <pre> and <code> (helps width-in-ch & consistent fonts)
+    // Language class on both <pre> and <code> so width in ch uses the same font
     if (lang) {
       const cls = `language-${lang}`;
       if (preEl && !preEl.classList.contains(cls)) preEl.classList.add(cls);
       if (codeEl && !codeEl.classList.contains(cls)) codeEl.classList.add(cls);
     }
 
-    // Highlight if Prism is loaded
+    // Highlight (if Prism is loaded)
     if (window.Prism) {
       const codes = [];
       assigned.forEach(el => {
         if (el.tagName === 'CODE') codes.push(el);
         codes.push(...el.querySelectorAll('code'));
       });
-
       if (codes.length === 0 && preEl) {
         window.Prism.highlightElement(preEl);
       } else {
@@ -338,13 +283,14 @@ class CodeViewer extends HTMLElement {
     }
   }
 
-  /* ----------------- Choose & normalize the visible element ---------------- */
+  /* choose and normalize the visible code element */
+
   _resolveDisplayEl(normalize = false) {
-    let next = this._els.preInternal;
+    let next = this.preInternal;
     if (this.getAttribute('highlight') === 'prism') {
-      const assigned = this._els.slot.assignedElements({ flatten: true });
+      const assigned = this.slotEl.assignedElements({ flatten: true });
       const pre = assigned.find(n => n.tagName === 'PRE');
-      next = pre || assigned[0] || this._els.preInternal;
+      next = pre || assigned[0] || this.preInternal;
     }
 
     const changed = next !== this._displayEl;
@@ -374,7 +320,8 @@ class CodeViewer extends HTMLElement {
     }
   }
 
-  /* ----------------------------- Styling ---------------------------------- */
+  /* styling helpers */
+
   _applyBoxColors() {
     const compBg  = this.getAttribute('bg-color') || 'white';
     const titleBg = this.getAttribute('title-bg-color') || 'transparent';
@@ -425,7 +372,8 @@ class CodeViewer extends HTMLElement {
     });
   }
 
-  /* ----------------------------- Utilities -------------------------------- */
+  /* utilities */
+
   _stripCommonIndent(text) {
     // Split, but do NOT add or remove any extra newline beyond explicit trim step.
     const lines = text.split('\n');
@@ -446,9 +394,10 @@ class CodeViewer extends HTMLElement {
 
     // Remove up to minIndent leading whitespace from every line
     const re = new RegExp(`^[ \\t]{0,${minIndent}}`);
-    return lines.map(l => l.replace(re, '')).join('\n');
+    const out = lines.map(l => l.replace(re, '')).join('\n');
+
+    return out;
   }
 }
 
-/* --------------------------- Registration --------------------------------- */
 customElements.define('code-viewer', CodeViewer);
