@@ -4,21 +4,22 @@
   WebDevBites_Test_DropDownList.html
 -->
 <head>
-  <title>DropDown List</title>
+  <title>Test DropDown List</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
   <link rel="stylesheet" href="../css/reset.css" />
   <link rel="stylesheet" href="../css/ContentMenus.css" />
-  <link rel="stylesheet" href="../css/Content.css" />
   <link rel="stylesheet" href="../css/help.css" />
-  <link rel="stylesheet" href="../css/ThemeWebDev.css" />
   <link rel="stylesheet" href="../css/StylesPhoto.css" />
   <link rel="stylesheet" href="../css/StylesSizerComp.css" />
   <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeWebDev.css" />
   <script src="../js/ScriptsWebComponents.js"></script>
   <script src="../js/Content.js"></script>
   <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
   <link rel="stylesheet" href="../css/FigureSizer.css" />
   <script src="../js/FigureSizer.js"></script>
   <link rel="stylesheet" href="../css/link-nav.css" />
@@ -28,8 +29,6 @@
   <script src="../js/contentMessages.js"></script>
   <link rel="stylesheet" href="../css/prism.css" />
   <script src="../js/prism.js"></script>
-  <script src="../Tests/DropDownList/js/dropdown.js"></script>
-  <link rel="stylesheet" href="../Tests/DropDownList/css/dropdown.css">
   <script>
     function loadInExplorer() {
       const loc = window.location;
@@ -39,6 +38,7 @@
     }
     function load() {
       loadInExplorer();
+      processQueryString();
       buildBottomMenu();
       postFileName();
       postHostMsg(makeMsg('url', location.href));
@@ -49,21 +49,52 @@
     .menuHeader {
       padding:0.0rem 0.5rem 0.25rem 0.5rem;
     }
+/* Page fills the viewport; body is a flex column */
+html, body { height: 100%; }
+body {
+  margin: 0;
+  padding: 0.5rem;          /* keep your red-border padding */
+  /* border: 4px solid red; */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  box-sizing: border-box;   /* include padding/border in the height calc */
+}
+
+/* Make the custom element the main flex column area */
+content-block {
+  display: flex;            /* default for custom tags is inline */
+  flex-direction: column;
+  flex: 1 1 auto;           /* take the remaining height in body */
+  min-height: 0;            /* allow children to grow/shrink in Firefox */
+}
+
+/* Header (and any other stuff above the iframe) takes only needed space */
+content-block > header,
+content-block > .header,
+content-block > div:not(:has(iframe)) {
+  flex: 0 0 auto;
+}
+
+/* The iframe fills the rest */
+body content-block > iframe {
+  display: block;
+  width: 100%;
+  flex: 1 1 auto;           /* <- this makes it stretch vertically */
+  min-height: 0;
+  height: auto;             /* no fixed height */
+  position: static;         /* neutralize previous relative/top/bottom */
+  /* border: 4px solid green; */
+}
   </style>
-  <style>
-    #container {
-      min-width: 60rem;
-    }
-  </style>
-  <!-- <link rel="stylesheet" href="css/TwoPanelComponentWithMarkersAndClick.css"> -->
 </head>
 <body id="github" onload="load()">
 
   <!-- show-hide with 'about' message -->
   <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
-    WebDevBites_Test_DropDownList.html<br />
+    WebDevBites_Tests.html<br />
     copyright &copy; James Fawcett<br />
-    Revised: 10/10/2025
+    Revised: 10/11/2025
   </div>
 
   <content-block>
@@ -72,7 +103,7 @@
       <div id="pagetitle" class="header">
         <h2 id="title">WebDev Bites: Test DropDown List</h2>
         <h4 id="subtitle" class="indent">
-          test hover and click dropdown lists 
+          dropdown menus with click or hover 
         </h4>
       </div>
       <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
@@ -83,114 +114,33 @@
         <a class="repoLinks" target="_self" href="WebDevBites_CompImageViewerInterface.html" style="color:var(--light); margin-left:1.5em;">Interface</a> -->
       </div>
     </header>
-  <div style="height:0.75rem;"></div>
+    <div style="height:0.75rem;"></div>
   <!-- <image-viewer img-src="Components/ImageViewerComponent/pictures/Helmet_CapeCod_2012.jpg" bg-color="var(--light)" title-bg-color="#ccc" img-width="400" style="float:right; margin-right:-1rem;">
     Figure 1. Prototype Viewer
   </image-viewer> -->
-
-  <h3>Drop Down Lists</h3>
+  <!-- <h2>Test Introduction</h2>
   <tm-b>
-    Demonstrates drop down lists that display if clicked and other lists 
-    that display on hover.
+    These test pages are shown without much explanation. They've explored ideas for this site to see what 
+    works. Some have been rejected and some have led to implementations that are an 
+    integral part of the site.
   </tm-b>
   <t-b>
-    List links open in new tab. To return here simply close tab.
+    To explore design and implementation of a test, open the test page, right-click, 
+    and select: 
+    <inset>
+      <code>This Frame > View Frame Source</code>
+    </inset>
+    Any of the included stylesheets and 
+    scripts can be opened by clicking on links for those in the Source.
   </t-b>
-  <div style="height:0.25rem;"></div>
-  <div class="container">
-    <!-- clickdowns -->
-    <div class="clickdowns">
-      <div class="label">click down/Up mouseout/up</div>
-      <div style="display:flex; flex-direction: row;">
-        <div class="dropdown" id="resourcesWrap1">
-          <button id="clickBtn1" class="dropbtn" aria-haspopup="true" aria-expanded="false">Resources ▾</button>
-          <div id="clickMenu1" class="dropdown-content" role="menu" aria-label="Resources">
-            <a href="https://developer.mozilla.org/en-US/docs/Web/HTML" target="_blank" role="menuitem">MDN HTML</a>
-            <a href="https://html.spec.whatwg.org/" target="_blank" role="menuitem">HTML Living Standard</a>
-          </div>
-        </div>
-        <div class="dropdown" id="resourcesWrap2">
-          <div style="display:flex; flex-direction: column;">
-            <button id="clickBtn2" class="dropbtn" aria-haspopup="true" aria-expanded="false">Docs ▾</button>
-            <div id="clickMenu2" class="dropdown-content" role="menu" aria-label="Docs">
-              <a href="https://developer.mozilla.org/en-US/docs/Web/CSS" target="_blank" role="menuitem">MDN CSS</a>
-              <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank" role="menuitem">MDN JS</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- hoverdowns -->
-    <div class="hoverdowns">
-      <div class="label">Hover down/mouseout up</div>
-      <div style="display:flex; flex-direction: row;">
-        <div class="dropdown hover-dropdown" id="hoverWrap1">
-          <button class="dropbtn" id="hoverBtn1" aria-haspopup="true" aria-expanded="false">Projects ▾</button>
-          <div class="dropdown-content" id="hoverMenu1" role="menu" aria-label="More Links">
-            <a href="https://freecodecamp.org" target="_blank" role="menuitem">freeCodeCamp</a>
-            <a href="https://www.theodinproject.com/" target="_blank" role="menuitem">The Odin Project</a>
-          </div>
-        </div>
-        <div class="dropdown hover-dropdown" id="hoverWrap2">
-          <button class="dropbtn" id="hoverBtn2" aria-haspopup="true" aria-expanded="false">Tools ▾</button>
-          <div class="dropdown-content" id="hoverMenu2" role="menu" aria-label="Tools">
-            <a href="https://codepen.io" target="_blank" role="menuitem">CodePen</a>
-            <a href="https://stackblitz.com" target="_blank" role="menuitem">StackBlitz</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <t-b>
+    Some of the test ideas that appeared to be useful for site operations 
+    have been developed into components and explained in much more detail. You 
+    will find them in the &quot;Components&quot; list available from the left 
+    panel of this view.
+  </t-b> -->
 
-  <!-- <div id="container" style="display:flex; flex-direction: row;">
-    <div class="clickdowns" style="padding:0.5rem 1.5rem;">
-      <div style="padding:0.25rem 1.0rem; float:left;">Click Down/Up mouseout/Up</div>
-      <div class="dropdown" id="resourcesWrap1">
-        <button id="clickBtn1" class="dropbtn" aria-haspopup="true" aria-expanded="false">Resources ▾</button>
-        <div id="clickMenu1" class="dropdown-content" role="menu" aria-label="Resources">
-          <a href="https://developer.mozilla.org/en-US/docs/Web/HTML" target="_blank" role="menuitem">MDN HTML</a>
-          <a href="https://html.spec.whatwg.org/" target="_blank" role="menuitem">HTML Living Standard</a>
-        </div>
-      </div>
-      <div class="dropdown" id="resourcesWrap2">
-        <div style="display:flex; flex-direction: column;">
-          <button id="clickBtn2" class="dropbtn" aria-haspopup="true" aria-expanded="false">Docs ▾</button>
-          <div id="clickMenu2" class="dropdown-content" role="menu" aria-label="Docs">
-            <a href="https://developer.mozilla.org/en-US/docs/Web/CSS" target="_blank" role="menuitem">MDN CSS</a>
-            <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank" role="menuitem">MDN JS</a>
-          </div>
-        </div>
-      </div>
-    </div>
-    </div>
-    <div class="hoverdowns" style="padding:0.5rem 1.5rem;">
-      <div style="padding:0.25rem 1.0rem; float:right;">Hover Down/mouseout Up</div>
-      <div class="dropdown hover-dropdown" id="hoverWrap1">
-        <button class="dropbtn" id="hoverBtn1" aria-haspopup="true" aria-expanded="false">Projects ▾</button>
-        <div class="dropdown-content" id="hoverMenu1" role="menu" aria-label="More Links">
-          <a href="https://freecodecamp.org" target="_blank" role="menuitem">freeCodeCamp</a>
-          <a href="https://www.theodinproject.com/" target="_blank" role="menuitem">The Odin Project</a>
-        </div>
-      </div>
-      <div class="dropdown hover-dropdown" id="hoverWrap2">
-        <button class="dropbtn" id="hoverBtn2" aria-haspopup="true" aria-expanded="false">Tools ▾</button>
-        <div class="dropdown-content" id="hoverMenu2" role="menu" aria-label="Tools">
-          <a href="https://codepen.io" target="_blank" role="menuitem">CodePen</a>
-          <a href="https://stackblitz.com" target="_blank" role="menuitem">StackBlitz</a>
-        </div>
-      </div>
-    </div>
-  </div> -->
-  <div style="height:1.75rem;"></div>
-  <t-b>
-    To view HTML source right-click anywhere on page and select 
-    &quot;View Page Source&quot;.
-  </t-b>
-  <t-b>
-    To view CSS or JS click on links to &quot;css/DropDown.css&quot; and 
-    &quot;js/DropDown.js&quot; in the Page Source.
-  </t-b>
-    <div style="height:15em;"></div>
+    <iframe id="pgframe" src="../Tests/DropDownList/DropDownList.html" name="tpanel"></iframe>
   </content-block>
   <div id="bottomMenu">
     <div id="keys" class="hidden"></div>
@@ -202,8 +152,8 @@
       </div>
     </div>
     <div id="pages" class="hidden"></div>
-    <div id="url" class="hidden">url</div>
-    <div id="goto" class="hidden">url</div>
+    <div id="url" class="hidden"></div>
+    <div id="goto" class="hidden"></div>
   </div>
   <a id="bottom"></a>
   <script src="js/WebDevTestPages.js"></script>
@@ -211,16 +161,88 @@
   <script>createSiteNavMenu('goto')</script>
   <script src="../js/link-nav.js" defer></script>
   <script>
-    setCookie('#pages', 0, 10);
+    setCookie('#pages', 1, 10);
   </script>
-  <script>
-    // Initialize any number of click dropdowns
-    createClickDropdown({ buttonId: "clickBtn1", menuId: "clickMenu1" });
-    createClickDropdown({ buttonId: "clickBtn2", menuId: "clickMenu2" });
+<script>
+(function () {
+  function px(n){ return Math.max(0, Math.floor(n)) + 'px'; }
 
-    // Initialize any number of hover dropdowns (stateful)
-    createHoverDropdown({ wrapId: "hoverWrap1", buttonId: "hoverBtn1", menuId: "hoverMenu1", graceMs: 180 });
-    createHoverDropdown({ wrapId: "hoverWrap2", buttonId: "hoverBtn2", menuId: "hoverMenu2", graceMs: 180 });
-  </script>
+  function sizeIframe() {
+    const iframe = document.querySelector('body content-block > iframe');
+    if (!iframe) return;
+
+    // measure body paddings & borders (they reduce available viewport height)
+    const bs = getComputedStyle(document.body);
+    const padTop    = parseFloat(bs.paddingTop)    || 0;
+    const padBottom = parseFloat(bs.paddingBottom) || 0;
+    const bTop      = parseFloat(bs.borderTopWidth)    || 0;
+    const bBottom   = parseFloat(bs.borderBottomWidth) || 0;
+
+    // measure header inside content-block (takes space above iframe)
+    const header = document.querySelector('content-block > header');
+    const headerH = header ? header.getBoundingClientRect().height : 0;
+
+    // if you keep a spacer or any gap above the iframe, account for it here:
+    const gapEl = document.querySelector('content-block > div[style*="height:0.75rem"]');
+    const gapH = gapEl ? gapEl.getBoundingClientRect().height : 0;
+
+    // if you want the iframe to stop above the bottom menu (outside content-block)
+    const bottomMenu = document.getElementById('bottomMenu');
+    const bottomH = bottomMenu ? bottomMenu.getBoundingClientRect().height : 0;
+
+    // available viewport height minus everything that must stay visible
+    const available =
+      window.innerHeight
+      - (padTop + padBottom + bTop + bBottom)
+      - headerH
+      - gapH
+      - bottomH;
+
+    iframe.style.height = px(available - 15);
+  }
+
+  // initial + on resize + after fonts settle
+  window.addEventListener('load',   sizeIframe, { once: true });
+  window.addEventListener('resize', sizeIframe, { passive: true });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(sizeIframe);
+})();
+</script>
+<script>
+  /*-- querystring processing, see footing for redirect processing -----
+  https://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript
+*/
+function getParameterByName(name, url = window.location.href) {
+  // escape any [ or ] in the name
+  name = name.replace(/[[\]]/g, '\\$&');
+  // capture everything after `=` up to—but not including—an `&`
+  const regex = new RegExp(`[?&]${name}=([^&]*)`);
+  const results = regex.exec(url);
+  return results
+    ? decodeURIComponent(results[1])
+    : null;
+
+  // name = name.replace(/[\[\]]/g, '\\$&');
+  // var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+  // results = regex.exec(url);
+  // if (!results) return null;
+  // if (!results[2]) return '';
+  // return decodeURIComponent(results[2].replace(/\+/g, ' '));
+}
+
+  
+  /*-- query string redirect processing --*/
+  function processQueryString() {
+  var url = window.location.href;
+  var src = getParameterByName("src", url);
+  if (isDefined(src)) { 
+    /*-- redirect to specified page --*/
+    let pf = document.getElementById("pgframe");
+    if (isDefined(src)) {
+      pf.src = src;
+      src = null;
+    }
+  }    
+}
+</script>
 </body>
 </html>

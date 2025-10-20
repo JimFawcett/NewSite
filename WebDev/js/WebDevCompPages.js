@@ -10,15 +10,12 @@ function buildPages() {
     pgs.innerHTML =
     "<div class='darkItem listheader' onclick='togglePages()'>WebDev Comp Pages</div>\
     <div class='menuBody'>\
-      <a href='WebDevBites_CompSpacer.html'>Spacer Demo</a>\
-      <a href='WebDevBites_CompSpacerDesign.html'>Spacer Design</a>\
-      <a href='WebDevBites_CompSpacerInterface.html'>Spacer Interface</a>\
-      <a href='WebDevBites_CompImageViewer.html'>ImageView Demo</a>\
-      <a href='WebDevBites_CompImageViewerDesign.html'>ImageView Design</a>\
-      <a href='WebDevBites_CompImageViewerInterface.html'>ImageView Interface</a>\
-      <a class='undef' href='javascript:;'>Text Viewer</a>\
+      <a href='WebDevBites_Components.html'>Introduction</a>\
+      <a href='WebDevBites_CompImageViewer.html'>Image Viewer</a>\
+      <a href='WebDevBites_CompSpacer.html'>Spacer</a>\
+      <a href='WebDevBites_CompCodeViewer.html'>Code Viewer</a>\
       <a class='undef' href='javascript:;'>Splitter</a>\
-      <a class='undef' href='javascript:;'>TwoPanel</a>\
+      <a class='undef' href='javascript:;'>Two Panel Viewer</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
