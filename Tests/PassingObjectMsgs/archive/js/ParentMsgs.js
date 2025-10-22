@@ -7,7 +7,7 @@ function createMessage(dest, key, value) {
 }
 /*-- Explorer requests change of iframe window location --*/
 function postMsg(msg) {
-  let ifrm = document.getElementById("mpgframe");
+  let ifrm = document.getElementById("pgframe");
   ifrm.contentWindow.postMessage(msg, "*");
 }
 /*-- iframe responds to Explorer link click --*/
