@@ -18,7 +18,6 @@ function buildPages() {
       <a href='WebDevBites_Test_QueryStrings.html'>Query Strings</a>\
       <a href='WebDevBites_Test_urlCookie.html'>url Cookie</a>\
       <a href='WebDevBites_Test_StackedContent.html'>Stacked Content</a>\
-      <a href='WebDevBites_Test_PageLayout.html'>Page Layout</a>\
       <a href='WebDevBites_Test_TwoPanelViewer.html'>Two Panel Viewer</a>\
       </div>\
     <div style='height:0.5em;'></div>";
