@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html id="top">
 <!--
-  RepoRust_RustLogger.html
+  RepoRust_RustCmdLine.html
 -->
 <head>
-  <title>Rust Logger</title>
+  <title>Rust CmdLine</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
   <link rel="stylesheet" href="../css/reset.css" />
@@ -48,9 +48,9 @@
 
   <!-- show-hide with 'about' message -->
   <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
-    RepoRust_RustLogger.html<br />
+    RepoRust_RustThreadPool.html<br />
     copyright &copy; James Fawcett<br />
-    Revised: 10/30/2025
+    Revised: 11/06/2025
   </div>
 
   <content-block>
@@ -58,9 +58,9 @@
     <header>
       <!--<a class="repoLink" href="https://github.com/JimFawcett">JimFawcett Repositories</a>-->
       <div id="pagetitle">
-        <h2 id="title">Rust Logger</h2>
+        <h2 id="title">Rust Cmd Line</h2>
         <h4 id="subtitle" class="indent">
-          concurrently log to file and std output<br />
+          parses command line arguments with specified defaults<br />
         </h4>
       </div>
       <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
@@ -69,12 +69,13 @@
       </div>
 
     </header>
-        <div>
-          <h3 id="concept">Concept:</h3>
-          <div>
-            <div style="width:calc(100vw - 6rem);">
-              <photosizer-block src="Pictures/RustLogger.output.png" width="400" class="photoSizerBlock right" style="margin-top:0; margin-right:-2rem;">
-                <span style="
+    <div class="note" style="border:2px dashed red;">
+      Default settings are not working correctly.  Will fix as time permits.
+    </div>
+        <div class="bb-55">
+          <div style="width:calc(100vw - 6rem);">
+            <photosizer-block src="Pictures/RustCmdLineParserOutput.JPG" width="500" class="photoSizerBlock right" style="margin-top:0; margin-right:-2rem;">
+              <span style="
           display: inline-block;
           font-weight: bold;
           font-family: 'Comic Sans MS', Tahoma;
@@ -82,151 +83,158 @@
           width: 100%;
           padding: 5px 0px;
         ">
-                  Fig 1. Logger Output
-                </span>
-              </photosizer-block>
-            </div>
+                Fig 1. CmdLineParser Output
+              </span>
+            </photosizer-block>
           </div>
+          <h3 id="concept">Concept:</h3>
           <t-b>
-            RustLogger is a facility for inserting time-date stamped string messages into the console and a text file
-            simultaneously. You can also select for console alone or text file alone.
+            RustCmdLine is a facility for parsing command line arguments.  Here&apos;s a sample:
+            <div class="indent pad5">
+              <c-s>/P "." /p "rs,txt" /s /H /r "abc"</c-s>
+            </div>
+            where:
+            <div class="indent pad5">
+              <c-s>
+                /P "."&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- path<br />
+                /p "rs,txt" - file patterns<br />
+                /s&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- recurse through directory tree rooted at path<br />
+                /H&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- hide directories that don&apos;t contain target files<br />
+                /r "abc"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- regular expression
+              </c-s>
+            </div>
             <spacer-15></spacer-15>
+            The intent is that a program creates an instance of CmdLineParser, uses that to parse its command line, then
+            passes it to any code that needs to know about an option.
           </t-b>
           <h3 id="design">Design:</h3>
-          <!--<div style="width:calc(100vw - 6rem);">
-        <photosizer-block src="Pictures/TestLogger.jpg" width="500" class="photoSizerBlock right" style="margin-top:0;">
-          <span style="
-          display: inline-block;
-          font-weight: bold;
-          font-family: 'Comic Sans MS, Tahoma';
-          background-color: #ddd;
-          width: 100%;
-          padding: 5px 0px;
-        ">
-            Fig 1. Test Logger Classes
-          </span>
-        </photosizer-block>
-      </div>-->
           <t-b>
             <t-b>
-              There is one struct, Logger, with methods and several functions in this design:
-              <indent-block class="pad5">
-                Methods:
+              This repository contains a library with a single user-defined type: CmdLineParser.  It contains
+              a vector of pattern strings (file extensions), a HashMap of option char and value, e.g., {P, "."},
+              and a help string.  It provides methods for initiating the parse, returning pattern strings,
+              returning options, and returning the path.
+            </t-b>
+            <t-b>
+              CmdLineParser implements the following methods and functions:
+              <div class="indent">
                 <ol class="tight">
                   <li>
                     <strong><c-s>new() -> Self</c-s></strong>
                     <div style="padding:3px 10px 5px 10px;">
-                      Create new <c-s>Logger</c-s> which has no attached file and writes to console.
+                      Create new <c-s>CmdLineParser</c-s> which has an options hashmap, patterns vector, and help string.
                     </div>
                   </li>
                   <li>
-                    <strong><c-s>init(f:File, con:bool) -> Self</c-s></strong>
+                    <strong><c-s>parse(&self)</c-s></strong>
                     <div style="padding:3px 10px 5px 10px;">
-                      Create new Logger attached to f and writes to console only if con is <c-s>true</c-s>.
+                      Builds internal options hashmap and patterns vector.
                     </div>
                   </li>
                   <li>
-                    <strong><c-s>console(&mut self, con:bool)</c-s></strong>
+                    <strong><c-s>path(&self) -> String</c-s></strong>
                     <div style="padding:3px 10px 5px 10px;">
-                      sets console writing to <c-s>true</c-s> or <c-s>false</c-s>.
+                      Return value of relative root path, held in options map.
                     </div>
                   </li>
                   <li>
-                    <strong><c-s>file(&mut self, f:File)</c-s></strong>
+                    <strong><c-s>abs_path(&self) -> String</c-s></strong>
                     <div style="padding:3px 10px 5px 10px;">
-                      Sets or resets log file <c-s>f</c-s>.
+                      Return value of absolute root path, from canonicalized relative path.
                     </div>
                   </li>
                   <li>
-                    <strong><c-s>opt(&mut self, f:Option&lt;File&gt;</c-s></strong>
+                    <strong><c-s>set_path(&mut self, p:&str)</c-s></strong>
                     <div style="padding:3px 10px 5px 10px;">
-                      sets or resets <c-s>Logger::fl</c-s> to the option provided.
+                      Replaces value of root path, held in options map.
                     </div>
                   </li>
                   <li>
-                    <strong><c-s>open(&mut self, s:&str) -> bool</c-s></strong>
+                    <strong><c-s>set_regex(&mut self, re:&str)</c-s></strong>
                     <div style="padding:3px 10px 5px 10px;">
-                      Opens logger, truncating log file if it exists.
+                      Replaces value of regex string, held in options map.
                     </div>
                   </li>
                   <li>
-                    <strong><c-s>open_append(&mut self, s:&str) -> bool</c-s></strong>
+                    <strong><c-s>get_regex(&mut self) -> &str</c-s></strong>
                     <div style="padding:3px 10px 5px 10px;">
-                      Opens logger, appending to log file if it exists.
+                      Retrieves value of regex string, held in options map.
                     </div>
                   </li>
                   <li>
-                    <strong><c-s>ts_write(&mut self, s:&str) -> &mut Self</c-s></strong>
+                    <strong><c-s>default_options(&mut self)</c-s></strong>
                     <div style="padding:3px 10px 5px 10px;">
-                      Writes date_time stamp then string s to the log target(s).
+                      Sets values of some of the options in options map.
                     </div>
                   </li>
                   <li>
-                    <strong><c-s>write(&mut self, s:&str) -> &mut Self</c-s></strong>
+                    <strong><c-s>contains_option(&self, opt:char) -> bool</c-s></strong>
                     <div style="padding:3px 10px 5px 10px;">
-                      Writes string s to the log target(s).
+                      returns true if options map contains key opt, else returns false.
                     </div>
                   </li>
                   <li>
-                    <strong><c-s>close(&mut self)</c-s></strong>
+                    <strong><c-s>add_option(&mut self, opt:char, val:&str)</c-s></strong>
                     <div style="padding:3px 10px 5px 10px;">
-                      Closes logger by setting <c-s>Logger::fl</c-s> to the option <c-s>None</c-s>.
+                      Inserts option in options hashmap, adding key if it does not exist, else overriding previous value.
+                    </div>
+                  </li>
+                  <li>
+                    <strong><c-s>value(&self, opt:char) -> &str</c-s></strong>
+                    <div style="padding:3px 10px 5px 10px;">
+                      Inserts option in options hashmap, adding key if it does not exist, else overriding previous value.
+                    </div>
+                  </li>
+                  <li>
+                    <strong><c-s>add_pattern(&mut self, patt:&str) -> &mut self</c-s></strong>
+                    <div style="padding:3px 10px 5px 10px;">
+                      Inserts patt into patterns vector.  Method can be chained.
+                    </div>
+                  </li>
+                  <li>
+                    <strong><c-s>patterns(&self) -> &CmdLinePatterns</c-s></strong>
+                    <div style="padding:3px 10px 5px 10px;">
+                      Returns reference to vector of patterns.
+                    </div>
+                  </li>
+                  <li>
+                    <strong><c-s>options(&self) -> &Options</c-s></strong>
+                    <div style="padding:3px 10px 5px 10px;">
+                      Returns reference to hashmap of options.
+                    </div>
+                  </li>
+                  <li>
+                    <strong><c-s>help(&self) -> &str</c-s></strong>
+                    <div style="padding:3px 10px 5px 10px;">
+                      Returns default help string.
+                    </div>
+                  </li>
+                  <li>
+                    <strong><c-s>replace_help(&mut self, hs:&str)</c-s></strong>
+                    <div style="padding:3px 10px 5px 10px;">
+                      Replace internal help string.
                     </div>
                   </li>
                 </ol>
-                <t-b>
-                  Functions:
-                </t-b>
-                <ol class="tight">
-                  <li>
-                    <strong><c-s>open_file(s:&str, mode:OpenMode) -> Option&lt;File&gt;</c-s></strong>
-                    <div style="padding:3px 10px 5px 10px;">
-                      Opens file with OpenMode::Append or OpenMode::Truncate. Returns option that may
-                      be used with <c-s>Logger::opt(f:Option&lt;File&gt;)</c-s>.
-                    </div>
-                  </li>
-                  <li>
-                    <strong><c-s>file_exists(s:&str) -> bool</c-s></strong>
-                    <div style="padding:3px 10px 5px 10px;">
-                      Does this file exist?
-                    </div>
-                  </li>
-                  <li>
-                    <strong><c-s>remove_file(s:&str) -> bool</c-s></strong>
-                    <div style="padding:3px 10px 5px 10px;">
-                      Delete file if it exists and has appropriate access.
-                    </div>
-                  </li>
-                  <li>
-                    <strong><c-s>file_contains(fl:&str, ts:&str) -> bool</c-s></strong>
-                    <div style="padding:3px 10px 5px 10px;">
-                      Does the file named fl contain the string ts?
-                    </div>
-                  </li>
-                  <li>
-                    <strong><c-s>file_contents(fl:&str)</c-s></strong>
-                    <div style="padding:3px 10px 5px 10px;">
-                      Display text file contents on console.
-                    </div>
-                  </li>
-                </ol>
-              </indent-block>
+              </div>
             </t-b>
           </t-b>
-          <div class="clear"></div>
+          <div class="clears"></div>
           <h3 id="oper">Operation:</h3>
-          <t-b class="indent">
-            This is intended to be a very simple logger - easy to use and with virtually no setup or configuration.
+          <t-b>
+            See Test1.rs in examples folder for typical usage.
           </t-b>
           <h3>Build:</h3>
-          <t-b class="indent">
+          <t-b>
             Download and, in a command prompt, <c-s>cargo build</c-s> or <c-s>cargo run</c-s>.
           </t-b>
           <h3>Status:</h3>
-          <t-b class="indent">
-            There may be some changes after I start building bigger Rust applications.
+          <t-b>
+            This is version 1.1.0<br />
+            Tested on both Windows 10 and Ubuntu Linux
           </t-b>
-        </div>  <spacer-15></spacer-15>
+        </div>
+        <div style="height:15rem;"></div>
   </content-block>
   <div id="bottomMenu">
     <div id="keys" class="hidden"></div>
@@ -251,7 +259,7 @@
   <script>createSiteNavMenu('goto')</script>
   <script src="../js/link-nav.js" defer></script>
   <script>
-    setCookie('#pages', 0, 10);
+    setCookie('#pages', 4, 10);
   </script>
 </body>
 </html>
