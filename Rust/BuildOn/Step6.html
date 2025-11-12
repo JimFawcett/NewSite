@@ -1,0 +1,338 @@
+﻿<!DOCTYPE html>
+<!--
+  BuildOn-Step4.html
+  -------------
+  This page is a prototype for pages that provide:
+  - Header block at the top
+  - page menu in the left panel
+  - content in the right panel
+  - content section links in a footer block
+  Its design uses:
+  - CSS grid to lay out the page in three rows, header, main, footer
+  - The grid is fixed to the viewport using margins and height attributes
+  - flex grid in the main row to hold the page menu and content panels
+  - flex grid in the footer holding a toggle button and section links
+  - JavaScript to respond to the toggle button by:
+    a. Setting the menu panel display to none or block which toggles
+       its visibility and space
+    b. Setting the right area in the footer to a menu of section links
+       or a copyright notice.
+  This is a test prototype for story pages.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BuildOn Step#6 - Par</title>
+  <link rel="stylesheet" href="css/Styles_Basic.css" />
+  <link rel="stylesheet" href="css/Styles_Structure.css" />
+  <link rel="stylesheet" href="css/Styles_RustTheme.css" />
+  <link rel="stylesheet" href="css/Styles_StoryPagesGrid.css" />
+  <link rel="stylesheet" href="css/StylesWebComponents.css" />
+  <script src="js/ScriptsUtilities.js"></script>
+  <script src="js/ScriptsWebComponents.js"></script>
+  <script src="js/ScriptsKeyboard.js"></script>
+  <script src="js/Scripts_StoryPageMenu.js"></script>
+  <style>
+    #github .refsep {
+      font-weight: normal;
+      text-align: left;
+    }
+  </style>
+</head>
+<body id="github" onload="init()">
+
+  <a id="Next" href="StepsRefs.html">N</a>
+  <a id="Prev" href="Step5.html">P</a>
+
+  <grid-container>
+    <grid-header class="dark" onclick="togglemenus()">
+       <h2 class="dark">BuildOn - Step #6:&nbsp;&nbsp;&nbsp;Parallel Text Search</h2>
+     </grid-header>
+     <grid-main>
+       <a href="#top"></a>
+       <main-wrapper>
+         <main-left id="nav" class="light">
+           <ul>
+              <li><a href="../../index.html">Home</a></li>
+              <li><a href="../../BuildOn.html">Repo</a></li>
+              <li><a href="Intro.html">BuildOn Intro</a>&nbsp;&nbsp;</li>
+              <li><a href="Step0.html">Step&nbsp;#0&nbsp;-&nbsp;TF</a>&nbsp;&nbsp;</li>
+              <li><a href="Step1.html">Step&nbsp;#1&nbsp;-&nbsp;TS</a>&nbsp;&nbsp;</li>
+              <li><a href="Step2.html">Step&nbsp;#2&nbsp;-&nbsp;DN</a>&nbsp;&nbsp;</li>
+              <li><a href="Step3.html">Step&nbsp;#3&nbsp;-&nbsp;CP</a>&nbsp;&nbsp;</li>
+              <li><a href="Step4.html">Step&nbsp;#4&nbsp;-&nbsp;Exc</a>&nbsp;&nbsp;</li>
+              <li><a href="Step5.html">Step&nbsp;#5&nbsp;-&nbsp;RE</a>&nbsp;&nbsp;</li>
+              <li><a href="Step6.html">Step&nbsp;#6&nbsp;-&nbsp;Par</a>&nbsp;&nbsp;</li>
+              <li><a href="StepsRefs.html">StepsRefs</a>&nbsp;&nbsp;</li>
+              <li><a href="../../DesignBites.html">Design Bites</a>&nbsp;&nbsp;</li>
+              <li><a href="https://doc.rust-lang.org/std/fmt/">std::fmt</a>&nbsp;&nbsp;</li>
+              <li><a href="../DebuggingRust.pdf">DebugRust</a></li>
+              <li><a href="https://github.com/JimFawcett/RustPlaygroundExamples#top">Playgrd Exm</a>&nbsp;&nbsp;</li>
+              <li><a href="../RustBites/RustBites_GettingStarted.html">Starting Rust</a>&nbsp;&nbsp;</li>
+              <li><a href="../RustBites/RustBites_Intro.html">Rust Bites</a>&nbsp;&nbsp;</li>
+              <li><a href="../../RustStory_Prologue.html">Rust Story</a>&nbsp;&nbsp;</li>
+              <li><a href="../../IndexPage.html">Glossary</a>&nbsp;&nbsp;</li>
+              <!--<li><a href="../../RustStory_References.html">References</a>&nbsp;&nbsp;</li>-->
+           </ul>
+         </main-left>
+         <main-right id="content" class="light">
+        <div style="height:1.0em;">&nbsp;</div>
+        <a id="dirnav"></a>
+        <h3>BuildOn Project - Parallel Execution of Text Search</h3>
+        <div style="float:right;" class="light">
+          <photosizer-block 
+            src="pictures/TextFinderClassDiagram2.jpg" 
+            width="400" class="photoSizerBlock left"
+            style="background-color: #fefefa;"  
+          >
+            <span style="font-family:'Comic Sans MS';">Figure 1. TextFinder Types</span>
+          </photosizer-block>
+        </div>
+        <div style="float:right; clear:both;" class="light clear">
+          <photosizer-block 
+            src="pictures/ParallelTextSearch.jpg" 
+            width="500" class="photoSizerBlock left"
+            style="background-color: #fefefa;"  
+          >
+            <span style="font-family:'Comic Sans MS';">Figure 2. Parallel Text Search</span>
+          </photosizer-block>
+        </div>
+        <t-b>
+          This Step adds processing of text search in parallel, one thread for each file.  It introduces a
+          thread pool into TextSearch, a blocking queue in Display, and uses 1 thread for directory
+          navigation, mulitple threads for text search, and another thread for sending display 
+          contents to the output, as shown in Figure 2.
+        </t-b>
+        <t-b>
+
+        </t-b>
+        <t-b>
+          Figure 1 is a type diagram for Textfinder, showing how these parts fit together.
+        </t-b>
+        <indent-block>
+          <details>
+            <summary class="darkItem" style="width:max-content;">TextFinder Specification</summary>
+        <h4>TextFinder Specification:</h4>
+        <t-b>
+          <ol class="tight">
+            <li>
+              Identify all files in a directory subtree that match a pattern and contain a specified text.
+            </li>
+            <li>
+              Specify root path, one or more file patterns (.h, .cpp, .cs, .rs, ...), and search text on command line.
+            </li>
+            <li>
+              Specify options <c-s>/s [true|false]</c-s>, <c-s>/v [true|false]</c-s>, <c-s>/H [true|false]</c-s>
+              <c-s>/h [true|false]</c-s> for recursive directory walk, verbose output header, Hidden dirs with no match,
+              and help message, respectively.
+            </li>
+            <li>
+              Display file name and path, without duplication of path name, e.g., organized by directory, for files
+              containing the search text.
+            </li>
+            <li>
+              Interesting extensions:
+              <ul class="tight" style="margin-left:0.85rem;">
+                <li>
+                  Replace text by regular expressions for both search text and file patterns.
+                </li>
+                <li>
+                  Replace sequential file searches with parallel searches to improve performance and useability.
+                </li>
+              </ul>
+            </li>
+          </ol>
+        </t-b>
+          </details>
+        </indent-block>
+
+        <t-b>
+          <c-s>Executive</c-s> uses <c-s>CLParser</c-s> to access the program&apos;s starting path,
+          file patterns, search text, and options.
+        </t-b>
+        <t-b>
+          <c-s>Executive</c-s> configures the <c-s>CLPparser</c-s> instance for 
+          TextFinder&apos;s <c-s>Finder</c-s> operations by 
+          defining default values of program attributes not already defined on the command line. 
+        </t-b>
+        <t-b>
+          It then creates a member instance of <c-s>DirNav</c-s>, providing it access to 
+          <c-s>TextSearch::Finder</c-s> as a generic parameter.
+        </t-b>
+        <t-b>
+          DirNav creates an instance of TextSearch&apos;s <c-s>Finder</c-s> and provides access to it
+          via a member function <c-s>DirNav&lt;App&gt;::getApp()</c-s>.  This may be used to configure
+          <c-s>Finder</c-s> before starting a search.  It may also be used to collect results that are
+          specific to <c-s>DirNav</c-s>, e.g., the number of files and directories processed.
+        </t-b>
+        <t-b>
+          <c-s>Executive</c-s> uses <c-s>getApp()</c-s> to configure Finder with search text.
+        </t-b>
+        <div style="height:0.15em;">&nbsp;</div>
+        <hr class="spread" />
+        <a id="step6"></a>
+        <h3>Step #6 - Add Parallel Search</h3>
+        <t-b>
+          In this step we will add code modifications to support searching files for text in parallel, one
+          thread for each file.
+        </t-b>
+        <t-b>
+          TextSearch and GenOut modifications:
+          <ol>
+            <li>
+              In Finder add a thread pool that receives file and directory names from <c-s>Finder::do_dir</c-s>
+              and <c-s>Finder::do_file</c-s>.  Each thread uses a processing function that pulls a file from
+              the thread pool queue and searches it for text.  It sends its results to <c-s>GenOut</c-s>.
+            </li>
+            <li>
+              To <c-s>GenOut</c-s> add a blocking queue that receives <c-s>Finder</c-s>&apos;s results.  Now,
+              <c-s>GenOut</c-s> cannot immediately write out the result because of the uncertainty in timing of
+              each individual search.  A <c-s>Finder</c-s> thread may still be searching when a new directory is
+              entered in <c-s>DirNav</c-s>.
+            </li>
+            <li>
+              The issue cited above can be resolved by storing <c-s>Finder</c-s> results in a data structure
+              and simply display directory names as they are encountered, saving the file results for display
+              at the end of processing.  This allows the user to monitor progress and allow <c-s>GenOut</c-s>
+              to use some policy for display, perhaps sorting by directory name and by file name in each
+              directory.
+            </li>
+          </ol>
+        </t-b>
+        <div style="height:0.15em;">&nbsp;</div>
+        <hr class="spread" />
+        <a id="refs"></a>
+        <h3>Step #2 References</h3>
+        <t-b>
+          The table below provides references relevant for Step #2 : DirNav.  The first links refer to specific
+          regions of the Rust Story, from this site.  Other links go to Rust documentation. 
+        </t-b>
+        <t-b>
+          You can look at the Rust Story by selecting the Rust Story link in the menu in the left panel.
+        </t-b>
+        <div style="height:0.5rem;">&nbsp;</div>
+        <h4>Table 2. - Step #2 References</h4>
+        <div>
+          <table style="width:100%;" class="lightItem">
+            <tr>
+              <th class="darkItem" style="width: 10em;">Topic</th>
+              <th class="darkItem" style-"width: auto;">Description</th>
+              <th class="darkItem" style="width: 15em;">Link</th>
+            </tr>
+            <tr>
+              <td>Threads</td>
+              <td>
+                Threads are similar to those in the C++ thread library, but subject to Rust ownership
+                policies.  Data ownership in a thread processing function uses &quot;interior mutability&quot;
+                to track at run-time memory and data race safety.  It does that with <c-s>RefCell</c-s> instances
+                embedded in Rust&apos;s synchronizing constructs, Mutex, RWLock, and Channel.
+              </td>
+              <td>
+                <a href="../RustBites/RustBites_Threads.html">RustBites Threads</a><br />
+                <a href="../RustBites/RustBites_Synchron.html">RustBites Sync</a><br />
+                <a href="https://blog.rust-lang.org/2015/04/10/Fearless-Concurrency.html">Fearless Concurrency</a><br />
+                <a href="../../RustStory_Libraries.html#thread">RustStory threads</a><br />
+                <a href="../../RustStory_Libraries.html#sync">RustStory Sync</a><br />
+                <a href="../../RustStory_Libraries.html#mpsc">RustStory MPSC</a>
+              </td>
+            </tr>
+            <tr>
+              <td>Generics</td>
+              <td>
+                Generics in Rust are very similar to those in C# and Java, and simpler than C++ templates.
+                They are code generators often do little more than substitute a specific type for a generic
+                parameter.  Rust generics are often constrained with traits, as discussed above.
+              </td>
+              <td>
+                <a href="../../RustStory_models.html#generics">Rust Story Generics</a><br />
+                <a href="../RustBites/RustBites_Traits.html">Rust Bites Generics and Traits</a><br />
+                <a href="https://doc.rust-lang.org/book/ch10-00-generics.html">The Rust Book</a><br />
+              </td>
+            </tr>
+            <tr>
+              <td>Ownership</td>
+              <td>
+                Rusts ownership rules: There is only one owner for any resource.  Owners deallocate their resources
+                when they go out of scope.  Ownership can be transferred with a Move or borrowed with a reference.
+                References don&apos;t own resources, they just borrow them, and so never deallocate.
+                Rust ownership does not support simultaneously aliasing and mutation.
+              </td>
+              <td>
+                <a href="../RustBites/RustBites_Ownrs.html">Rust Bites Ownership</a><br />
+                <a href="../../RustStory_Models.html#ownership">Rust Story Ownership</a><br />
+                <a href="https://depth-first.com/articles/2020/01/27/rust-ownership-by-example/">By Example</a><br />
+                <a href="https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html">Rust Book</a><br />
+                <a href="https://doc.rust-lang.org/nomicon/ownership.html">Rust Nomicon</a><br />
+              </td>
+            </tr>
+            <tr>
+              <td>Strings</td>
+              <td>
+                Rust std strings come in two flavors: <c-s>String</c-s> and <c-s>str</c-s>, representing
+                string objects and literal strings.  Each contains utf-8 characters.  The Rust library path
+                also provides PathBuf, similar to String, and Path, similar to &str, but uses the encoding
+                for paths provided by the current platform, e.g., Windows, Linux, or macOS.
+              </td>
+              <td>
+                <a href="https://doc.rust-lang.org/std/string/struct.String.html">std::String</a><br />
+                <a href="https://doc.rust-lang.org/std/str/index.html">std::str</a><br />
+                <a href="https://doc.rust-lang.org/std/path/index.html">std::path</a><br />
+                <a href="https://doc.rust-lang.org/std/path/struct.PathBuf.html">std::path::PathBuf</a>
+                <a href="https://doc.rust-lang.org/std/path/struct.Path.html">std::path::Path</a><br />
+                <a href="https://doc.rust-lang.org/rust-by-example/std_misc/path.html">Rust by Example</a>
+              </td>
+            </tr>
+            <tr>
+              <td>struct</td>
+              <td>
+                Rust structs serve the same role as classes do in C++ and C#.  Struct methods are
+                defined inside impl StructName {} blocks.
+              </td>
+              <td>
+                <a href="../../RustStory_Data.html#structs">Rust Story structs</a><br />
+                <a href="https://doc.rust-lang.org/std/keyword.struct.html">std::Stuct</a><br />
+                <a href="https://doc.rust-lang.org/std/keyword.impl.html">keyword impl</a>
+              </td>
+            </tr>
+            <tr>
+              <td>File System</td>
+              <td>
+                Rust has a well engineered facility for accessing files and directories.<br />
+                Some key types in std::fs are: DirEntry, File, OpenOptions, ReadDir, ...
+              </td>
+              <td>
+                <a href="../../RustStory_Libraries.html#fs">Rust story File System</a><br />
+                <a href="https://doc.rust-lang.org/std/fs/index.html">std::fs</a><br />
+                &nbsp;
+              </td>
+            </tr>
+          </table>
+        </div>
+        <t-b>
+          You don&apos;t need to use all of the references in the right-most column.  Just look at
+          each quickly and use the one(s) that work(s) best for you.
+        </t-b>
+        <div style="height:10em;">&nbsp;</div>
+        <a id="bottom"></a>
+         </main-right>
+       </main-wrapper>
+     </grid-main>
+     <grid-footer class="light">
+       <footer-wrapper>
+         <footer-left class="dark" onclick="togglemenus()">
+           &nbsp;toggle&nbsp;menu&nbsp;
+         </footer-left>
+         <footer-right id="sects" style="display:flex; padding:0em 1em;">
+           <ul>
+             <li><a href="#top">Top</a></li>
+             <li><a href="#intro">Intro</a></li>
+             <li><a href="#step6">Parallel Search</a></li>
+             <li><a href="#refs">References</a></li>
+           </ul>
+         </footer-right>
+       </footer-wrapper>
+     </grid-footer>
+   </grid-container>
+</body>
+</html>

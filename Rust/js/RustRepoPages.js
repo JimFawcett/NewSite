@@ -18,7 +18,7 @@ function buildPages() {
       <a href='RepoRust_RustDisplayLib.html'>Display Lib</a>\
       <a href='RepoRust_RustDirNav.html'>Dir Nav</a>\
       <a href='RepoRust_RustCommPrototype.html'>Comm Prototype</a>\
-      <a href='RepoRust_RustCommPrototypeTP.html'>Comm Prototype W/TP</a>\
+      <a href='RepoRust_RustCommPrototypeWTP.html'>Comm Prototype W/TP</a>\
       <a href='RepoRust_RustStringConv.html'>String Conv</a>\
       <a href='RepoRust_RustBuildOn.html'>BuildOn</a>\
       <a href='RepoRust_RustCommExp.html'>Comm Experiments</a>\
