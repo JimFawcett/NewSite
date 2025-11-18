@@ -23,7 +23,7 @@ function buildPages() {
       <a href='RepoCpp_PrettyPrint.html'>PrettyPrint</a>\
       <a href='RepoCpp_BlockingQueue.html'>BlockingQueue</a>\
       <a href='RepoCpp_FileMgr.html'>FileMgr</a>\
-      <a href='RepoCpp_Properties.html'>Cpp Properties</a>\
+      <a href='RepoCpp_CppProperties.html'>Cpp Properties</a>\
       <a href='RepoCpp_ThreadPool.html'>ThreadPool</a>\
       <a href='RepoCpp_NoSqlDb.html'>NoSqlDb</a>\
       <a href='RepoCpp_Process.html'>Process</a>\
