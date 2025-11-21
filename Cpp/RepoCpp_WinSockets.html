@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  RepoCpp_WinSockets.html
+-->
+<head>
+  <title>C++ Win Sockets</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <!-- <link rel="stylesheet" href="../css/help.css" /> -->
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreReposCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    body { padding:1rem 2rem; }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href="../Cpp/CppHome.html"></a>
+  <a id="prev" class="hidden" href="../Site/SiteHome.html"></a> -->
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    RepoCpp_WinSockets.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 11/19/2025
+  </div>
+
+  <div>
+    <!-- <a id="top"></a> -->
+    <header>
+      <!--<a class="repoLink" href="https://github.com/JimFawcett">JimFawcett Repositories</a>-->
+      <div id="pagetitle">
+        <h2 id="title">Win Sockets</h2>
+        <h4 id="subtitle" class="indent">
+          interface to Windows sockets
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--light); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/Sockets-Windows" style="margin-left:1.25em; color:var(--light); ">Sockets-Windows Repo</a>
+      </div>
+
+    </header>
+    <!-- <div class="note" style="border:2px dashed red;">
+      Default settings are not working correctly.  Will fix as time permits.
+    </div> -->
+        <h3 id="concept">1.0 Concept</h3>
+        <div class="right">
+          <div style="float:right; padding:0rem 0rem 0.5rem 1rem;">
+            <photosizer-block src="pictures/Sockets.JPG" width="500" class="photoSizerBlock" style="margin-top:0;">
+              <span style="
+          display: inline-block;
+          font-weight: bold;
+          font-family: 'Comic Sans MS', Tahoma;
+          background-color: #ddd;
+          width: 100%;
+          padding: 5px 0px;
+        ">
+                Fig 1. Sockets Model
+              </span>
+            </photosizer-block>
+          </div>
+        </div>
+        <t-b>
+          Sockets are an operating system facility for sending streams of bytes through the tcp stack to another
+          process or another machine.  Their behavior is affected by buffers owned by each socket receiver.
+          <div style="height:0.75em;"></div>
+          If the sender sends N bytes, then:
+          <ul>
+            <li>
+              if the receiver&apos;s buffer has space for the N bytes, then all are sent.  The send function
+              returns N signalling that all bytes were transfered.
+            </li>
+            <li>
+              if the receiving buffer has M &lt; N bytes available, then M bytes are sent and the send function
+              returns M signalling that N-M bytes were not sent.
+            </li>
+            <li>
+              if the receiving buffer is full, then the sender blocks until some space becomes available in
+              the buffer.
+            </li>
+          </ul>
+          Sockets don&apos;t know about any data structure other than streams of bytes.  So to send a message
+          you must frame it&apos;s bytes with some additional decoration so the receiver can detect when an entire
+          message has been received.
+          <div style="height:0.75em;"></div>
+          Also, since both sending and receiving are allowed on the same socket connection, some talk protocol
+          is needed.  Without that, both ends may send, eventually resulting in deadlock.  Similarly, if both
+          receive then buffers on both ends will empty, resulting again in deadlock.
+          <div style="height:0.75em;"></div>
+          The socket library provided in this repository provides means to simplify handling both problems.
+          See the Resources listed below for ways to fully handle them.
+        </t-b>
+        <h3 id="design">2.0 Design</h3>
+        <div class="right clear">
+          <div style="clear:both; float:right; padding:0rem 0rem 0.5rem 1rem;">
+            <photosizer-block src="pictures/SocketsClassDiagram.JPG" width="500" class="photoSizerBlock" style="margin-top:0;">
+              <span style="
+          display: inline-block;
+          font-weight: bold;
+          font-family: 'Comic Sans MS', Tahoma;
+          background-color: #ddd;
+          width: 100%;
+          padding: 5px 0px;
+        ">
+                Fig 2. Sockets Class Diagram
+              </span>
+            </photosizer-block>
+          </div>
+        </div>
+        <t-b>
+          Sockets-Windows provides four classes: Socket, SocketConnecter, SocketListener, and SocketSystem.
+          An instance of Socket is created by the SocketListener when it establishes a connection.  Listener
+          creates a thread, passing it a client handler object and the new socket.  Clients use SocketConnecter
+          to establish a connection with a listener and to communicate with the remote socket.
+          <div style="height:0.75em;"></div>
+          Each program that uses Sockets must declare an instance of SocketSystem that loads the windows
+          socket library on construction and unloads on destruction.
+        </t-b>
+        <h3 id="res">3.0 Resources</h3>
+        <t-b>
+          <a target="_blank" href="docs/Win32Sockets.pdf">Win32Sockets.pdf</a>
+          <div>
+            Discusses how Win32 Sockets operate.
+          </div>
+          <div style="height:0.75em;"></div>
+          <a target="_blank" href="docs/CommunicationChannel.pdf">CommunicationChannel.pdf</a>
+          <div>
+            This document describes how sockets are used to build a reliable message-based asynchronous
+            communication channel.
+          </div>
+          <div style="height:0.75em;"></div>
+          <a target="_blank" href="RepoCpp_CommWithFileXfer.html">CppCommWithFileXfer</a>
+          <div>
+            This repository holds code that uses these techniques.
+          </div>
+          <div style="height:0.75em;"></div>
+        </t-b>
+        <div style="height:15rem;"></div>
+      </t-b>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppRepoPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 21, 10);
+  </script>
+</body>
+</html>
