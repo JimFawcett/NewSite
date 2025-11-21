@@ -43,10 +43,10 @@ function buildPages() {
       <a href='RepoCpp_STRValueType.html'>STRValueType</a>\
       <a href='RepoCpp_CompoundObjects.html'>CompoundObjects</a>\
       <a href='RepoCpp_ObjectFactories.html'>Object Factories</a>\
-      <a href='RepoCpp_TemplateTechniques.html'>Template Techniques</a>\
+      <a href='RepoCpp_TemplateTechniques.html'>TemplateTechniques</a>\
       <a href='RepoCpp_STL-Containers.html'>STL-Containers</a>\
       <a href='RepoCpp_IOStreams.html'>IOStreams</a>\
-      <a href='RepoCpp_Threads.html'>Cpp Threads</a>\
+      <a href='RepoCpp_Threads.html'>Threads</a>\
       <a href='RepoCpp_ProcsAndThreads.html'>Procs and Threads</a>\
       <a href='RepoCpp_Interop.html'>Interop</a>\
       <a href='RepoCpp_Models.html'>Cpp Models</a>\
