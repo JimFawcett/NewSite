@@ -49,8 +49,9 @@ function buildPages() {
       <a href='RepoCpp_Threads.html'>Threads</a>\
       <a href='RepoCpp_ProcsAndThreads.html'>Procs and Threads</a>\
       <a href='RepoCpp_Interop.html'>Interop</a>\
-      <a href='RepoCpp_Models.html'>Cpp Models</a>\
-      <a href='RepoCpp_CppStory.html'>Cpp Story</a>\
+      <a href='RepoCpp_CppModels.html'>CppModels</a>\
+      <a href='RepoCpp_CppModelsVideos.html'>CppModelsVideos</a>\
+      <a href='RepoCpp_CppStory.html'>CppStory</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
