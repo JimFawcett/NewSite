@@ -1,4 +1,5 @@
 // Initialize dropdown menus
+// Initialize dropdown menus
 function initDropdowns() {
     console.log('initDropdowns called');
     
@@ -41,31 +42,6 @@ function initDropdowns() {
             button.classList.add('active');
         });
         
-        // Click on button toggles dropdown
-        button.addEventListener('click', function(e) {
-            e.stopPropagation();
-            console.log('Button clicked:', this.textContent);
-            
-            // Close all other dropdowns
-            document.querySelectorAll('.dropdown').forEach(dd => {
-                if (dd !== dropdown) {
-                    const list = dd.querySelector('.dropdown-list');
-                    const btn = dd.querySelector('.dropdown-button');
-                    if (list) list.classList.remove('show');
-                    if (btn) btn.classList.remove('active');
-                }
-            });
-            
-            // Calculate position for fixed positioning
-            const buttonRect = button.getBoundingClientRect();
-            dropdownList.style.top = (buttonRect.bottom + 5) + 'px';
-            dropdownList.style.left = buttonRect.left + 'px';
-            
-            // Toggle this dropdown
-            dropdownList.classList.toggle('show');
-            button.classList.toggle('active');
-        });
-        
         // Mouse leave from dropdown container closes it
         dropdown.addEventListener('mouseleave', function() {
             console.log('Mouse left dropdown');
@@ -73,15 +49,13 @@ function initDropdowns() {
             button.classList.remove('active');
         });
         
-        // Close dropdown when clicking on a link (only if dropdown has 'close-on-click' class)
-        if (dropdown.classList.contains('close-on-click')) {
-            dropdownList.querySelectorAll('a').forEach(link => {
-                link.addEventListener('click', function() {
-                    // dropdownList.classList.remove('show');
-                    // button.classList.remove('active');
-                });
+        // Optional: Keep dropdown open when clicking links
+        dropdownList.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                // Dropdown stays open - navigation will happen naturally
+                console.log('Link clicked:', this.textContent);
             });
-        }
+        });
     });
 
     // Close dropdowns when clicking outside
@@ -98,5 +72,4 @@ function initDropdowns() {
     
     console.log('initDropdowns completed');
 }
-
 // Call initDropdowns from your load() function
