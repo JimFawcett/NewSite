@@ -10,7 +10,13 @@ function buildPages() {
     pgs.innerHTML =
     "<div class='darkItem listheader' onclick='togglePages()'>Code Bites Pages</div>\
       <div class='menuBody'>\
-        <a href='CodeBites_UseAI.html'>Using AI</a>\
+        <a href='CodeBites_AI_Self_Assessment.html'>AI self assessment</a>\
+        <a href='CodeBites_Useage_Examples.html'>example uses</a>\
+        <a href='CodeBites_ChatBotAI.html'>chat bots</a>\
+        <a href='CodeBites_AgentAI.html'>agents</a>\
+        <a href='CodeBites_CodeAI.html'>AI coding</a>\
+        <a href='CodeBites_LLM_API.html'>LLM API</a>\
+        <a href='CodeBites_AgenticAI.html'>agentic AI</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
