@@ -10,6 +10,7 @@ function buildPages() {
     pgs.innerHTML =
     "<div class='darkItem listheader' onclick='togglePages()'>Code Bites Pages</div>\
       <div class='menuBody'>\
+        <a href='CodeBites_Introduction.html'>Introduction</a>\
         <a href='CodeBites_AI_Self_Assessment.html'>AI self assessment</a>\
         <a href='CodeBites_Useage_Examples.html'>example uses</a>\
         <a href='CodeBites_ChatBotAI.html'>chat bots</a>\
