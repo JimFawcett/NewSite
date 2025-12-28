@@ -26,6 +26,8 @@
   <script src="../js/cookies.js"></script>
   <script src="../js/contentElements.js"></script>
   <script src="../js/contentMessages.js"></script>
+  <script src="../WebDev/Components/CodeViewerComponent/js/CodeViewer.js" defer></script>
+  <link rel="stylesheet" href="../WebDev/Components/CodeViewerComponent/css/CodeViewer.css">
   <script>
     function loadInExplorer() {
       const loc = window.location;
@@ -129,8 +131,9 @@
     <div style="height:1rem;"></div>
 
     <div class="quote" style="position:relative; top:-0.75rem;">
-      “Our intelligence is what makes us human, and AI is an extension of that quality.”<br>
-      — Yann LeCun, NYU, from 2018 Wired interview
+      “The real risk of AI is not that it starts thinking like us, but that we stop thinking <br>
+      because of it.”<br>
+      - Perplexity.AI
     </div>
     <div>
       <hr class="spread" />
@@ -179,9 +182,323 @@
         </li>
       </ul>
     </t-b>
-    <h3>2.0 - LLM Structure</h3>
+    <t-b>
+      AI Agents and Consoles are different environments from the Bots that eliminate some of this need for 
+      workargounds.  We will discuss each of these in upcoming Bites.
+    </t-b>
+    <h3 id="example">2.0 - Example</h3>
+    <tm-b>
+      Work for this example started by downloading the code for a Rust ThreadPool from my github repository 
+      as a zip file from the repository.  I then supplied an equivalent to the following prompt to ChatGPT 5.2:
+      <div style="padding:0.5rem 1.5rem; margin:0.5rem 0rem; border:2px dashed var(--dark); width:max-content;">
+        Generate a list of function line counts and complexities for all of the functions in the zip file I've pasted below.
+        <div style="height:0.75rem;"></div>
+        <strong>Line count</strong> is the total number of lines in each function including code, whitespace, and comments. <br>
+        <strong>Complexity</strong> is simply the number of open braces in each function.<br>
+        <div style="height:0.75rem;"></div>
+        Also provide count totals for each file.<br>
+        <div style="height:0.75rem;"></div>
+        Display the lists in an html file using fixed layout tables with colgroup width styles.
+      </div>
+      <div style="height:0.75rem;"></div>
+  <details>
+    <summary>Rust ThreadPool Code</summary>
+    <code-viewer width="90ch" font-size="1.0rem" highlight="prism" language="css"  bg-color="var(--light)" title-bg-color="#ccc" style="margin-left:-1rem;">
+      Figure 1. Rust Thread Pool
+      <pre slot="code"><code>    1 /////////////////////////////////////////////////////////////
+    2 // rust_thread_pool::lib.rs - threadpool wit BlockingQueue //
+    3 //                                                         //
+    4 // Jim Fawcett, https://JimFawcett.github.com, 29 Jun 2020 //
+    5 /////////////////////////////////////////////////////////////
+    6 /*
+    7    There are two undefined methods for ThreadPool&lt;M&gt;
+    8    that need to be implemented before this design is
+    9    complete, e.g.:
+   10    - post_work_item posts a function object to input queue
+   11    - get_message retrieves results from an output queue
+   12 */
+   13 #![allow(dead_code)]
+   14 use std::fmt::*;
+   15 use rust_blocking_queue::*;
+   16 use std::thread::*;
+   17 use std::sync::*;
+   18 use std::default::{Default};
+   19
+   20 #[derive(Debug)]
+   21 pub struct ThreadPool&lt;M&gt;
+   22 {
+   23     sbq: Arc&lt;BlockingQueue&lt;M&gt;&gt;,
+   24     thrd: Vec&lt;Option&lt;JoinHandle&lt;()&gt;&gt;&gt;
+   25     /* see note below about Option */
+   26 }
+   27 impl&lt;M&gt; ThreadPool&lt;M&gt;
+   28 where M: Send + 'static
+   29 {
+   30     /*-----------------------------------------------------
+   31       construct threadpool, starting nt threads,
+   32       provide threadpool processing as f:F in new
+   33     */
+   34     pub fn new&lt;F&gt;(nt:u8, f:F) -&gt; ThreadPool&lt;M&gt;
+   35     where F: FnOnce(&BlockingQueue&lt;M&gt;) -&gt; () + Send + 'static + Copy
+   36     {
+   37         /* safely share BlockingQueue with Arc */
+   38         let sqm = Arc::new(BlockingQueue::&lt;M&gt;::new());
+   39         let mut vt = Vec::&lt;Option&lt;JoinHandle&lt;()&gt;&gt;&gt;::new();
+   40         /* start nt threads */
+   41         for _i in 0..nt {
+   42             /*-----------------------------------------------
+   43               ref sq to master shared queue (sqm) is captured
+   44               by thread proc closure
+   45             */
+   46             let sq = Arc::clone(&sqm);
+   47             let handle = std::thread::spawn( move || {
+   48                 f(&sq);  // thread_pool_processing
+   49             });
+   50             vt.push(Some(handle));
+   51         }
+   52         Self { // return newly created threadpool
+   53             sbq: sqm,
+   54             thrd: vt,
+   55         }
+   56     }
+   57     /*-- wait for threads to finish --*/
+   58     pub fn wait(&mut self) {
+   59
+   60         for handle in &mut self.thrd {
+   61             let _ = handle.take().unwrap().join();
+   62             /*
+   63               This is a hack!
+   64               Without the Option, wrapping threadhandle, can't move threadhandle
+   65               out of Vec&lt;JoinHandle&lt;()&gt;&gt;, so error in line above.
+   66
+   67               Can move out of the option as long as we replace
+   68               the moved value (take swaps None for Some in option).
+   69
+   70               I was stumpted until I saw this link.  Apparently a well known hack.
+   71               https://users.rust-lang.org/t/spawn-threads-and-join-in-destructor/1613
+   72             */
+   73         }
+   74     }
+   75     /*-- post to ThreadPool queue --*/
+   76     pub fn post_message(&mut self, _msg:M)
+   77     where M:Debug + Clone {
+   78         self.sbq.en_q(_msg);
+   79     }
+   80     /*-- return results to caller --*/
+   81     pub fn get_message(&mut self) -&gt; M
+   82     where M:Debug + Clone + Default {
+   83         /* to be defined */
+   84         let m:M = M::default();
+   85         m
+   86     }
+   87 }
+   88
+   89 #[cfg(test)]
+   90 mod tests {
+   91     use super::*;
+   92     #[test]
+   93     fn test_new() {
+   94         let test = |bq:&BlockingQueue&lt;String&gt;| {
+   95             let msg = bq.de_q();
+   96             print!(&quot;&#92;n  {:?}&quot;, msg);
+   97         };
+   98         let mut tp = ThreadPool::&lt;String&gt;::new(2, test);
+   99         let msg = &quot;test message&quot;.to_string();
+  100         tp.post_message(msg);
+  101         tp.post_message(&quot;quit&quot;.to_string());
+  102         tp.wait();
+  103     }
+  104 }    </code></pre>
+    </code-viewer>
+  </details>
+
+      <div>
+        Here are the ChatGPT 5.2 response artifacts. I've edited styles for display.
+      </div>
+    </tm-b>
+  <h4>RustThreadPool Function Line Counts and Complexities</h4>
+  <ul class="tights" style="margin-left:2rem;">
+    <li>
+      <strong>Line count</strong> = total number of lines from the line containing <code>fn</code>
+      through the line containing <br>
+      its matching closing brace, including comments and blank lines.
+    </li>
+    <li>
+      <strong>Complexity</strong> = number of &quot;<code>{</code>&quot; characters inside the function body
+      (including the first one).
+    </li>
+  </ul>
+  <div style="height:0.75rem;"></div>
+  <!-- Per-file summary -->
+  <table>
+    <colgroup>
+      <col style="width: 12rem;" />
+      <col style="width: 8rem;" />
+      <col style="width: 8rem;" />
+      <col style="width: 8rem;" />
+    </colgroup>
+    <caption style="font-size:1.2rem; text-align: left; padding:0.5rem;">Per-file Summary</caption>
+    <thead>
+      <tr>
+        <th>File</th>
+        <th>Total lines</th>
+        <th>Function count</th>
+        <th>Sum of complexities</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>examples/test1.rs</td>
+        <td style="text-align:right">157</td>
+        <td style="text-align:right">9</td>
+        <td style="text-align:right">29</td>
+      </tr>
+      <tr>
+        <td>src/lib.rs</td>
+        <td style="text-align:right">104</td>
+        <td style="text-align:right">5</td>
+        <td style="text-align:right">11</td>
+      </tr>
+    </tbody>
+  </table>
+  <div style="height:0.75rem;"></div>
+  <!-- Per-function details -->
+  <table>
+    <colgroup>
+      <col style="width: 12rem;" />
+      <col style="width: 12rem;" />
+      <col style="width: 8rem;" />
+      <col style="width: 8rem;" />
+      <col style="width: 8rem;" />
+    </colgroup>
+    <caption style="font-size:1.2rem; text-align: left; padding:0.5rem;">Per-function Metrics</caption>
+    <thead>
+      <tr>
+        <th>File</th>
+        <th>Function</th>
+        <th>Start line</th>
+        <th>Line count</th>
+        <th>Complexity</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- src/lib.rs -->
+      <tr>
+        <td>src/lib.rs</td>
+        <td>new</td>
+        <td style="text-align:right">34</td>
+        <td style="text-align:right">23</td>
+        <td style="text-align:right">4</td>
+      </tr>
+      <tr>
+        <td>src/lib.rs</td>
+        <td>wait</td>
+        <td style="text-align:right">58</td>
+        <td style="text-align:right">17</td>
+        <td style="text-align:right">2</td>
+      </tr>
+      <tr>
+        <td>src/lib.rs</td>
+        <td>post_message</td>
+        <td style="text-align:right">76</td>
+        <td style="text-align:right">4</td>
+        <td style="text-align:right">1</td>
+      </tr>
+      <tr>
+        <td>src/lib.rs</td>
+        <td>get_message</td>
+        <td style="text-align:right">81</td>
+        <td style="text-align:right">6</td>
+        <td style="text-align:right">1</td>
+      </tr>
+      <tr>
+        <td>src/lib.rs</td>
+        <td>test_new</td>
+        <td style="text-align:right">93</td>
+        <td style="text-align:right">11</td>
+        <td style="text-align:right">3</td>
+      </tr>
+      <!-- examples/test1.rs -->
+      <tr>
+        <td>examples/test1.rs</td>
+        <td>test_message_in_pool</td>
+        <td style="text-align:right">21</td>
+        <td style="text-align:right">13</td>
+        <td style="text-align:right">5</td>
+      </tr>
+      <tr>
+        <td>examples/test1.rs</td>
+        <td>post_message_to_pool</td>
+        <td style="text-align:right">35</td>
+        <td style="text-align:right">15</td>
+        <td style="text-align:right">2</td>
+      </tr>
+      <tr>
+        <td>examples/test1.rs</td>
+        <td>new</td>
+        <td style="text-align:right">58</td>
+        <td style="text-align:right">5</td>
+        <td style="text-align:right">2</td>
+      </tr>
+      <tr>
+        <td>examples/test1.rs</td>
+        <td>execute</td>
+        <td style="text-align:right">63</td>
+        <td style="text-align:right">5</td>
+        <td style="text-align:right">2</td>
+      </tr>
+      <tr>
+        <td>examples/test1.rs</td>
+        <td>quit</td>
+        <td style="text-align:right">68</td>
+        <td style="text-align:right">3</td>
+        <td style="text-align:right">1</td>
+      </tr>
+      <tr>
+        <td>examples/test1.rs</td>
+        <td>test_workitem_in_pool</td>
+        <td style="text-align:right">74</td>
+        <td style="text-align:right">11</td>
+        <td style="text-align:right">3</td>
+      </tr>
+      <tr>
+        <td>examples/test1.rs</td>
+        <td>post_workitem_to_pool</td>
+        <td style="text-align:right">87</td>
+        <td style="text-align:right">15</td>
+        <td style="text-align:right">2</td>
+      </tr>
+      <tr>
+        <td>examples/test1.rs</td>
+        <td>test0</td>
+        <td style="text-align:right">103</td>
+        <td style="text-align:right">43</td>
+        <td style="text-align:right">11</td>
+      </tr>
+      <tr>
+        <td>examples/test1.rs</td>
+        <td>main</td>
+        <td style="text-align:right">147</td>
+        <td style="text-align:right">11</td>
+        <td style="text-align:right">1</td>
+      </tr>
+
+    </tbody>
+  </table>
+
+  <div style="height:1.5rem;"></div>
+  <t-b>
+    <strong>Note:</strong><br>
+    This analysis would not work as well for C++ because it is significantly harder to parse than Rust 
+    and, unlike Rust, supports function overloading.
+  </t-b>
+  <t-b>
+    It is likely to be easier to write a parser specifically for C++ code analysis. You will find an example 
+    in the github Repository: <a target="blank" href="https://github.com/JimFawcett/CppParser">CppParser</a>.
+  </t-b>
+    <!-- <h3>2.0 - LLM Structure</h3>
         <div class="left">
-          <div style="float:right; padding:1rem 0rem 1.5rem 1rem;">
+          <div style="float:right; padding:1rem 2.5rem 1.5rem 0rem; border:0px solid red;">
             <photosizer-block src="pictures/LLM2.svg" width="600" class="photoSizerBlock" style="margin-top:0;">
               <span style="
           display: inline-block;
@@ -197,6 +514,28 @@
           </div>
         </div>
         <div style="height:0.75rem;"></div>
+        <t-b>
+          <div style="position:relative; left:-1.5rem;">
+            Pre-trained LLMs are composed of:
+          </div>
+         
+          <ol class="tight" style="padding-left:3rem;">
+            <li>
+              A tokenizer that maps incoming text into tokens and translates that into numerical values.
+            </li>
+            <li>
+              Stacks of Deep Neural Networks that recognize patterns in the incoming text. Each Deep 
+              Neural Net consists of layers of nodes that collect and normalize incoming data from
+              links that multiply the value of their predecessors by pretrained values.
+            </li>
+            <li>
+              Attention mechanisms that dynamically alter link multipliers. 
+            </li>
+            <li>
+              An output stack that normalizes and uses values to select output tokens.
+            </li>
+          </ol>
+        </t-b>
         <div class="left">
           <div style="float:right; padding:1rem 0rem 1.5rem 1rem;">
             <photosizer-block src="pictures/deep_neural_network.svg" width="600" class="photoSizerBlock" style="margin-top:0;">
@@ -249,7 +588,7 @@
             </photosizer-block>
           </div>
         </div>
-        <div style="height:0.75rem;"></div>
+        <div style="height:0.75rem;"></div> -->
 
 <div style="height:15rem;"></div>
 </content-block>
