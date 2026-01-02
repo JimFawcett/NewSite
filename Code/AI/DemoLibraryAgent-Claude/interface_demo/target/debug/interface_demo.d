@@ -1,0 +1,1 @@
+C:\github\JimFawcett\NewSite\Code\AI\DemoLibraryAgent-Claude\interface_demo\target\debug\interface_demo.exe: C:\github\JimFawcett\NewSite\Code\AI\DemoLibraryAgent-Claude\RustBlockingQueue\src\lib.rs C:\github\JimFawcett\NewSite\Code\AI\DemoLibraryAgent-Claude\RustThreadPool\src\lib.rs C:\github\JimFawcett\NewSite\Code\AI\DemoLibraryAgent-Claude\interface_demo\src\main.rs

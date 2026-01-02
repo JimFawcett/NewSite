@@ -26,6 +26,8 @@
   <script src="../js/cookies.js"></script>
   <script src="../js/contentElements.js"></script>
   <script src="../js/contentMessages.js"></script>
+  <script src="../WebDev/Components/CodeViewerComponent/js/CodeViewer.js" defer></script>
+  <link rel="stylesheet" href="../WebDev/Components/CodeViewerComponent/css/CodeViewer.css">
   <script>
     function loadInExplorer() {
       const loc = window.location;
@@ -108,7 +110,7 @@
   <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
     CodeBites_AgentAI.html<br />
     copyright &copy; James Fawcett<br />
-    Revised: 12/19/2025
+    Revised: 01/01/2026
   </div>
 
   <content-block>
@@ -133,6 +135,425 @@
       The outer agent code, perhaps python, handles file management activities that a browser is not 
       allowed to do for secuity reasons. Most of the code management will be done with an AI model.
     </tm-b>
+    <t-b>
+      This page presents an example agent written in python that:
+      <ul class="tight" style="margin-left:2rem;">
+        <li>
+          analyzes a specified project path, looking for libraries that may use 
+          Rust, C++, C#, or Python.
+        </li>
+        <li>
+          creates a list of public interface functions.
+        </li>
+        <li>
+          Generates an application in the language of the library that demonstrates 
+          each of the public member functions.
+        </li>
+      </ul>
+      Use of the demo application requires you to create a project directory, move the 
+      application to its src directory, and establish dependencies for the libraries 
+      being demonstrated. You can then run the demos manually.
+    </t-b>
+    <t-b>
+      For production code we would ask the AI to build an agent that carried out those 
+      set-up operations.  In order to keep this example as simple as practical that was 
+      omitted.
+    </t-b>
+    <h3 id="agent_code">2.0 - Agent Code</h3>
+    <tm-b>
+      Here is the prompt used with Claude Sonnet 4.5:
+      <div style="border: 2px dashed var(--dark); margin: 0.75rem 0.0rem; padding:0.5rem 1.5rem;">
+        "create an agent that uses the anthropic api and a python application.  Given a path to 
+        a project directory list the public interface for each library file and develop an 
+        application in the language of the library to demonstrate each public interface function"
+      </div>
+      That generated the python agent code shown in the dropdown below.
+    </tm-b>
+    <t-b>
+      <div style="height:0.75rem;"></div>
+      <details>
+        <summary class="darkItem">Python Agent Code</summary>
+    <code-viewer width="110ch" font-size="0.90rem" highlight="prism" language="css"  bg-color="var(--light)" title-bg-color="#ccc" style="margin-left:-1rem; overflow-x: auto;">
+      Figure 1. Python Agent Code
+      <pre slot="code"><code>  1 #!/usr/bin/env env python3
+  2 &quot;&quot;&quot;
+  3 Interface Demo Agent - Analyzes library files and generates demonstration applications
+  4 Uses Claude API to understand public interfaces and create usage examples
+  5 &quot;&quot;&quot;
+  6
+  7 import os
+  8 import sys
+  9 import json
+ 10 import anthropic
+ 11 from pathlib import Path
+ 12 from typing import List, Dict, Tuple, Optional
+ 13
+ 14
+ 15 class InterfaceDemoAgent:
+ 16     &quot;&quot;&quot;Agent that analyzes code libraries and generates demonstration applications&quot;&quot;&quot;
+ 17
+ 18     # Language detection by file extension
+ 19     LANGUAGE_MAP = {
+ 20         '.py': 'python',
+ 21         '.rs': 'rust',
+ 22         '.cpp': 'cpp',
+ 23         '.hpp': 'cpp',
+ 24         '.h': 'cpp',
+ 25         '.cs': 'csharp',
+ 26         '.java': 'java',
+ 27         '.js': 'javascript',
+ 28         '.ts': 'typescript',
+ 29         '.go': 'go',
+ 30         '.rb': 'ruby',
+ 31     }
+ 32
+ 33     # Library file patterns to identify
+ 34     LIBRARY_INDICATORS = {
+ 35         'python': ['__init__.py', 'lib', 'src'],
+ 36         'rust': ['lib.rs', 'src/lib.rs'],
+ 37         'cpp': ['include/', '.hpp', '.h'],
+ 38         'csharp': ['.cs'],
+ 39     }
+ 40
+ 41     def __init__(self, api_key: Optional[str] = None):
+ 42         &quot;&quot;&quot;Initialize the agent with Anthropic API key&quot;&quot;&quot;
+ 43         self.api_key = api_key or os.environ.get('ANTHROPIC_API_KEY')
+ 44         if not self.api_key:
+ 45             raise ValueError(&quot;ANTHROPIC_API_KEY must be provided or set in environment&quot;)
+ 46
+ 47         self.client = anthropic.Anthropic(api_key=self.api_key)
+ 48         self.model = &quot;claude-sonnet-4-20250514&quot;
+ 49
+ 50     def find_library_files(self, project_path: str) -&gt; List[Tuple[str, str]]:
+ 51         &quot;&quot;&quot;
+ 52         Find all library files in the project directory
+ 53         Returns: List of (filepath, language) tuples
+ 54         &quot;&quot;&quot;
+ 55         project_path = Path(project_path).resolve()
+ 56         if not project_path.exists():
+ 57             raise ValueError(f&quot;Project path does not exist: {project_path}&quot;)
+ 58
+ 59         library_files = []
+ 60
+ 61         for root, dirs, files in os.walk(project_path):
+ 62             # Skip common non-library directories
+ 63             dirs[:] = [d for d in dirs if d not in [
+ 64                 '.git', '__pycache__', 'node_modules', 'target',
+ 65                 'build', 'dist', 'venv', '.venv', 'bin', 'obj'
+ 66             ]]
+ 67
+ 68             for file in files:
+ 69                 filepath = Path(root) / file
+ 70                 ext = filepath.suffix.lower()
+ 71
+ 72                 if ext in self.LANGUAGE_MAP:
+ 73                     # Check if it's likely a library file
+ 74                     if self._is_library_file(filepath, ext):
+ 75                         language = self.LANGUAGE_MAP[ext]
+ 76                         library_files.append((str(filepath), language))
+ 77
+ 78         return library_files
+ 79
+ 80     def _is_library_file(self, filepath: Path, ext: str) -&gt; bool:
+ 81         &quot;&quot;&quot;Determine if a file is likely a library file&quot;&quot;&quot;
+ 82         filename = filepath.name.lower()
+ 83         parent = filepath.parent.name.lower()
+ 84
+ 85         # Python libraries
+ 86         if ext == '.py':
+ 87             # Exclude test files and scripts
+ 88             if any(x in filename for x in ['test_', '_test', 'setup.py', '__main__.py']):
+ 89                 return False
+ 90             # Include if in lib/src directory or is __init__.py
+ 91             return 'lib' in parent or 'src' in parent or filename == '__init__.py'
+ 92
+ 93         # Rust libraries
+ 94         if ext == '.rs':
+ 95             return filename == 'lib.rs' or 'src' in str(filepath)
+ 96
+ 97         # C++ headers are typically library interfaces
+ 98         if ext in ['.hpp', '.h']:
+ 99             return 'include' in str(filepath) or parent == 'src'
+100
+101         # C# class libraries
+102         if ext == '.cs':
+103             # Exclude Program.cs which is usually the entry point
+104             if filename == 'program.cs':
+105                 return False
+106             return True
+107
+108         return True
+109
+110     def extract_public_interface(self, filepath: str, language: str) -&gt; Dict:
+111         &quot;&quot;&quot;
+112         Use Claude to extract the public interface from a library file
+113         Returns: Dict with interface description and details
+114         &quot;&quot;&quot;
+115         with open(filepath, 'r', encoding='utf-8') as f:
+116             code_content = f.read()
+117
+118         prompt = f&quot;&quot;&quot;Analyze this {language} library file and extract its public interface.
+119
+120 File: {filepath}
+121
+122 Code:
+123 ```{language}
+124 {code_content}
+125 ```
+126
+127 Please provide a structured analysis with:
+128 1. **Library Purpose**: Brief description of what this library does
+129 2. **Public Functions/Methods**: List each public function with:
+130    - Function signature
+131    - Parameters and their types
+132    - Return type
+133    - Brief description of what it does
+134 3. **Public Classes/Types**: If applicable, list public classes/structs/types
+135 4. **Dependencies**: Any imports or dependencies needed to use this library
+136
+137 Format your response as JSON with this structure:
+138 {{
+139   &quot;library_name&quot;: &quot;name&quot;,
+140   &quot;purpose&quot;: &quot;description&quot;,
+141   &quot;language&quot;: &quot;{language}&quot;,
+142   &quot;public_functions&quot;: [
+143     {{
+144       &quot;name&quot;: &quot;function_name&quot;,
+145       &quot;signature&quot;: &quot;full signature&quot;,
+146       &quot;parameters&quot;: [{{&quot;name&quot;: &quot;param&quot;, &quot;type&quot;: &quot;type&quot;, &quot;description&quot;: &quot;desc&quot;}}],
+147       &quot;return_type&quot;: &quot;type&quot;,
+148       &quot;description&quot;: &quot;what it does&quot;
+149     }}
+150   ],
+151   &quot;public_classes&quot;: [
+152     {{
+153       &quot;name&quot;: &quot;ClassName&quot;,
+154       &quot;description&quot;: &quot;what it is&quot;,
+155       &quot;methods&quot;: [&quot;method1&quot;, &quot;method2&quot;]
+156     }}
+157   ],
+158   &quot;dependencies&quot;: [&quot;dep1&quot;, &quot;dep2&quot;]
+159 }}
+160
+161 Respond ONLY with valid JSON, no other text.&quot;&quot;&quot;
+162
+163         try:
+164             response = self.client.messages.create(
+165                 model=self.model,
+166                 max_tokens=4000,
+167                 messages=[
+168                     {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
+169                 ]
+170             )
+171
+172             response_text = response.content[0].text.strip()
+173
+174             # Extract JSON if wrapped in markdown
+175             if response_text.startswith('```'):
+176                 lines = response_text.split('&#92;n')
+177                 response_text = '&#92;n'.join(lines[1:-1])
+178
+179             interface_data = json.loads(response_text)
+180             interface_data['filepath'] = filepath
+181
+182             return interface_data
+183
+184         except Exception as e:
+185             print(f&quot;Error extracting interface from {filepath}: {e}&quot;)
+186             return {
+187                 &quot;error&quot;: str(e),
+188                 &quot;filepath&quot;: filepath,
+189                 &quot;language&quot;: language
+190             }
+191
+192     def generate_demo_application(self, interface_data: Dict) -&gt; str:
+193         &quot;&quot;&quot;
+194         Use Claude to generate a demonstration application
+195         Returns: Complete demo application code
+196         &quot;&quot;&quot;
+197         language = interface_data.get('language', 'unknown')
+198         library_name = interface_data.get('library_name', 'library')
+199
+200         prompt = f&quot;&quot;&quot;Generate a complete, runnable demonstration application in {language} that showcases all the public functions from this library.
+201
+202 Library Interface:
+203 {json.dumps(interface_data, indent=2)}
+204
+205 Requirements:
+206 1. Create a complete, standalone application that demonstrates EVERY public function
+207 2. Include proper imports and setup
+208 3. Add clear comments explaining what each demonstration does
+209 4. Include error handling where appropriate
+210 5. Make the output clear and informative
+211 6. If the library requires setup/initialization, include that
+212 7. Use realistic example data for function parameters
+213
+214 For the output:
+215 - Make it a complete, runnable {language} application
+216 - Add a main function that calls all demonstrations
+217 - Include helpful print statements showing what's being demonstrated
+218 - Format output clearly so users can see the results
+219
+220 Generate production-quality code with proper structure and documentation.
+221 Respond ONLY with the code, no explanations before or after.&quot;&quot;&quot;
+222
+223         try:
+224             response = self.client.messages.create(
+225                 model=self.model,
+226                 max_tokens=8000,
+227                 messages=[
+228                     {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
+229                 ]
+230             )
+231
+232             demo_code = response.content[0].text.strip()
+233
+234             # Remove markdown code fences if present
+235             if demo_code.startswith('```'):
+236                 lines = demo_code.split('&#92;n')
+237                 # Remove first and last lines (the ``` markers)
+238                 demo_code = '&#92;n'.join(lines[1:-1])
+239
+240             return demo_code
+241
+242         except Exception as e:
+243             print(f&quot;Error generating demo application: {e}&quot;)
+244             return f&quot;# Error generating demo: {str(e)}&quot;
+245
+246     def process_project(self, project_path: str, output_dir: str = None) -&gt; Dict:
+247         &quot;&quot;&quot;
+248         Main processing function: analyze project and generate demos
+249         Returns: Summary of processing results
+250         &quot;&quot;&quot;
+251         if output_dir is None:
+252             output_dir = os.path.join(project_path, 'interface_demos')
+253
+254         output_path = Path(output_dir)
+255         output_path.mkdir(parents=True, exist_ok=True)
+256
+257         print(f&quot;?? Scanning project: {project_path}&quot;)
+258         library_files = self.find_library_files(project_path)
+259
+260         if not library_files:
+261             print(&quot;? No library files found&quot;)
+262             return {&quot;status&quot;: &quot;no_files&quot;, &quot;files_processed&quot;: 0}
+263
+264         print(f&quot;?? Found {len(library_files)} library files&quot;)
+265
+266         results = {
+267             &quot;project_path&quot;: project_path,
+268             &quot;output_dir&quot;: str(output_path),
+269             &quot;files_processed&quot;: 0,
+270             &quot;files_failed&quot;: 0,
+271             &quot;demos_generated&quot;: []
+272         }
+273
+274         for filepath, language in library_files:
+275             print(f&quot;&#92;n?? Processing: {filepath}&quot;)
+276             print(f&quot;   Language: {language}&quot;)
+277
+278             # Extract interface
+279             print(&quot;   ??  Extracting public interface...&quot;)
+280             interface_data = self.extract_public_interface(filepath, language)
+281
+282             if &quot;error&quot; in interface_data:
+283                 print(f&quot;   ? Failed to extract interface&quot;)
+284                 results[&quot;files_failed&quot;] += 1
+285                 continue
+286
+287             # Generate demo
+288             print(&quot;   ?? Generating demonstration application...&quot;)
+289             demo_code = self.generate_demo_application(interface_data)
+290
+291             # Save interface documentation
+292             lib_name = interface_data.get('library_name', Path(filepath).stem)
+293             interface_file = output_path / f&quot;{lib_name}_interface.json&quot;
+294             with open(interface_file, 'w', encoding='utf-8') as f:
+295                 json.dump(interface_data, f, indent=2)
+296
+297             # Save demo application with appropriate extension
+298             ext_map = {
+299                 'python': '.py',
+300                 'rust': '.rs',
+301                 'cpp': '.cpp',
+302                 'csharp': '.cs',
+303                 'java': '.java',
+304                 'javascript': '.js',
+305                 'typescript': '.ts',
+306                 'go': '.go',
+307                 'ruby': '.rb',
+308             }
+309             demo_ext = ext_map.get(language, '.txt')
+310             demo_file = output_path / f&quot;{lib_name}_demo{demo_ext}&quot;
+311
+312             with open(demo_file, 'w', encoding='utf-8') as f:
+313                 f.write(demo_code)
+314
+315             print(f&quot;   ? Generated: {demo_file.name}&quot;)
+316
+317             results[&quot;files_processed&quot;] += 1
+318             results[&quot;demos_generated&quot;].append({
+319                 &quot;source&quot;: filepath,
+320                 &quot;interface_doc&quot;: str(interface_file),
+321                 &quot;demo_app&quot;: str(demo_file),
+322                 &quot;language&quot;: language
+323             })
+324
+325         # Save summary report
+326         summary_file = output_path / &quot;generation_summary.json&quot;
+327         with open(summary_file, 'w', encoding='utf-8') as f:
+328             json.dump(results, f, indent=2)
+329
+330         print(f&quot;&#92;n? Complete! Processed {results['files_processed']} files&quot;)
+331         print(f&quot;?? Output directory: {output_path}&quot;)
+332
+333         return results
+334
+335
+336 def main():
+337     &quot;&quot;&quot;Command-line interface&quot;&quot;&quot;
+338     if len(sys.argv) &lt; 2:
+339         print(&quot;Usage: python interface_demo_agent.py &lt;project_path&gt; [output_dir]&quot;)
+340         print(&quot;&#92;nExample:&quot;)
+341         print(&quot;  python interface_demo_agent.py ./my_project&quot;)
+342         print(&quot;  python interface_demo_agent.py ./my_project ./demos&quot;)
+343         print(&quot;&#92;nEnvironment variable required:&quot;)
+344         print(&quot;  ANTHROPIC_API_KEY - Your Anthropic API key&quot;)
+345         sys.exit(1)
+346
+347     project_path = sys.argv[1]
+348     output_dir = sys.argv[2] if len(sys.argv) &gt; 2 else None
+349
+350     try:
+351         agent = InterfaceDemoAgent()
+352         results = agent.process_project(project_path, output_dir)
+353
+354         print(&quot;&#92;n&quot; + &quot;=&quot;*60)
+355         print(&quot;?? PROCESSING SUMMARY&quot;)
+356         print(&quot;=&quot;*60)
+357         print(f&quot;Files processed: {results['files_processed']}&quot;)
+358         print(f&quot;Files failed: {results['files_failed']}&quot;)
+359         print(f&quot;Demos generated: {len(results['demos_generated'])}&quot;)
+360         print(f&quot;Output location: {results['output_dir']}&quot;)
+361
+362         if results['demos_generated']:
+363             print(&quot;&#92;n?? Generated Demonstrations:&quot;)
+364             for demo in results['demos_generated']:
+365                 print(f&quot;&#92;n  Source: {demo['source']}&quot;)
+366                 print(f&quot;  Language: {demo['language']}&quot;)
+367                 print(f&quot;  Interface Doc: {demo['interface_doc']}&quot;)
+368                 print(f&quot;  Demo App: {demo['demo_app']}&quot;)
+369
+370     except Exception as e:
+371         print(f&quot;? Error: {e}&quot;)
+372         sys.exit(1)
+373
+374
+375 if __name__ == &quot;__main__&quot;:
+376     main()          </code></pre>
+        </code-viewer>
+      </details>
+    </t-b>
     <t-b>
       This page is just starting.  It will eventually contain completed examples of local file access and modification:
       <ol>
