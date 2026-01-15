@@ -28,6 +28,7 @@
   <script src="../js/contentMessages.js"></script>
   <script src="../WebDev/Components/CodeViewerComponent/js/CodeViewer.js" defer></script>
   <link rel="stylesheet" href="../WebDev/Components/CodeViewerComponent/css/CodeViewer.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     function loadInExplorer() {
       const loc = window.location;
@@ -104,6 +105,18 @@
       margin:0rem;
     }
   </style>
+  <style>
+    #md_content {
+      font-size: 16px; /* Base size for all content */
+    }
+    
+    #md_content h1 { font-size: 2em; }
+    #md_content h2 { font-size: 1.5em; }
+    #md_content code { font-size: 0.9em; }
+    #md_content pre { font-size: 0.85em; }
+    #md_content ol { margin-left: 2rem; }
+    #md_content ul { margin-left: 2rem; }
+  </style>
 </head>
 <body id="github" onload="load()">
 
@@ -139,422 +152,726 @@
       This page presents an example agent written in python that:
       <ul class="tight" style="margin-left:2rem;">
         <li>
-          analyzes a specified project path, looking for libraries that may use 
-          Rust, C++, C#, or Python.
+          analyzes a specified path to a Rust crate, looking for its library 
         </li>
         <li>
-          creates a list of public interface functions.
+          creates a list of public interface functions and encodes that in a markdown file.
         </li>
         <li>
-          Generates an application in the language of the library that demonstrates 
+          Generates an application in the Rust language that demonstrates 
           each of the public member functions.
         </li>
+        <li>
+          Places the demo application in the crate&apos;s examples directory. Users can then build
+          the library and run the demo using Rust&apos;s Cargo tool.
+        </li>
       </ul>
-      Use of the demo application requires you to create a project directory, move the 
-      application to its src directory, and establish dependencies for the libraries 
-      being demonstrated. You can then run the demos manually.
-    </t-b>
-    <t-b>
-      For production code we would ask the AI to build an agent that carried out those 
-      set-up operations.  In order to keep this example as simple as practical that was 
-      omitted.
+      All of this is demonstrated with the code and screenshots below.
     </t-b>
     <h3 id="agent_code">2.0 - Agent Code</h3>
     <tm-b>
       Here is the prompt used with Claude Sonnet 4.5:
       <div style="border: 2px dashed var(--dark); margin: 0.75rem 0.0rem; padding:0.5rem 1.5rem;">
-        "create an agent that uses the anthropic api and a python application.  Given a path to 
-        a project directory list the public interface for each library file and develop an 
-        application in the language of the library to demonstrate each public interface function"
+        "generate a python based agent that, given a path to a local Rust crate, generates a markdown 
+        file summarizing the crate's public interface and places a rust application that demonstrates 
+        the public interface, in a directory, sibling to the src directory, named examples"
       </div>
-      That generated the python agent code shown in the dropdown below.
+      That generated markdown successfully.
     </tm-b>
+    <t-b>
+<details>
+  <summary class="darkItem">Agent Generated Project Summary</summary>
+  <div id="md_content" style="padding:0.5rem 2.0rem;"></div>
+  <div>
+  <script>
+    fetch('./AI/RustDemoAgent-Claude/PROJECT_SUMMARY.md')
+      .then(response => response.text())
+      .then(text => {
+        document.getElementById('md_content').innerHTML = marked.parse(text);
+      });
+  </script>
+  </div>
+</details>
+    </t-b>
+    <tm-b>
+      The demo application was filled with not very useful
+      placeholders and failed to build.
+    </tm-b>
+    <t-b>
+      After several iterations with prompts showing error messages and sample working code the python agent 
+      finally generated useful Rust demonstration code. 
+    </t-b>
     <t-b>
       <div style="height:0.75rem;"></div>
       <details>
         <summary class="darkItem">Python Agent Code</summary>
-    <code-viewer width="110ch" font-size="0.90rem" highlight="prism" language="css"  bg-color="var(--light)" title-bg-color="#ccc" style="margin-left:-1rem; overflow-x: auto;">
+    <code-viewer width="90ch" font-size="1.0rem" highlight="prism" language="css"  bg-color="var(--light)" title-bg-color="#ccc" style="margin-left:-1rem; overflow-x: auto;">
       Figure 1. Python Agent Code
-      <pre slot="code"><code>  1 #!/usr/bin/env env python3
+      <pre slot="code"><code>  1 #!/usr/bin/env python3
   2 &quot;&quot;&quot;
-  3 Interface Demo Agent - Analyzes library files and generates demonstration applications
-  4 Uses Claude API to understand public interfaces and create usage examples
-  5 &quot;&quot;&quot;
-  6
-  7 import os
-  8 import sys
-  9 import json
- 10 import anthropic
- 11 from pathlib import Path
- 12 from typing import List, Dict, Tuple, Optional
- 13
- 14
- 15 class InterfaceDemoAgent:
- 16     &quot;&quot;&quot;Agent that analyzes code libraries and generates demonstration applications&quot;&quot;&quot;
- 17
- 18     # Language detection by file extension
- 19     LANGUAGE_MAP = {
- 20         '.py': 'python',
- 21         '.rs': 'rust',
- 22         '.cpp': 'cpp',
- 23         '.hpp': 'cpp',
- 24         '.h': 'cpp',
- 25         '.cs': 'csharp',
- 26         '.java': 'java',
- 27         '.js': 'javascript',
- 28         '.ts': 'typescript',
- 29         '.go': 'go',
- 30         '.rb': 'ruby',
- 31     }
- 32
- 33     # Library file patterns to identify
- 34     LIBRARY_INDICATORS = {
- 35         'python': ['__init__.py', 'lib', 'src'],
- 36         'rust': ['lib.rs', 'src/lib.rs'],
- 37         'cpp': ['include/', '.hpp', '.h'],
- 38         'csharp': ['.cs'],
- 39     }
- 40
- 41     def __init__(self, api_key: Optional[str] = None):
- 42         &quot;&quot;&quot;Initialize the agent with Anthropic API key&quot;&quot;&quot;
- 43         self.api_key = api_key or os.environ.get('ANTHROPIC_API_KEY')
- 44         if not self.api_key:
- 45             raise ValueError(&quot;ANTHROPIC_API_KEY must be provided or set in environment&quot;)
- 46
- 47         self.client = anthropic.Anthropic(api_key=self.api_key)
- 48         self.model = &quot;claude-sonnet-4-20250514&quot;
- 49
- 50     def find_library_files(self, project_path: str) -&gt; List[Tuple[str, str]]:
- 51         &quot;&quot;&quot;
- 52         Find all library files in the project directory
- 53         Returns: List of (filepath, language) tuples
- 54         &quot;&quot;&quot;
- 55         project_path = Path(project_path).resolve()
- 56         if not project_path.exists():
- 57             raise ValueError(f&quot;Project path does not exist: {project_path}&quot;)
- 58
- 59         library_files = []
- 60
- 61         for root, dirs, files in os.walk(project_path):
- 62             # Skip common non-library directories
- 63             dirs[:] = [d for d in dirs if d not in [
- 64                 '.git', '__pycache__', 'node_modules', 'target',
- 65                 'build', 'dist', 'venv', '.venv', 'bin', 'obj'
- 66             ]]
- 67
- 68             for file in files:
- 69                 filepath = Path(root) / file
- 70                 ext = filepath.suffix.lower()
- 71
- 72                 if ext in self.LANGUAGE_MAP:
- 73                     # Check if it's likely a library file
- 74                     if self._is_library_file(filepath, ext):
- 75                         language = self.LANGUAGE_MAP[ext]
- 76                         library_files.append((str(filepath), language))
+  3 Rust Crate Analyzer Agent - Enhanced Version
+  4
+  5 Analyzes a Rust crate's public interface and generates:
+  6 1. A markdown summary of the public API
+  7 2. A WORKING demonstration Rust application (not just comments!)
+  8 &quot;&quot;&quot;
+  9
+ 10 import os
+ 11 import sys
+ 12 import re
+ 13 from pathlib import Path
+ 14 from typing import List, Dict, Tuple, Optional
+ 15
+ 16
+ 17 class RustCrateAnalyzer:
+ 18     &quot;&quot;&quot;Analyzes Rust crate structure and public interface.&quot;&quot;&quot;
+ 19
+ 20     def __init__(self, crate_path: str):
+ 21         self.crate_path = Path(crate_path).resolve()
+ 22         self.src_path = self.crate_path / &quot;src&quot;
+ 23         self.examples_path = self.crate_path / &quot;examples&quot;
+ 24         self.cargo_toml = self.crate_path / &quot;Cargo.toml&quot;
+ 25
+ 26         # Validate paths
+ 27         if not self.crate_path.exists():
+ 28             raise FileNotFoundError(f&quot;Crate path does not exist: {self.crate_path}&quot;)
+ 29         if not self.src_path.exists():
+ 30             raise FileNotFoundError(f&quot;Source directory does not exist: {self.src_path}&quot;)
+ 31         if not self.cargo_toml.exists():
+ 32             raise FileNotFoundError(f&quot;Cargo.toml not found: {self.cargo_toml}&quot;)
+ 33
+ 34         self.crate_name = self._extract_crate_name()
+ 35         self.public_items = {
+ 36             'structs': [],
+ 37             'enums': [],
+ 38             'traits': [],
+ 39             'functions': [],
+ 40             'constants': [],
+ 41             'modules': [],
+ 42             'impl_blocks': {}  # Maps struct name to list of methods
+ 43         }
+ 44
+ 45     def _extract_crate_name(self) -&gt; str:
+ 46         &quot;&quot;&quot;Extract crate name from Cargo.toml.&quot;&quot;&quot;
+ 47         with open(self.cargo_toml, 'r', encoding='utf-8') as f:
+ 48             for line in f:
+ 49                 if line.strip().startswith('name'):
+ 50                     match = re.search(r'name&#92;s*=&#92;s*[&quot;&#92;']([^&quot;&#92;']+)[&quot;&#92;']', line)
+ 51                     if match:
+ 52                         return match.group(1)
+ 53         return self.crate_path.name
+ 54
+ 55     def analyze(self):
+ 56         &quot;&quot;&quot;Analyze all Rust source files in the crate.&quot;&quot;&quot;
+ 57         print(f&quot;Analyzing crate: {self.crate_name}&quot;)
+ 58         print(f&quot;Crate path: {self.crate_path}&quot;)
+ 59
+ 60         # Find all .rs files
+ 61         rs_files = list(self.src_path.rglob(&quot;*.rs&quot;))
+ 62         print(f&quot;Found {len(rs_files)} Rust source files&quot;)
+ 63
+ 64         for rs_file in rs_files:
+ 65             self._analyze_file(rs_file)
+ 66
+ 67         return self.public_items
+ 68
+ 69     def _analyze_file(self, file_path: Path):
+ 70         &quot;&quot;&quot;Analyze a single Rust source file for public items.&quot;&quot;&quot;
+ 71         try:
+ 72             with open(file_path, 'r', encoding='utf-8') as f:
+ 73                 content = f.read()
+ 74         except Exception as e:
+ 75             print(f&quot;Warning: Could not read {file_path}: {e}&quot;)
+ 76             return
  77
- 78         return library_files
- 79
- 80     def _is_library_file(self, filepath: Path, ext: str) -&gt; bool:
- 81         &quot;&quot;&quot;Determine if a file is likely a library file&quot;&quot;&quot;
- 82         filename = filepath.name.lower()
- 83         parent = filepath.parent.name.lower()
- 84
- 85         # Python libraries
- 86         if ext == '.py':
- 87             # Exclude test files and scripts
- 88             if any(x in filename for x in ['test_', '_test', 'setup.py', '__main__.py']):
- 89                 return False
- 90             # Include if in lib/src directory or is __init__.py
- 91             return 'lib' in parent or 'src' in parent or filename == '__init__.py'
- 92
- 93         # Rust libraries
- 94         if ext == '.rs':
- 95             return filename == 'lib.rs' or 'src' in str(filepath)
- 96
- 97         # C++ headers are typically library interfaces
- 98         if ext in ['.hpp', '.h']:
- 99             return 'include' in str(filepath) or parent == 'src'
-100
-101         # C# class libraries
-102         if ext == '.cs':
-103             # Exclude Program.cs which is usually the entry point
-104             if filename == 'program.cs':
-105                 return False
-106             return True
-107
-108         return True
-109
-110     def extract_public_interface(self, filepath: str, language: str) -&gt; Dict:
-111         &quot;&quot;&quot;
-112         Use Claude to extract the public interface from a library file
-113         Returns: Dict with interface description and details
-114         &quot;&quot;&quot;
-115         with open(filepath, 'r', encoding='utf-8') as f:
-116             code_content = f.read()
-117
-118         prompt = f&quot;&quot;&quot;Analyze this {language} library file and extract its public interface.
-119
-120 File: {filepath}
-121
-122 Code:
-123 ```{language}
-124 {code_content}
-125 ```
-126
-127 Please provide a structured analysis with:
-128 1. **Library Purpose**: Brief description of what this library does
-129 2. **Public Functions/Methods**: List each public function with:
-130    - Function signature
-131    - Parameters and their types
-132    - Return type
-133    - Brief description of what it does
-134 3. **Public Classes/Types**: If applicable, list public classes/structs/types
-135 4. **Dependencies**: Any imports or dependencies needed to use this library
-136
-137 Format your response as JSON with this structure:
-138 {{
-139   &quot;library_name&quot;: &quot;name&quot;,
-140   &quot;purpose&quot;: &quot;description&quot;,
-141   &quot;language&quot;: &quot;{language}&quot;,
-142   &quot;public_functions&quot;: [
-143     {{
-144       &quot;name&quot;: &quot;function_name&quot;,
-145       &quot;signature&quot;: &quot;full signature&quot;,
-146       &quot;parameters&quot;: [{{&quot;name&quot;: &quot;param&quot;, &quot;type&quot;: &quot;type&quot;, &quot;description&quot;: &quot;desc&quot;}}],
-147       &quot;return_type&quot;: &quot;type&quot;,
-148       &quot;description&quot;: &quot;what it does&quot;
-149     }}
-150   ],
-151   &quot;public_classes&quot;: [
-152     {{
-153       &quot;name&quot;: &quot;ClassName&quot;,
-154       &quot;description&quot;: &quot;what it is&quot;,
-155       &quot;methods&quot;: [&quot;method1&quot;, &quot;method2&quot;]
-156     }}
-157   ],
-158   &quot;dependencies&quot;: [&quot;dep1&quot;, &quot;dep2&quot;]
-159 }}
-160
-161 Respond ONLY with valid JSON, no other text.&quot;&quot;&quot;
-162
-163         try:
-164             response = self.client.messages.create(
-165                 model=self.model,
-166                 max_tokens=4000,
-167                 messages=[
-168                     {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
-169                 ]
-170             )
-171
-172             response_text = response.content[0].text.strip()
+ 78         # Remove comments and strings to avoid false matches
+ 79         cleaned = self._remove_comments_and_strings(content)
+ 80
+ 81         # Extract public items
+ 82         self._extract_structs(cleaned, file_path)
+ 83         self._extract_enums(cleaned, file_path)
+ 84         self._extract_traits(cleaned, file_path)
+ 85         self._extract_impl_blocks(content, file_path)  # Parse impl blocks FIRST to get context
+ 86         self._extract_functions(cleaned, file_path)
+ 87         self._extract_constants(cleaned, file_path)
+ 88         self._extract_modules(cleaned, file_path)
+ 89
+ 90     def _remove_comments_and_strings(self, content: str) -&gt; str:
+ 91         &quot;&quot;&quot;Remove comments and string literals to avoid false matches.&quot;&quot;&quot;
+ 92         # Remove line comments
+ 93         content = re.sub(r'//.*$', '', content, flags=re.MULTILINE)
+ 94         # Remove block comments
+ 95         content = re.sub(r'/&#92;*.*?&#92;*/', '', content, flags=re.DOTALL)
+ 96         # Remove string literals
+ 97         content = re.sub(r'&quot;(?:[^&quot;&#92;&#92;]|&#92;&#92;.)*&quot;', '&quot;&quot;', content)
+ 98         return content
+ 99
+100     def _extract_structs(self, content: str, file_path: Path):
+101         &quot;&quot;&quot;Extract public struct definitions.&quot;&quot;&quot;
+102         pattern = r'pub&#92;s+struct&#92;s+(&#92;w+)&#92;s*(?:&lt;[^&gt;]+&gt;)?(?:&#92;s*&#92;([^)]*&#92;)|&#92;s*&#92;{[^}]*&#92;})?'
+103         matches = re.finditer(pattern, content)
+104         for match in matches:
+105             struct_name = match.group(1)
+106             # Get the full definition for better context
+107             full_match = self._extract_full_definition(content, match.start())
+108             self.public_items['structs'].append({
+109                 'name': struct_name,
+110                 'definition': full_match,
+111                 'file': file_path.relative_to(self.src_path),
+112                 'has_generics': '&lt;' in full_match
+113             })
+114
+115     def _extract_enums(self, content: str, file_path: Path):
+116         &quot;&quot;&quot;Extract public enum definitions.&quot;&quot;&quot;
+117         pattern = r'pub&#92;s+enum&#92;s+(&#92;w+)&#92;s*(?:&lt;[^&gt;]+&gt;)?&#92;s*&#92;{'
+118         matches = re.finditer(pattern, content)
+119         for match in matches:
+120             enum_name = match.group(1)
+121             full_match = self._extract_full_definition(content, match.start())
+122             variants = self._extract_enum_variants(full_match)
+123             self.public_items['enums'].append({
+124                 'name': enum_name,
+125                 'definition': full_match,
+126                 'file': file_path.relative_to(self.src_path),
+127                 'variants': variants
+128             })
+129
+130     def _extract_traits(self, content: str, file_path: Path):
+131         &quot;&quot;&quot;Extract public trait definitions.&quot;&quot;&quot;
+132         pattern = r'pub&#92;s+trait&#92;s+(&#92;w+)&#92;s*(?:&lt;[^&gt;]+&gt;)?'
+133         matches = re.finditer(pattern, content)
+134         for match in matches:
+135             trait_name = match.group(1)
+136             full_match = self._extract_full_definition(content, match.start())
+137             self.public_items['traits'].append({
+138                 'name': trait_name,
+139                 'definition': full_match,
+140                 'file': file_path.relative_to(self.src_path)
+141             })
+142
+143     def _extract_impl_blocks(self, content: str, file_path: Path):
+144         &quot;&quot;&quot;Extract impl blocks to associate methods with structs.&quot;&quot;&quot;
+145         # Match impl blocks: impl&lt;T&gt; StructName&lt;T&gt; { ... }
+146         pattern = r'impl&#92;s*(?:&lt;[^&gt;]+&gt;)?&#92;s+(&#92;w+)&#92;s*(?:&lt;[^&gt;]+&gt;)?&#92;s*&#92;{'
+147         matches = re.finditer(pattern, content)
+148
+149         for match in matches:
+150             struct_name = match.group(1)
+151             impl_start = match.end()
+152
+153             # Find the closing brace of this impl block
+154             brace_count = 1
+155             pos = impl_start
+156             impl_end = impl_start
+157
+158             while pos &lt; len(content) and brace_count &gt; 0:
+159                 if content[pos] == '{':
+160                     brace_count += 1
+161                 elif content[pos] == '}':
+162                     brace_count -= 1
+163                     if brace_count == 0:
+164                         impl_end = pos
+165                         break
+166                 pos += 1
+167
+168             impl_body = content[impl_start:impl_end]
+169
+170             # Extract public methods from this impl block
+171             method_pattern = r'pub&#92;s+fn&#92;s+(&#92;w+)'
+172             method_matches = re.finditer(method_pattern, impl_body)
 173
-174             # Extract JSON if wrapped in markdown
-175             if response_text.startswith('```'):
-176                 lines = response_text.split('&#92;n')
-177                 response_text = '&#92;n'.join(lines[1:-1])
-178
-179             interface_data = json.loads(response_text)
-180             interface_data['filepath'] = filepath
-181
-182             return interface_data
-183
-184         except Exception as e:
-185             print(f&quot;Error extracting interface from {filepath}: {e}&quot;)
-186             return {
-187                 &quot;error&quot;: str(e),
-188                 &quot;filepath&quot;: filepath,
-189                 &quot;language&quot;: language
-190             }
-191
-192     def generate_demo_application(self, interface_data: Dict) -&gt; str:
-193         &quot;&quot;&quot;
-194         Use Claude to generate a demonstration application
-195         Returns: Complete demo application code
-196         &quot;&quot;&quot;
-197         language = interface_data.get('language', 'unknown')
-198         library_name = interface_data.get('library_name', 'library')
-199
-200         prompt = f&quot;&quot;&quot;Generate a complete, runnable demonstration application in {language} that showcases all the public functions from this library.
-201
-202 Library Interface:
-203 {json.dumps(interface_data, indent=2)}
-204
-205 Requirements:
-206 1. Create a complete, standalone application that demonstrates EVERY public function
-207 2. Include proper imports and setup
-208 3. Add clear comments explaining what each demonstration does
-209 4. Include error handling where appropriate
-210 5. Make the output clear and informative
-211 6. If the library requires setup/initialization, include that
-212 7. Use realistic example data for function parameters
-213
-214 For the output:
-215 - Make it a complete, runnable {language} application
-216 - Add a main function that calls all demonstrations
-217 - Include helpful print statements showing what's being demonstrated
-218 - Format output clearly so users can see the results
-219
-220 Generate production-quality code with proper structure and documentation.
-221 Respond ONLY with the code, no explanations before or after.&quot;&quot;&quot;
-222
-223         try:
-224             response = self.client.messages.create(
-225                 model=self.model,
-226                 max_tokens=8000,
-227                 messages=[
-228                     {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt}
-229                 ]
-230             )
+174             for method_match in method_matches:
+175                 method_name = method_match.group(1)
+176                 if struct_name not in self.public_items['impl_blocks']:
+177                     self.public_items['impl_blocks'][struct_name] = []
+178                 self.public_items['impl_blocks'][struct_name].append(method_name)
+179
+180     def _extract_functions(self, content: str, file_path: Path):
+181         &quot;&quot;&quot;Extract public function definitions.&quot;&quot;&quot;
+182         pattern = r'pub&#92;s+(?:async&#92;s+)?fn&#92;s+(&#92;w+)&#92;s*(?:&lt;[^&gt;]+&gt;)?&#92;s*&#92;([^)]*&#92;)'
+183         matches = re.finditer(pattern, content)
+184         for match in matches:
+185             fn_name = match.group(1)
+186             full_match = self._extract_full_definition(content, match.start())
+187
+188             # Determine if it's a method or standalone function
+189             is_method = '&self' in full_match or '&mut self' in full_match
+190
+191             self.public_items['functions'].append({
+192                 'name': fn_name,
+193                 'definition': full_match,
+194                 'file': file_path.relative_to(self.src_path),
+195                 'is_method': is_method
+196             })
+197
+198     def _extract_constants(self, content: str, file_path: Path):
+199         &quot;&quot;&quot;Extract public constants.&quot;&quot;&quot;
+200         pattern = r'pub&#92;s+const&#92;s+(&#92;w+)&#92;s*:&#92;s*[^=]+=&#92;s*[^;]+;'
+201         matches = re.finditer(pattern, content)
+202         for match in matches:
+203             const_name = match.group(1)
+204             self.public_items['constants'].append({
+205                 'name': const_name,
+206                 'definition': match.group(0),
+207                 'file': file_path.relative_to(self.src_path)
+208             })
+209
+210     def _extract_modules(self, content: str, file_path: Path):
+211         &quot;&quot;&quot;Extract public module declarations.&quot;&quot;&quot;
+212         pattern = r'pub&#92;s+mod&#92;s+(&#92;w+)&#92;s*;'
+213         matches = re.finditer(pattern, content)
+214         for match in matches:
+215             mod_name = match.group(1)
+216             self.public_items['modules'].append({
+217                 'name': mod_name,
+218                 'file': file_path.relative_to(self.src_path)
+219             })
+220
+221     def _extract_full_definition(self, content: str, start_pos: int, max_lines: int = 15) -&gt; str:
+222         &quot;&quot;&quot;Extract a complete definition starting from start_pos.&quot;&quot;&quot;
+223         lines = content[start_pos:].split('&#92;n')
+224         result_lines = []
+225         brace_count = 0
+226         in_definition = False
+227
+228         for line in lines[:max_lines]:
+229             result_lines.append(line)
+230             brace_count += line.count('{') - line.count('}')
 231
-232             demo_code = response.content[0].text.strip()
-233
-234             # Remove markdown code fences if present
-235             if demo_code.startswith('```'):
-236                 lines = demo_code.split('&#92;n')
-237                 # Remove first and last lines (the ``` markers)
-238                 demo_code = '&#92;n'.join(lines[1:-1])
-239
-240             return demo_code
-241
-242         except Exception as e:
-243             print(f&quot;Error generating demo application: {e}&quot;)
-244             return f&quot;# Error generating demo: {str(e)}&quot;
-245
-246     def process_project(self, project_path: str, output_dir: str = None) -&gt; Dict:
-247         &quot;&quot;&quot;
-248         Main processing function: analyze project and generate demos
-249         Returns: Summary of processing results
-250         &quot;&quot;&quot;
-251         if output_dir is None:
-252             output_dir = os.path.join(project_path, 'interface_demos')
-253
-254         output_path = Path(output_dir)
-255         output_path.mkdir(parents=True, exist_ok=True)
-256
-257         print(f&quot;?? Scanning project: {project_path}&quot;)
-258         library_files = self.find_library_files(project_path)
-259
-260         if not library_files:
-261             print(&quot;? No library files found&quot;)
-262             return {&quot;status&quot;: &quot;no_files&quot;, &quot;files_processed&quot;: 0}
+232             if '{' in line:
+233                 in_definition = True
+234
+235             # If we've closed all braces or hit a semicolon at top level
+236             if in_definition and brace_count == 0:
+237                 break
+238             elif not in_definition and ';' in line:
+239                 break
+240
+241         return '&#92;n'.join(result_lines).strip()
+242
+243     def _extract_enum_variants(self, enum_def: str) -&gt; List[str]:
+244         &quot;&quot;&quot;Extract variant names from enum definition.&quot;&quot;&quot;
+245         variants = []
+246         # Look for variant patterns
+247         lines = enum_def.split('&#92;n')
+248         in_body = False
+249         for line in lines:
+250             if '{' in line:
+251                 in_body = True
+252                 continue
+253             if '}' in line:
+254                 break
+255             if in_body:
+256                 # Match variant names (word at start of trimmed line, before comma/brace/paren)
+257                 match = re.match(r'&#92;s*(&#92;w+)', line)
+258                 if match:
+259                     variant = match.group(1)
+260                     if variant and variant not in ['pub', 'enum']:
+261                         variants.append(variant)
+262         return variants
 263
-264         print(f&quot;?? Found {len(library_files)} library files&quot;)
-265
-266         results = {
-267             &quot;project_path&quot;: project_path,
-268             &quot;output_dir&quot;: str(output_path),
-269             &quot;files_processed&quot;: 0,
-270             &quot;files_failed&quot;: 0,
-271             &quot;demos_generated&quot;: []
-272         }
-273
-274         for filepath, language in library_files:
-275             print(f&quot;&#92;n?? Processing: {filepath}&quot;)
-276             print(f&quot;   Language: {language}&quot;)
-277
-278             # Extract interface
-279             print(&quot;   ??  Extracting public interface...&quot;)
-280             interface_data = self.extract_public_interface(filepath, language)
+264     def generate_markdown(self) -&gt; str:
+265         &quot;&quot;&quot;Generate markdown documentation of the public interface.&quot;&quot;&quot;
+266         md_lines = [
+267             f&quot;# {self.crate_name} - Public Interface&quot;,
+268             &quot;&quot;,
+269             f&quot;This document summarizes the public API of the `{self.crate_name}` crate.&quot;,
+270             &quot;&quot;,
+271             &quot;## Overview&quot;,
+272             &quot;&quot;,
+273             f&quot;- **Structs**: {len(self.public_items['structs'])}&quot;,
+274             f&quot;- **Enums**: {len(self.public_items['enums'])}&quot;,
+275             f&quot;- **Traits**: {len(self.public_items['traits'])}&quot;,
+276             f&quot;- **Functions**: {len(self.public_items['functions'])}&quot;,
+277             f&quot;- **Constants**: {len(self.public_items['constants'])}&quot;,
+278             f&quot;- **Modules**: {len(self.public_items['modules'])}&quot;,
+279             &quot;&quot;
+280         ]
 281
-282             if &quot;error&quot; in interface_data:
-283                 print(f&quot;   ? Failed to extract interface&quot;)
-284                 results[&quot;files_failed&quot;] += 1
-285                 continue
-286
-287             # Generate demo
-288             print(&quot;   ?? Generating demonstration application...&quot;)
-289             demo_code = self.generate_demo_application(interface_data)
-290
-291             # Save interface documentation
-292             lib_name = interface_data.get('library_name', Path(filepath).stem)
-293             interface_file = output_path / f&quot;{lib_name}_interface.json&quot;
-294             with open(interface_file, 'w', encoding='utf-8') as f:
-295                 json.dump(interface_data, f, indent=2)
-296
-297             # Save demo application with appropriate extension
-298             ext_map = {
-299                 'python': '.py',
-300                 'rust': '.rs',
-301                 'cpp': '.cpp',
-302                 'csharp': '.cs',
-303                 'java': '.java',
-304                 'javascript': '.js',
-305                 'typescript': '.ts',
-306                 'go': '.go',
-307                 'ruby': '.rb',
-308             }
-309             demo_ext = ext_map.get(language, '.txt')
-310             demo_file = output_path / f&quot;{lib_name}_demo{demo_ext}&quot;
-311
-312             with open(demo_file, 'w', encoding='utf-8') as f:
-313                 f.write(demo_code)
-314
-315             print(f&quot;   ? Generated: {demo_file.name}&quot;)
+282         # Add each category
+283         if self.public_items['structs']:
+284             md_lines.extend(self._format_items_section(&quot;Structs&quot;, self.public_items['structs']))
+285
+286         if self.public_items['enums']:
+287             md_lines.extend(self._format_items_section(&quot;Enums&quot;, self.public_items['enums']))
+288
+289         if self.public_items['traits']:
+290             md_lines.extend(self._format_items_section(&quot;Traits&quot;, self.public_items['traits']))
+291
+292         if self.public_items['functions']:
+293             md_lines.extend(self._format_items_section(&quot;Functions&quot;, self.public_items['functions']))
+294
+295         if self.public_items['constants']:
+296             md_lines.extend(self._format_items_section(&quot;Constants&quot;, self.public_items['constants']))
+297
+298         if self.public_items['modules']:
+299             md_lines.extend(self._format_modules_section())
+300
+301         return '&#92;n'.join(md_lines)
+302
+303     def _format_items_section(self, title: str, items: List[Dict]) -&gt; List[str]:
+304         &quot;&quot;&quot;Format a section of items for markdown.&quot;&quot;&quot;
+305         lines = [f&quot;## {title}&quot;, &quot;&quot;]
+306
+307         for item in items:
+308             lines.append(f&quot;### `{item['name']}`&quot;)
+309             lines.append(&quot;&quot;)
+310             lines.append(f&quot;*Defined in: `{item['file']}`*&quot;)
+311             lines.append(&quot;&quot;)
+312             lines.append(&quot;```rust&quot;)
+313             lines.append(item['definition'])
+314             lines.append(&quot;```&quot;)
+315             lines.append(&quot;&quot;)
 316
-317             results[&quot;files_processed&quot;] += 1
-318             results[&quot;demos_generated&quot;].append({
-319                 &quot;source&quot;: filepath,
-320                 &quot;interface_doc&quot;: str(interface_file),
-321                 &quot;demo_app&quot;: str(demo_file),
-322                 &quot;language&quot;: language
-323             })
-324
-325         # Save summary report
-326         summary_file = output_path / &quot;generation_summary.json&quot;
-327         with open(summary_file, 'w', encoding='utf-8') as f:
-328             json.dump(results, f, indent=2)
-329
-330         print(f&quot;&#92;n? Complete! Processed {results['files_processed']} files&quot;)
-331         print(f&quot;?? Output directory: {output_path}&quot;)
-332
-333         return results
-334
-335
-336 def main():
-337     &quot;&quot;&quot;Command-line interface&quot;&quot;&quot;
-338     if len(sys.argv) &lt; 2:
-339         print(&quot;Usage: python interface_demo_agent.py &lt;project_path&gt; [output_dir]&quot;)
-340         print(&quot;&#92;nExample:&quot;)
-341         print(&quot;  python interface_demo_agent.py ./my_project&quot;)
-342         print(&quot;  python interface_demo_agent.py ./my_project ./demos&quot;)
-343         print(&quot;&#92;nEnvironment variable required:&quot;)
-344         print(&quot;  ANTHROPIC_API_KEY - Your Anthropic API key&quot;)
-345         sys.exit(1)
-346
-347     project_path = sys.argv[1]
-348     output_dir = sys.argv[2] if len(sys.argv) &gt; 2 else None
-349
-350     try:
-351         agent = InterfaceDemoAgent()
-352         results = agent.process_project(project_path, output_dir)
-353
-354         print(&quot;&#92;n&quot; + &quot;=&quot;*60)
-355         print(&quot;?? PROCESSING SUMMARY&quot;)
-356         print(&quot;=&quot;*60)
-357         print(f&quot;Files processed: {results['files_processed']}&quot;)
-358         print(f&quot;Files failed: {results['files_failed']}&quot;)
-359         print(f&quot;Demos generated: {len(results['demos_generated'])}&quot;)
-360         print(f&quot;Output location: {results['output_dir']}&quot;)
-361
-362         if results['demos_generated']:
-363             print(&quot;&#92;n?? Generated Demonstrations:&quot;)
-364             for demo in results['demos_generated']:
-365                 print(f&quot;&#92;n  Source: {demo['source']}&quot;)
-366                 print(f&quot;  Language: {demo['language']}&quot;)
-367                 print(f&quot;  Interface Doc: {demo['interface_doc']}&quot;)
-368                 print(f&quot;  Demo App: {demo['demo_app']}&quot;)
-369
-370     except Exception as e:
-371         print(f&quot;? Error: {e}&quot;)
-372         sys.exit(1)
-373
+317         return lines
+318
+319     def _format_modules_section(self) -&gt; List[str]:
+320         &quot;&quot;&quot;Format modules section for markdown.&quot;&quot;&quot;
+321         lines = [&quot;## Modules&quot;, &quot;&quot;]
+322
+323         for mod in self.public_items['modules']:
+324             lines.append(f&quot;- `{mod['name']}` (declared in `{mod['file']}`)&quot;)
+325
+326         lines.append(&quot;&quot;)
+327         return lines
+328
+329     def generate_example(self) -&gt; str:
+330         &quot;&quot;&quot;Generate a WORKING Rust example that demonstrates the public interface.&quot;&quot;&quot;
+331         example_lines = [
+332             f&quot;// Example demonstrating the {self.crate_name} crate public interface&quot;,
+333             f&quot;// This file was auto-generated by rust_crate_analyzer&quot;,
+334             &quot;&quot;,
+335             f&quot;use {self.crate_name}::*;&quot;,
+336             &quot;&quot;,
+337             &quot;fn main() {&quot;,
+338             f'    println!(&quot;Demonstrating {self.crate_name} crate&quot;);',
+339             '    println!(&quot;{}&quot;, &quot;=&quot;.repeat(50));',
+340             &quot;&quot;
+341         ]
+342
+343         section_num = 1
+344
+345         # Find constructors using impl block information
+346         struct_with_new = {}
+347         for struct_name, method_names in self.public_items['impl_blocks'].items():
+348             if 'new' in method_names:
+349                 # Find the new function
+350                 for func in self.public_items['functions']:
+351                     if func['name'] == 'new':
+352                         struct_with_new[struct_name] = func
+353                         break
+354
+355         # Find methods for each struct using impl block information
+356         methods_by_struct = {}
+357         for struct_name, method_names in self.public_items['impl_blocks'].items():
+358             struct_methods = []
+359             for func in self.public_items['functions']:
+360                 if func['name'] in method_names and func['name'] != 'new':  # Exclude constructor
+361                     struct_methods.append(func)
+362             if struct_methods:
+363                 methods_by_struct[struct_name] = struct_methods
+364
+365         # Generate comprehensive struct examples with usage
+366         if self.public_items['structs']:
+367             for struct in self.public_items['structs'][:2]:  # Focus on first 2 structs
+368                 struct_name = struct['name']
+369                 var_name = struct_name.lower()
+370
+371                 # Only generate if we have a constructor OR methods
+372                 if struct_name in struct_with_new or struct_name in methods_by_struct:
+373                     example_lines.append(f'    println!(&quot;&#92;&#92;n{section_num}. {struct_name} demonstrations...&quot;);')
 374
-375 if __name__ == &quot;__main__&quot;:
-376     main()          </code></pre>
+375                     # Create instance
+376                     if struct_name in struct_with_new:
+377                         if struct['has_generics']:
+378                             example_lines.append(f&quot;    let {var_name} = {struct_name}::&lt;String&gt;::new();&quot;)
+379                         else:
+380                             example_lines.append(f&quot;    let {var_name} = {struct_name}::new();&quot;)
+381                     else:
+382                         example_lines.append(f&quot;    // let {var_name} = {struct_name} {{ /* fields */ }};&quot;)
+383                     example_lines.append(&quot;&quot;)
+384
+385                     # Find and use methods
+386                     struct_methods = methods_by_struct.get(struct_name, [])
+387
+388                     # Look for common patterns (enqueue/push methods)
+389                     # Normalize names by removing underscores for pattern matching
+390                     enqueue_methods = [m for m in struct_methods if any(name in m['name'].replace('_', '').lower() for name in ['push', 'enq', 'add', 'insert', 'put'])]
+391                     dequeue_methods = [m for m in struct_methods if any(name in m['name'].replace('_', '').lower() for name in ['pop', 'deq', 'remove', 'get', 'take'])]
+392
+393                     if enqueue_methods:
+394                         enq_method = enqueue_methods[0]
+395                         example_lines.append(f'    println!(&quot;   Enqueuing items...&quot;);')
+396                         example_lines.append(f&quot;    for i in 1..=5 {{&quot;)
+397                         example_lines.append(f'        let msg = format!(&quot;msg{{}}&quot;, i);')
+398                         example_lines.append(f&quot;        {var_name}.{enq_method['name']}(msg);&quot;)
+399                         example_lines.append(f'        println!(&quot;      Enqueued: msg{{}}&quot;, i);')
+400                         example_lines.append(f&quot;    }}&quot;)
+401                         example_lines.append(&quot;&quot;)
+402
+403                     if dequeue_methods:
+404                         deq_method = dequeue_methods[0]
+405                         example_lines.append(f'    println!(&quot;   Dequeuing items...&quot;);')
+406                         example_lines.append(f&quot;    for _ in 1..=5 {{&quot;)
+407                         example_lines.append(f&quot;        let msg = {var_name}.{deq_method['name']}();&quot;)
+408                         example_lines.append(f'        println!(&quot;      Dequeued: {{}}&quot;, msg);')
+409                         example_lines.append(f&quot;    }}&quot;)
+410                         example_lines.append(&quot;&quot;)
+411
+412                     example_lines.append(f'    println!(&quot;   {struct_name} operations complete!&quot;);')
+413                     example_lines.append(&quot;&quot;)
+414                     section_num += 1
+415
+416         # Generate standalone function examples (not methods)
+417         standalone_fns = [f for f in self.public_items['functions']
+418                          if not f['is_method'] and f['name'] != 'new']
+419
+420         if standalone_fns:
+421             example_lines.append(f'    println!(&quot;&#92;&#92;n{section_num}. Standalone functions...&quot;);')
+422             for func in standalone_fns[:5]:
+423                 func_name = func['name']
+424                 params = self._generate_params_from_definition(func['definition'])
+425
+426                 # Try to determine if it returns something
+427                 if '-&gt;' in func['definition'] and '()' not in func['definition'].split('-&gt;')[-1]:
+428                     example_lines.append(f&quot;    let result = {func_name}({params});&quot;)
+429                     example_lines.append(f'    println!(&quot;   {func_name} returned: {{:?}}&quot;, result);')
+430                 else:
+431                     example_lines.append(f&quot;    {func_name}({params});&quot;)
+432                     example_lines.append(f'    println!(&quot;   Called {func_name}&quot;);')
+433             example_lines.append(&quot;&quot;)
+434             section_num += 1
+435
+436         # Generate enum examples
+437         if self.public_items['enums']:
+438             example_lines.append(f'    println!(&quot;&#92;&#92;n{section_num}. Enum usage...&quot;);')
+439             for enum in self.public_items['enums'][:2]:
+440                 enum_name = enum['name']
+441                 if enum.get('variants'):
+442                     first_variant = enum['variants'][0]
+443                     example_lines.append(f&quot;    let _value = {enum_name}::{first_variant};&quot;)
+444                     example_lines.append(f'    println!(&quot;   Created {enum_name}::{first_variant}&quot;);')
+445
+446                     # Show pattern matching if multiple variants
+447                     if len(enum['variants']) &gt; 1:
+448                         example_lines.append(f&quot;    match _value {{&quot;)
+449                         for variant in enum['variants'][:3]:
+450                             example_lines.append(f&quot;        {enum_name}::{variant} =&gt; println!(&#92;&quot;      Matched {variant}&#92;&quot;),&quot;)
+451                         if len(enum['variants']) &gt; 3:
+452                             example_lines.append(f&quot;        _ =&gt; println!(&#92;&quot;      Other variant&#92;&quot;),&quot;)
+453                         example_lines.append(f&quot;    }}&quot;)
+454             example_lines.append(&quot;&quot;)
+455             section_num += 1
+456
+457         # Generate constant examples
+458         if self.public_items['constants']:
+459             example_lines.append(f'    println!(&quot;&#92;&#92;n{section_num}. Constants...&quot;);')
+460             for const in self.public_items['constants']:
+461                 const_name = const['name']
+462                 example_lines.append(f'    println!(&quot;   {const_name}: {{}}&quot;, {const_name});')
+463             example_lines.append(&quot;&quot;)
+464
+465         example_lines.extend([
+466             '    println!(&quot;&#92;&#92;nExample complete!&quot;);',
+467             &quot;}&quot;
+468         ])
+469
+470         return '&#92;n'.join(example_lines)
+471
+472     def _generate_params_from_definition(self, func_def: str) -&gt; str:
+473         &quot;&quot;&quot;Generate example parameters from function definition.&quot;&quot;&quot;
+474         # Extract parameter list
+475         match = re.search(r'&#92;((.*?)&#92;)', func_def)
+476         if not match:
+477             return &quot;&quot;
+478
+479         params_str = match.group(1)
+480         if not params_str.strip():
+481             return &quot;&quot;
+482
+483         # Parse parameters
+484         result_params = []
+485         for param in params_str.split(','):
+486             param = param.strip()
+487             if not param or param.startswith('self'):
+488                 continue
+489
+490             # Extract type hint
+491             if ':' in param:
+492                 param_type = param.split(':')[1].strip()
+493                 example_val = self._type_to_example(param_type)
+494                 result_params.append(example_val)
+495
+496         return ', '.join(result_params) if result_params else &quot;/* params */&quot;
+497
+498     def _type_to_example(self, type_str: str) -&gt; str:
+499         &quot;&quot;&quot;Convert a type string to an example value.&quot;&quot;&quot;
+500         type_lower = type_str.lower()
+501
+502         if 'string' in type_lower:
+503             return '&quot;example&quot;.to_string()'
+504         elif '&str' in type_str:
+505             return '&quot;example&quot;'
+506         elif 'i32' in type_lower or 'i64' in type_lower:
+507             return '42'
+508         elif 'u32' in type_lower or 'u64' in type_lower or 'usize' in type_lower:
+509             return '10'
+510         elif 'f32' in type_lower or 'f64' in type_lower:
+511             return '3.14'
+512         elif 'bool' in type_lower:
+513             return 'true'
+514         elif 'vec' in type_lower:
+515             return 'vec![]'
+516         else:
+517             return '/* value */'
+518
+519     def write_outputs(self):
+520         &quot;&quot;&quot;Write the markdown documentation and example files.&quot;&quot;&quot;
+521         # Create examples directory if it doesn't exist
+522         self.examples_path.mkdir(exist_ok=True)
+523
+524         # Write markdown documentation
+525         md_output_path = self.crate_path / f&quot;{self.crate_name}_interface.md&quot;
+526         md_content = self.generate_markdown()
+527         with open(md_output_path, 'w', encoding='utf-8') as f:
+528             f.write(md_content)
+529         print(f&quot;&#92;n√ Generated documentation: {md_output_path}&quot;)
+530
+531         # Write example application
+532         example_output_path = self.examples_path / &quot;demo.rs&quot;
+533         example_content = self.generate_example()
+534         with open(example_output_path, 'w', encoding='utf-8') as f:
+535             f.write(example_content)
+536         print(f&quot;√ Generated example: {example_output_path}&quot;)
+537
+538         return md_output_path, example_output_path
+539
+540
+541 def main():
+542     &quot;&quot;&quot;Main entry point for the analyzer agent.&quot;&quot;&quot;
+543     if len(sys.argv) != 2:
+544         print(&quot;Usage: python rust_crate_analyzer.py &lt;path_to_rust_crate&gt;&quot;)
+545         print(&quot;&#92;nExample:&quot;)
+546         print(&quot;  python rust_crate_analyzer.py /path/to/my_crate&quot;)
+547         sys.exit(1)
+548
+549     crate_path = sys.argv[1]
+550
+551     try:
+552         # Create analyzer
+553         analyzer = RustCrateAnalyzer(crate_path)
+554
+555         # Analyze the crate
+556         public_items = analyzer.analyze()
+557
+558         # Print summary
+559         print(&quot;&#92;n&quot; + &quot;=&quot; * 60)
+560         print(&quot;ANALYSIS COMPLETE&quot;)
+561         print(&quot;=&quot; * 60)
+562         print(f&quot;&#92;nPublic Interface Summary:&quot;)
+563         print(f&quot;  Structs:   {len(public_items['structs'])}&quot;)
+564         print(f&quot;  Enums:     {len(public_items['enums'])}&quot;)
+565         print(f&quot;  Traits:    {len(public_items['traits'])}&quot;)
+566         print(f&quot;  Functions: {len(public_items['functions'])}&quot;)
+567         print(f&quot;  Constants: {len(public_items['constants'])}&quot;)
+568         print(f&quot;  Modules:   {len(public_items['modules'])}&quot;)
+569
+570         # Write outputs
+571         print(&quot;&#92;nGenerating outputs...&quot;)
+572         analyzer.write_outputs()
+573
+574         print(&quot;&#92;n&quot; + &quot;=&quot; * 60)
+575         print(&quot;SUCCESS&quot;)
+576         print(&quot;=&quot; * 60)
+577
+578     except FileNotFoundError as e:
+579         print(f&quot;Error: {e}&quot;, file=sys.stderr)
+580         sys.exit(1)
+581     except Exception as e:
+582         print(f&quot;Unexpected error: {e}&quot;, file=sys.stderr)
+583         import traceback
+584         traceback.print_exc()
+585         sys.exit(1)
+586
+587
+588 if __name__ == &quot;__main__&quot;:
+589     main()</code></pre>
         </code-viewer>
       </details>
     </t-b>
-    <t-b></t-b>
+    <t-b>
+      <details>
+        <summary class="darkItem">Rust Demo Code</summary>
+    <code-viewer width="90ch" font-size="1.0rem" highlight="prism" language="css"  bg-color="var(--light)" title-bg-color="#ccc" style="margin-left:-1rem; overflow-x: auto;">
+      Figure 1. Rust BlockingQueue Demo
+      <pre slot="code"><code> 1 // Example demonstrating the rust_blocking_queue crate public interface
+ 2 // This file was auto-generated by rust_crate_analyzer
+ 3
+ 4 use rust_blocking_queue::*;
+ 5
+ 6 fn main() {
+ 7     println!(&quot;Demonstrating rust_blocking_queue crate&quot;);
+ 8     println!(&quot;{}&quot;, &quot;=&quot;.repeat(50));
+ 9
+10     println!(&quot;&#92;n1. BlockingQueue demonstrations...&quot;);
+11     let blockingqueue = BlockingQueue::&lt;String&gt;::new();
+12
+13     println!(&quot;   Enqueuing items...&quot;);
+14     for i in 1..=5 {
+15         let msg = format!(&quot;msg{}&quot;, i);
+16         blockingqueue.en_q(msg);
+17         println!(&quot;      Enqueued: msg{}&quot;, i);
+18     }
+19
+20     println!(&quot;   Dequeuing items...&quot;);
+21     for _ in 1..=5 {
+22         let msg = blockingqueue.de_q();
+23         println!(&quot;      Dequeued: {}&quot;, msg);
+24     }
+25
+26     println!(&quot;   BlockingQueue operations complete!&quot;);
+27
+28     println!(&quot;&#92;nExample complete!&quot;);
+29 }</code></pre>
+        </code-viewer>  
+      </details>
+    </t-b>
+    <tm-b>
+      <details>
+        <summary class="darkItem">Rust Demo Output</summary>
+        <code-viewer width="90ch" font-size="1.0rem" highlight="prism" language="css"  bg-color="var(--light)" title-bg-color="#ccc" style="margin-left:-1rem; overflow-x: auto;">
+          Figure 1. Demo Output
+          <pre slot="code"><code>
+C:\github\JimFawcett\RustBlockingQueue
+> cargo run --example demo
+   Compiling rust_blocking_queue v0.1.0 (C:\github\JimFawcett\RustBlockingQueue)     
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.89s
+     Running `target\debug\examples\demo.exe`
+Demonstrating rust_blocking_queue crate
+==================================================
+
+1. BlockingQueue demonstrations...
+   Enqueuing items...
+      Enqueued: msg1
+      Enqueued: msg2
+      Enqueued: msg3
+      Enqueued: msg4
+      Enqueued: msg5
+   Dequeuing items...
+      Dequeued: msg1
+      Dequeued: msg2
+      Dequeued: msg3
+      Dequeued: msg4
+      Dequeued: msg5
+   BlockingQueue operations complete!
+
+Example complete!
+C:\github\JimFawcett\RustBlockingQueue
+>
+          </code></pre>
+        </code-viewer>
+      </details>
+    </tm-b>
     <t-b>
       This page is just starting.  It will eventually contain completed examples of local file access and modification:
       <ol>
