@@ -838,8 +838,286 @@
     </code-viewer>
   </details>
 
+  <h3 id="tree">2.4 - Agent Analysis File Code</h3>
+  <tm-b>
+    In the next section we show the agent&apos;s file analysis of a Rust library that implements
+    directory navigation. Here is the code in that library file.
+  </tm-b>
+  <details>
+    <summary class="darkItem">RustDirNav/src/lib.rs Code</summary>
+    <tm-b>
+    </tm-b>
+    <t-b style="margin-bottom: 0rem;">
+    </t-b>
+    <code-viewer width="100ch" font-size="1.0rem" highlight="prism" language="css"  bg-color="var(--light)" title-bg-color="#ccc" style="margin-left:-1rem; overflow-x: auto;">
+      Figure 1. Rust Directory Navigation Library
+      <pre slot="code"><code>  1 /////////////////////////////////////////////////////////////
+  2 // rust_dir_nav::lib1.rs                                   //
+  3 //                                                         //
+  4 // Jim Fawcett, https://JimFawcett.github.io, 12 Apr 2020  //
+  5 /////////////////////////////////////////////////////////////
+  6 /*
+  7    DirNav&lt;App&gt; is a directory navigator that  uses the generic
+  8    parameter App to define how files and directories are
+  9    handled.
+ 10    - displays only paths that have file targets by default
+ 11    - hide(false) will show all directories traversed
+ 12    - recurses directory tree at specified root by default
+ 13    - recurse(false) examines only specified path.
+ 14 */
+ 15 use std::fs::{self, DirEntry};
+ 16 use std::io;
+ 17 use std::io::{Error, ErrorKind};
+ 18 #[allow(unused_imports)]
+ 19 use std::path::{Path, PathBuf};
+ 20
+ 21 /// trait required of the App generic parameter type
+ 22 pub trait DirEvent {
+ 23     fn do_dir(&mut self, d: &str);
+ 24     fn do_file(&mut self, f: &str);
+ 25 }
+ 26 //---------------------------------------
+ 27 // Sample implementation of DirNav param
+ 28 // --------------------------------------
+ 29 // #[derive(Debug, Default)]
+ 30 // pub struct Appl;
+ 31 // impl DirEvent for Appl {
+ 32 //     fn do_dir(&mut self, d:&str) {
+ 33 //         print!(&quot;&#92;n  {:?}&quot;, d);
+ 34 //     }
+ 35 //     fn do_file(&mut self, f:&str) {
+ 36 //         print!(&quot;&#92;n    {:?}&quot;, f);
+ 37 //     }
+ 38 // }
+ 39
+ 40 /////////////////////////////////////////////////
+ 41 // Patterns are a collection of extension strings
+ 42 // used to identify files as search targets
+ 43
+ 44 type SearchPatterns = Vec&lt;std::ffi::OsString&gt;;
+ 45
+ 46 /// Directory Navigator Structure
+ 47 #[allow(dead_code)]
+ 48 #[derive(Debug, Default)]
+ 49 pub struct DirNav&lt;App: DirEvent&gt; {
+ 50     /// file extensions to look for
+ 51     pats: SearchPatterns,
+ 52     /// instance of App : DirEvent, requires do_file and do_dir methods
+ 53     app: App,
+ 54     /// number of files processed
+ 55     num_file: usize,
+ 56     /// number of dirs processed
+ 57     num_dir: usize,
+ 58     /// recurse ?
+ 59     recurse : bool,
+ 60     /// hide dirs with no targets ?
+ 61     hide: bool,
+ 62 }
+ 63 impl&lt;App: DirEvent + Default&gt; DirNav&lt;App&gt; {
+ 64     pub fn new() -&gt; Self
+ 65     where
+ 66         App: DirEvent + Default,
+ 67     {
+ 68         Self {
+ 69             pats: SearchPatterns::new(),
+ 70             app: App::default(),
+ 71             num_file: 0,
+ 72             num_dir: 0,
+ 73             recurse: true,
+ 74             hide: true,
+ 75         }
+ 76     }
+ 77     /// do recursive visit?
+ 78     pub fn recurse(&mut self, p:bool) {
+ 79         self.recurse = p;
+ 80     }
+ 81     /// hide dirs with no targets?
+ 82     pub fn hide(&mut self, p:bool) {
+ 83         self.hide = p;
+ 84     }
+ 85     /// return reference to App to get results, if any
+ 86     pub fn get_app(&mut self) -&gt; &mut App {
+ 87         &mut self.app
+ 88     }
+ 89     /// return number of dirs processed
+ 90     pub fn get_dirs(&self) -&gt; usize {
+ 91         self.num_dir
+ 92     }
+ 93     /// return number of files processed
+ 94     pub fn get_files(&self) -&gt; usize {
+ 95         self.num_file
+ 96     }
+ 97     /// return patterns, e.g., file extensions to look for
+ 98     pub fn get_patts(&self) -&gt; &SearchPatterns {
+ 99         &self.pats
+100     }
+101
+102     /// add extention to search for - takes either String or &str
+103     pub fn add_pat&lt;S: Into&lt;String&gt;&gt;(&mut self, p: S) -&gt; &mut DirNav&lt;App&gt; {
+104         let mut t = std::ffi::OsString::new();
+105         t.push(p.into());
+106         self.pats.push(t);
+107         self
+108     }
+109     /// reset to default state
+110     pub fn clear(&mut self) {
+111         self.pats.clear();
+112         self.num_dir = 0;
+113         self.num_file = 0;
+114         self.app = App::default();
+115     }
+116     /// Depth First Search for file extentions starting at path dir&lt;br /&gt;
+117     /// Displays only directories with files matching pattern
+118     pub fn visit(&mut self, dir: &Path) -&gt; io::Result&lt;()&gt;
+119     where App: DirEvent
+120     {
+121         self.num_dir += 1;
+122         let dir_name: String =
+123           self.replace_sep(dir).to_string_lossy().to_string();
+124         let mut files = Vec::&lt;std::ffi::OsString&gt;::new();
+125         let mut sub_dirs = Vec::&lt;std::ffi::OsString&gt;::new();
+126         if dir.is_dir() {
+127             /* search local directory */
+128             for entry in fs::read_dir(dir)? {
+129                 let entry = entry?;
+130                 let path = entry.path();
+131                 if path.is_dir() {
+132                     let cd = self.replace_sep(&path);
+133                     sub_dirs.push(cd);
+134                 } else {
+135                     self.num_file += 1;
+136                     if self.in_patterns(&entry) | self.pats.is_empty() {
+137                         files.push(entry.file_name());
+138                     }
+139                 }
+140             }
+141             /*-- display only dirs with found files --*/
+142             if !files.is_empty() || !self.hide {
+143                 self.app.do_dir(&dir_name);
+144             }
+145             for fl in files {
+146                 let flnm = fl.to_string_lossy().to_string();
+147                 self.app.do_file(&flnm);
+148             }
+149             /*-- recurse into subdirectories --*/
+150             for sub in sub_dirs {
+151                 let mut pb = std::path::PathBuf::new();
+152                 pb.push(sub);
+153                 if self.recurse {
+154                     self.visit(&pb)?;
+155                 }
+156             }
+157             return Ok(());  // normal return
+158         }
+159         Err(Error::new(ErrorKind::Other, &quot;not a directory&quot;))
+160     }
+161     /// replace Windows directory separator with Linux separator
+162     pub fn replace_sep(&self, path: &Path) -&gt; std::ffi::OsString {
+163         let rtn = path.to_string_lossy();
+164         let mod_path = rtn.replace(&quot;&#92;&#92;&quot;, &quot;/&quot;);
+165         let mut os_str: std::ffi::OsString = std::ffi::OsString::new();
+166         os_str.push(mod_path);
+167         os_str
+168     }
+169     /// does store contain d.path().extension() ?
+170     pub fn in_patterns(&self, d: &DirEntry) -&gt; bool {
+171         let p = d.path();
+172         let ext = p.extension();
+173         match ext {
+174             Some(extn) =&gt; self.pats.contains(&(extn.to_os_string())),
+175             None =&gt; false,
+176         }
+177     }
+178 }
+179
+180 #[cfg(test)]
+181 mod tests {
+182     // test_setup() should run first. To ensure that:
+183     //   use cargo -- --test-threads=1
+184     // to see console output:
+185     //   use cargo test -- --show-output --test-threads=1
+186     use super::*;
+187     #[derive(Debug)]
+188     struct ApplTest {
+189         rslt_store: Vec&lt;String&gt;,
+190     }
+191     impl DirEvent for ApplTest {
+192         fn do_dir(&mut self, _d: &str) {
+193             //print!(&quot;&#92;n  {:?}&quot;, d);
+194         }
+195         fn do_file(&mut self, f: &str) {
+196             //print!(&quot;&#92;n    {:?}&quot;, f);
+197             self.rslt_store.push((*f).to_string());
+198         }
+199     }
+200     impl Default for ApplTest {
+201         fn default() -&gt; Self {
+202             ApplTest {
+203                 rslt_store: Vec::&lt;String&gt;::new(),
+204             }
+205         }
+206     }
+207     #[test]
+208     fn test_setup() {
+209         let _ = std::fs::create_dir(&quot;./test_dir&quot;);
+210         let _ = std::fs::create_dir(&quot;./test_dir/test_sub1_dir&quot;);
+211         let _ = std::fs::create_dir(&quot;./test_dir/test_sub2_dir&quot;);
+212         let _ = std::fs::File::create(&quot;./test_dir/test_file.rs&quot;);
+213         let _ = std::fs::File::create(&quot;./test_dir/test_sub1_dir/test_file1.rs&quot;);
+214         let _ = std::fs::File::create(&quot;./test_dir/test_sub1_dir/test_file2.exe&quot;);
+215         let _ = std::fs::File::create(&quot;./test_dir/test_sub2_dir/test_file3.txt&quot;);
+216     }
+217     #[test]
+218     fn test_walk() {
+219         let mut dn = DirNav::&lt;ApplTest&gt;::new();
+220         dn.add_pat(&quot;rs&quot;).add_pat(&quot;exe&quot;).add_pat(&quot;txt&quot;);
+221         let mut pb = PathBuf::new();
+222         pb.push(&quot;./test_dir&quot;.to_string());
+223         let _ = dn.visit(&pb);
+224         let rl = &dn.get_app().rslt_store;
+225         /*
+226           run exe in target/debug with --nocapture option
+227           to see output of print statement below.
+228         */
+229         print!(&quot;&#92;n  {:?}&quot;, rl);
+230
+231         // test for found files
+232         let l = |s: &str| -&gt; String { s.to_string() };
+233
+234         assert!(rl.contains(&l(&quot;test_file.rs&quot;)));
+235         assert!(rl.contains(&l(&quot;test_file1.rs&quot;)));
+236         assert!(rl.contains(&l(&quot;test_file2.exe&quot;)));
+237         assert!(rl.contains(&l(&quot;test_file3.txt&quot;)));
+238         /*
+239           uncomment line below to make test fail
+240         */
+241         //assert!(rl.contains(&l(&quot;foobar&quot;)));
+242     }
+243     #[test]
+244     fn test_patts() {
+245         let mut dn = DirNav::&lt;ApplTest&gt;::new();
+246         dn.add_pat(&quot;foo&quot;).add_pat(&quot;bar&quot;);
+247         assert_eq!(dn.get_patts().len(), 2);
+248         let pats = dn.get_patts();
+249         let mut foo_str = std::ffi::OsString::new();
+250         foo_str.push(&quot;foo&quot;);
+251         assert!(pats.contains(&foo_str));
+252         let mut bar_str = std::ffi::OsString::new();
+253         bar_str.push(&quot;bar&quot;);
+254         assert!(pats.contains(&bar_str));
+255         dn.clear();
+256         assert_eq!(dn.get_patts().len(), 0);
+257     }
+258 }
+      </code></pre>
+    </code-viewer>
+  </details>
+  <tm-b>
+    I created this library while learning Rust.  It functions as expected, at least in the applications I built 
+    at the time, but my lack of experience then shows in the analysis of the next section.
+  </tm-b>
 
-  <h3 id="analyze">2.4 - Analyze Code File</h3>
+  <h3 id="analyze">2.5 - Analyze Code File</h3>
   <tm-b>
     The command &quot;/analyze ./src/lib.rs&quot; initiates a comprehensive analysis of 
     the cited file:
@@ -867,8 +1145,7 @@
     </t-b>
     <code-viewer width="100ch" font-size="1.0rem" highlight="prism" language="css"  bg-color="var(--light)" title-bg-color="#ccc" style="margin-left:-1rem; overflow-x: auto;">
       Figure 1. dev_agent.py analyze ./src/lib.rs
-      <pre slot="code"><code>
- 17
+      <pre slot="code"><code> 17
  18 You: /files
  19
  20 Found 4 code files:
@@ -1216,8 +1493,12 @@
       </code></pre>
     </code-viewer>
   </details>
+  <tm-b>
+    If I wanted to strengthen this library for production use I would implement some, but not all of the suggestions.  Some add 
+    complexity without much added value, although most are very appropriate.
+  </tm-b>
 
-  <h3 id="improvements">2.5 - Improvements</h3>
+  <h3 id="improvements">2.6 - Improvements</h3>
   <tm-b>
     Suggested Improvements include:
     <ul class="tight" style="margin-left:2rem;">
@@ -1773,7 +2054,7 @@
     </code-viewer>
   </details>
 
-  <h3 id="usageref">2.6 - Usage Reference</h3>
+  <h3 id="usageref">2.7 - Usage Reference</h3>
   <tm-b>
     All of the prior dropdown contents were generated by the <strong>dev_agent.py</strong> agent.
     This part contains usage guides generated by the <strong>claude.ai</strong> chat bot when it generated 
