@@ -19,7 +19,6 @@ function buildPages() {
       <a href='../SWDev/SWDevHome.html'>SWDev</a>\
       <a href='../Basics/BasicsHome.html'>Basics</a>\
       <a href='../Code/CodeHome.html'>Code</a>\
-      <a href='../GridExplorer/GridExplorer.html'>Viewer</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
