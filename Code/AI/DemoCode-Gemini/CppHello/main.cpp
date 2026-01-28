@@ -1,6 +1,6 @@
-#include <iostream>
+import <iostream>;
 
 int main() {
-    std::cout << "Hello C++ World!" << std::endl;
+    std::cout << "Hello, World!" << std::endl;
     return 0;
 }
