@@ -31,7 +31,7 @@ function closeMenus() {
     // pgs.classList.add('hidden');
     hideElement('pages');
   }
-  window.parent.postMessage(makeMsg(clear, null));
+  window.parent.postMessage(makeMsg('clear', null));
   // let pklst = document.getElementById('picklist');
   // if(isDefined(pklst)) {
   //   // pgs.classList.add('hidden');
