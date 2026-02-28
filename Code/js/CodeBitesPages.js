@@ -17,6 +17,7 @@ function buildPages() {
         <a href='CodeBites_AgentAI.html'>AI agents</a>\
         <a href='CodeBites_CodeAI.html'>AI consoles</a>\
         <a href='CodeBites_SkillsAI.html'>AI Skills</a>\
+        <a href='CodeBites_AI_Links.html'>AI Links</a>\
         <a href='CodeBites_LLM_API.html'>LLM API</a>\
         <a href='CodeBites_AgenticAI.html'>agentic AI</a>\
       </div>\
