@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Architecture — A Developer's Map</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-hover: #1c2129;
+    --border: #30363d;
+    --border-bright: #484f58;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --text-muted: #656d76;
+    --accent-blue: #58a6ff;
+    --accent-purple: #bc8cff;
+    --accent-green: #3fb950;
+    --accent-orange: #d29922;
+    --accent-red: #f85149;
+    --accent-pink: #f778ba;
+    --accent-cyan: #76e3ea;
+    --glow-blue: rgba(88, 166, 255, 0.15);
+    --glow-purple: rgba(188, 140, 255, 0.15);
+    --glow-green: rgba(63, 185, 80, 0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Serif 4', Georgia, serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  .noise-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  }
+
+  header {
+    padding: 3rem 2rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(88,166,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: clamp(1.6rem, 4vw, 2.6rem);
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple), var(--accent-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+  }
+
+  header .subtitle {
+    font-size: 1rem;
+    color: var(--text-dim);
+    font-weight: 300;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  header .tag {
+    display: inline-block;
+    margin-top: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent-green);
+    background: rgba(63, 185, 80, 0.1);
+    border: 1px solid rgba(63, 185, 80, 0.25);
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1.5rem 4rem;
+  }
+
+  /* ── PIPELINE SECTION ── */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+  }
+
+  .pipeline::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--border) 0px,
+      var(--border) 6px,
+      transparent 6px,
+      transparent 12px
+    );
+    transform: translateX(-50%);
+    z-index: 0;
+  }
+
+  .stage {
+    position: relative;
+    z-index: 1;
+    opacity: 0;
+    transform: translateY(24px);
+    animation: fadeUp 0.5s ease forwards;
+  }
+
+  .stage:nth-child(1) { animation-delay: 0.1s; }
+  .stage:nth-child(2) { animation-delay: 0.2s; }
+  .stage:nth-child(3) { animation-delay: 0.3s; }
+  .stage:nth-child(4) { animation-delay: 0.4s; }
+  .stage:nth-child(5) { animation-delay: 0.5s; }
+  .stage:nth-child(6) { animation-delay: 0.6s; }
+  .stage:nth-child(7) { animation-delay: 0.7s; }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .stage-connector {
+    display: flex;
+    justify-content: center;
+    padding: 0.75rem 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .connector-arrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    background: var(--bg);
+    padding: 0.2rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .stage-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .stage-card:hover {
+    border-color: var(--border-bright);
+  }
+
+  .stage-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+  }
+
+  .stage-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 1.5rem;
+    right: 1.5rem;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .stage-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 600;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    flex-shrink: 0;
+    letter-spacing: 0;
+  }
+
+  .stage-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 0.95rem;
+    flex: 1;
+  }
+
+  .stage-analogy {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-style: italic;
+    font-family: 'Source Serif 4', serif;
+  }
+
+  .expand-icon {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    transition: transform 0.3s;
+  }
+
+  .stage-card.open .expand-icon {
+    transform: rotate(45deg);
+  }
+
+  .stage-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+  }
+
+  .stage-card.open .stage-body {
+    max-height: 2000px;
+  }
+
+  .stage-content {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .stage-desc {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+    line-height: 1.7;
+  }
+
+  /* ── VISUAL DIAGRAMS ── */
+  .visual-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin: 1rem 0;
+    overflow-x: auto;
+  }
+
+  .visual-box pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    line-height: 1.55;
+    color: var(--text-dim);
+    white-space: pre;
+    margin: 0;
+  }
+
+  .visual-box .hl-blue { color: var(--accent-blue); }
+  .visual-box .hl-purple { color: var(--accent-purple); }
+  .visual-box .hl-green { color: var(--accent-green); }
+  .visual-box .hl-orange { color: var(--accent-orange); }
+  .visual-box .hl-red { color: var(--accent-red); }
+  .visual-box .hl-pink { color: var(--accent-pink); }
+  .visual-box .hl-cyan { color: var(--accent-cyan); }
+  .visual-box .hl-dim { color: var(--text-muted); }
+  .visual-box .hl-bright { color: var(--text); }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .detail-item {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+  }
+
+  .detail-item .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.3rem;
+  }
+
+  .detail-item .value {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8em;
+    background: rgba(255,255,255,0.06);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    color: var(--accent-cyan);
+  }
+
+  /* ── COLOR THEMES PER STAGE ── */
+  .theme-input .stage-number { background: rgba(88,166,255,0.15); color: var(--accent-blue); }
+  .theme-input .stage-card:hover { box-shadow: 0 0 20px rgba(88,166,255,0.06); }
+  .theme-input .detail-item .label { color: var(--accent-blue); }
+
+  .theme-embed .stage-number { background: rgba(63,185,80,0.15); color: var(--accent-green); }
+  .theme-embed .stage-card:hover { box-shadow: 0 0 20px rgba(63,185,80,0.06); }
+  .theme-embed .detail-item .label { color: var(--accent-green); }
+
+  .theme-attn .stage-number { background: rgba(188,140,255,0.15); color: var(--accent-purple); }
+  .theme-attn .stage-card:hover { box-shadow: 0 0 20px rgba(188,140,255,0.06); }
+  .theme-attn .detail-item .label { color: var(--accent-purple); }
+
+  .theme-ffn .stage-number { background: rgba(210,153,34,0.15); color: var(--accent-orange); }
+  .theme-ffn .stage-card:hover { box-shadow: 0 0 20px rgba(210,153,34,0.06); }
+  .theme-ffn .detail-item .label { color: var(--accent-orange); }
+
+  .theme-stack .stage-number { background: rgba(247,120,186,0.15); color: var(--accent-pink); }
+  .theme-stack .stage-card:hover { box-shadow: 0 0 20px rgba(247,120,186,0.06); }
+  .theme-stack .detail-item .label { color: var(--accent-pink); }
+
+  .theme-output .stage-number { background: rgba(118,227,234,0.15); color: var(--accent-cyan); }
+  .theme-output .stage-card:hover { box-shadow: 0 0 20px rgba(118,227,234,0.06); }
+  .theme-output .detail-item .label { color: var(--accent-cyan); }
+
+  .theme-train .stage-number { background: rgba(248,81,73,0.15); color: var(--accent-red); }
+  .theme-train .stage-card:hover { box-shadow: 0 0 20px rgba(248,81,73,0.06); }
+  .theme-train .detail-item .label { color: var(--accent-red); }
+
+  /* ── BIG PICTURE SECTION ── */
+  .big-picture {
+    margin-top: 3rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    opacity: 0;
+    animation: fadeUp 0.5s ease 0.9s forwards;
+  }
+
+  .big-picture h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    color: var(--text);
+  }
+
+  .scale-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+
+  .scale-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+  }
+
+  .scale-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+  }
+
+  .scale-table tr:last-child td { border-bottom: none; }
+
+  .scale-table .model-name { color: var(--text); font-weight: 500; }
+
+  footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  @media (max-width: 700px) {
+    .pipeline::before { left: 24px; }
+    .detail-grid { grid-template-columns: 1fr; }
+    .stage-analogy { display: none; }
+    header { padding: 2rem 1rem 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="noise-overlay"></div>
+
+<header>
+  <h1>LLM Architecture</h1>
+  <p class="subtitle">How Large Language Models process text — a developer's walkthrough from input to output</p>
+  <span class="tag">Transformer-based decoder architecture</span>
+</header>
+
+<div class="container">
+
+  <!-- ═══════════ FULL PIPELINE OVERVIEW ═══════════ -->
+  <div class="visual-box" style="margin-bottom: 2.5rem; opacity:0; animation: fadeUp 0.5s ease 0.05s forwards;">
+    <pre>
+<span class="hl-dim">┌─────────────────────────────────────────────────────────────────────────────────────┐</span>
+<span class="hl-dim">│</span>  <span class="hl-bright">THE FULL PIPELINE</span>  <span class="hl-dim">(click each stage below for details)</span>                           <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>                                                                                     <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>  <span class="hl-blue">❶ INPUT</span>         <span class="hl-green">❷ EMBED</span>        <span class="hl-purple">❸ ATTENTION</span>      <span class="hl-orange">❹ FFN</span>                        <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>  <span class="hl-blue">"Hello world"</span> → <span class="hl-green">[0.2, -0.1,</span> → <span class="hl-purple">tokens look</span>   → <span class="hl-orange">transform</span>  ─┐                     <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>  <span class="hl-blue">→ [15496, 995]</span>  <span class="hl-green"> 0.8, ...]</span>    <span class="hl-purple">at each other</span>   <span class="hl-orange">& reason</span>   │                     <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>                                                         │ <span class="hl-pink">❺ ×N LAYERS</span>          <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>                    <span class="hl-cyan">❻ OUTPUT</span>      <span class="hl-orange">❹ FFN</span>        <span class="hl-purple">❸ ATTN</span>  │ <span class="hl-pink">(repeat ❸→❹)</span>          <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>                    <span class="hl-cyan">"!" ← sample</span> ← <span class="hl-orange">transform</span>  ← <span class="hl-purple">attend</span> ←─┘                     <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>                    <span class="hl-cyan">from probs</span>     <span class="hl-orange">& reason</span>    <span class="hl-purple">again</span>                         <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>                                                                                     <span class="hl-dim">│</span>
+<span class="hl-dim">└─────────────────────────────────────────────────────────────────────────────────────┘</span>
+</pre>
+  </div>
+
+  <!-- ═══════════ PIPELINE STAGES ═══════════ -->
+  <div class="pipeline">
+
+    <!-- ── STAGE 1: INPUT / TOKENIZATION ── -->
+    <div class="stage theme-input">
+      <div class="stage-card" onclick="toggle(this)">
+        <div class="stage-header">
+          <div class="stage-number">01</div>
+          <div class="stage-title">Tokenization</div>
+          <div class="stage-analogy">like a compiler's lexer</div>
+          <div class="expand-icon">+</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-content">
+            <div class="stage-desc">
+              Raw text is split into <strong>tokens</strong> — sub-word chunks from a fixed vocabulary (typically 32k–128k entries). This isn't word-splitting; it uses algorithms like Byte-Pair Encoding (BPE) that learn common character sequences from data. Each token maps to an integer ID.
+            </div>
+            <div class="visual-box">
+              <pre>
+<span class="hl-bright">Input:</span>  <span class="hl-blue">"Unbelievable!"</span>
+
+<span class="hl-bright">Step 1 — Tokenize:</span>
+  <span class="hl-blue">"Un"</span>  <span class="hl-blue">"believ"</span>  <span class="hl-blue">"able"</span>  <span class="hl-blue">"!"</span>
+
+<span class="hl-bright">Step 2 — Map to IDs:</span>
+  <span class="hl-green">[  1400,    25191,     481,     0  ]</span>
+
+<span class="hl-dim">Common words → 1 token       ("the" → 262)</span>
+<span class="hl-dim">Rare words   → many tokens   ("defenestrate" → "def" + "en" + "est" + "rate")</span>
+<span class="hl-dim">Code tokens  → "  " (2 spaces), "func", "return", etc.</span>
+</pre>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="label">Algorithm</div>
+                <div class="value">Byte-Pair Encoding (BPE) or SentencePiece. Trained on the corpus to find optimal splits.</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">Dev analogy</div>
+                <div class="value">Like a lexer turning source code into tokens — but for natural language, optimized for compression.</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">Why sub-words?</div>
+                <div class="value">Handles any text (typos, new words, code) with a finite vocabulary. Zero out-of-vocabulary errors.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-connector"><span class="connector-arrow">▼ token IDs</span></div>
+
+    <!-- ── STAGE 2: EMBEDDING ── -->
+    <div class="stage theme-embed">
+      <div class="stage-card" onclick="toggle(this)">
+        <div class="stage-header">
+          <div class="stage-number">02</div>
+          <div class="stage-title">Embedding + Positional Encoding</div>
+          <div class="stage-analogy">like a hash map → dense vector</div>
+          <div class="expand-icon">+</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-content">
+            <div class="stage-desc">
+              Each token ID becomes a high-dimensional vector (e.g., 4096 floats) via a learned lookup table. A <strong>positional encoding</strong> is added so the model knows token order — without this, "dog bites man" and "man bites dog" would be identical.
+            </div>
+            <div class="visual-box">
+              <pre>
+<span class="hl-bright">Embedding Matrix</span> <span class="hl-dim">(vocab_size × d_model)</span>
+<span class="hl-dim">┌──────────────────────────────────────────────┐</span>
+<span class="hl-dim">│</span>  token 0   → <span class="hl-green">[ 0.02, -0.15,  0.44, ... ]</span>    <span class="hl-dim">│</span>  <span class="hl-dim">d_model</span>
+<span class="hl-dim">│</span>  token 1   → <span class="hl-green">[-0.31,  0.08,  0.22, ... ]</span>    <span class="hl-dim">│</span>  <span class="hl-dim">= 4096</span>
+<span class="hl-dim">│</span>  token 2   → <span class="hl-green">[ 0.17,  0.59, -0.03, ... ]</span>    <span class="hl-dim">│</span>  <span class="hl-dim">floats</span>
+<span class="hl-dim">│</span>  <span class="hl-dim">...         (vocab_size rows)</span>                <span class="hl-dim">│</span>
+<span class="hl-dim">└──────────────────────────────────────────────┘</span>
+
+<span class="hl-bright">token_embedding</span>  <span class="hl-dim">=</span>  <span class="hl-green">embed_matrix[token_id]</span>
+<span class="hl-bright">final_embedding</span>  <span class="hl-dim">=</span>  <span class="hl-green">token_embedding</span> <span class="hl-bright">+</span> <span class="hl-blue">position_encoding</span>
+
+<span class="hl-dim">Semantically similar words land near each other:</span>
+  <span class="hl-green">cosine_sim("king", "queen")</span>  <span class="hl-dim">≈ 0.85</span>
+  <span class="hl-green">cosine_sim("king", "banana")</span> <span class="hl-dim">≈ 0.12</span>
+</pre>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="label">Shape</div>
+                <div class="value">Input: <code>[batch, seq_len]</code> ints → Output: <code>[batch, seq_len, d_model]</code> floats</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">Position encoding</div>
+                <div class="value">Modern models use RoPE (Rotary Position Embeddings) — encodes position via rotation matrices. Generalizes to unseen sequence lengths.</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">Key insight</div>
+                <div class="value">Embeddings are <em>learned</em>, not hand-designed. The model discovers that "king − man + woman ≈ queen" during training.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-connector"><span class="connector-arrow">▼ vectors [seq_len × d_model]</span></div>
+
+    <!-- ── STAGE 3: SELF-ATTENTION ── -->
+    <div class="stage theme-attn">
+      <div class="stage-card open" onclick="toggle(this)">
+        <div class="stage-header">
+          <div class="stage-number">03</div>
+          <div class="stage-title">Multi-Head Self-Attention</div>
+          <div class="stage-analogy">the core innovation</div>
+          <div class="expand-icon">+</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-content">
+            <div class="stage-desc">
+              This is the heart of the Transformer. Each token computes <strong>how much to attend to every other token</strong>. It asks: "given what I represent, which other tokens in this sequence are relevant to me?" Three learned projections — <strong>Query, Key, Value</strong> — make this work.
+            </div>
+            <div class="visual-box">
+              <pre>
+<span class="hl-bright">For each token, compute three vectors:</span>
+
+  <span class="hl-purple">Q</span> = embedding × <span class="hl-purple">W_q</span>     <span class="hl-dim">← "What am I looking for?"</span>
+  <span class="hl-blue">K</span> = embedding × <span class="hl-blue">W_k</span>     <span class="hl-dim">← "What do I contain?"</span>
+  <span class="hl-green">V</span> = embedding × <span class="hl-green">W_v</span>     <span class="hl-dim">← "What info do I carry?"</span>
+
+<span class="hl-bright">Attention scores:</span>
+
+  <span class="hl-orange">scores</span> = softmax( <span class="hl-purple">Q</span> × <span class="hl-blue">Kᵀ</span> / √d_k )
+
+  <span class="hl-dim">        "The"  "cat"  "sat"  "on"</span>
+  <span class="hl-dim">"The"</span>  [ <span class="hl-dim">0.1</span>   <span class="hl-dim">0.4</span>   <span class="hl-dim">0.3</span>   <span class="hl-dim">0.2</span>  ]   <span class="hl-dim">← each row sums to 1</span>
+  <span class="hl-dim">"cat"</span>  [ <span class="hl-dim">0.2</span>   <span class="hl-dim">0.1</span>   <span class="hl-purple">0.5</span>   <span class="hl-dim">0.2</span>  ]   <span class="hl-dim">← "cat" attends heavily to "sat"</span>
+  <span class="hl-dim">"sat"</span>  [ <span class="hl-dim">0.1</span>   <span class="hl-purple">0.6</span>   <span class="hl-dim">0.1</span>   <span class="hl-dim">0.2</span>  ]   <span class="hl-dim">← "sat" attends heavily to "cat"</span>
+  <span class="hl-dim">"on"</span>   [ <span class="hl-dim">0.2</span>   <span class="hl-dim">0.2</span>   <span class="hl-purple">0.4</span>   <span class="hl-dim">0.2</span>  ]
+
+<span class="hl-bright">Output:</span>  output = <span class="hl-orange">scores</span> × <span class="hl-green">V</span>       <span class="hl-dim">← weighted mix of all token values</span>
+
+<span class="hl-bright">Multi-head</span> <span class="hl-dim">(e.g., 32 heads run in parallel):</span>
+  <span class="hl-dim">Head 1 might learn: syntactic relationships (subject↔verb)</span>
+  <span class="hl-dim">Head 2 might learn: coreference ("it" → "the cat")</span>
+  <span class="hl-dim">Head 3 might learn: positional patterns (nearby words)</span>
+  <span class="hl-dim">...then all heads are concatenated and projected back to d_model</span>
+</pre>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="label">Causal mask</div>
+                <div class="value">During generation, token N can only attend to tokens 0..N. This prevents "seeing the future." Implemented as a triangular mask matrix.</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">Complexity</div>
+                <div class="value">O(n²) in sequence length — this is why context windows are expensive. A 100k context = 10 billion attention computations per layer.</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">KV Cache</div>
+                <div class="value">During generation, previously computed K and V are cached so each new token only computes one new row — not the full matrix. Critical optimization.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-connector"><span class="connector-arrow">▼ context-enriched vectors</span></div>
+
+    <!-- ── STAGE 4: FEED-FORWARD NETWORK ── -->
+    <div class="stage theme-ffn">
+      <div class="stage-card" onclick="toggle(this)">
+        <div class="stage-header">
+          <div class="stage-number">04</div>
+          <div class="stage-title">Feed-Forward Network (MLP)</div>
+          <div class="stage-analogy">like a per-token dense layer</div>
+          <div class="expand-icon">+</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-content">
+            <div class="stage-desc">
+              After attention gathers context, each token passes independently through a 2-layer MLP. This is where the model does most of its "reasoning" — transforming the contextualized representation through learned non-linear functions. This is also where most of the model's <strong>stored knowledge</strong> (facts, patterns) lives.
+            </div>
+            <div class="visual-box">
+              <pre>
+<span class="hl-bright">Per token (applied independently to each position):</span>
+
+  <span class="hl-orange">hidden</span>  = <span class="hl-green">activation_fn</span>( x × <span class="hl-orange">W₁</span> + <span class="hl-dim">b₁</span> )    <span class="hl-dim">← expand: d_model → 4×d_model</span>
+  <span class="hl-orange">output</span>  = <span class="hl-orange">hidden</span> × <span class="hl-orange">W₂</span> + <span class="hl-dim">b₂</span>              <span class="hl-dim">← compress: 4×d_model → d_model</span>
+
+<span class="hl-dim">Example dimensions (Llama 70B):</span>
+  <span class="hl-dim">d_model = 8192</span>
+  <span class="hl-dim">d_ffn   = 28672  (3.5× expansion with SwiGLU)</span>
+
+<span class="hl-bright">Residual connection + LayerNorm:</span>
+
+  x = <span class="hl-cyan">LayerNorm</span>( x + <span class="hl-purple">Attention</span>(x) )
+  x = <span class="hl-cyan">LayerNorm</span>( x + <span class="hl-orange">FFN</span>(x) )
+                 <span class="hl-dim">↑</span>
+        <span class="hl-dim">skip connection — the original signal</span>
+        <span class="hl-dim">always passes through. The model learns</span>
+        <span class="hl-dim">to ADD refinements, not replace.</span>
+</pre>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="label">Activation</div>
+                <div class="value">Modern LLMs use SwiGLU: <code>SwiGLU(x) = Swish(xW₁) ⊙ xW₃</code>. A gated variant that outperforms ReLU.</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">Parameter count</div>
+                <div class="value">~⅔ of the model's total parameters are in FFN layers. This is the "memory bank" of facts and patterns.</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">Residual stream</div>
+                <div class="value">Think of it as a shared bus — attention writes context, FFN writes transformations, all additive. Solves vanishing gradients.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-connector"><span class="connector-arrow">▼ repeat N times</span></div>
+
+    <!-- ── STAGE 5: LAYER STACKING ── -->
+    <div class="stage theme-stack">
+      <div class="stage-card" onclick="toggle(this)">
+        <div class="stage-header">
+          <div class="stage-number">05</div>
+          <div class="stage-title">Stacked Transformer Layers</div>
+          <div class="stage-analogy">like a deep call stack</div>
+          <div class="expand-icon">+</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-content">
+            <div class="stage-desc">
+              Stages 3 and 4 (attention + FFN) form one <strong>Transformer layer</strong>. Modern LLMs stack 32 to 128+ of these layers. Each layer refines the representation — early layers handle syntax and simple patterns, later layers handle semantics and complex reasoning.
+            </div>
+            <div class="visual-box">
+              <pre>
+<span class="hl-bright">Layer Progression</span> <span class="hl-dim">(what each depth "learns")</span>
+
+  <span class="hl-dim">Layer  0–10:</span>  <span class="hl-green">Surface patterns</span> — POS tags, punctuation, local syntax
+  <span class="hl-dim">Layer 10–30:</span>  <span class="hl-blue">Semantics</span> — word sense, entity types, relationships
+  <span class="hl-dim">Layer 30–60:</span>  <span class="hl-purple">Reasoning</span> — multi-step inference, analogies, logic
+  <span class="hl-dim">Layer 60–80:</span>  <span class="hl-orange">Task execution</span> — formatting, instruction following
+  <span class="hl-dim">Layer 80+  :</span>  <span class="hl-pink">Output shaping</span> — final token prediction refinement
+
+<span class="hl-bright">Residual stream view:</span>
+
+  <span class="hl-dim">input</span> ──→ <span class="hl-green">[+Attn₁]</span> → <span class="hl-green">[+FFN₁]</span> → <span class="hl-blue">[+Attn₂]</span> → <span class="hl-blue">[+FFN₂]</span> → <span class="hl-dim">...</span> → <span class="hl-pink">[+AttnN]</span> → <span class="hl-pink">[+FFNN]</span> → <span class="hl-dim">output</span>
+           <span class="hl-dim">↑_______________________________________________↑</span>
+            <span class="hl-dim">original signal persists through all layers (residual connections)</span>
+</pre>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="label">Typical depth</div>
+                <div class="value">GPT-3: 96 layers. Llama 3 70B: 80 layers. Claude Sonnet-class: likely 60–100+. More layers = more "thinking steps."</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">Residual stream</div>
+                <div class="value">The key abstraction: data flows through a "stream" and each layer adds a delta. Like middleware in a server stack — each one modifies the request.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-connector"><span class="connector-arrow">▼ final hidden states</span></div>
+
+    <!-- ── STAGE 6: OUTPUT / SAMPLING ── -->
+    <div class="stage theme-output">
+      <div class="stage-card" onclick="toggle(this)">
+        <div class="stage-header">
+          <div class="stage-number">06</div>
+          <div class="stage-title">Output Head & Sampling</div>
+          <div class="stage-analogy">like a probability distribution → pick</div>
+          <div class="expand-icon">+</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-content">
+            <div class="stage-desc">
+              The final hidden state of the <em>last</em> token is projected back to vocabulary-size logits, then converted to probabilities via softmax. The model picks the next token from this distribution — and the choice of <strong>sampling strategy</strong> dramatically affects output quality.
+            </div>
+            <div class="visual-box">
+              <pre>
+<span class="hl-bright">Projection to vocabulary:</span>
+
+  <span class="hl-cyan">logits</span> = hidden_state × <span class="hl-cyan">W_output</span>      <span class="hl-dim">← shape: [d_model] → [vocab_size]</span>
+  <span class="hl-cyan">probs</span>  = softmax( <span class="hl-cyan">logits</span> / <span class="hl-orange">temperature</span> )
+
+<span class="hl-bright">Example output distribution:</span>
+<span class="hl-dim">  "The cat sat on the ___"</span>
+
+  <span class="hl-green">mat</span>     ████████████████████  <span class="hl-green">34%</span>
+  <span class="hl-green">floor</span>   ███████████████       <span class="hl-green">22%</span>
+  <span class="hl-green">couch</span>   ██████████            <span class="hl-green">15%</span>
+  <span class="hl-dim">bed</span>     ██████                <span class="hl-dim">9%</span>
+  <span class="hl-dim">table</span>   ████                  <span class="hl-dim">6%</span>
+  <span class="hl-dim">...</span>     <span class="hl-dim">(remaining ~50k tokens share the last 14%)</span>
+
+<span class="hl-bright">Sampling strategies:</span>
+  <span class="hl-orange">temperature=0</span>   → always pick "mat"            <span class="hl-dim">(deterministic)</span>
+  <span class="hl-orange">temperature=0.7</span> → usually "mat" or "floor"     <span class="hl-dim">(balanced)</span>
+  <span class="hl-orange">temperature=1.5</span> → might pick "windowsill"      <span class="hl-dim">(creative)</span>
+  <span class="hl-cyan">top_p=0.9</span>       → sample from top 90% of mass  <span class="hl-dim">(nucleus sampling)</span>
+  <span class="hl-cyan">top_k=50</span>        → sample from top 50 tokens    <span class="hl-dim">(truncation)</span>
+</pre>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="label">Autoregressive loop</div>
+                <div class="value">The chosen token is appended to the sequence, and the <em>entire forward pass</em> runs again for the next token. Generation is inherently sequential.</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">Speed bottleneck</div>
+                <div class="value">Each token requires a full forward pass. A 1000-token response needs 1000 passes. KV caching makes each pass O(1) new computation.</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">Weight tying</div>
+                <div class="value"><code>W_output</code> often shares weights with the embedding matrix (transposed). One matrix serves double duty, saving billions of parameters.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-connector"><span class="connector-arrow">▼ model ships — but how?</span></div>
+
+    <!-- ── STAGE 7: TRAINING ── -->
+    <div class="stage theme-train">
+      <div class="stage-card" onclick="toggle(this)">
+        <div class="stage-header">
+          <div class="stage-number">07</div>
+          <div class="stage-title">Training Pipeline</div>
+          <div class="stage-analogy">how all these weights are learned</div>
+          <div class="expand-icon">+</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-content">
+            <div class="stage-desc">
+              Training happens in three major phases. First, massive self-supervised pre-training on internet-scale text. Then supervised fine-tuning on curated examples. Finally, RLHF/RLAIF to align the model with human preferences — this is what makes a raw text predictor into a useful assistant.
+            </div>
+            <div class="visual-box">
+              <pre>
+<span class="hl-bright">Phase 1: Pre-training</span> <span class="hl-dim">(weeks on thousands of GPUs)</span>
+<span class="hl-dim">┌─────────────────────────────────────────────────────────────┐</span>
+<span class="hl-dim">│</span>  Objective: <span class="hl-red">next-token prediction</span>                          <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>                                                             <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>  Input:  "The capital of France is"                         <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>  Target: "Paris"                                            <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>  Loss:   <span class="hl-red">cross_entropy(predicted_probs, "Paris")</span>             <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>                                                             <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>  Data: ~10-15 trillion tokens (web, books, code, papers)    <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>  Cost: $10M–$100M+ in compute                              <span class="hl-dim">│</span>
+<span class="hl-dim">└─────────────────────────────────────────────────────────────┘</span>
+           <span class="hl-dim">↓</span>
+<span class="hl-bright">Phase 2: Supervised Fine-Tuning (SFT)</span>
+<span class="hl-dim">┌─────────────────────────────────────────────────────────────┐</span>
+<span class="hl-dim">│</span>  Train on curated <span class="hl-blue">(instruction, response)</span> pairs             <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>  Teaches the model to follow instructions and be helpful    <span class="hl-dim">│</span>
+<span class="hl-dim">└─────────────────────────────────────────────────────────────┘</span>
+           <span class="hl-dim">↓</span>
+<span class="hl-bright">Phase 3: RLHF / Constitutional AI</span>
+<span class="hl-dim">┌─────────────────────────────────────────────────────────────┐</span>
+<span class="hl-dim">│</span>  1. Generate multiple responses to a prompt                 <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>  2. Human (or AI) ranks them: <span class="hl-green">Response A</span> > <span class="hl-red">Response B</span>       <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>  3. Train a <span class="hl-purple">reward model</span> on these preferences               <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>  4. Use PPO/DPO to optimize the LLM against the reward     <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>                                                             <span class="hl-dim">│</span>
+<span class="hl-dim">│</span>  This is what makes "raw GPT" → "ChatGPT"                  <span class="hl-dim">│</span>
+<span class="hl-dim">└─────────────────────────────────────────────────────────────┘</span>
+</pre>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="label">Optimizer</div>
+                <div class="value">AdamW with learning rate warmup + cosine decay. Gradient checkpointing saves memory at the cost of recomputation.</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">Parallelism</div>
+                <div class="value">Models are too large for one GPU. Training uses tensor parallelism (split layers), pipeline parallelism (split stages), and data parallelism (split batches).</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">Key insight</div>
+                <div class="value">Pre-training learns <em>capabilities</em>. RLHF learns <em>when and how to use them</em>. The base model can write poetry — RLHF teaches it to do so when asked.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /pipeline -->
+
+  <!-- ═══════════ SCALE REFERENCE ═══════════ -->
+  <div class="big-picture">
+    <h2>Scale Reference — Real Models</h2>
+    <table class="scale-table">
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Parameters</th>
+          <th>Layers</th>
+          <th>d_model</th>
+          <th>Heads</th>
+          <th>Context</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="model-name">GPT-2</td>
+          <td>1.5B</td>
+          <td>48</td>
+          <td>1600</td>
+          <td>25</td>
+          <td>1,024</td>
+        </tr>
+        <tr>
+          <td class="model-name">Llama 3 8B</td>
+          <td>8B</td>
+          <td>32</td>
+          <td>4096</td>
+          <td>32</td>
+          <td>128k</td>
+        </tr>
+        <tr>
+          <td class="model-name">Llama 3 70B</td>
+          <td>70B</td>
+          <td>80</td>
+          <td>8192</td>
+          <td>64</td>
+          <td>128k</td>
+        </tr>
+        <tr>
+          <td class="model-name">GPT-4 (est.)</td>
+          <td>~1.8T (MoE)</td>
+          <td>~120</td>
+          <td>~12288</td>
+          <td>~96</td>
+          <td>128k</td>
+        </tr>
+        <tr>
+          <td class="model-name">DeepSeek V3</td>
+          <td>671B (MoE)</td>
+          <td>61</td>
+          <td>7168</td>
+          <td>128</td>
+          <td>128k</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<footer>
+  Transformer architecture (Vaswani et al., 2017) — "Attention Is All You Need"
+</footer>
+
+<script>
+  function toggle(card) {
+    card.classList.toggle('open');
+  }
+</script>
+</body>
+</html>
