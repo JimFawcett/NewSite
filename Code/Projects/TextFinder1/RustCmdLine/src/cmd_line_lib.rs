@@ -51,9 +51,13 @@ use std::fs::*;
 
 /// display command line arguments
 pub fn show_cmd_line() {
-    print!("\n  {:?}\n  ", args().next());
-    for arg in args().skip(1) {
-        print!("{:?} ", arg)
+    print!("\n  {:?}\n  ", args().next().unwrap_or_default());
+    let mut iter = args().skip(1).peekable();
+    while let Some(arg) = iter.next() {
+        print!("{:?}", arg);
+        if iter.peek().is_some() {
+            print!(" ");
+        }
     }
 }
 

@@ -4,7 +4,7 @@
 // Jim Fawcett, https://JimFawcett.github.io, 19 Apr 2020  //
 /////////////////////////////////////////////////////////////
 
-use rust_cmd_line::*;
+use cmd_line_lib::*;  // lib name here, not package name
 
 fn main() {
 
