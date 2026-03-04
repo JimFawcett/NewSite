@@ -2,8 +2,9 @@
 ## rust_cmd_line project notes
 ### project setup using claude code in VS Code
 1. created TextFinder1 project folder
-2. copied RustTextfinder repo code into folder
-3. changed the name of the library from default lib.rs to cmd_line_lib and name of package to rust_cmd_line.
+2. copied RustTextfinder repo code into folder and opened subfolder RustCmdLine to work on 
+command line processing.
+3. changed the name of the command line parser library from default lib.rs to cmd_line_lib and name of package to rust_cmd_line.
 4. debugged and fixed the name changes.
 ### create specification markdown
 5. prompted claude code to create a specification file that matched the code in rust_cmd_line_lib.rs
