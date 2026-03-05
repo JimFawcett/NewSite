@@ -181,7 +181,7 @@ fn main() {
     parser.default_options();
     parser.parse();
 
-    if parser.options().contains_key(&'h') {
+    if std::env::args().len() == 1 || parser.options().contains_key(&'h') {
         print!("\n{}\n", help());
         return;
     }

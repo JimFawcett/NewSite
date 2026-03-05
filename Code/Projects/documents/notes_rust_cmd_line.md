@@ -69,5 +69,17 @@ directory holding cargo.toml.
 8. I asked claude to create a specification for text_finder.rs
 9. I cleaned and rebuilt text_finder and test1 and ran them successfully.
 10. posted changes to github
-
+11. asked claude to modify specification of text_finder to display help string if run with no arguments. I'm testing claude's ability to update files when their specs are updated.
+12. That succeeded and claude noted that this is just prescriptive, i.e., no code was changed.
+13. claude asked if I wanted to make the corresponding changes.  I said yes. One change was implemented in text_finder.rs.
+14. I cleaned, rebuilt, and ran text_finder successfully verifying the change and remaining behaviors
+### ------------------------------------------------------------
+### Summary of application processing changes
+1. text_finder and its helper packages cmd_line_lib and dir_nav_lib were cleaned up by making needed package and file name changes, for maintainability.
+2. specifications were created by claude for each of the packages.
+3. two changes were made to the SPECIFICATIONS to:
+    - provide black-list of directories not to enter, e.g., Target
+    - return help string without scanning if no arguments are supplied to text_finder.
+4. Claude changed two of the three code files to support the spec changes.
+5. new text_finder features tested successfully.
 

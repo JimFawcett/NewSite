@@ -34,7 +34,7 @@ wired together in `main()`.
 | `/h` | Display help message and exit | *(off)* |
 
 The `target` directory is always excluded from traversal regardless of command
-line arguments.
+line arguments. Running with no arguments displays the help message and exits.
 
 ---
 
@@ -180,7 +180,8 @@ Otherwise prints a brief one-line summary of path, patterns, and regex.
 ### `help() -> String`
 
 Builds and returns a formatted help string listing all supported options with
-their default values. Called when `/h` is present on the command line.
+their default values. Called when `/h` is present on the command line or when
+no arguments are provided.
 
 ---
 
@@ -189,7 +190,8 @@ their default values. Called when `/h` is present on the command line.
 **Flow:**
 
 1. Create `CmdLineParse`, call `default_options()` then `parse()`.
-2. If `/h` is present, print the help string and return.
+2. If no arguments were provided (`std::env::args().len() == 1`) or `/h` is
+   present, print the help string and return.
 3. Create `DirNav::<TfAppl>::new()` and immediately call `add_skip("target")`
    to exclude Cargo build output directories.
 4. If `/s` is present, set `DirNav::recurse` and `TfAppl::recurse` from its
