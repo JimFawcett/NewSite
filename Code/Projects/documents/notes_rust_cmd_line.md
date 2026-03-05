@@ -34,8 +34,8 @@ directory holding cargo.toml.
   - translate to another language by instructing claude to use a new language, e.g., C++ 
 ### ------------------------------------------------------------
 ### Observations:
-1. building spec is almost as hard as building the code
-2. When starting from scratch it seems plausible to:
+1. building spec before code is almost as hard as building the code
+2. When starting without code it seems plausible to:
    - write a little package code
    - ask claude to build a spec for that beginning
    - verify code and spec match
