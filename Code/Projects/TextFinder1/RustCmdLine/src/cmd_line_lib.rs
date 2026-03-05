@@ -1,7 +1,8 @@
 /////////////////////////////////////////////////////////////
-// rust_cmd_line::lib.rs                                   //
+// cmd_line_lib.rs                                         //
 //                                                         //
 // Jim Fawcett, https://JimFawcett.github.io, 19 Apr 2020  //
+// Revised: 05 Mar 2026                                    //
 /////////////////////////////////////////////////////////////
 
 use std::env::{args};
@@ -28,26 +29,26 @@ use std::fs::*;
 /////////////////////////////////////////////////////////////
 // CmdLineParse methods
 //-----------------------------------------------------------
-// new() -> CmdLineParse
-// parse(&self)
-// contains_option(&self, opt: char) -> bool
-// value(&self, char opt) -> &str
-// options(&self) -> &HashMap<char, String>
-// - defaults are created with default_options():
+// new() -> Self
+// parse(&mut self)
+// default_options(&mut self)
 //   - /P "."    - root search path is current directory
 //   - /s "true" - recurse
 //   - /r "."    - match all text
 //   - /H "true" - hide unused directories
-//   - no patterns are equivalent to all files
+// contains_option(&self, opt: char) -> bool
+// add_option(&mut self, o: char, v: &str)
+// value(&self, opt: char) -> &str
+// options(&self) -> &Options
 // path(&self) -> String
 // abs_path(&self) -> String
-// set_path(&self, p:&str)
-// patterns(&self) -> &Vec<String>
-// add_pattern(&mut self, p:&str) -> &mut self
-// set_regex(&mut self, re:&str)
+// set_path(&mut self, p: &str)
+// set_regex(&mut self, re: &str)
 // get_regex(&self) -> &str
-// help(&self) -> String
-// replace_help(&mut self, &str) -> String
+// add_pattern(&mut self, p: &str) -> &mut Self
+// patterns(&self) -> &CmdLinePatterns
+// help(&self) -> &str
+// replace_help(&mut self, s: &str)
 
 /// display command line arguments
 pub fn show_cmd_line() {

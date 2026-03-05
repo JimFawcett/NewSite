@@ -1,0 +1,5 @@
+C:\github\JimFawcett\NewSite\Code\Projects\TextFinder1\RustDirNav\target\debug\examples\test1.d: examples\test1.rs
+
+C:\github\JimFawcett\NewSite\Code\Projects\TextFinder1\RustDirNav\target\debug\examples\test1.exe: examples\test1.rs
+
+examples\test1.rs:

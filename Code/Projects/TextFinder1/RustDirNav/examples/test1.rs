@@ -1,10 +1,10 @@
 /////////////////////////////////////////////////////////////
-// rust_dir_nav::test1.rs                                  //
+// test1.rs                                                //
 //                                                         //
 // Jim Fawcett, https://JimFawcett.github.io, 12 Apr 2020  //
 /////////////////////////////////////////////////////////////
 
-use rust_dir_nav::*;
+use dir_nav_lib::*;
 #[allow(unused_imports)]
 use std::env::current_dir;
 use std::io;
