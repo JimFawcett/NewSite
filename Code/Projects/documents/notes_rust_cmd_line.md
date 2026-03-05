@@ -43,4 +43,5 @@ directory holding cargo.toml.
    - ask claude to modify the spec
    - verify
    - continue until package is complete
+3. Completed spec is readable, close to README documentation, but much more detailed.
 ### ------------------------------------------------------------
