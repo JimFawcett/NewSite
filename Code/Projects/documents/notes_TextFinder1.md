@@ -77,11 +77,13 @@ directory holding cargo.toml.
 ### Summary of application processing changes
 1. text_finder and its helper packages cmd_line_lib and dir_nav_lib were cleaned up by making needed package and file name changes, for maintainability.
 2. specifications were created from code by claude for each of the packages and spec/code verified to match.
-3. two changes were made to the text_finder SPECIFICATION to:
-    - provide black-list of directories not to enter, e.g., Target
-    - return help string without scanning if no arguments are supplied to text_finder.
-4. Claude changed two of the three code files to support the spec changes.
-5. these new text_finder features tested successfully.
+3. two changes were made to the text_finder project to:
+    - provide black-list of directories not to enter, e.g., Target\
+    changed code then updated spec
+    - return help string without scanning if no arguments are supplied to text_finder\
+    changed spec then updated code
+4. Claude changed two of the three code files and spec to support these changes.
+5. the new text_finder features tested successfully.
 ### ------------------------------------------------------------
 ### Next Steps
 1. have claude list all of the requirements of text_finder as assertions.
@@ -89,3 +91,15 @@ directory holding cargo.toml.
 3. generate a powershell script that builds and runs all of the production tests.
 4. if that works, we have a very powerful way of implementing requirements driven implementation.
 5. ask claude to summarize the console chat that implemented all of this as a way of documenting the technique.
+### ------------------------------------------------------------
+### RustTextFinder production tests based on specification
+1. opened a new git branch 
+1. asked claude to generate a Req_TextFinder.md that, for each requirement in RustTextFinder_Spec.md, displays the name of the requirement and a list of assertions it must meet. That succeeded
+2. Asked claude to create a Rust application that verifies each of the assertions, above, by running text_finder with appropriate command line arguments and verifies based on output.
+3. That request ran out of context and was restarted. It completed and provided a Design summary.
+4. Built application RustTfVerify::main - succeeded
+5. Ran application: nicely formatted display showing Requirement, Assertion, and Result. 28 tests passed, 3 failed, 12 skipped as they depended on internal state not visible to verifier.
+6. Very impressive:
+    - verifier executes text_finder in sibling directory.
+    - uses assertions extracted by claude from specification document
+    - verifies assertions looking at text_finder output and its command line
