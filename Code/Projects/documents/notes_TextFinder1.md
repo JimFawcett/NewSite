@@ -96,7 +96,7 @@ directory holding cargo.toml.
 1. opened a new git branch 
 1. asked claude to generate a Req_TextFinder.md that, for each requirement in RustTextFinder_Spec.md, displays the name of the requirement and a list of assertions it must meet. That succeeded
 2. Asked claude to create a Rust application that verifies each of the assertions, above, by running text_finder with appropriate command line arguments and verifies based on output.
-3. That request ran out of context and was restarted. It completed and provided a Design summary.
+3. That request ran out of context and was restarted after compacting context. It completed and provided a Design summary.
 4. Built application RustTfVerify::main - succeeded
 5. Ran application: nicely formatted display showing Requirement, Assertion, and Result. 28 tests passed, 3 failed, 12 skipped as they depended on internal state not visible to verifier.
 6. Very impressive:
