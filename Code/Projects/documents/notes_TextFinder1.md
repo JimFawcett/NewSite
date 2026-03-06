@@ -76,7 +76,7 @@ directory holding cargo.toml.
 ### ------------------------------------------------------------
 ### Summary of application processing changes
 1. text_finder and its helper packages cmd_line_lib and dir_nav_lib were cleaned up by making needed package and file name changes, for maintainability.
-2. specifications were created by claude for each of the packages.
+2. specifications were created from code by claude for each of the packages and spec/code verified to match.
 3. two changes were made to the SPECIFICATIONS to:
     - provide black-list of directories not to enter, e.g., Target
     - return help string without scanning if no arguments are supplied to text_finder.
