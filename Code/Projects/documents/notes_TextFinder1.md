@@ -77,9 +77,15 @@ directory holding cargo.toml.
 ### Summary of application processing changes
 1. text_finder and its helper packages cmd_line_lib and dir_nav_lib were cleaned up by making needed package and file name changes, for maintainability.
 2. specifications were created from code by claude for each of the packages and spec/code verified to match.
-3. two changes were made to the SPECIFICATIONS to:
+3. two changes were made to the text_finder SPECIFICATION to:
     - provide black-list of directories not to enter, e.g., Target
     - return help string without scanning if no arguments are supplied to text_finder.
 4. Claude changed two of the three code files to support the spec changes.
-5. new text_finder features tested successfully.
-
+5. these new text_finder features tested successfully.
+### ------------------------------------------------------------
+### Next Steps
+1. have claude list all of the requirements of text_finder as assertions.
+2. generate a set of production test binaries that exercise each of the assertions.
+3. generate a powershell script that builds and runs all of the production tests.
+4. if that works, we have a very powerful way of implementing requirements driven implementation.
+5. ask claude to summarize the console chat that implemented all of this as a way of documenting the technique.
