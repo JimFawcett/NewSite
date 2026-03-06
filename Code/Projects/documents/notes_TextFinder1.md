@@ -1,5 +1,5 @@
 ### ------------------------------------------------------------
-## rust_cmd_line project notes
+## TextFinder1 project notes
 ### project setup using claude code in VS Code
 1. created TextFinder1 project folder
 2. copied RustTextfinder repo code into folder
