@@ -94,12 +94,21 @@ directory holding cargo.toml.
 ### ------------------------------------------------------------
 ### RustTextFinder production tests based on specification
 1. opened a new git branch 
-1. asked claude to generate a Req_TextFinder.md that, for each requirement in RustTextFinder_Spec.md, displays the name of the requirement and a list of assertions it must meet. That succeeded
-2. Asked claude to create a Rust application that verifies each of the assertions, above, by running text_finder with appropriate command line arguments and verifies based on output.
-3. That request ran out of context and was restarted after compacting context. It completed and provided a Design summary.
-4. Built application RustTfVerify::main - succeeded
-5. Ran application: nicely formatted display showing Requirement, Assertion, and Result. 28 tests passed, 3 failed, 12 skipped as they depended on internal state not visible to verifier.
-6. Very impressive:
+2. asked claude to generate a Req_TextFinder.md that, for each requirement in RustTextFinder_Spec.md, displays the name of the requirement and a list of assertions it must meet. That succeeded
+3. Asked claude to create a Rust application that verifies each of the assertions, above, by running text_finder with appropriate command line arguments and verifies based on output.
+4. That request ran out of context and was restarted after compacting context. It completed and provided a Design summary.
+5. Built application RustTfVerify::main - succeeded
+6. Ran application: nicely formatted display showing Requirement, Assertion, and Result. 28 tests passed, 3 failed, 12 skipped as they depended on internal state not visible to verifier.
+7. Very impressive:
     - verifier executes text_finder in sibling directory.
     - uses assertions extracted by claude from specification document
     - verifies assertions looking at text_finder output and its command line
+8. Asked claude to analyze the requirements test failures (tests based on spec and matching code)
+    - claude found the (minor) issues 
+    - asked claude to fix them which amounted to moving tests from verifyer to library tests.
+    - that succeeded and all parts (and whole) test successfully
+9. Asked claude to run cargo clean on all packages in project, including the verifyer. That succeeded.
+10. Asked claude to ensure there were no .git folders (which create unwanted git submodules) due to copying project folders. That succeeded - there were none.
+11. Again, very impressive:
+    - Nothing in items 7. through 9. required changing cwd or calling tools. 
+    - Claude did all of that.
