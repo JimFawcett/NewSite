@@ -136,6 +136,75 @@ impl TfAppl {
         self.tf.get_regex()
     }
 }
+/*-- Unit tests for white-box requirements --*/
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /*-- REQ-TF-01: TextFinder::new() initial field values --*/
+    #[test]
+    fn tf_new_re_str_is_empty() {
+        let tf = TextFinder::new();
+        assert_eq!(tf.re_str, "");
+    }
+    #[test]
+    fn tf_new_last_dir_is_empty() {
+        let tf = TextFinder::new();
+        assert_eq!(tf.last_dir, "");
+    }
+
+    /*-- REQ-TF-02: regex()/get_regex() round-trip --*/
+    #[test]
+    fn tf_regex_round_trip() {
+        let mut tf = TextFinder::new();
+        tf.regex("abc|def");
+        assert_eq!(tf.get_regex(), "abc|def");
+    }
+
+    /*-- REQ-TF-06: last_path()/get_last_path() round-trip --*/
+    #[test]
+    fn tf_last_path_round_trip() {
+        let mut tf = TextFinder::new();
+        tf.last_path("some/dir");
+        assert_eq!(tf.get_last_path(), "some/dir");
+    }
+
+    /*-- REQ-TA-01: TfAppl::new() initial field values --*/
+    #[test]
+    fn ta_new_hide_is_true() {
+        let ta = TfAppl::new();
+        assert!(ta.hide);
+    }
+    #[test]
+    fn ta_new_recurse_is_true() {
+        let ta = TfAppl::new();
+        assert!(ta.recurse);
+    }
+    #[test]
+    fn ta_new_curr_dir_is_empty() {
+        let ta = TfAppl::new();
+        assert_eq!(ta.curr_dir, "");
+    }
+
+    /*-- REQ-TA-04: hide()/get_hide() round-trip --*/
+    #[test]
+    fn ta_hide_round_trip() {
+        let mut ta = TfAppl::new();
+        ta.hide(false);
+        assert!(!ta.get_hide());
+        ta.hide(true);
+        assert!(ta.get_hide());
+    }
+
+    /*-- REQ-TA-06: TfAppl::regex() delegates to embedded TextFinder --*/
+    #[test]
+    fn ta_regex_delegates_to_text_finder() {
+        let mut ta = TfAppl::new();
+        ta.regex("hello");
+        assert_eq!(ta.get_regex(), "hello");
+    }
+}
+
 /*-- display title, display options if v(erbose) is true --*/
 fn verbose(parser: &cmd_line_lib::CmdLineParse) {
     const VERSION: &str = env!("CARGO_PKG_VERSION");

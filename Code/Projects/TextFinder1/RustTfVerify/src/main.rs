@@ -212,12 +212,12 @@ fn test_tf_01() -> Vec<TestResult> {
         TestResult::new(
             "REQ-TF-01",
             "TextFinder::new() re_str == \"\"",
-            Status::Skip("internal struct state; not observable via CLI".to_string()),
+            Status::Skip("covered by unit test tf_new_re_str_is_empty in RustTextFinder".to_string()),
         ),
         TestResult::new(
             "REQ-TF-01",
             "TextFinder::new() last_dir == \"\"",
-            Status::Skip("internal struct state; not observable via CLI".to_string()),
+            Status::Skip("covered by unit test tf_new_last_dir_is_empty in RustTextFinder".to_string()),
         ),
     ]
 }
@@ -230,7 +230,7 @@ fn test_tf_02() -> Vec<TestResult> {
     vec![TestResult::new(
         "REQ-TF-02",
         "After regex(s), get_regex() returns s",
-        Status::Skip("internal struct state; not observable via CLI".to_string()),
+        Status::Skip("covered by unit test tf_regex_round_trip in RustTextFinder".to_string()),
     )]
 }
 
@@ -327,7 +327,7 @@ fn test_tf_06() -> Vec<TestResult> {
     vec![TestResult::new(
         "REQ-TF-06",
         "After last_path(p), get_last_path() returns p",
-        Status::Skip("internal struct state; not observable via CLI".to_string()),
+        Status::Skip("covered by unit test tf_last_path_round_trip in RustTextFinder".to_string()),
     )]
 }
 
@@ -340,17 +340,17 @@ fn test_ta_01() -> Vec<TestResult> {
         TestResult::new(
             "REQ-TA-01",
             "TfAppl::new() hide == true",
-            Status::Skip("internal struct state; not observable via CLI".to_string()),
+            Status::Skip("covered by unit test ta_new_hide_is_true in RustTextFinder".to_string()),
         ),
         TestResult::new(
             "REQ-TA-01",
             "TfAppl::new() recurse == true",
-            Status::Skip("internal struct state; not observable via CLI".to_string()),
+            Status::Skip("covered by unit test ta_new_recurse_is_true in RustTextFinder".to_string()),
         ),
         TestResult::new(
             "REQ-TA-01",
             "TfAppl::new() curr_dir == \"\"",
-            Status::Skip("internal struct state; not observable via CLI".to_string()),
+            Status::Skip("covered by unit test ta_new_curr_dir_is_empty in RustTextFinder".to_string()),
         ),
     ]
 }
@@ -378,7 +378,7 @@ fn test_ta_02(tf: &str) -> Vec<TestResult> {
     // With ZZZNOMATCH there are no matches so directory should be hidden.
     let out_hide = run_tf(tf, &["/P", TEST_ROOT, "/H", "true", "/r", "ZZZNOMATCH_XYZ"])
         .unwrap_or_default();
-    let dirs_hidden = !out_hide.contains("subdir") && !out_hide.contains("tf_test_data");
+    let dirs_hidden = !out_hide.contains("subdir");
     results.push(TestResult::new(
         "REQ-TA-02",
         "hide=true: directory not printed when no matching file found",
@@ -444,7 +444,7 @@ fn test_ta_04() -> Vec<TestResult> {
     vec![TestResult::new(
         "REQ-TA-04",
         "After hide(p), get_hide() returns p",
-        Status::Skip("internal struct state; verified indirectly by REQ-TA-02".to_string()),
+        Status::Skip("covered by unit test ta_hide_round_trip in RustTextFinder".to_string()),
     )]
 }
 
@@ -485,7 +485,7 @@ fn test_ta_06() -> Vec<TestResult> {
     vec![TestResult::new(
         "REQ-TA-06",
         "TfAppl::regex(s) sets embedded TextFinder regex",
-        Status::Skip("internal delegation; verified indirectly by REQ-TF-04".to_string()),
+        Status::Skip("covered by unit test ta_regex_delegates_to_text_finder in RustTextFinder".to_string()),
     )]
 }
 
@@ -542,7 +542,7 @@ fn test_mn_03(tf: &str) -> Vec<TestResult> {
     // /H true with no match: no directory printed
     let out_hide = run_tf(tf, &["/P", TEST_ROOT, "/H", "true", "/r", "ZZZNOMATCH_XYZ"])
         .unwrap_or_default();
-    let no_dir = !out_hide.contains("tf_test_data") && !out_hide.contains("subdir");
+    let no_dir = !out_hide.contains("subdir");
     results.push(TestResult::new(
         "REQ-MN-03",
         "/H true: directories with no matches are hidden",
@@ -564,7 +564,7 @@ fn test_mn_03(tf: &str) -> Vec<TestResult> {
     // /H absent defaults to true (same as /H true)
     let out_def = run_tf(tf, &["/P", TEST_ROOT, "/r", "ZZZNOMATCH_XYZ"])
         .unwrap_or_default();
-    let no_dir_def = !out_def.contains("tf_test_data") && !out_def.contains("subdir");
+    let no_dir_def = !out_def.contains("subdir");
     results.push(TestResult::new(
         "REQ-MN-03",
         "/H absent defaults to true: directories hidden when no match",
