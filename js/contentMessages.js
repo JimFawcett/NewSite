@@ -3,6 +3,12 @@
  * ver 1.0 - 19 Feb 2025
  * Jim Fawcett
  */
+// document.addEventListener('DOMContentLOaded', function() {
+//   alert('in addEventListener');
+//   document.getElementById('pages').addEventListener('mouseleave', function() {
+//     hideElement('pages');
+//   })
+// })
 
 function isDefined(elem) {
   if (typeof elem === 'undefined' || elem === null || elem === undefined) {
