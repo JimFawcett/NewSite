@@ -1,11 +1,12 @@
 ///////////////////////////////////////////////////////////
 // main.cpp - TextFinder entry point                     //
 //                                                       //
-// CMake build command:                                  //
+// CMake build commands:                                 //
 //   cmake -S . -B build                                 //
 //   cmake --build build --config Release | Debug        //
-// Run command:                                          //
+// Run commands:                                         //
 //   ./build/Debug/TextFinder.exe                        //
+//   ./build/Release/TextFinder.exe                      //
 //                                                       //
 // Jim Fawcett, https://JimFawcett.github.io             //
 // Uses C++23 named modules + import std                 //
