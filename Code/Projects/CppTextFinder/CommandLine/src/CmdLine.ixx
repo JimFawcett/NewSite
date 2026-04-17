@@ -54,6 +54,9 @@ public:
             "  text_finder [/P <path>] [/p <exts>] [/s <bool>] [/H <bool>]\n"
             "              [/r <regex>] [/v] [/h]\n"
             "\n"
+            "  Flag prefix: both '/' (Windows style) and '-' (Unix style) are accepted,\n"
+            "  e.g. \"/P .\" and \"-P .\" are equivalent.\n"
+            "\n"
             "Options:\n"
             "  /P <path>    Root path for the search              (default: \".\")\n"
             "  /p <exts>    Comma-separated file extensions to\n"
@@ -74,7 +77,7 @@ private:
 
     void parse(int argc, const char* argv[]) {
         auto is_flag = [](const std::string& t) {
-            return t.size() == 2 && t[0] == '/' && std::isalpha(static_cast<unsigned char>(t[1]));
+            return t.size() == 2 && (t[0] == '/' || t[0] == '-') && std::isalpha(static_cast<unsigned char>(t[1]));
         };
         int i = 1;
         while (i < argc) {
