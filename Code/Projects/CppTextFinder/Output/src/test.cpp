@@ -12,8 +12,8 @@ static std::string make_temp_file(const std::string& content)
     namespace fs = std::filesystem;
 
     // Use a unique name under the system temp directory
-    static std::atomic<int> counter{ 0 };
-    int id = counter.fetch_add(1, std::memory_order_relaxed);
+    static int counter = 0;
+    int id = counter++;
 
     fs::path p = fs::temp_directory_path() /
                  ("output_test_" + std::to_string(id) + ".txt");
@@ -23,7 +23,6 @@ static std::string make_temp_file(const std::string& content)
         return {};
 
     ofs << content;
-    ofs.close();
     return p.string();
 }
 
@@ -72,20 +71,18 @@ static bool test_on_dir_hide_true_no_immediate_print()
     return captured.find("/some/dir") == std::string::npos;
 }
 
-// 4. set_hide(false) after construction behaves like hide=false.
+// 4. Output(false) prints directory immediately on on_dir.
 static bool test_set_hide_false_prints_on_dir()
 {
-    Output out(/*hide=*/true);
-    out.set_hide(false);
+    Output out(/*hide=*/false);
     std::string captured = capture([&]{ out.on_dir("/dir"); });
     return captured.find("/dir") != std::string::npos;
 }
 
-// 5. set_hide(true) after construction behaves like hide=true.
+// 5. Output(true) does not print directory on on_dir alone.
 static bool test_set_hide_true_no_print_on_dir()
 {
-    Output out(/*hide=*/false);
-    out.set_hide(true);
+    Output out(/*hide=*/true);
     std::string captured = capture([&]{ out.on_dir("/dir"); });
     return captured.find("/dir") == std::string::npos;
 }

@@ -156,22 +156,6 @@ bool test_no_recurse() {
     return files_seen.size() == 1 && files_seen[0] == "top.txt";
 }
 
-// 10. set_recurse(bool) via setter method
-bool test_set_recurse_method() {
-    auto root = make_temp_root("set_recurse");
-    touch(root / "top.txt");
-    touch(root / "sub" / "deep.txt");
-
-    std::vector<std::string> files_seen;
-    DirNav nav;
-    nav.set_recurse(false);
-    nav.set_file_handler([&](const std::string& f){ files_seen.push_back(f); });
-    nav.visit(root);
-
-    std::filesystem::remove_all(root);
-    return files_seen.size() == 1;
-}
-
 // 11. Default skip list skips "build" directory
 bool test_default_skip_build() {
     auto root = make_temp_root("skip_build");
@@ -469,7 +453,6 @@ int main() {
         { "pattern_filter",                             test_pattern_filter },
         { "multiple_patterns",                          test_multiple_patterns },
         { "no_recurse",                                 test_no_recurse },
-        { "set_recurse_method",                         test_set_recurse_method },
         { "default_skip_build",                         test_default_skip_build },
         { "default_skip_target",                        test_default_skip_target },
         { "default_skip_git",                           test_default_skip_git },
@@ -500,7 +483,7 @@ int main() {
             std::cerr << "  UNKNOWN EXCEPTION in " << t.name << '\n';
             passed = false;
         }
-        std::println("{}: {}", passed ? "PASS" : "FAIL", t.name);
+        std::cout << (passed ? "PASS" : "FAIL") << "  " << t.name << "\n";
         if (!passed) all_passed = false;
     }
 

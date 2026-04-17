@@ -9,46 +9,42 @@ public:
         : hide_(hide)
         , dir_printed_(false)
         , match_count_(0)
-        , regex_pattern_(".")
+        , regex_(std::regex("."))
     {}
 
     void set_regex(const std::string& pattern)
     {
-        regex_pattern_ = pattern;
-    }
-
-    void set_hide(bool h)
-    {
-        hide_ = h;
+        try   { regex_ = std::regex(pattern); }
+        catch (const std::regex_error&) { regex_.reset(); }
     }
 
     void on_dir(const std::string& dir_path)
     {
-        current_dir_  = dir_path;
-        dir_printed_  = false;
+        current_dir_ = dir_path;
+        dir_printed_ = false;
 
         if (!hide_)
         {
-            std::cout << "\n  " << current_dir_ << std::endl;
+            std::cout << "\n  " << current_dir_ << '\n' << std::flush;
             dir_printed_ = true;
         }
     }
 
     void on_file(const std::string& file_name)
     {
-        std::string full_path = current_dir_ + "/" + file_name;
+        std::filesystem::path full_path =
+            std::filesystem::path(current_dir_) / file_name;
 
         if (!find(full_path))
             return;
 
         if (hide_ && !dir_printed_)
         {
-            std::cout << "\n  " << current_dir_ << std::endl;
+            std::cout << "\n  " << current_dir_ << '\n';
             dir_printed_ = true;
         }
 
-        std::cout << "      " << file_name << std::endl;
-
+        std::cout << "      " << file_name << '\n' << std::flush;
         ++match_count_;
     }
 
@@ -58,19 +54,20 @@ public:
     }
 
 private:
-    bool        hide_;
-    bool        dir_printed_;
-    std::size_t match_count_;
-    std::string regex_pattern_;
-    std::string current_dir_;
+    bool                       hide_;
+    bool                       dir_printed_;
+    std::size_t                match_count_;
+    std::optional<std::regex>  regex_;
+    std::string                current_dir_;
 
-    bool find(const std::string& file_path)
+    bool find(const std::filesystem::path& file_path) const
     {
+        if (!regex_) return false;
         try
         {
             std::string contents;
+            bool        read_ok = false;
 
-            // Attempt text read first
             {
                 std::ifstream ifs(file_path);
                 if (ifs)
@@ -78,12 +75,14 @@ private:
                     std::ostringstream oss;
                     oss << ifs.rdbuf();
                     if (ifs || ifs.eof())
+                    {
                         contents = oss.str();
+                        read_ok  = true;
+                    }
                 }
             }
 
-            // If text read failed or produced empty result, attempt binary read
-            if (contents.empty())
+            if (!read_ok)
             {
                 std::ifstream ifs(file_path, std::ios::binary);
                 if (!ifs)
@@ -97,17 +96,7 @@ private:
                 contents = oss.str();
             }
 
-            std::regex re;
-            try
-            {
-                re = std::regex(regex_pattern_);
-            }
-            catch (const std::regex_error&)
-            {
-                return false;
-            }
-
-            return std::regex_search(contents, re);
+            return std::regex_search(contents, *regex_);
         }
         catch (...)
         {

@@ -1,4 +1,4 @@
-# CppTextFinder
+  # CppTextFinder
 
 A command-line tool that walks a directory tree and reports files whose content
 matches a regular expression.  Written in C++23 with named modules, built with

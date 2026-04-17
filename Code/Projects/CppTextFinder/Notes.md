@@ -22,6 +22,38 @@ Component-specific conversations belong in each part's own Notes.md.*
 
 ---
 
+### 2026-04-16 — Initial project prompt
+
+**Prompt**
+I want to build a spec driven infrastracture tuned to small projects. Each project
+is likely to have a few parts, constructed as libraries.  I want each part to have
+its own folder as siblings to the entry point folder. Each library and the entry
+point folder will have a Spec.md file.  The entry point Spec.md should not reproduce
+content of its parts. I also want a Constitution.md and Structure.md in the project
+folder which contains all the other folders. I also want a Notes.md in each of the
+folders that captures the prompts and responses for that part.  This project is a
+TextFinder with EntryPoint, CommandLine, DirNav, and Output code files. The Spec,
+and Constitution should be programming language agnostic.  The Structure part
+contains information that depends on the language, e.g., use cargo or CMake. Please
+build the files with comments where input is needed from me.
+I want the user to see program output during its execution based on the /H argument.
+I want a black list of directories that DirNav should not enter including target,
+build, .git, also a public method to add another directory.  That should work for
+multiple calls.
+
+**Response summary**
+Created the full spec infrastructure: `Constitution.md`, `Structure.md`, and
+per-part `Spec.md` + `Notes.md` files for EntryPoint, CommandLine, DirNav, and
+Output.  All design-decision gaps were marked with `<!-- INPUT NEEDED -->` comments.
+
+**Decisions / follow-up**
+- Language-agnostic: Constitution.md and per-part Spec.md files
+- Language-specific: Structure.md (C++23, CMake 3.28, named modules, `.ixx`)
+- DirNav skip list seeded with `target`, `build`, `.git`; public `add_skip()` method
+- `/H` flag: `true` = clean output (dir printed only on first match); `false` = real-time (dir printed on entry)
+
+---
+
 ### 2026-04-16 — Code generation workflow
 
 **Prompt**

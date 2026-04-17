@@ -5,20 +5,12 @@ import std;
 
 int main(int argc, const char* argv[])
 {
-    // Show help when no arguments are supplied
-    if (argc == 1)
-    {
-        CmdLine cl_help(argc, argv);
-        std::cout << cl_help.help_text();
-        return 0;
-    }
-
     CmdLine cl(argc, argv);
 
-    // Show help when /h is present
-    if (cl.help())
+    // Show help when no arguments are supplied or /h is present
+    if (argc == 1 || cl.help())
     {
-        std::cout << cl.help_text();
+        std::cout << CmdLine::help_text();
         return 0;
     }
 
@@ -26,10 +18,10 @@ int main(int argc, const char* argv[])
     if (cl.verbose())
     {
         std::cout << "Options:\n"
-                  << "  /P  " << cl.path()    << "\n"
-                  << "  /r  " << cl.regex()   << "\n"
-                  << "  /s  " << (cl.recurse() ? "true" : "false") << "\n"
-                  << "  /H  " << (cl.hide()    ? "true" : "false") << "\n";
+                  << "  /P  " << cl.path()                          << "\n"
+                  << "  /r  " << cl.regex()                         << "\n"
+                  << "  /s  " << (cl.recurse() ? "true" : "false")  << "\n"
+                  << "  /H  " << (cl.hide()    ? "true" : "false")  << "\n";
 
         auto patterns = cl.patterns();
         if (patterns.empty())
@@ -39,34 +31,11 @@ int main(int argc, const char* argv[])
         else
         {
             std::cout << "  /p  ";
-            for (std::size_t i = 0; i < patterns.size(); ++i)
-            {
-                if (i > 0) std::cout << ",";
-                std::cout << patterns[i];
-            }
+            for (char c : patterns | std::views::join_with(','))
+                std::cout << c;
             std::cout << "\n";
         }
-        std::cout << std::endl;
-    }
-
-    // Validate the root path before starting the walk
-    {
-        std::error_code ec;
-        std::filesystem::path root(cl.path());
-
-        bool exists = std::filesystem::exists(root, ec);
-        if (ec || !exists)
-        {
-            std::cerr << "error: path does not exist: " << cl.path() << "\n";
-            return 1;
-        }
-
-        bool is_dir = std::filesystem::is_directory(root, ec);
-        if (ec || !is_dir)
-        {
-            std::cerr << "error: path is not a directory: " << cl.path() << "\n";
-            return 1;
-        }
+        std::cout << "\n";
     }
 
     // Configure Output
@@ -76,26 +45,14 @@ int main(int argc, const char* argv[])
     // Configure DirNav
     DirNav dn(cl.recurse());
 
-    dn.set_dir_handler(
-        [&out](const std::string& dir_path)
-        {
-            out.on_dir(dir_path);
-        });
-
-    dn.set_file_handler(
-        [&out](const std::string& file_name)
-        {
-            out.on_file(file_name);
-        });
+    dn.set_dir_handler( [&out](const std::string& d){ out.on_dir(d);  });
+    dn.set_file_handler([&out](const std::string& f){ out.on_file(f); });
 
     for (const auto& pattern : cl.patterns())
-    {
         dn.add_pattern(pattern);
-    }
 
     // Run the walk
-    bool ok = dn.visit(std::filesystem::path(cl.path()));
-    if (!ok)
+    if (!dn.visit(std::filesystem::path(cl.path())))
     {
         std::cerr << "error: could not traverse path: " << cl.path() << "\n";
         return 1;

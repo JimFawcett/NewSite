@@ -19,16 +19,13 @@ public:
 
     std::vector<std::string> patterns() const {
         std::string raw = get("p");
+        if (raw.empty())
+            return {};
         std::vector<std::string> result;
-        if (raw.empty()) {
-            return result;
-        }
-        std::istringstream ss(raw);
-        std::string token;
-        while (std::getline(ss, token, ',')) {
-            if (!token.empty()) {
-                result.push_back(std::move(token));
-            }
+        for (auto part : raw | std::views::split(',')) {
+            std::string s(part.begin(), part.end());
+            if (!s.empty())
+                result.push_back(std::move(s));
         }
         return result;
     }
@@ -42,14 +39,14 @@ public:
     }
 
     bool verbose() const {
-        return options_.contains("v");
+        return present("v");
     }
 
     bool help() const {
-        return options_.contains("h");
+        return present("h");
     }
 
-    std::string help_text() const {
+    static std::string help_text() {
         return
             "CppTextFinder — search a directory tree for files whose content matches a regex\n"
             "\n"
@@ -73,17 +70,17 @@ public:
     }
 
 private:
-    std::map<std::string, std::string> options_;
+    std::unordered_map<std::string, std::string> options_;
 
     void parse(int argc, const char* argv[]) {
+        auto is_flag = [](const std::string& t) {
+            return t.size() == 2 && t[0] == '/' && std::isalpha(static_cast<unsigned char>(t[1]));
+        };
         int i = 1;
         while (i < argc) {
             std::string token = argv[i];
-            auto is_flag = [](const std::string& t) {
-                return t.size() == 2 && t[0] == '/' && std::isalpha(static_cast<unsigned char>(t[1]));
-            };
             if (is_flag(token)) {
-                std::string key = token.substr(1);
+                std::string key(1, token[1]);
                 if (i + 1 < argc) {
                     std::string next = argv[i + 1];
                     if (is_flag(next)) {
@@ -99,10 +96,6 @@ private:
                     options_[key] = "true";
                 }
             }
-            // Tokens that do not begin with '/' and were not consumed as a
-            // value are silently ignored (they arrive here only when i was not
-            // advanced after a previous key, which cannot happen under this
-            // algorithm; guard is here for clarity).
             ++i;
         }
     }
@@ -114,6 +107,10 @@ private:
         if (!options_.contains("H")) { options_["H"] = "true"; }
         // /p has no meaningful default value; leave absent so patterns() returns empty
         // /v and /h are boolean presence flags; leave absent when not supplied
+    }
+
+    bool present(const std::string& key) const {
+        return options_.contains(key);
     }
 
     std::string get(const std::string& key) const {

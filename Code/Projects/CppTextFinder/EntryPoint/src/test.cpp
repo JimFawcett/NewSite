@@ -7,21 +7,10 @@ import std;
 // Tiny test harness helpers
 // ---------------------------------------------------------------------------
 
-static int g_pass = 0;
-static int g_fail = 0;
-
-static void report(const char* name, bool passed)
+static bool report(const char* name, bool passed)
 {
-    if (passed)
-    {
-        std::cout << "PASS  " << name << "\n";
-        ++g_pass;
-    }
-    else
-    {
-        std::cout << "FAIL  " << name << "\n";
-        ++g_fail;
-    }
+    std::cout << (passed ? "PASS" : "FAIL") << "  " << name << "\n";
+    return passed;
 }
 
 // ---------------------------------------------------------------------------
@@ -393,10 +382,7 @@ static bool test_hide_false_dir_callback_still_fires()
 // ---------------------------------------------------------------------------
 static bool test_cmdline_help_text_nonempty()
 {
-    const char* argv[] = { "text_finder" };
-    int argc = 1;
-    CmdLine cl(argc, argv);
-    return !cl.help_text().empty();
+    return !CmdLine::help_text().empty();
 }
 
 // ---------------------------------------------------------------------------
@@ -416,30 +402,34 @@ static bool test_cmdline_hide_false()
 
 int main()
 {
-    report("dir_callback_invoked",                  test_dir_callback_invoked());
-    report("file_callback_invoked",                 test_file_callback_invoked());
-    report("file_count_matches_visited",            test_file_count_matches_visited());
-    report("match_count_is_correct",                test_match_count_is_correct());
-    report("visit_nonexistent_path_returns_false",  test_visit_nonexistent_path_returns_false());
-    report("recursion_visits_subdirectory_files",   test_recursion_visits_subdirectory_files());
-    report("no_recursion_skips_subdirectory_files", test_no_recursion_skips_subdirectory_files());
-    report("extension_filter_excludes_non_matching",test_extension_filter_excludes_non_matching());
-    report("cmdline_help_flag_detected",            test_cmdline_help_flag_detected());
-    report("cmdline_defaults",                      test_cmdline_defaults());
-    report("cmdline_no_recurse",                    test_cmdline_no_recurse());
-    report("cmdline_patterns_parsed",               test_cmdline_patterns_parsed());
-    report("cmdline_regex_stored",                  test_cmdline_regex_stored());
-    report("cmdline_verbose_flag",                  test_cmdline_verbose_flag());
-    report("match_count_zero_when_no_matches",      test_match_count_zero_when_no_matches());
-    report("file_count_zero_before_visit",          test_file_count_zero_before_visit());
-    report("wiring_file_and_match_counts_consistent",test_wiring_file_and_match_counts_consistent());
-    report("hide_false_dir_callback_still_fires",   test_hide_false_dir_callback_still_fires());
-    report("cmdline_help_text_nonempty",            test_cmdline_help_text_nonempty());
-    report("cmdline_hide_false",                    test_cmdline_hide_false());
+    int n_pass = 0, n_fail = 0;
+    auto run = [&](const char* name, bool ok)
+    {
+        report(name, ok) ? ++n_pass : ++n_fail;
+    };
 
-    std::cout << "\n"
-              << g_pass << " passed, "
-              << g_fail << " failed\n";
+    run("dir_callback_invoked",                  test_dir_callback_invoked());
+    run("file_callback_invoked",                 test_file_callback_invoked());
+    run("file_count_matches_visited",            test_file_count_matches_visited());
+    run("match_count_is_correct",                test_match_count_is_correct());
+    run("visit_nonexistent_path_returns_false",  test_visit_nonexistent_path_returns_false());
+    run("recursion_visits_subdirectory_files",   test_recursion_visits_subdirectory_files());
+    run("no_recursion_skips_subdirectory_files", test_no_recursion_skips_subdirectory_files());
+    run("extension_filter_excludes_non_matching",test_extension_filter_excludes_non_matching());
+    run("cmdline_help_flag_detected",            test_cmdline_help_flag_detected());
+    run("cmdline_defaults",                      test_cmdline_defaults());
+    run("cmdline_no_recurse",                    test_cmdline_no_recurse());
+    run("cmdline_patterns_parsed",               test_cmdline_patterns_parsed());
+    run("cmdline_regex_stored",                  test_cmdline_regex_stored());
+    run("cmdline_verbose_flag",                  test_cmdline_verbose_flag());
+    run("match_count_zero_when_no_matches",      test_match_count_zero_when_no_matches());
+    run("file_count_zero_before_visit",          test_file_count_zero_before_visit());
+    run("wiring_file_and_match_counts_consistent",test_wiring_file_and_match_counts_consistent());
+    run("hide_false_dir_callback_still_fires",   test_hide_false_dir_callback_still_fires());
+    run("cmdline_help_text_nonempty",            test_cmdline_help_text_nonempty());
+    run("cmdline_hide_false",                    test_cmdline_hide_false());
 
-    return g_fail == 0 ? 0 : 1;
+    std::cout << "\n" << n_pass << " passed, " << n_fail << " failed\n";
+
+    return n_fail == 0 ? 0 : 1;
 }
