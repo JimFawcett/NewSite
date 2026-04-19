@@ -128,4 +128,26 @@ is derived from it.
 
 ---
 
+### 2026-04-17 — TextFinder cleanup
+
+1. **Search for codesmells and fix**<br>  Fixed in all code files
+
+2. **Search for non-idiomatic code and fix**<br>  Fixed in all code files
+
+---
+
+### 2026-04-17 - New Project Infrastructure
+
+1. **Created and saved (NewSite/Code/_template_[language])**
+    
+    a. Constitution.md
+
+    b. Structure.md
+    
+    c. Notes.md
+    
+    d. README.md
+    
+    e. new_project.py
+
 *End of Notes.md*
