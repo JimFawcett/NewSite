@@ -52,9 +52,13 @@ explicit DirNav(bool recurse = true);
 The following directory names are always skipped, regardless of any
 `add_skip()` calls:
 
-```cpp
-{"target", "build", ".git"}
-```
+| Language / tool | Skipped names |
+|-----------------|---------------|
+| C# / .NET       | `bin`, `obj` |
+| Rust            | `target` |
+| C++             | `build`, `out` |
+| Python          | `__pycache__`, `.venv`, `venv`, `dist` |
+| VCS / IDE       | `.git`, `.vs`, `.idea` |
 
 These are initialised in the constructor and cannot be removed.
 
@@ -121,8 +125,8 @@ size_t dir_count() const;
 - `visit()` never throws; filesystem errors on individual entries are caught and
   the entry is skipped.
 - If `add_pattern()` is never called, all files are passed to `file_callback`.
-- The default skip list (`target`, `build`, `.git`) is always active; callers
-  may extend it with `add_skip()` but may not shrink it.
+- The default skip list (see table above) is always active; callers may extend
+  it with `add_skip()` but may not shrink it.
 - `add_skip()` is idempotent: adding the same name twice has no effect.
 
 ---

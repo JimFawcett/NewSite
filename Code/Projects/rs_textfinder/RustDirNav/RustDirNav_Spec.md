@@ -66,7 +66,7 @@ pub struct DirNav<App: DirEvent> {
 | Field | Type | Default | Purpose |
 |-------|------|---------|---------|
 | `pats` | `SearchPatterns` | empty | File extensions to match |
-| `skip_dirs` | `SearchPatterns` | empty | Directory names to exclude from traversal |
+| `skip_dirs` | `SearchPatterns` | see below | Directory names to exclude from traversal |
 | `app` | `App` | `App::default()` | Caller-supplied event handler |
 | `num_file` | `usize` | `0` | Running count of all files encountered |
 | `num_dir` | `usize` | `0` | Running count of all directories entered |
@@ -83,11 +83,22 @@ pub struct DirNav<App: DirEvent> {
 
 Creates a new `DirNav<App>` with:
 - empty patterns vector,
-- empty skip-dirs vector,
+- `skip_dirs` pre-populated with the default skip list (see table below),
 - `app` initialised via `App::default()`,
 - `num_file` and `num_dir` set to `0`,
 - `recurse` set to `true`,
 - `hide` set to `true`.
+
+**Default skip list** — these directory names are always excluded from traversal;
+callers may extend the list with `add_skip()` but may not remove entries:
+
+| Language / tool | Skipped names |
+|-----------------|---------------|
+| C# / .NET       | `bin`, `obj` |
+| Rust            | `target` |
+| C++             | `build`, `out` |
+| Python          | `__pycache__`, `.venv`, `venv`, `dist` |
+| VCS / IDE       | `.git`, `.vs`, `.idea` |
 
 ---
 

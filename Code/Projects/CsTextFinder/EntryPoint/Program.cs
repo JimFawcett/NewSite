@@ -1,3 +1,19 @@
+if (args.Contains("-T") || args.Contains("/T"))
+{
+    int failures = 0;
+    Console.WriteLine("=== CommandLine ===");
+    failures += CommandLine.Tests.RunAll();
+    Console.WriteLine("=== DirNav ===");
+    failures += DirNav.Tests.RunAll();
+    Console.WriteLine("=== Output ===");
+    failures += Output.Tests.RunAll();
+    Console.WriteLine("=== EntryPoint (integration) ===");
+    failures += IntegrationTests.RunAll();
+    Console.WriteLine($"\nTotal: {failures} failure(s)");
+    Environment.Exit(failures > 0 ? 1 : 0);
+    return;
+}
+
 var cl = new CommandLine.CmdLine(args);
 
 if (args.Length == 0 || cl.Help)

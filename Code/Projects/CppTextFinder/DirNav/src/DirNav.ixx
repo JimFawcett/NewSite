@@ -11,7 +11,18 @@ class DirNav {
 public:
     explicit DirNav(bool recurse = true)
         : recurse_(recurse)
-        , skip_list_({"target", "build", ".git"})
+        , skip_list_({
+              // C#/.NET
+              "bin", "obj",
+              // Rust
+              "target",
+              // C++
+              "build", "out",
+              // Python
+              "__pycache__", ".venv", "venv", "dist",
+              // VCS / IDE
+              ".git", ".vs", ".idea"
+          })
         , file_count_(0)
         , dir_count_(0)
     {}

@@ -256,7 +256,6 @@ fn main() {
     }
 
     let mut dn = dir_nav_lib::DirNav::<TfAppl>::new();
-    dn.add_skip("target");
 
     if parser.options().contains_key(&'s') {
         let r_value = parser.options()[&'s'] == "true";

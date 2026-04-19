@@ -51,9 +51,13 @@ public DirNav(bool recurse = true);
 The following directory names are always skipped, regardless of any
 `AddSkip()` calls:
 
-```csharp
-{ "bin", "obj", ".git" }
-```
+| Language / tool | Skipped names |
+|-----------------|---------------|
+| C# / .NET       | `bin`, `obj` |
+| Rust            | `target` |
+| C++             | `build`, `out` |
+| Python          | `__pycache__`, `.venv`, `venv`, `dist` |
+| VCS / IDE       | `.git`, `.vs`, `.idea` |
 
 These are initialised in the constructor and cannot be removed.
 
@@ -116,7 +120,7 @@ public int DirCount  { get; }
 - `Visit()` never throws; filesystem errors on individual entries are caught and
   the entry is skipped.
 - If `AddPattern()` is never called, all files are passed to `FileHandler`.
-- The default skip list (`bin`, `obj`, `.git`) is always active; callers may
+- The default skip list (see table above) is always active; callers may
   extend it with `AddSkip()` but may not shrink it.
 - `AddSkip()` is idempotent: adding the same name twice has no effect.
 

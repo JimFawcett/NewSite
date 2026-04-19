@@ -84,13 +84,13 @@ value `"true"` when present with no argument.
 
 ## Invariants
 
-1. The build output directory is always excluded from traversal.
+1. Build output and tooling directories are always excluded from traversal:
+   `bin`, `obj` (C#), `target` (Rust), `build`, `out` (C++),
+   `__pycache__`, `.venv`, `venv`, `dist` (Python),
+   `.git`, `.vs`, `.idea` (VCS/IDE).
 2. Running with no arguments displays help and exits cleanly.
 3. A missing or unreadable root path is reported and the program exits with a
    non-zero status.
-
-<!-- INPUT NEEDED: Specify the exact name(s) of build output directories to skip,
-     e.g. "build", "out", "x64/Release". -->
 
 ---
 

@@ -18,7 +18,18 @@ public class DirNav
     {
         _recurse  = recurse;
         _skipList = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            { "bin", "obj", ".git" };
+        {
+            // C#/.NET
+            "bin", "obj",
+            // Rust
+            "target",
+            // C++
+            "build", "out",
+            // Python
+            "__pycache__", ".venv", "venv", "dist",
+            // common VCS / IDE metadata
+            ".git", ".vs", ".idea",
+        };
     }
 
     public void AddPattern(string ext) => _patterns.Add(ext.TrimStart('.'));

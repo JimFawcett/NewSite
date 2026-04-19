@@ -67,9 +67,27 @@ impl<App: DirEvent + Default> DirNav<App> {
     where
         App: DirEvent + Default,
     {
+        let defaults = [
+            // C#/.NET
+            "bin", "obj",
+            // Rust
+            "target",
+            // C++
+            "build", "out",
+            // Python
+            "__pycache__", ".venv", "venv", "dist",
+            // VCS / IDE
+            ".git", ".vs", ".idea",
+        ];
+        let mut skip_dirs = SearchPatterns::new();
+        for name in &defaults {
+            let mut s = std::ffi::OsString::new();
+            s.push(name);
+            skip_dirs.push(s);
+        }
         Self {
             pats: SearchPatterns::new(),
-            skip_dirs: SearchPatterns::new(),
+            skip_dirs,
             app: App::default(),
             num_file: 0,
             num_dir: 0,
