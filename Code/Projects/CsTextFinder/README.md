@@ -135,6 +135,7 @@ Default directories excluded from traversal:
 | C++             | `build`, `out` |
 | Python          | `__pycache__`, `.venv`, `venv`, `dist` |
 | VCS / IDE       | `.git`, `.vs`, `.idea` |
+| Archives        | `archive` |
 
 ---
 

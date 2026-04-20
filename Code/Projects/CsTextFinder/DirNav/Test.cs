@@ -5,18 +5,23 @@ public static class Tests
     public static int RunAll()
     {
         int pass = 0, fail = 0;
-        Run(ref pass, ref fail, "VisitNonExistent",      TestVisitNonExistent);
-        Run(ref pass, ref fail, "VisitExistingDir",      TestVisitExistingDir);
-        Run(ref pass, ref fail, "DirHandlerFires",       TestDirHandlerFires);
-        Run(ref pass, ref fail, "FileHandlerFires",      TestFileHandlerFires);
-        Run(ref pass, ref fail, "PatternFiltering",      TestPatternFiltering);
-        Run(ref pass, ref fail, "DefaultSkipsBin",       TestDefaultSkipsBin);
-        Run(ref pass, ref fail, "DefaultSkipsTarget",    TestDefaultSkipsTarget);
-        Run(ref pass, ref fail, "DefaultSkipsPycache",   TestDefaultSkipsPycache);
-        Run(ref pass, ref fail, "AddSkipWorks",          TestAddSkipWorks);
-        Run(ref pass, ref fail, "NoRecurse",             TestNoRecurse);
-        Run(ref pass, ref fail, "CountersAreReset",      TestCountersAreReset);
-        Run(ref pass, ref fail, "FileCountCorrect",      TestFileCountCorrect);
+        void Check(string name, Func<bool> test)
+        {
+            if (Run(name, test)) pass++; else fail++;
+        }
+
+        Check("VisitNonExistent",    TestVisitNonExistent);
+        Check("VisitExistingDir",    TestVisitExistingDir);
+        Check("DirHandlerFires",     TestDirHandlerFires);
+        Check("FileHandlerFires",    TestFileHandlerFires);
+        Check("PatternFiltering",    TestPatternFiltering);
+        Check("DefaultSkipsBin",     TestDefaultSkipsBin);
+        Check("DefaultSkipsTarget",  TestDefaultSkipsTarget);
+        Check("DefaultSkipsPycache", TestDefaultSkipsPycache);
+        Check("AddSkipWorks",        TestAddSkipWorks);
+        Check("NoRecurse",           TestNoRecurse);
+        Check("CountersAreReset",    TestCountersAreReset);
+        Check("FileCountCorrect",    TestFileCountCorrect);
         Print(pass, fail);
         return fail;
     }
@@ -165,13 +170,13 @@ public static class Tests
         return dir;
     }
 
-    private static void Run(ref int pass, ref int fail, string name, Func<bool> test)
+    private static bool Run(string name, Func<bool> test)
     {
         bool ok = false;
         try   { ok = test(); }
         catch (Exception ex) { Console.WriteLine($"    exception: {ex.Message}"); }
         Console.WriteLine($"  {(ok ? "PASS" : "FAIL")}  {name}");
-        if (ok) pass++; else fail++;
+        return ok;
     }
 
     private static void Print(int pass, int fail) =>

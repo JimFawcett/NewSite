@@ -2,7 +2,7 @@ namespace DirNav;
 
 public class DirNav
 {
-    private bool _recurse;
+    public bool Recurse { get; set; }
     private readonly HashSet<string> _skipList;
     private readonly HashSet<string> _patterns =
         new(StringComparer.OrdinalIgnoreCase);
@@ -16,7 +16,7 @@ public class DirNav
 
     public DirNav(bool recurse = true)
     {
-        _recurse  = recurse;
+        Recurse   = recurse;
         _skipList = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             // C#/.NET
@@ -29,12 +29,13 @@ public class DirNav
             "__pycache__", ".venv", "venv", "dist",
             // common VCS / IDE metadata
             ".git", ".vs", ".idea",
+            // archives
+            "archive",
         };
     }
 
     public void AddPattern(string ext) => _patterns.Add(ext.TrimStart('.'));
     public void AddSkip(string name)   => _skipList.Add(name);
-    public void SetRecurse(bool r)     => _recurse = r;
 
     public bool Visit(string root)
     {
@@ -48,11 +49,11 @@ public class DirNav
     private void VisitImpl(string dir)
     {
         _dirCount++;
-        DirHandler?.Invoke(Normalise(dir));
+        DirHandler?.Invoke(Normalize(dir));
 
         try
         {
-            foreach (string file in Directory.GetFiles(dir))
+            foreach (string file in Directory.EnumerateFiles(dir))
             {
                 if (ExtensionMatches(file))
                 {
@@ -61,9 +62,9 @@ public class DirNav
                 }
             }
 
-            if (_recurse)
+            if (Recurse)
             {
-                foreach (string sub in Directory.GetDirectories(dir))
+                foreach (string sub in Directory.EnumerateDirectories(dir))
                 {
                     string name = Path.GetFileName(sub);
                     if (!_skipList.Contains(name))
@@ -82,5 +83,5 @@ public class DirNav
         return _patterns.Contains(ext);
     }
 
-    private static string Normalise(string path) => path.Replace('\\', '/');
+    private static string Normalize(string path) => path.Replace('\\', '/');
 }

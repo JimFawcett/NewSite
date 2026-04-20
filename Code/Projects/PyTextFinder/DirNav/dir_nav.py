@@ -9,6 +9,7 @@ class DirNav:
         "build", "out",
         "__pycache__", ".venv", "venv", "dist",
         ".git", ".vs", ".idea",
+        "archive",
     })
 
     def __init__(self, recurse: bool = True) -> None:

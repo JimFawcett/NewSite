@@ -1,11 +1,11 @@
-namespace Output;
-
 using System.Text;
 using System.Text.RegularExpressions;
 
+namespace Output;
+
 public class Output
 {
-    private bool   _hide;
+    private readonly bool _hide;
     private bool   _dirPrinted;
     private int    _matchCount;
     private string _currentDir = string.Empty;
@@ -15,12 +15,10 @@ public class Output
 
     public Output(bool hide = true) => _hide = hide;
 
-    public void SetHide(bool hide) => _hide = hide;
-
     public void SetRegex(string pattern)
     {
         try   { _regex = new Regex(pattern); }
-        catch { _regex = new Regex("."); }
+        catch (ArgumentException) { _regex = new Regex("."); }
     }
 
     public void OnDir(string dirPath)
@@ -30,14 +28,13 @@ public class Output
         if (!_hide)
         {
             Console.WriteLine($"\n  {_currentDir}");
-            Console.Out.Flush();
             _dirPrinted = true;
         }
     }
 
     public void OnFile(string fileName)
     {
-        string fullPath = _currentDir + "/" + fileName;
+        string fullPath = $"{_currentDir}/{fileName}";
         if (!Find(fullPath)) return;
 
         if (_hide && !_dirPrinted)
@@ -46,19 +43,21 @@ public class Output
             _dirPrinted = true;
         }
         Console.WriteLine($"      {fileName}");
-        Console.Out.Flush();
         _matchCount++;
     }
 
     private bool Find(string filePath)
     {
-        try
-        {
-            string contents;
-            try   { contents = File.ReadAllText(filePath); }
-            catch { contents = Encoding.Latin1.GetString(File.ReadAllBytes(filePath)); }
-            return _regex.IsMatch(contents);
-        }
-        catch { return false; }
+        string? contents = ReadFile(filePath);
+        return contents is not null && _regex.IsMatch(contents);
+    }
+
+    private static string? ReadFile(string filePath)
+    {
+        try { return File.ReadAllText(filePath); }
+        catch (UnauthorizedAccessException) { return null; }  // won't succeed on retry
+        catch (IOException) { }                               // retry as Latin-1 for binary content
+        try { return Encoding.Latin1.GetString(File.ReadAllBytes(filePath)); }
+        catch (Exception) { return null; }
     }
 }

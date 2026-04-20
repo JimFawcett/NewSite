@@ -22,30 +22,31 @@ public class CmdLine
         get
         {
             string raw = Get("p");
-            if (string.IsNullOrEmpty(raw)) return Array.Empty<string>();
-            return raw.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            if (string.IsNullOrEmpty(raw)) return [];
+            return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         }
     }
 
-    public string HelpText =>
-        "CsTextFinder — search a directory tree for files whose content matches a regex\n" +
-        "\n" +
-        "Usage:\n" +
-        "  CsTextFinder [/P <path>] [/p <exts>] [/s <bool>] [/H <bool>]\n" +
-        "               [/r <regex>] [/v] [/h]\n" +
-        "\n" +
-        "Options:\n" +
-        "  /P <path>    Root path for the search              (default: \".\")\n" +
-        "  /p <exts>    Comma-separated file extensions,\n" +
-        "               e.g. \"cs,txt\"                         (default: all files)\n" +
-        "  /s <bool>    Recurse into subdirectories           (default: true)\n" +
-        "  /H <bool>    true  = print directory only when it\n" +
-        "               contains a match (clean output).\n" +
-        "               false = print every directory entered  (default: true)\n" +
-        "  /r <regex>   Regular expression matched against\n" +
-        "               file content                          (default: \".\")\n" +
-        "  /v           Verbose: echo all options before searching\n" +
-        "  /h           Print this help text and exit\n";
+    public string HelpText => """
+        CsTextFinder — search a directory tree for files whose content matches a regex
+
+        Usage:
+          CsTextFinder [/P <path>] [/p <exts>] [/s <bool>] [/H <bool>]
+                       [/r <regex>] [/v] [/h]
+
+        Options:
+          /P <path>    Root path for the search              (default: ".")
+          /p <exts>    Comma-separated file extensions,
+                       e.g. "cs,txt"                         (default: all files)
+          /s <bool>    Recurse into subdirectories           (default: true)
+          /H <bool>    true  = print directory only when it
+                       contains a match (clean output).
+                       false = print every directory entered  (default: true)
+          /r <regex>   Regular expression matched against
+                       file content                          (default: ".")
+          /v           Verbose: echo all options before searching
+          /h           Print this help text and exit
+        """;
 
     private void Parse(string[] args)
     {
@@ -79,12 +80,12 @@ public class CmdLine
 
     private void ApplyDefaults()
     {
-        if (!_options.ContainsKey("P")) _options["P"] = ".";
-        if (!_options.ContainsKey("r")) _options["r"] = ".";
-        if (!_options.ContainsKey("s")) _options["s"] = "true";
-        if (!_options.ContainsKey("H")) _options["H"] = "true";
+        _options.TryAdd("P", ".");
+        _options.TryAdd("r", ".");
+        _options.TryAdd("s", "true");
+        _options.TryAdd("H", "true");
     }
 
     private string Get(string key) =>
-        _options.TryGetValue(key, out string? v) ? v : string.Empty;
+        _options.GetValueOrDefault(key, string.Empty)!;
 }

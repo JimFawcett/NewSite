@@ -3,12 +3,17 @@ public static class IntegrationTests
     public static int RunAll()
     {
         int pass = 0, fail = 0;
-        Run(ref pass, ref fail, "FindMatchingFiles",       TestFindMatchingFiles);
-        Run(ref pass, ref fail, "PatternFiltersExtensions", TestPatternFiltering);
-        Run(ref pass, ref fail, "NoMatchYieldsZero",       TestNoMatchYieldsZero);
-        Run(ref pass, ref fail, "NoRecurseStaysShallow",   TestNoRecurseStaysShallow);
-        Run(ref pass, ref fail, "DefaultSkipsApplied",     TestDefaultSkipsApplied);
-        Run(ref pass, ref fail, "MultipleMatchesAccumulate", TestMultipleMatchesAccumulate);
+        void Check(string name, Func<bool> test)
+        {
+            if (Run(name, test)) pass++; else fail++;
+        }
+
+        Check("FindMatchingFiles",        TestFindMatchingFiles);
+        Check("PatternFiltersExtensions", TestPatternFiltering);
+        Check("NoMatchYieldsZero",        TestNoMatchYieldsZero);
+        Check("NoRecurseStaysShallow",    TestNoRecurseStaysShallow);
+        Check("DefaultSkipsApplied",      TestDefaultSkipsApplied);
+        Check("MultipleMatchesAccumulate",TestMultipleMatchesAccumulate);
         Print(pass, fail);
         return fail;
     }
@@ -119,13 +124,13 @@ public static class IntegrationTests
         return dir;
     }
 
-    private static void Run(ref int pass, ref int fail, string name, Func<bool> test)
+    private static bool Run(string name, Func<bool> test)
     {
         bool ok = false;
         try   { ok = test(); }
         catch (Exception ex) { Console.WriteLine($"    exception: {ex.Message}"); }
         Console.WriteLine($"  {(ok ? "PASS" : "FAIL")}  {name}");
-        if (ok) pass++; else fail++;
+        return ok;
     }
 
     private static void Print(int pass, int fail) =>

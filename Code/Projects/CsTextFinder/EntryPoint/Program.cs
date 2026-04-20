@@ -45,18 +45,13 @@ output.SetRegex(cl.Regex);
 
 var dn = new DirNav.DirNav(cl.Recurse)
 {
-    DirHandler  = dir  => output.OnDir(dir),
-    FileHandler = file => output.OnFile(file)
+    DirHandler  = output.OnDir,
+    FileHandler = output.OnFile
 };
 
 foreach (string pat in cl.Patterns)
     dn.AddPattern(pat);
 
-bool ok = dn.Visit(cl.Path);
-if (!ok)
-{
-    Console.Error.WriteLine($"error: could not traverse: {cl.Path}");
-    Environment.Exit(1);
-}
+dn.Visit(cl.Path);
 
 Console.WriteLine($"\n{dn.FileCount} file(s) visited, {output.MatchCount} file(s) matched");

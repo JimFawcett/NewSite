@@ -11,7 +11,7 @@ CMake 3.28+.
 - Regex search over file contents (text and binary files)
 - Recursive or single-directory walk
 - File-extension filtering (e.g. search only `.cpp`, `.h`)
-- Built-in skip list: `target`, `build`, `.git` are never entered
+- Built-in skip list: build artifacts and VCS directories are never entered
 - Two output modes controlled by `/H`: real-time traversal vs. clean match-only output
 - Summary line: files visited and files matched
 
@@ -143,7 +143,18 @@ CommandLine   DirNav   Output
 - `DirNav` fires events via `std::function` callbacks registered by `EntryPoint`.
 - `Output` is a plain class with `on_dir()` and `on_file()` methods.
 
-Default directories excluded from traversal: `target`, `build`, `.git`.
+Default directories excluded from traversal:
+
+| Language / tool | Skipped names |
+|-----------------|---------------|
+| C# / .NET       | `bin`, `obj` |
+| Rust            | `target` |
+| C++             | `build`, `out` |
+| Python          | `__pycache__`, `.venv`, `venv`, `dist` |
+| VCS / IDE       | `.git`, `.vs`, `.idea` |
+| Archives        | `archive` |
+
+Directory names are matched by bare name at any depth in the tree.
 
 ---
 

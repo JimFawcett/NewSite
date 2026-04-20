@@ -78,6 +78,8 @@ impl<App: DirEvent + Default> DirNav<App> {
             "__pycache__", ".venv", "venv", "dist",
             // VCS / IDE
             ".git", ".vs", ".idea",
+            // archives
+            "archive",
         ];
         let mut skip_dirs = SearchPatterns::new();
         for name in &defaults {

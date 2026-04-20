@@ -5,13 +5,18 @@ public static class Tests
     public static int RunAll()
     {
         int pass = 0, fail = 0;
-        Run(ref pass, ref fail, "DefaultMatchCountZero",    TestDefaultMatchCountZero);
-        Run(ref pass, ref fail, "MatchCountIncrements",     TestMatchCountIncrements);
-        Run(ref pass, ref fail, "NoMatchNoCount",           TestNoMatchNoCount);
-        Run(ref pass, ref fail, "RegexFiltersFiles",        TestRegexFiltersFiles);
-        Run(ref pass, ref fail, "OnDirResetsAcrossDirs",    TestOnDirResetsAcrossDirs);
-        Run(ref pass, ref fail, "UnreadableFileSkipped",    TestUnreadableFileSkipped);
-        Run(ref pass, ref fail, "InvalidRegexFallsBack",    TestInvalidRegexFallsBack);
+        void Check(string name, Func<bool> test)
+        {
+            if (Run(name, test)) pass++; else fail++;
+        }
+
+        Check("DefaultMatchCountZero", TestDefaultMatchCountZero);
+        Check("MatchCountIncrements",  TestMatchCountIncrements);
+        Check("NoMatchNoCount",        TestNoMatchNoCount);
+        Check("RegexFiltersFiles",     TestRegexFiltersFiles);
+        Check("OnDirResetsAcrossDirs", TestOnDirResetsAcrossDirs);
+        Check("UnreadableFileSkipped", TestUnreadableFileSkipped);
+        Check("InvalidRegexFallsBack", TestInvalidRegexFallsBack);
         Print(pass, fail);
         return fail;
     }
@@ -25,13 +30,13 @@ public static class Tests
         try
         {
             File.WriteAllText(Path.Combine(dir, "f.txt"), "hello world");
-            var out_ = new Output();
-            out_.SetRegex("hello");
+            var sut = new Output();
+            sut.SetRegex("hello");
             return Quiet(() =>
             {
-                out_.OnDir(dir.Replace('\\', '/'));
-                out_.OnFile("f.txt");
-                return out_.MatchCount == 1;
+                sut.OnDir(dir.Replace('\\', '/'));
+                sut.OnFile("f.txt");
+                return sut.MatchCount == 1;
             });
         }
         finally { Directory.Delete(dir, true); }
@@ -43,13 +48,13 @@ public static class Tests
         try
         {
             File.WriteAllText(Path.Combine(dir, "f.txt"), "hello world");
-            var out_ = new Output();
-            out_.SetRegex("zzz_nomatch_zzz");
+            var sut = new Output();
+            sut.SetRegex("zzz_nomatch_zzz");
             return Quiet(() =>
             {
-                out_.OnDir(dir.Replace('\\', '/'));
-                out_.OnFile("f.txt");
-                return out_.MatchCount == 0;
+                sut.OnDir(dir.Replace('\\', '/'));
+                sut.OnFile("f.txt");
+                return sut.MatchCount == 0;
             });
         }
         finally { Directory.Delete(dir, true); }
@@ -62,14 +67,14 @@ public static class Tests
         {
             File.WriteAllText(Path.Combine(dir, "a.txt"), "apple");
             File.WriteAllText(Path.Combine(dir, "b.txt"), "banana");
-            var out_ = new Output();
-            out_.SetRegex("apple");
+            var sut = new Output();
+            sut.SetRegex("apple");
             return Quiet(() =>
             {
-                out_.OnDir(dir.Replace('\\', '/'));
-                out_.OnFile("a.txt");
-                out_.OnFile("b.txt");
-                return out_.MatchCount == 1;
+                sut.OnDir(dir.Replace('\\', '/'));
+                sut.OnFile("a.txt");
+                sut.OnFile("b.txt");
+                return sut.MatchCount == 1;
             });
         }
         finally { Directory.Delete(dir, true); }
@@ -83,15 +88,15 @@ public static class Tests
         {
             File.WriteAllText(Path.Combine(dir1, "f1.txt"), "match");
             File.WriteAllText(Path.Combine(dir2, "f2.txt"), "match");
-            var out_ = new Output();
-            out_.SetRegex("match");
+            var sut = new Output();
+            sut.SetRegex("match");
             return Quiet(() =>
             {
-                out_.OnDir(dir1.Replace('\\', '/'));
-                out_.OnFile("f1.txt");
-                out_.OnDir(dir2.Replace('\\', '/'));
-                out_.OnFile("f2.txt");
-                return out_.MatchCount == 2;
+                sut.OnDir(dir1.Replace('\\', '/'));
+                sut.OnFile("f1.txt");
+                sut.OnDir(dir2.Replace('\\', '/'));
+                sut.OnFile("f2.txt");
+                return sut.MatchCount == 2;
             });
         }
         finally
@@ -103,13 +108,13 @@ public static class Tests
 
     private static bool TestUnreadableFileSkipped()
     {
-        var out_ = new Output();
-        out_.SetRegex(".");
+        var sut = new Output();
+        sut.SetRegex(".");
         return Quiet(() =>
         {
-            out_.OnDir("C:/");
-            out_.OnFile("___nonexistent_xyz.txt");
-            return out_.MatchCount == 0;
+            sut.OnDir("C:/");
+            sut.OnFile("___nonexistent_xyz.txt");
+            return sut.MatchCount == 0;
         });
     }
 
@@ -119,14 +124,14 @@ public static class Tests
         try
         {
             File.WriteAllText(Path.Combine(dir, "f.txt"), "hello");
-            var out_ = new Output();
-            out_.SetRegex("[invalid");  // bad regex — should fall back to "."
+            var sut = new Output();
+            sut.SetRegex("[invalid");  // bad regex — should fall back to "."
             return Quiet(() =>
             {
-                out_.OnDir(dir.Replace('\\', '/'));
-                out_.OnFile("f.txt");
+                sut.OnDir(dir.Replace('\\', '/'));
+                sut.OnFile("f.txt");
                 // fallback "." matches everything non-empty
-                return out_.MatchCount == 1;
+                return sut.MatchCount == 1;
             });
         }
         finally { Directory.Delete(dir, true); }
@@ -147,13 +152,13 @@ public static class Tests
         return dir;
     }
 
-    private static void Run(ref int pass, ref int fail, string name, Func<bool> test)
+    private static bool Run(string name, Func<bool> test)
     {
         bool ok = false;
         try   { ok = test(); }
         catch (Exception ex) { Console.WriteLine($"    exception: {ex.Message}"); }
         Console.WriteLine($"  {(ok ? "PASS" : "FAIL")}  {name}");
-        if (ok) pass++; else fail++;
+        return ok;
     }
 
     private static void Print(int pass, int fail) =>

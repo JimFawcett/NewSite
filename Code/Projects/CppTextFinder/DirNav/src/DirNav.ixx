@@ -21,7 +21,9 @@ public:
               // Python
               "__pycache__", ".venv", "venv", "dist",
               // VCS / IDE
-              ".git", ".vs", ".idea"
+              ".git", ".vs", ".idea",
+              // archives
+              "archive"
           })
         , file_count_(0)
         , dir_count_(0)
