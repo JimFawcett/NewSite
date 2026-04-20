@@ -96,6 +96,7 @@ private:
         std::filesystem::directory_iterator it(dir, ec);
         if (ec) return;
 
+        std::vector<std::filesystem::path> subdirs;
         for (const auto& entry : it) {
             std::error_code entry_ec;
 
@@ -112,11 +113,13 @@ private:
             bool is_directory = entry.is_directory(entry_ec);
             if (!entry_ec && is_directory) {
                 std::string bare_name = entry.path().filename().string();
-                if (skip_list_.contains(bare_name)) continue;
-                if (recurse_)
-                    visit_impl(entry.path());
+                if (!skip_list_.contains(bare_name) && recurse_)
+                    subdirs.push_back(entry.path());
             }
         }
+
+        for (const auto& subdir : subdirs)
+            visit_impl(subdir);
     }
 };
 

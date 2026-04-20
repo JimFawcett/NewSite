@@ -1,6 +1,6 @@
 # Spec.md — PyTextFinder/EntryPoint
 
-*Specifies only the wiring and execution flow of `main.py`.  Details of each
+*Specifies only the wiring and execution flow of `PyTextFinder.py`.  Details of each
 package are in their own Spec.md files.*
 
 ---
@@ -23,7 +23,7 @@ traversal logic.
 
 ## Source File
 
-`EntryPoint/main.py` — `main()` function called under `if __name__ == "__main__"`.
+`EntryPoint/PyTextFinder.py` — `main()` function called under `if __name__ == "__main__"`.
 
 ---
 

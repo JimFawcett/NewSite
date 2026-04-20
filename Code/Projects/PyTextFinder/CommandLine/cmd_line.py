@@ -41,7 +41,7 @@ class CmdLine:
             "PyTextFinder — search a directory tree for files whose content matches a regex\n"
             "\n"
             "Usage:\n"
-            "  python EntryPoint/main.py [/P <path>] [/p <exts>] [/s <bool>] [/H <bool>]\n"
+            "  python EntryPoint/PyTextFinder.py [/P <path>] [/p <exts>] [/s <bool>] [/H <bool>]\n"
             "                            [/r <regex>] [/v] [/h]\n"
             "\n"
             "Options:\n"

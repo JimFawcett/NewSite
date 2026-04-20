@@ -168,8 +168,8 @@ impl<App: DirEvent + Default> DirNav<App> {
                         sub_dirs.push(cd);
                     }
                 } else {
-                    self.num_file += 1;
                     if self.in_patterns(&entry) | self.pats.is_empty() {
+                        self.num_file += 1;
                         files.push(entry.file_name());
                     }
                 }

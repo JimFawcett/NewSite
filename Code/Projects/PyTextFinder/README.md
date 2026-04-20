@@ -31,14 +31,14 @@ matches a regular expression.  Written in Python 3.10+, no build step required.
 **Example — find all `.py` files containing `def ` under the current tree:**
 
 ```
-python EntryPoint/main.py /P . /p py /r "def "
+python EntryPoint/PyTextFinder.py /P . /p py /r "def "
 ```
 
 **Git Bash / MINGW note:** The shell converts `/P`, `/r`, etc. to Windows paths.
 Use `-` as the flag prefix instead to avoid this:
 
 ```bash
-python EntryPoint/main.py -P . -p py -r "def "
+python EntryPoint/PyTextFinder.py -P . -p py -r "def "
 ```
 
 PowerShell and cmd.exe accept `/` prefixes without issue.
@@ -57,7 +57,7 @@ No build step is required.
 
 ```bash
 # from PyTextFinder/
-python EntryPoint/main.py -P . -r "def " -p py
+python EntryPoint/PyTextFinder.py -P . -r "def " -p py
 ```
 
 ---
@@ -66,7 +66,7 @@ python EntryPoint/main.py -P . -r "def " -p py
 
 ```bash
 # run all tests via the -T flag
-python EntryPoint/main.py -T
+python EntryPoint/PyTextFinder.py -T
 
 # or with the standard unittest runner
 python -m unittest discover -s . -p "test_*.py"
@@ -103,7 +103,7 @@ PyTextFinder/
 │   └── Notes.md
 └── EntryPoint/
     ├── __init__.py
-    ├── main.py             wires CommandLine, DirNav, Output; drives execution
+    ├── PyTextFinder.py     wires CommandLine, DirNav, Output; drives execution
     ├── test_main.py
     ├── Spec.md
     └── Notes.md
@@ -113,7 +113,7 @@ PyTextFinder/
 
 ## Architecture
 
-Three independent packages, wired together only in `main.py`:
+Three independent packages, wired together only in `PyTextFinder.py`:
 
 ```
 CommandLine   DirNav   Output

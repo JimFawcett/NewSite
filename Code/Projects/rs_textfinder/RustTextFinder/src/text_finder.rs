@@ -46,6 +46,7 @@ impl TextFinder {
         &self.last_dir
     }
     pub fn find(&self, file_path: &str) -> bool {
+        if self.re_str == "." { return true; }
         let contents:String;
         /*-- attempt to read file as text --*/
         let txt_rslt = std::fs::read_to_string(file_path);

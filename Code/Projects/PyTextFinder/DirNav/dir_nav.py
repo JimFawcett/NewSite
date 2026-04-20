@@ -58,6 +58,7 @@ class DirNav:
         except OSError:
             return
 
+        subdirs = []
         for entry in entries:
             if entry.is_file(follow_symlinks=False):
                 if self._extension_matches(entry.name):
@@ -66,7 +67,10 @@ class DirNav:
                         handler(entry.name)
             elif entry.is_dir(follow_symlinks=False):
                 if entry.name not in self._skips and self._recurse:
-                    self._visit_impl(entry.path)
+                    subdirs.append(entry.path)
+
+        for subdir in subdirs:
+            self._visit_impl(subdir)
 
     def _extension_matches(self, filename: str) -> bool:
         if not self._patterns:

@@ -51,5 +51,7 @@ class Output:
         return None
 
     def _find(self, file_path: str) -> bool:
+        if self._regex.pattern == ".":
+            return True
         contents = self._read_file(file_path)
         return contents is not None and bool(self._regex.search(contents))

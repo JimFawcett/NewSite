@@ -9,13 +9,15 @@ public:
         : hide_(hide)
         , dir_printed_(false)
         , match_count_(0)
+        , match_all_(true)
         , regex_(std::regex("."))
     {}
 
     void set_regex(const std::string& pattern)
     {
+        match_all_ = (pattern == ".");
         try   { regex_ = std::regex(pattern); }
-        catch (const std::regex_error&) { regex_.reset(); }
+        catch (const std::regex_error&) { regex_.reset(); match_all_ = true; }
     }
 
     void on_dir(const std::string& dir_path)
@@ -57,11 +59,13 @@ private:
     bool                       hide_;
     bool                       dir_printed_;
     std::size_t                match_count_;
+    bool                       match_all_;
     std::optional<std::regex>  regex_;
     std::string                current_dir_;
 
     bool find(const std::filesystem::path& file_path) const
     {
+        if (match_all_) return true;
         if (!regex_) return false;
         try
         {

@@ -23,8 +23,8 @@ PyTextFinder/
 ├── generate_part.py            ← scaffolds a new part directory
 ├── EntryPoint/
 │   ├── __init__.py
-│   ├── main.py                 ← top-level entry; wires and drives execution
-│   ├── test_main.py
+│   ├── PyTextFinder.py                 ← top-level entry; wires and drives execution
+│   ├── test_PyTextFinder.py
 │   ├── Spec.md
 │   └── Notes.md
 ├── CommandLine/
@@ -55,7 +55,7 @@ Each part is a directory containing an `__init__.py`, making it a Python
 package.  The source file is the snake_case equivalent of the part name
 (e.g. `DirNav` → `dir_nav.py`).
 
-`main.py` inserts the PyTextFinder root into `sys.path` at startup so that
+`PyTextFinder.py` inserts the PyTextFinder root into `sys.path` at startup so that
 sibling packages (`CommandLine`, `DirNav`, `Output`) are importable without
 installing anything.
 
@@ -65,7 +65,7 @@ installing anything.
 
 ```bash
 # from PyTextFinder/
-python EntryPoint/main.py -P . -r "def " -p py
+python EntryPoint/PyTextFinder.py -P . -r "def " -p py
 ```
 
 ---
@@ -74,7 +74,7 @@ python EntryPoint/main.py -P . -r "def " -p py
 
 ```bash
 # run all tests via the -T flag (discovers test_*.py in all part dirs)
-python EntryPoint/main.py -T
+python EntryPoint/PyTextFinder.py -T
 
 # or with the standard unittest runner
 python -m unittest discover -s . -p "test_*.py"

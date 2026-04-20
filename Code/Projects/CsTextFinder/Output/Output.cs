@@ -10,6 +10,7 @@ public class Output
     private int    _matchCount;
     private string _currentDir = string.Empty;
     private Regex  _regex = new(".");
+    private bool   _matchAll = true;
 
     public int MatchCount => _matchCount;
 
@@ -17,8 +18,9 @@ public class Output
 
     public void SetRegex(string pattern)
     {
+        _matchAll = (pattern == ".");
         try   { _regex = new Regex(pattern); }
-        catch (ArgumentException) { _regex = new Regex("."); }
+        catch (ArgumentException) { _regex = new Regex("."); _matchAll = true; }
     }
 
     public void OnDir(string dirPath)
@@ -48,6 +50,7 @@ public class Output
 
     private bool Find(string filePath)
     {
+        if (_matchAll) return true;
         string? contents = ReadFile(filePath);
         return contents is not null && _regex.IsMatch(contents);
     }

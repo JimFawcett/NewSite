@@ -48,7 +48,7 @@ def set_hide(self, hide: bool) -> None
 These are plain methods.  EntryPoint passes them to DirNav:
 
 ```python
-# in main.py:
+# in PyTextFinder.py:
 dn.dir_handler  = out.on_dir
 dn.file_handler = out.on_file
 ```
