@@ -5,7 +5,7 @@ tf_timer.py — time a TextFinder run and report file counts + elapsed time.
 Usage:
     python tf_timer.py <program> [TextFinder options ...]
 
-<program>: PyTextFinder | CsTextFinder | CppTextFinder | RustTextFinder
+<program>: PyTextFinder | CsTextFinder | CppTextFinder | RustTextFinder | RustTextFinderOpt
 All remaining arguments are forwarded to the chosen program.
 
 Example:
@@ -20,7 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent
 
-KNOWN = ["PyTextFinder", "CsTextFinder", "CppTextFinder", "RustTextFinder"]
+KNOWN = ["PyTextFinder", "CsTextFinder", "CppTextFinder", "RustTextFinder", "RustTextFinderOpt"]
 
 
 def _dash_to_slash(args):
@@ -84,6 +84,22 @@ def resolve_command(prog_name, tf_args):
         if exe:
             return [str(exe)] + _dash_to_slash(tf_args), None
         manifest = ROOT / "rs_textfinder" / "RustTextFinder" / "Cargo.toml"
+        return (
+            ["cargo", "run", "--release",
+             "--manifest-path", str(manifest), "--"] + tf_args,
+            "no pre-built exe — using 'cargo run --release' (includes compile check)",
+        )
+
+    if prog_name == "RustTextFinderOpt":
+        exe = _first_existing(
+            ROOT / "rs_textfinder_opt/RustTextFinder/target/release/text_finder.exe",
+            ROOT / "rs_textfinder_opt/RustTextFinder/target/release/text_finder",
+            ROOT / "rs_textfinder_opt/RustTextFinder/target/debug/text_finder.exe",
+            ROOT / "rs_textfinder_opt/RustTextFinder/target/debug/text_finder",
+        )
+        if exe:
+            return [str(exe)] + _dash_to_slash(tf_args), None
+        manifest = ROOT / "rs_textfinder_opt" / "RustTextFinder" / "Cargo.toml"
         return (
             ["cargo", "run", "--release",
              "--manifest-path", str(manifest), "--"] + tf_args,

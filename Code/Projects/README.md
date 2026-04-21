@@ -148,16 +148,17 @@ Metrics collected by `code_metrics.py`. **Lines** = total line count; **Scopes**
 
 ## Timing
 
-Search root: `NewSite`, extensions: `py js ts jsx tsx cpp c h hpp ixx cs rs`, content regex: `class`.
+Search root: `NewSite`, extensions: `py js ts jsx tsx cpp c h hpp ixx cs rs`, content regex: `class`. Each elapsed time is the minimum of three consecutive warm-cache runs.
 
-| TextFinder     | Files Visited | Files Matched | Elapsed (s) |
-|----------------|--------------:|--------------:|------------:|
-| PyTextFinder   |          1156 |           634 |       0.283 |
-| CsTextFinder   |          1156 |           634 |       0.886 |
-| CppTextFinder  |          1156 |           634 |       0.531 |
-| RustTextFinder |          1156 |           634 |       0.677 |
+| TextFinder        | Files Visited | Files Matched | Elapsed (s) |
+|-------------------|--------------:|--------------:|------------:|
+| PyTextFinder      |          1166 |           634 |       0.269 |
+| CsTextFinder      |          1166 |           634 |       1.076 |
+| CppTextFinder     |          1166 |           634 |       0.612 |
+| RustTextFinder    |          1166 |           634 |       0.905 |
+| RustTextFinderOpt |          1166 |           634 |       0.713 |
 
-All four agree on 634 matched.
+All five agree on 634 matched.
 
 ### Why Python leads despite being interpreted
 
@@ -165,13 +166,23 @@ The workload is almost entirely **I/O-bound**. Every implementation spends most 
 
 Python's hot path is **C**. `os.scandir()`, `open()`, `file.read()`, and `re.search()` are all C extensions. Python only interprets the few lines of logic between them, so its "interpreted overhead" is nearly invisible for this workload.
 
-**C++ `std::regex` is notoriously slow.** Its DFA construction is deferred to match time and not cached between calls, so every `std::regex_search` rebuilds work that Python's compiled `re` object caches once. This alone explains why C++ trails Python despite generating native code.
+**C++ `std::regex` is notoriously slow.** The compiled regex object is cached across calls, so the pattern is only built once — but `std::regex_search` itself uses a backtracking NFA engine that rescans the input on every match attempt. Python's `re` and Rust's `regex` crate both use DFA-based engines that scan in a single linear pass, which is why they pull ahead despite the C++ binary being native code. The standard fix is to swap `std::regex` for Google's RE2 library, which uses a DFA and would likely bring CppTextFinder into the same performance class as Python and Rust. RE2 was not adopted here because it is a third-party dependency not available in the C++ standard library.
 
 **C# pays .NET startup cost.** The runtime and JIT spin up before the first directory is touched — a large fraction of total elapsed time for a short-running tool.
 
-**Rust is genuinely fast** — its `regex` crate is excellent — but per-file `read_to_string` with a UTF-8 fallback copy adds allocations that Python avoids by reading directly into a Python string buffer.
+**Rust is genuinely fast** — its `regex` crate is excellent — but the baseline `RustTextFinder` has two inefficiencies that `RustTextFinderOpt` corrects.
 
-The rule of thumb: *interpreted vs. compiled matters for CPU-bound loops*. For I/O-bound tools with C-backed standard libraries, Python competes on equal terms and often wins against languages with heavyweight runtimes (C#) or slow standard-library implementations (C++ `std::regex`).
+### RustTextFinderOpt — optimization steps
+
+Three changes were investigated; only the third produced a clear gain.
+
+**Step 1 — pre-compile the regex (no measurable gain).** The baseline compiles `regex::Regex::new(&self.re_str)` inside `find()`, once per file. The fix stores a compiled `Option<regex::Regex>` in the struct and compiles it once in the `regex()` setter. Elapsed time was unchanged. The `regex` crate's DFA construction is fast enough that it does not dominate per-file cost.
+
+**Step 2 — search raw bytes instead of UTF-8 strings (minor gain).** The baseline reads each file with `read_to_string` (UTF-8 validation + heap allocation), then falls back to `read → String::from_utf8_lossy().to_string()` (a second allocation) for files that fail UTF-8 decoding. The fix switches to `regex::bytes::Regex`, reads every file as raw bytes with a thread-local reused buffer, and matches directly on `&[u8]` — no UTF-8 conversion at all. This eliminates the double-allocation fallback path but the overall gain was small because most files decode as valid UTF-8 on the first attempt.
+
+**Step 3 — use `DirEntry::file_type()` instead of `Path::is_dir()` (dominant gain).** The baseline calls `path.is_dir()` for every entry inside the directory scan loop. `is_dir()` on a `Path` issues a separate `stat` syscall to query the file type — one extra kernel round-trip per entry. `DirEntry::file_type()`, by contrast, returns the type already cached by the OS as part of the `readdir` response; no extra syscall is needed. Fixing this one call reduced elapsed time from ~0.90 s to ~0.71 s, a 21% improvement, and accounts for nearly all of the gap closed between `RustTextFinder` and `RustTextFinderOpt`.
+
+The remaining gap between Rust (~0.71 s) and Python (~0.27 s) is attributable to per-path string manipulation in `DirNav` (`replace_sep` on every directory entry) and Python's tighter integration between `os.scandir()` and the OS page cache.
 
 ---
 
