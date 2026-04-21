@@ -6,7 +6,7 @@ Multi-language implementations of software tools, built to the same design and c
 
 ## TextFinder Projects
 
-Each TextFinder variant walks a directory tree and reports files whose content matches a regular expression. All four share the same command-line interface and three-component architecture (`CommandLine`, `DirNav`, `Output`/`TextFinder`) wired together in an entry point.
+Each TextFinder variant walks a directory tree and reports files whose content matches a regular expression. All five share the same command-line interface and three-component architecture (`CommandLine`, `DirNav`, `Output`/`TextFinder`) wired together in an entry point.
 
 | Project | Language | Build tool | Entry point |
 |---------|----------|------------|-------------|
@@ -14,6 +14,7 @@ Each TextFinder variant walks a directory tree and reports files whose content m
 | [CsTextFinder](CsTextFinder/) | C# / .NET 10 | dotnet CLI | `CsTextFinder.exe` |
 | [PyTextFinder](PyTextFinder/) | Python 3.10+ | none | `python EntryPoint/PyTextFinder.py` |
 | [rs_textfinder](rs_textfinder/) | Rust (Cargo workspace) | cargo | `cargo run` from `RustTextFinder/` |
+| [rs_textfinder_opt](rs_textfinder_opt/) | Rust (Cargo workspace) | cargo | `cargo run` from `RustTextFinder/` |
 
 ### Shared Command-Line Interface
 
@@ -143,6 +144,18 @@ Metrics collected by `code_metrics.py`. **Lines** = total line count; **Scopes**
 | RustTextFinder\src\text_finder.rs | 297 | 77 |
 | RustTfVerify\src\main.rs | 760 | 137 |
 | **TOTAL** | **1715** | **348** |
+
+### RustTextFinderOpt
+
+| File | Lines | Scopes |
+|------|------:|-------:|
+| RustCmdLine\examples\test1.rs | 43 | 15 |
+| RustCmdLine\src\cmd_line_lib.rs | 243 | 52 |
+| RustDirNav\examples\test1.rs | 77 | 14 |
+| RustDirNav\src\dir_nav_lib.rs | 292 | 52 |
+| RustTextFinder\src\text_finder.rs | 319 | 78 |
+| RustTfVerify\src\main.rs | 760 | 137 |
+| **TOTAL** | **1736** | **348** |
 
 ---
 
