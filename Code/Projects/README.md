@@ -179,6 +179,5 @@ The rule of thumb: *interpreted vs. compiled matters for CPU-bound loops*. For I
 
 | Path | Description |
 |------|-------------|
-| [TextFinder.md](TextFinder.md) | Top-level feature overview and usage summary |
 | [documents/](documents/) | Shared design documents and notes |
 | [archive/](archive/) | Earlier drafts and experimental versions |
