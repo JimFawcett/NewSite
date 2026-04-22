@@ -87,13 +87,15 @@ Attempts to read the file at `file_path` and tests whether its content matches
 `re_str`.
 
 **Algorithm:**
-1. Try `std::fs::read_to_string(file_path)`.
-2. On failure, fall back to `std::fs::read()` and convert bytes to a lossy
+1. If `re_str == "."`, return `true` immediately (match-all fast path; no file
+   read is performed).
+2. Try `std::fs::read_to_string(file_path)`.
+3. On failure, fall back to `std::fs::read()` and convert bytes to a lossy
    UTF-8 string.
-3. If both reads fail, return `false`.
-4. Compile `re_str` with `regex::Regex::new()`. Return `false` if compilation
+4. If both reads fail, return `false`.
+5. Compile `re_str` with `regex::Regex::new()`. Return `false` if compilation
    fails.
-5. Return `re.is_match(&contents)`.
+6. Return `re.is_match(&contents)`.
 
 ### Private Methods
 
@@ -216,6 +218,7 @@ no arguments are provided.
 3. `TextFinder::find()` never panics; all error paths return `false`.
 4. If `/p` is absent, `pats` remains empty and `DirNav` passes every file to
    `do_file`.
-5. If `/r` is absent, the default regex `"."` matches every non-empty file.
+5. If `/r` is absent, the default regex `"."` triggers the match-all fast path
+   in `find()` — no file content is read at all.
 6. The regex is compiled on every `find()` call; there is no pre-compilation
    step.

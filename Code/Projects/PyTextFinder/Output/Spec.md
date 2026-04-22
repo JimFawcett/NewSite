@@ -77,15 +77,26 @@ printed" flag.
 Every write to `sys.stdout` is followed by `sys.stdout.flush()` so output
 appears on the console immediately.
 
-### Internal Method
+### Internal Methods
+
+#### `_read_file(file_path: str) -> str | None`
+
+Tries to open and read `file_path` as text, returning the full contents as a
+`str` or `None` on failure.
+
+1. Try `open(file_path, "r", encoding="utf-8")`.
+2. On `UnicodeDecodeError`, try `open(file_path, "r", encoding="latin-1")`
+   (lossless for arbitrary binary content).
+3. On `OSError` (permissions, missing file), return `None` immediately without
+   retrying.
+4. If both encodings fail, return `None`.
 
 #### `_find(file_path: str) -> bool`
 
-1. Attempt `open(file_path, "r", encoding="utf-8")` to read the file.
-2. If that raises `UnicodeDecodeError`, attempt `open(file_path, "r",
-   encoding="latin-1")` (lossless for binary content).
-3. If both reads fail (e.g. `OSError`), return `False`.
-4. Return `bool(self._regex.search(contents))`.
+1. If `self._regex.pattern == "."`, return `True` immediately — the match-all
+   fast path; no file is opened or read.
+2. Call `_read_file(file_path)`. If it returns `None`, return `False`.
+3. Return `bool(self._regex.search(contents))`.
 
 The compiled `re.Pattern` object is cached after `set_regex()` is called; it
 is not recompiled on every `on_file()` invocation.
@@ -121,8 +132,8 @@ Returns the number of files that matched the regex.
 - `_find()` never throws; all exceptions from file I/O and `re` compilation
   are caught and treated as non-match.
 - A directory header is printed at most once per `visit()` call.
-- If `set_regex()` is never called, the default pattern `"."` matches every
-  non-empty file.
+- If `set_regex()` is never called, the default pattern `"."` triggers the
+  match-all fast path in `_find()` — no file is read at all.
 
 ---
 

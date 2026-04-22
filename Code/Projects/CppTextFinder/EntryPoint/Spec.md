@@ -21,12 +21,13 @@ traversal logic.
 
 ---
 
-## Source File
+## Source Files
 
-`src/main.cpp`
-
-<!-- INPUT NEEDED: Confirm this is the only source file in EntryPoint, or list
-     additional files if needed (e.g. a TfAppl adapter class). -->
+```
+EntryPoint/src/
+├── main.cpp
+└── test.cpp
+```
 
 ---
 
@@ -36,13 +37,13 @@ traversal logic.
 main(argc, argv)
 │
 ├─ if argc == 1 or /h present
-│     print help string (from CommandLine)
-│     exit 0
+│     print help string (from CmdLine::help_text())
+│     return 0
 │
 ├─ CmdLine cl(argc, argv)      ← parses and applies defaults
 │
 ├─ if /v present
-│     print verbose option summary
+│     print verbose option summary to std::cout
 │
 ├─ Output out(cl.hide())       ← standalone; no DirNav knowledge
 │     out.set_regex(cl.regex())
@@ -54,14 +55,12 @@ main(argc, argv)
 │         [&out](const std::string& f){ out.on_file(f); })
 │
 ├─ for each pattern in cl.patterns():
-│     dn.add_pattern(patt)
+│     dn.add_pattern(pattern)
 │
-├─ dn.visit(cl.path())         ← runs the walk
+├─ dn.visit(std::filesystem::path(cl.path()))
 │
-└─ print summary: N files visited, M files matched
+└─ print summary: N file(s) visited, M file(s) matched
 ```
-
-<!-- INPUT NEEDED: Decide on the exact summary line format. -->
 
 ---
 
@@ -69,19 +68,19 @@ main(argc, argv)
 
 | Condition | Behaviour |
 |-----------|-----------|
-| Root path does not exist | Print error message; exit with status 1 |
-| Root path is not a directory | Print error message; exit with status 1 |
+| Root path does not exist or is not a directory | Print error to `std::cerr`; return 1 |
 | Unreadable file during walk | Skip silently (handled inside DirNav/Output) |
 
-<!-- INPUT NEEDED: Specify whether to use exceptions, error codes, or
-     std::expected/std::optional for signalling path errors from DirNav. -->
+Error detection is return-value based: `dn.visit()` returns `false` when the
+root path is invalid.
 
 ---
 
 ## Invariants
 
-- `target`, `build`, and `.git` are always skipped by DirNav; EntryPoint does
-  not need to register them explicitly.
+- `bin`, `obj`, `target`, `build`, `out`, `__pycache__`, `.venv`, `venv`,
+  `dist`, `.git`, `.vs`, `.idea`, and `archive` are always skipped by DirNav;
+  EntryPoint does not need to register them explicitly.
 - When no arguments are supplied, help is displayed and the process exits 0.
 - EntryPoint never calls regex or filesystem functions directly.
 

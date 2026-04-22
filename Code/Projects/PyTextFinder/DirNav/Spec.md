@@ -58,6 +58,7 @@ as a `frozenset[str]`:
 | C++             | `build`, `out` |
 | Python          | `__pycache__`, `.venv`, `venv`, `dist` |
 | VCS / IDE       | `.git`, `.vs`, `.idea` |
+| Archives        | `archive` |
 
 These are copied into a mutable `set[str]` in the constructor and cannot be
 removed.
@@ -104,13 +105,16 @@ def dir_count(self) -> int
 
 1. Increment `_dir_count`.
 2. Invoke `dir_handler` with the normalised `dir_path` (backslashes → `/`).
-3. Call `os.scandir(dir_path)` (catches `OSError`; returns on error).
-4. For each entry:
-   - If it is a file and its extension matches any pattern (or the pattern
-     list is empty), increment `_file_count` and invoke `file_handler` with
-     `entry.name` (bare filename only).
-   - If it is a directory, check its bare name against the skip list.
-     If **not** in the skip list and `_recurse` is `True`, recurse.
+3. Call `os.scandir(dir_path)` into a list (catches `OSError`; returns on error).
+4. In a single pass over the entries (using `follow_symlinks=False` for type checks):
+   - If the entry is a regular file and its extension matches any pattern (or the
+     pattern list is empty), increment `_file_count` and invoke `file_handler`
+     with `entry.name` (bare filename only).
+   - If the entry is a directory and its bare name is **not** in the skip list
+     and `_recurse` is `True`, append `entry.path` to a local `subdirs` list.
+5. After all entries are processed, recurse into each path in `subdirs` by
+   calling `_visit_impl()`. All files in the current directory are dispatched
+   before any subdirectory is entered.
 
 ---
 

@@ -36,12 +36,19 @@ EntryPoint registers its methods as callbacks on DirNav using lambdas.
 explicit Output(bool hide = true);
 ```
 
+Initialises `match_all_` to `true` and pre-compiles `regex_` with the default
+pattern `"."`.
+
 ### Configuration Methods
 
 ```cpp
 void set_regex(const std::string& pattern);
 void set_hide(bool h);
 ```
+
+`set_regex()` sets `match_all_ = (pattern == ".")`, then attempts
+`regex_.emplace(pattern)`.  On `std::regex_error` the stored regex is reset and
+`match_all_` is forced back to `true` so the match-all fast path remains active.
 
 ### Public Event Methods
 
@@ -66,43 +73,43 @@ printed" flag.
 
 #### `on_file(const std::string& file_name)`
 
-1. Builds the full file path: `current_dir + "/" + file_name`.
+1. Builds the full file path from `current_dir_` and `file_name` using
+   `std::filesystem::path::operator/`.
 2. Calls the internal `find()` method.
 3. On a match:
-   - If `hide` is `true` and the directory header has not yet been printed,
-     print the directory path now and set the "already printed" flag.
+   - If `hide_` is `true` and the directory header has not yet been printed,
+     print the directory path now and set `dir_printed_ = true`.
    - Print the matched filename (indented) and flush `std::cout`.
-4. Increments internal match counter.
+4. Increments `match_count_`.
 
-Every write to `std::cout` is followed by `std::flush` (or uses `std::endl`)
-so output appears on the console immediately rather than waiting for the stream
-buffer to fill.
+Every write to `std::cout` is followed by `std::flush` or `std::endl` so output
+appears on the console immediately.
 
 ### Internal Method
 
-#### `find(const std::string& file_path) -> bool`
+#### `find(const std::filesystem::path& file_path) → bool`  *(private const)*
 
-1. Attempt `std::ifstream` read of the entire file into a `std::string`.
-2. If the file cannot be read as text, attempt a binary read and reinterpret
-   as a string (lossy; non-UTF-8 bytes are kept as-is).
-3. If both reads fail, return `false`.
-4. Compile `regex_pattern` with `std::regex`; return `false` on compile error.
-5. Return `std::regex_search(contents, re)`.
-
-<!-- INPUT NEEDED: Decide whether the regex should be pre-compiled once (stored
-     as std::regex member) or compiled on each do_file call.  Pre-compiling is
-     more efficient but requires re-compiling whenever set_regex() is called. -->
+1. If `match_all_` is `true`, return `true` immediately — the match-all fast
+   path; no file is opened or read.
+2. If `regex_` is empty (`std::nullopt`), return `false`.
+3. Attempt a text read via `std::ifstream` into a `std::string` using
+   `oss << ifs.rdbuf()`.
+4. If the text read fails, retry with `std::ios::binary` mode (keeps non-UTF-8
+   bytes as-is).
+5. If both reads fail, return `false`.
+6. Return `std::regex_search(contents, *regex_)`.  The `std::regex` object is
+   compiled once in `set_regex()` and stored in `regex_`; it is not recompiled
+   on every `on_file()` invocation.
+7. Any exception from file I/O or `std::regex_search` is caught by a top-level
+   `try/catch (...)` that returns `false`.
 
 ### Counters
 
 ```cpp
-size_t match_count() const;
+std::size_t match_count() const;
 ```
 
 Returns the number of files that matched the regex.
-
-<!-- INPUT NEEDED: Decide whether Output or EntryPoint owns the responsibility
-     for printing the final summary line (files visited, matches found). -->
 
 ---
 
@@ -116,21 +123,19 @@ Returns the number of files that matched the regex.
       <matched_filename>
 ```
 
-- Directory lines: no leading indent.
-- File lines: indented by 4 spaces (or a tab).
-
-<!-- INPUT NEEDED: Adjust indentation, separator lines, or colour/ANSI codes
-     if desired. -->
+- Directory lines: 2-space leading indent.
+- File lines: 6-space leading indent.
 
 ---
 
 ## Invariants
 
-- `find()` never throws; all exceptions from `std::ifstream` and `std::regex`
-  are caught and treated as non-match.
+- `find()` never throws; all exceptions from `std::ifstream` and
+  `std::regex_search` are caught and treated as non-match.
 - A directory header is printed at most once per `visit()` call.
-- If `set_regex()` is never called, the default pattern `"."` matches every
-  non-empty file.
+- If `set_regex()` is never called, the default pattern `"."` sets
+  `match_all_ = true`, triggering the match-all fast path — no file is read
+  at all.
 
 ---
 

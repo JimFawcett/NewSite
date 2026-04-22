@@ -99,6 +99,7 @@ callers may extend the list with `add_skip()` but may not remove entries:
 | C++             | `build`, `out` |
 | Python          | `__pycache__`, `.venv`, `venv`, `dist` |
 | VCS / IDE       | `.git`, `.vs`, `.idea` |
+| Archives        | `archive` |
 
 ---
 
@@ -197,9 +198,9 @@ Performs a depth-first search of the directory tree rooted at `dir`.
 4. Read all entries in `dir`:
    - Sub-directories whose last name component appears in `skip_dirs` are
      silently ignored. All others are collected into a local vector.
-   - Files are always counted (`num_file += 1`). If their extension matches a
-     pattern in `pats`, or if `pats` is empty, the filename is added to a local
-     files vector.
+   - For each regular file whose extension matches a pattern in `pats`, or when
+     `pats` is empty: increment `num_file` and add the filename to a local files
+     vector. Files that do not match are neither counted nor dispatched.
 5. If the local files vector is non-empty **or** `hide` is `false`, call
    `app.do_dir()` with the directory path string.
 6. Call `app.do_file()` for each file in the files vector.
@@ -233,8 +234,8 @@ Returns `false` if the file has no extension or the extension is not in `pats`.
 1. `App` must implement both `DirEvent` and `Default`; `Default` is used by `new()`
    and `clear()`.
 2. When `pats` is empty, every file triggers `app.do_file()`.
-3. `num_file` counts all files regardless of pattern match; only matched files are
-   forwarded to `app.do_file()`.
+3. `num_file` counts only files that match a pattern (or all files when `pats` is
+   empty); unmatched files are neither counted nor forwarded to `app.do_file()`.
 4. `num_dir` counts every directory entered, including those suppressed by `hide`;
    skipped directories (in `skip_dirs`) are never entered and are not counted.
 5. `clear()` resets patterns and counters but preserves `recurse`, `hide`, and

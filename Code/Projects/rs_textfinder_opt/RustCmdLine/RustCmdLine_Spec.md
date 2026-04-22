@@ -22,10 +22,10 @@ any code that needs option values.
 /P "." /p "rs,txt" /s /r "abc" /H /h
 ```
 
-- Every option begins with `/` followed by a single ASCII character key.
-- If the token immediately after an option key does **not** start with `/`, that
+- Every option begins with `/` or `-` followed by a single ASCII character key.
+- If the token immediately after an option key does **not** start with `/` or `-`, that
   token is the option's value.
-- If the next token **does** start with `/`, or the option key is the last token,
+- If the next token **does** start with `/` or `-`, or the option key is the last token,
   the value is automatically set to `"true"`.
 - The `/p` option is special: its value is a comma-separated list that is split
   into individual strings and stored in the patterns vector.
@@ -40,6 +40,7 @@ any code that needs option values.
 | `r` | Regular expression for content matching | `"."` (matches all) |
 | `H` | Hide directories with no matching files | `"true"` |
 | `h` | Display help message | *(no default)* |
+| `v` | Verbose: print all option values before searching | *(no default)* |
 
 Custom single-character option keys are supported for application-specific use.
 
@@ -105,9 +106,9 @@ Reads `std::env::args()` and populates `opt_map` and `patterns`.
 
 1. Collect all arguments into a `Vec<String>`, skip index 0 (program name).
 2. For each argument at index `i`:
-   - If it starts with `/`:
+   - If it starts with `/` or `-`:
      - Key = second byte cast to `char`.
-     - If `i` is not the last argument **and** `args[i+1]` does not start with `/`:
+     - If `i` is not the last argument **and** `args[i+1]` does not start with `/` or `-`:
        value = `args[i+1]`.
      - Otherwise: value = `"true"`.
      - Insert `(key, value)` into `opt_map`, overwriting any previous entry.
@@ -230,7 +231,7 @@ message before calling `help()` or displaying it to the user.
 
 | Function | Behaviour |
 |----------|-----------|
-| `is_opt(&self, s: &str) -> bool` | Returns `true` if the first byte of `s` is `'/'`. Panics on empty string. |
+| `is_opt(&self, s: &str) -> bool` | Returns `true` if the first byte of `s` is `'/'` or `'-'`. Panics on empty string. |
 | `help_txt() -> String` | Returns the built-in default help text string used by `new()`. |
 | `replace_sep(path: &str) -> String` | If the path string contains a backslash character, replaces every `\` with `/` and removes the first 4 characters (strips the Windows `\\?\` UNC prefix produced by `canonicalize`). |
 

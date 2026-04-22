@@ -76,20 +76,29 @@ printed" flag.
 Every write to `Console.Out` is followed by `Console.Out.Flush()` so output
 appears on the console immediately.
 
-### Internal Method
+### Internal Methods
 
-#### `Find(string filePath) → bool`
+#### `ReadFile(string filePath) → string?`  *(private static)*
 
-1. Attempt `File.ReadAllText` to read the file into a string.
-2. If that throws (e.g. encoding error), attempt `File.ReadAllBytes` and convert
-   with `Encoding.Latin1.GetString` (lossless for binary content).
-3. If both reads fail, return `false`.
-4. Compile the regex pattern with `new Regex(pattern)`; return `false` on
-   `ArgumentException`.
-5. Return `Regex.IsMatch(contents)`.
+1. Try `File.ReadAllText(filePath)` and return the result on success.
+2. On `UnauthorizedAccessException`, return `null` immediately (retrying
+   will not help).
+3. On `IOException` (e.g. encoding error), try
+   `Encoding.Latin1.GetString(File.ReadAllBytes(filePath))` and return the
+   result (lossless for binary content).
+4. On any other exception in the fallback, return `null`.
 
-The compiled `Regex` object is cached after `SetRegex` is called; it is not
-recompiled on every `OnFile` invocation.
+#### `Find(string filePath) → bool`  *(private)*
+
+1. If `_matchAll` is `true`, return `true` immediately — the match-all fast
+   path; no file is opened or read.
+2. Call `ReadFile(filePath)`. If it returns `null`, return `false`.
+3. Return `_regex.IsMatch(contents)`.
+
+The `Regex` object is compiled once in `SetRegex()` and stored in `_regex`;
+it is not recompiled on every `OnFile` invocation. `_matchAll` is set to
+`true` whenever the pattern is `"."` (including the constructor default and
+any failed compilation fallback).
 
 ### Counter
 
@@ -121,8 +130,8 @@ Returns the number of files that matched the regex.
 - `Find()` never throws; all exceptions from file I/O and `Regex` construction
   are caught and treated as non-match.
 - A directory header is printed at most once per `Visit()` call.
-- If `SetRegex()` is never called, the default pattern `"."` matches every
-  non-empty file.
+- If `SetRegex()` is never called, the default pattern `"."` triggers the
+  match-all fast path in `Find()` — no file is read at all.
 
 ---
 

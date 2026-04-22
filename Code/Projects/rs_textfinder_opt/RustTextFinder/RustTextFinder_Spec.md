@@ -48,34 +48,58 @@ regex = "1.7.0"
 
 ---
 
+## Private Module `read_file`
+
+A private module that provides a drop-in replacement for `std::fs::read` using
+a thread-local staging buffer to eliminate repeated heap allocations.
+
+```rust
+mod read_file {
+    pub fn read(file_path: &str) -> std::io::Result<Vec<u8>>
+}
+```
+
+**Behaviour:** On first call the buffer is heap-allocated. On subsequent calls
+the buffer is reused if the file fits within its current capacity; otherwise the
+capacity is doubled or grown to the file size, whichever is larger. One clone is
+still needed to return the owned `Vec<u8>`, but intermediate reallocations are
+eliminated once the high-water-mark capacity is established.
+
+---
+
 ## Struct `TextFinder`
 
 ```rust
 #[derive(Debug, Default)]
 pub struct TextFinder {
     re_str:   String,
+    compiled: Option<regex::bytes::Regex>,
     last_dir: String,
 }
 ```
 
-Searches the content of a single file for a regex match.
+Searches the raw byte content of a single file for a regex match.
 
 ### Fields (private)
 
 | Field | Type | Purpose |
 |-------|------|---------|
 | `re_str` | `String` | Current regular expression string |
+| `compiled` | `Option<regex::bytes::Regex>` | Pre-compiled byte-level regex; `None` until `regex()` is called |
 | `last_dir` | `String` | Directory path of the last file that produced a match |
 
 ### Public Methods
 
 #### `new() -> TextFinder`
 
-Creates a new `TextFinder` with empty `re_str` and `last_dir`.
+Creates a new `TextFinder` with empty `re_str`, `compiled` set to `None`, and
+empty `last_dir`.
 
 #### `regex(&mut self, s: &str)`
 
-Sets `re_str` to `s`. Must be called before `find()`.
+Sets `re_str` to `s` and compiles it into `compiled` via
+`regex::bytes::Regex::new(s)`. If compilation fails, `compiled` is set to
+`None`. Must be called before `find()`.
 
 #### `get_regex(&self) -> &str`
 
@@ -83,17 +107,18 @@ Returns a reference to the current regex string.
 
 #### `find(&self, file_path: &str) -> bool`
 
-Attempts to read the file at `file_path` and tests whether its content matches
-`re_str`.
+Tests whether the raw byte content of `file_path` matches the compiled regex.
 
 **Algorithm:**
-1. Try `std::fs::read_to_string(file_path)`.
-2. On failure, fall back to `std::fs::read()` and convert bytes to a lossy
-   UTF-8 string.
-3. If both reads fail, return `false`.
-4. Compile `re_str` with `regex::Regex::new()`. Return `false` if compilation
-   fails.
-5. Return `re.is_match(&contents)`.
+1. If `re_str == "."`, return `true` immediately (match-all fast path; no file
+   read is performed).
+2. If `compiled` is `None`, return `false`.
+3. Read the file as raw bytes via `read_file::read(file_path)`. Return `false`
+   if the read fails.
+4. Return `compiled.is_match(&bytes)`.
+
+No UTF-8 conversion is performed at any point; the `regex::bytes::Regex` engine
+matches directly on `&[u8]`.
 
 ### Private Methods
 
@@ -216,6 +241,7 @@ no arguments are provided.
 3. `TextFinder::find()` never panics; all error paths return `false`.
 4. If `/p` is absent, `pats` remains empty and `DirNav` passes every file to
    `do_file`.
-5. If `/r` is absent, the default regex `"."` matches every non-empty file.
-6. The regex is compiled on every `find()` call; there is no pre-compilation
-   step.
+5. If `/r` is absent, the default regex `"."` matches every file via the
+   match-all fast path — no file content is read at all.
+6. The regex is compiled once in `TextFinder::regex()` and reused across all
+   `find()` calls. No compilation occurs inside `find()`.

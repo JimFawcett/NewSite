@@ -58,6 +58,7 @@ The following directory names are always skipped, regardless of any
 | C++             | `build`, `out` |
 | Python          | `__pycache__`, `.venv`, `venv`, `dist` |
 | VCS / IDE       | `.git`, `.vs`, `.idea` |
+| Archives        | `archive` |
 
 These are initialised in the constructor and cannot be removed.
 
@@ -66,9 +67,9 @@ These are initialised in the constructor and cannot be removed.
 ```csharp
 public Action<string>? DirHandler  { get; set; }
 public Action<string>? FileHandler { get; set; }
+public bool Recurse { get; set; }
 public void AddPattern(string ext);    // e.g. "cs", "txt"
 public void AddSkip(string name);      // add one name to skip list
-public void SetRecurse(bool recurse);
 ```
 
 `AddSkip()` appends to the skip list; it may be called any number of times.
@@ -94,16 +95,25 @@ public int DirCount  { get; }
 
 ### Walk Algorithm
 
-1. Check `root` exists and is a directory; return `false` otherwise.
-2. Invoke `DirHandler` with the normalised `root` path string.
-3. Enumerate entries in `root`:
-   - If the entry is a file and its extension matches any pattern (or the
-     pattern list is empty), invoke `FileHandler` with the file name only
-     (`Path.GetFileName`).
-   - If the entry is a directory, check its bare name against the skip list.
-     If **not** in the skip list and `recurse` is `true`, recurse.
-4. Path separators are normalised to `'/'` before passing to handlers.
-5. Any `IOException` on an individual entry is caught and the entry is skipped.
+`Visit(root)`:
+1. Check `root` exists via `Directory.Exists`; return `false` if not.
+2. Reset `_fileCount` and `_dirCount` to zero.
+3. Call the private `VisitImpl(root)`.
+
+`VisitImpl(dir)`:
+1. Increment `_dirCount`.
+2. Invoke `DirHandler` with the normalised `dir` path (backslashes → `'/'`).
+3. The following two loops are wrapped in a single `try/catch` that silently
+   swallows `IOException` and `UnauthorizedAccessException` for the entire
+   directory if access fails.
+4. First loop — `Directory.EnumerateFiles(dir)`: for each file whose extension
+   matches any pattern (or the pattern list is empty), increment `_fileCount`
+   and invoke `FileHandler` with the bare filename (`Path.GetFileName`). All
+   files in the current directory are processed before any subdirectory is
+   entered.
+5. Second loop — `Directory.EnumerateDirectories(dir)` (only when `Recurse`
+   is `true`): for each subdirectory whose bare name is **not** in the skip
+   list, call `VisitImpl` recursively.
 
 ---
 
