@@ -1,25 +1,30 @@
 #!/usr/bin/env python3
 """
-tf_timer.py — time a TextFinder run and report file counts + elapsed time.
+tf_timer.py — benchmark a TextFinder run and report file counts + timing.
+
+Discards the first (warm-up) run, then reports min / median / max over
+the remaining timed runs.
 
 Usage:
-    python tf_timer.py <program> [TextFinder options ...]
+    python tf_timer.py <program> [--runs N] [TextFinder options ...]
 
 <program>: PyTextFinder | CsTextFinder | CppTextFinder | RustTextFinder | RustTextFinderOpt
+--runs N : number of timed runs after discarding warm-up (default: 20)
 All remaining arguments are forwarded to the chosen program.
 
 Example:
     python tf_timer.py PyTextFinder /P . /p py /r "def "
+    python tf_timer.py CppTextFinder --runs 10 /P . /p cpp /r "class "
 """
 
 import re
+import statistics
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).parent
-
+ROOT  = Path(__file__).resolve().parent / "TextFinder"
 KNOWN = ["PyTextFinder", "CsTextFinder", "CppTextFinder", "RustTextFinder", "RustTextFinderOpt"]
 
 
@@ -109,15 +114,42 @@ def resolve_command(prog_name, tf_args):
     return None, f"unknown program '{prog_name}' — choose from: {', '.join(KNOWN)}"
 
 
+def _parse_counts(combined: str) -> tuple[str, str] | None:
+    """Return (visited, matched) strings, or None if unparseable."""
+    m = re.search(r"(\d+)\s+file\(s\)\s+visited,\s+(\d+)\s+file\(s\)\s+matched", combined)
+    if m:
+        return m.group(1), m.group(2)
+    m2 = re.search(r"processed\s+(\d+)\s+files?\s+in\s+\d+\s+dirs?", combined)
+    if m2:
+        matched = str(len(re.findall(r'^\s+"[^"]+"\s*$', combined, re.MULTILINE)))
+        return m2.group(1), matched
+    return None
+
+
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
-        print("usage: python tf_timer.py <program> [options ...]")
+        print("usage: python tf_timer.py <program> [--runs N] [options ...]")
         print(f"  program : {' | '.join(KNOWN)}")
+        print("  --runs N : timed runs after warm-up discard (default: 20)")
         print("  options : any TextFinder flags, e.g. /P . /p py /r \"def \"")
         sys.exit(0)
 
     prog_name = sys.argv[1]
-    tf_args   = sys.argv[2:]
+
+    # Pull --runs N out of the remaining args before forwarding to the program
+    runs = 20
+    remaining: list[str] = []
+    it = iter(sys.argv[2:])
+    for a in it:
+        if a == "--runs":
+            try:
+                runs = int(next(it))
+            except (StopIteration, ValueError):
+                print("error: --runs requires an integer argument", file=sys.stderr)
+                sys.exit(1)
+        else:
+            remaining.append(a)
+    tf_args = remaining
 
     cmd, warn = resolve_command(prog_name, tf_args)
     if cmd is None:
@@ -126,29 +158,30 @@ def main():
     if warn:
         print(f"note: {warn}")
 
-    t0 = time.perf_counter()
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    elapsed = time.perf_counter() - t0
+    times: list[float] = []
+    counts: tuple[str, str] | None = None
 
-    combined = (result.stdout or "") + (result.stderr or "")
-    m = re.search(r"(\d+)\s+file\(s\)\s+visited,\s+(\d+)\s+file\(s\)\s+matched", combined)
-    if m:
-        print(f"files visited : {m.group(1)}")
-        print(f"files matched : {m.group(2)}")
+    for i in range(runs + 1):              # run 0 is the discard warm-up
+        t0     = time.perf_counter()
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        elapsed = time.perf_counter() - t0
+        if i == 0:
+            continue                       # discard warm-up run
+        times.append(elapsed)
+        if counts is None:
+            combined = (result.stdout or "") + (result.stderr or "")
+            counts = _parse_counts(combined)
+
+    if counts:
+        print(f"files visited : {counts[0]}")
+        print(f"files matched : {counts[1]}")
     else:
-        # Rust TextFinder format: "processed N files in M dirs"
-        # Matched files are each listed on their own quoted line, e.g.  "foo.rs"
-        m2 = re.search(r"processed\s+(\d+)\s+files?\s+in\s+\d+\s+dirs?", combined)
-        if m2:
-            matched = len(re.findall(r'^\s+"[^"]+"\s*$', combined, re.MULTILINE))
-            print(f"files visited : {m2.group(1)}")
-            print(f"files matched : {matched}")
-        else:
-            print("(could not parse file counts from output)")
-            if combined.strip():
-                print(combined.strip())
+        print("(could not parse file counts from output)")
 
-    print(f"elapsed       : {elapsed:.4f} s")
+    print(f"runs          : {runs}  (first discarded as warm-up)")
+    print(f"min           : {min(times):.4f} s")
+    print(f"median        : {statistics.median(times):.4f} s")
+    print(f"max           : {max(times):.4f} s")
 
     if result.returncode != 0:
         sys.exit(result.returncode)
