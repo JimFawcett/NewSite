@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  RepoCSharp_ConcurrentFileAccess.html
+-->
+<head>
+  <title>C# Concurrent File Acess</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <!-- <link rel="stylesheet" href="../css/help.css" /> -->
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCSharp.css" />
+  <link rel="stylesheet" href="css/RepoCSharp_NavigatorStyles.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreReposCSharp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href="../Cpp/CppHome.html"></a>
+  <a id="prev" class="hidden" href="../Site/SiteHome.html"></a> -->
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    RepoCSharp_ConcurrentFileAccess.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/23/2026
+  </div>
+
+  <content-block>
+    <!-- <a id="top"></a> -->
+    <header>
+      <!--<a class="repoLink" href="https://github.com/JimFawcett">JimFawcett Repositories</a>-->
+      <div id="pagetitle">
+        <h2 id="title">C# Concurrent File RepoCSharp_ConcurrentFileAccess</h2>
+        <h4 id="subtitle" class="indent">
+          reacts to thrown file open exceptions
+        </h4>
+      </div>
+      <div class="repo-header-links">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/CsConcurrentFileAccess">C# Concurrent File Access</a>
+      </div>
+
+    </header>
+    <div class="spacer-1rem"></div>
+        <indent-blocks>
+          <h3 id="concept">1.0 Concept</h3>
+          <t-b>
+            Demonstrates a retry facility for safe file access in concurrent environments where multiple
+            threads or processes may simultaneously read and write the same file.
+          </t-b>
+          <h3 id="projects">2.0 Projects</h3>
+          <h4>FileReader (ConcurrFileReads)</h4>
+          <t-b>
+            <code>ConcurrFileReads/FileReader.cs</code> &mdash; <code>FileReader</code> class in namespace <code>FileLocks</code>.
+          </t-b>
+          <t-b>
+            Handles concurrent read access to a file that may also be open for writing. Opens the file
+            with <code>FileShare.Read</code> so multiple readers can coexist. If the open fails (e.g., a writer
+            holds an exclusive lock), it retries up to <code>NumAttempts</code> times (default 50), sleeping
+            <code>SleepMilliSecs</code> milliseconds (default 50) between attempts.
+          </t-b>
+          <t-b>Public interface:</t-b>
+          <pre>
+FileReader fr = new FileReader();
+bool ok       = fr.Open(fileSpec);     // open with shared-read lock; retries on failure
+fr.Close();
+int n         = fr.ReadFile(path);     // reads entire file into internal byte array
+byte[] bytes  = fr.LastFileRead();     // returns the byte array from the last read
+int attempts  = fr.NumAttempts;        // get/set max retry count (default 50)
+int failures  = fr.NumFailures;        // number of times all retries were exhausted
+fr.SleepMilliSecs = 100;              // get/set sleep between retries (default 50 ms)</pre>
+          <h4>FileWriter (ConcurrFileWrites)</h4>
+          <t-b>
+            <code>ConcurrFileWrites/FileWriter.cs</code> &mdash; <code>FileWriter</code> class in namespace <code>FileLocks</code>.<br />
+            <code>ConcurrFileWrites/FileReader.cs</code> &mdash; same <code>FileReader</code> used internally by <code>FileWriter</code>.
+          </t-b>
+          <t-b>
+            Handles concurrent write access to a file that may already be open for reading or writing.
+            Opens the file with <code>FileAccess.Write</code> and <code>FileShare.None</code> (exclusive lock). Retries on
+            failure with the same sleep-and-retry strategy as <code>FileReader</code>. <code>CopyFile</code> uses <code>FileReader</code>
+            internally to read the source before acquiring the write lock.
+          </t-b>
+          <t-b>Public interface:</t-b>
+          <pre>
+FileWriter fw = new FileWriter();
+bool ok       = fw.Open(outFile);                  // open with exclusive-write lock; retries on failure
+fw.Close();
+int n         = fw.CopyFile(readPath, writePath);  // read source file, write to destination
+int attempts  = fw.NumAttempts;                    // get/set max retry count (default 50)
+int failures  = fw.NumFailures;                    // number of times all retries were exhausted
+fw.SleepMilliSecs = 100;                          // get/set sleep between retries (default 50 ms)</pre>
+          <h3 id="build">3.0 Build and Run</h3>
+          <t-b>
+            Both projects are SDK-style and target <strong>net10.0</strong>.
+          </t-b>
+          <pre>
+dotnet run --project ConcurrFileReads/ConcurrentReads.csproj -- &lt;filename&gt;
+dotnet run --project ConcurrFileWrites/ConcurrentWrites.csproj -- &lt;readFile&gt; &lt;writeFile&gt;</pre>
+          <t-b>
+            Each project's test stub (<code>TEST_FILEREADER</code> / <code>TEST_FILEWRITER</code>) is enabled via
+            <code>&lt;DefineConstants&gt;</code> in the <code>.csproj</code> and exercises the class in a 25,000-iteration loop,
+            reporting bytes transferred and open failures.
+          </t-b>
+        </indent-blocks>
+        <div style="height:20em;"></div>
+        <div class="spacer-15rem"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CSharpRepoPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+</body>
+</html>

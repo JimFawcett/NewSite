@@ -14,9 +14,9 @@ function buildPages() {
       <a href='RepoCSharp_Graph.html'>Directed Graph</a>\
       <a href='RepoCSharp_Parser.html'>C# Parser</a>\
       <a href='RepoCSharp_Navigator.html'>Dir Navigator</a>\
-      <a href='RepoCSharp_ConcurrentFileAcess.html'>Concurrent File Acess</a>\
+      <a href='RepoCSharp_ConcurrentFileAccess.html'>Concurrent File Access</a>\
       <a href='RepoCSharp_XDocument.html'>XML Document</a>\
-      <a href='RepoCSharp_DepAnal.html'>Dependency Analysis</a>\
+      <a href='RepoCSharp_DependencyAnalysis.html'>Dependency Analysis</a>\
       <a href='RepoCSharp_CommPrototype.html'>Comm Prototype</a>\
       <a href='RepoCSharp_RemoteRepo.html'>Remote Pluggable Repo</a>\
       <a href='RepoCSharp_BasicDemos.html'>Basic Demos</a>\

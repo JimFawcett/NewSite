@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<!--
+  CsConcurrentFileAccess.html
+-->
+<head>
+  <title>CsConcurrentFileAccess Repo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/StylesPageFrameDefaults.css" />
+  <link rel="stylesheet" href="css/StylesPageFrameStructure.css" />
+  <link rel="stylesheet" href="css/StylesPageFrameMenus.css" />
+  <link rel="stylesheet" href="css/StylesPageFrameThemeCsharp.css" />
+  <link rel="stylesheet" href="css/StylesWebComponents.css" />
+  <script src="js/ScriptsWebComponents.js"></script>
+  <script src="js/ScriptsPageFrameCsRepos.js"></script>
+  <script src="js/ScriptsPageFramePagesCsRepos.js"></script>
+  <script src="js/ScriptsPageFrameKeyboard.js"></script>
+  <style>
+    summary {
+      padding: 3px 0px 5px 0px;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 0em 0.6fr 1.5fr 0.6fr 1fr 0em;
+      padding: 0.0em;
+      margin: 0em 0.25em 1em 0.25em;
+      border: 1px solid var(--dark);
+    }
+
+    .item1 {
+      grid-column: 2;
+      padding: 0.2em 1em;
+      border: 2px solid var(--dark);
+    }
+
+    .item2 {
+      grid-column: 3;
+      padding: 0.2em 1em;
+      border: 2px solid var(--dark);
+    }
+
+    .item3 {
+      grid-column: 4;
+      padding: 0.2em 1em;
+      border: 2px solid var(--dark);
+    }
+
+    .item4 {
+      grid-column: 5;
+      padding: 0.2em 1em;
+      border: 2px solid var(--dark);
+    }
+
+    .gray {
+      background-color: #ddd;
+    }
+
+    .spread {
+      margin: 1em;
+    }
+
+    .tightSpread {
+      margin: 0.5em;
+    }
+    #github #pagetitle {
+      color: var(--light);
+      background-color: var(--dark);
+    }
+
+    #github #title {
+      color: var(--light);
+      background-color: var(--dark);
+    }
+
+    #github #subtitle {
+      color: var(--light);
+      background-color: var(--dark);
+    }
+
+    #github a.repoLink {
+      background-color: var(--dark);
+      color: var(--light);
+    }
+  </style>
+  <script>
+    function loadifcsharp() {
+      var loc = window.location.href;
+      if (window.self === window.top) {
+        window.location.href = 'TOCCSharp.html?src=' + loc;
+        }
+      else {
+        window.top.location.href = loc;
+        }
+    }
+  </script>
+</head>
+<body id="github" onload="initialize()">
+
+  <a id="Next" href="CsGraph.html">N</a>
+  <a id="Prev" href="CsNavigator.html">P</a>
+
+  <page-frame>
+    <frame-header>
+      <nav id="navbar"></nav>
+    </frame-header>
+    <main>
+      <div id="about" onclick="this.style.display = 'none'">about</div>
+      <div id="modified">12/09/2022</div>
+      <div id="page">CsConcurrentFileAccess Repo</div>
+      <div id="hlp"></div>
+      <a id="top"></a>
+      <content>
+        <header>
+          <a target="_blank" class="repoLink" href="https://github.com/JimFawcett/CsConcurrentFileAccess">CsConcurrentFileAccess code</a>
+          <hgroup id="pagetitle" onclick="loadifcsharp()" style="cursor:pointer;">
+            <h1 id="title">CsConcurrentFileAccess&nbsp;&nbsp;Repository</h1>
+            <h3 id="subtitle" class="indent">Supports multiple concurrent file readers and writers</h3>
+          </hgroup>
+
+          <div onmouseleave="closeQuickStatus()" style="padding-right:25px; position:absolute; top:1.9em; right:0.25em;">
+            <details>
+              <summary class="darkItem quickStatus" style="border:1px solid var(--light);">Quick Status</summary>
+              <status-grid style="padding:5px 10px;" class="lightItem border">
+                <status-itemLeft>
+                  Code functions correctly
+                </status-itemLeft>
+                <status-itemRight>
+                  no known defects
+                </status-itemRight>
+                <status-itemLeft>
+                  Demonstration code
+                </status-itemLeft>
+                <status-itemRight>
+                  yes
+                </status-itemRight>
+                <status-itemLeft>
+                  Documentation
+                </status-itemLeft>
+                <status-itemRight>
+                  yes
+                </status-itemRight>
+                <status-itemLeft>
+                  Test cases
+                </status-itemLeft>
+                <status-itemRight>
+                  no
+                </status-itemRight>
+                <status-itemLeft>
+                  Static library
+                </status-itemLeft>
+                <status-itemRight>
+                  no
+                </status-itemRight>
+                <status-itemLeft>
+                  Build requires
+                </status-itemLeft>
+                <status-itemRight>
+                  C# 7.0
+                </status-itemRight>
+                <status-itemLeft>
+                  Planned design changes
+                </status-itemLeft>
+                <status-itemRight>
+                  - Refactory into library<br />
+                  - Add more demonstrations
+                </status-itemRight>
+              </status-grid>
+            </details>
+          </div>
+        </header>
+
+        <indent-blocks>
+          <h3 id="concept">1.0 Concept</h3>
+          <t-b>
+            When a thread has opened a file for reading or writing, the .Net System.IO.File class will throw an exception
+            if another file attempts to open for either reading<sup>1</sup> or writing.  This small library
+            supports concurrent access by catching thrown exceptions, sleeping for a small interval and
+            retrying the file open operation.  It will do that a finite number of times before declaring
+            failure<sup>2</sup>.
+          </t-b>
+          <h3 id="design">2.0 Design</h3>
+          <t-b>
+            The library provides two classes:
+            <ul class="tight">
+              <li>
+                FileReader with methods:
+                <ul class="tight">
+                  <li>bool Open(string filename)</li>
+                  <li>void Close()</li>
+                  <li>
+                    int ReadFile(string filename) - uses Open and Close
+                  </li>
+                  <li>
+                    byte[] LastFileRead() - returns all bytes in filename
+                  </li>
+                </ul>
+                and properties:
+                <ul class="tight">
+                  <li>
+                    int NumAttempts - number of attempts to Open
+                  </li>
+                  <li>
+                    int NumFailures - number of failures to Open
+                  </li>
+                  <li>
+                    int SleepMilliSecs - time to wait in milliseconds between attempts to Open
+                  </li>
+                </ul>
+              </li>
+              <li>
+                FileWriter with methods:
+                <ul class="tight">
+                  <li>
+                    bool Open(string filename)
+                  </li>
+                  <li>
+                    void Close()
+                  </li>
+                  <li>
+                    int CopyFile(string readPath, string writePath)
+                  </li>
+                </ul>
+                and properties:
+                <ul class="tight">
+                  <li>
+                    int NumAttempts - number of attempts to Open
+                  </li>
+                  <li>
+                    int NumFailures - number of failures to Open
+                  </li>
+                  <li>
+                    int SleepMilliSecs - time to wait in milliseconds between attempts to Open
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </t-b>
+          <h3 id="build">3.0 Build</h3>
+          <t-b>
+            All code was built with Visual Studio, Community Edition - 2019, and tested on Windows 10.
+          </t-b>
+          <hr class="spread" />
+          <ol>
+            <li>
+              The System.IO.File class Open method supports FileShare.Read to allow multiple concurrent
+              readers access to a shared file.  That was used in this library to minimize
+              exception handling for read operations.
+            </li>
+            <li>
+              At this time, the library does not query the exception to see if continuing is feasible.
+              For example, if the error is file access denial, no amount of retrying will succeed. Eventually
+              the library will incorporate this query test.
+            </li>
+          </ol>
+        </indent-blocks>
+        <div style="height:20em;"></div>
+      </content>
+      <a id="bottom"></a>
+      <page-TOC id="pages" style="display:none;">
+      </page-TOC>
+      <page-sections id="sections" style="display:none;">
+        <sec-elem style="width:0.0em">&nbsp;</sec-elem>
+        <menu-elem class="secElem"><a href="#bottom">bottom</a></menu-elem>
+        <menu-elem class="secElem"><a href="#build">build</a></menu-elem>
+        <menu-elem class="secElem"><a href="#design">design</a></menu-elem>
+        <!--<menu-elem class="secElem"><a href="#respon">respon</a></menu-elem>-->
+        <!--<menu-elem class="secElem"><a href="#contents">contents</a></menu-elem>-->
+        <!--<menu-elem class="secElem"><a href="#respon">respon</a></menu-elem>-->
+        <menu-elem class="secElem"><a href="#concept">concept</a></menu-elem>
+        <menu-elem class="secElem"><a href="#top">top</a></menu-elem>
+        <div class='darkItem popupHeader' style="padding:0.25em 2.0em;" onclick="this.parentElement.style.display='none'">Sections</div>
+      </page-sections>
+    </main>
+    <frame-footer>
+      <menu-item style="width:2.0em;">&nbsp;</menu-item>
+      <menu-elem id="nextLink2" onclick="bottomMenu.next()">Next</menu-elem>
+      <menu-elem id="prevLink2" onclick="bottomMenu.prev()">Prev</menu-elem>
+      <menu-elem id="pgbtn" onclick="bottomMenu.pages()">Pages</menu-elem>
+      <menu-elem onclick="bottomMenu.sections()">Sections</menu-elem>
+      <menu-elem onclick="bottomMenu.about()">About</menu-elem>
+      <menu-elem id="kysbtn" onclick="storyHlpMenu.keys()">Keys</menu-elem>
+      <menu-elem style="margin-right:1em">
+        <span id="loc" style="display:inline-block; font-weight:normal"></span>
+      </menu-elem>
+    </frame-footer>
+  </page-frame>
+  <script>
+    let loc = document.getElementById("loc");
+    let fn = window.location.href.split(/\/|\\/).pop();
+    loc.innerHTML = fn + ":";
+  </script>
+</body>
+</html>
