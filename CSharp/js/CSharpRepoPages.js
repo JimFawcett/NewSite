@@ -22,8 +22,8 @@ function buildPages() {
       <a href='RepoCSharp_BasicDemos.html'>Basic Demos</a>\
       <a href='RepoCSharp_PubSub.html'>PublisherSubscriber</a>\
       <a href='RepoCSharp_Process.html'>Win Process</a>\
-      <a href='RepoCSharp_WPF.html'>Win Pres Foundation</a>\
-      <a href='RepoCSharp_WCF'>Win Comm Foundation</a>\
+      <a href='RepoCSharp_WPF_Demos.html'>Win Pres Foundation</a>\
+      <a href='RepoCSharp_WCF_Demos.html'>Win Comm Foundation</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
