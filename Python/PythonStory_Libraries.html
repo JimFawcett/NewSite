@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  PythonStory_Libraries.html
+-->
+<head>
+  <title>Python Story Libraries</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemePython.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code { font-size: 0.95rem; background-color: #2b1408; color: #fef9c3; width: max-content; border-radius: 0.25rem; padding: 0rem 2rem; margin-bottom: 1rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExplorePython.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    PythonStory_Libraries.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Python Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #8 &ndash; Libraries</h2>
+        <h4 class="indent" id="subtitle">standard library overview: os, sys, pathlib, datetime, re, math</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">8.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Python ships with a rich standard library &mdash; "batteries included." This chapter
+          surveys the modules you will reach for most often, giving you a working mental map
+          before the detailed I/O and collections chapters.
+        </t-b>
+      </indent-blocks>
+
+      <a id="os_sys"></a>
+      <h3>8.1  os and sys</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>os</c-s> provides operating system interfaces: environment variables, process
+          management, directory operations, and path manipulation. <c-s>sys</c-s> exposes the
+          Python interpreter itself: command-line arguments, standard streams, and the module
+          search path.
+        </t-b>
+        <defn-code>
+import os, sys
+
+home = os.environ.get("HOME", "/tmp")
+pid  = os.getpid()
+cwd  = os.getcwd()
+
+print(sys.argv)          # ['script.py', 'arg1', ...]
+print(sys.version)       # '3.12.0 (main, ...)'
+sys.exit(0)              # exit with code
+        </defn-code>
+        <t-b>
+          Prefer <c-s>pathlib</c-s> over <c-s>os.path</c-s> for new code; <c-s>os</c-s>
+          is still useful for process-level operations.
+        </t-b>
+      </indent-blocks>
+
+      <a id="pathlib"></a>
+      <h3>8.2  pathlib</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>pathlib.Path</c-s> represents filesystem paths as objects, making path
+          manipulation readable and cross-platform:
+        </t-b>
+        <defn-code>
+from pathlib import Path
+
+p = Path.home() / "projects" / "app"
+p.mkdir(parents=True, exist_ok=True)
+
+cfg = p / "config.json"
+if cfg.exists():
+    text = cfg.read_text(encoding="utf-8")
+
+for f in p.glob("**/*.py"):
+    print(f.name, f.stat().st_size)
+        </defn-code>
+        <t-b>
+          Key methods: <c-s>read_text()</c-s>, <c-s>write_text()</c-s>, <c-s>read_bytes()</c-s>,
+          <c-s>write_bytes()</c-s>, <c-s>glob()</c-s>, <c-s>rglob()</c-s>, <c-s>stat()</c-s>,
+          <c-s>rename()</c-s>, <c-s>unlink()</c-s>, <c-s>rmdir()</c-s>.
+        </t-b>
+      </indent-blocks>
+
+      <a id="datetime"></a>
+      <h3>8.3  datetime</h3>
+      <indent-blocks>
+        <t-b>
+          The <c-s>datetime</c-s> module provides types for dates, times, and durations:
+        </t-b>
+        <defn-code>
+from datetime import date, datetime, timedelta, timezone
+
+today = date.today()
+now   = datetime.now(tz=timezone.utc)
+delta = timedelta(days=30)
+future = now + delta
+
+# formatting and parsing
+formatted = now.strftime("%Y-%m-%d %H:%M:%S")
+parsed    = datetime.strptime("2026-01-01", "%Y-%m-%d")
+        </defn-code>
+        <t-b>
+          For timezone-aware code, use <c-s>datetime.now(tz=timezone.utc)</c-s> and the
+          third-party <c-s>zoneinfo</c-s> module (built in since Python 3.9) for named
+          time zones.
+        </t-b>
+      </indent-blocks>
+
+      <a id="re"></a>
+      <h3>8.4  re &mdash; Regular Expressions</h3>
+      <indent-blocks>
+        <t-b>
+          The <c-s>re</c-s> module provides Perl-compatible regular expressions. Compile
+          patterns for reuse:
+        </t-b>
+        <defn-code>
+import re
+
+email_re = re.compile(r"[\w.+-]+@[\w-]+\.[a-z]{2,}", re.IGNORECASE)
+
+text = "Contact alice@example.com or bob@test.org"
+matches = email_re.findall(text)
+# ['alice@example.com', 'bob@test.org']
+
+m = email_re.search(text)
+if m:
+    print(m.group(), m.start(), m.end())
+
+cleaned = re.sub(r"\s+", " ", "too   many   spaces")
+        </defn-code>
+        <t-b>
+          Key functions: <c-s>match()</c-s>, <c-s>search()</c-s>, <c-s>findall()</c-s>,
+          <c-s>finditer()</c-s>, <c-s>sub()</c-s>, <c-s>split()</c-s>.
+        </t-b>
+      </indent-blocks>
+
+      <a id="math_random"></a>
+      <h3>8.5  math and random</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>math</c-s> provides mathematical functions on floats (faster than the equivalent
+          Python operations for scalars). <c-s>random</c-s> provides pseudo-random number
+          generation:
+        </t-b>
+        <defn-code>
+import math, random
+
+print(math.sqrt(2))         # 1.4142135623730951
+print(math.log(math.e))     # 1.0
+print(math.isclose(0.1 + 0.2, 0.3))  # True
+
+random.seed(42)
+print(random.randint(1, 6))           # die roll
+print(random.choice(["a", "b", "c"]))
+deck = list(range(52))
+random.shuffle(deck)
+sample = random.sample(deck, 5)       # 5 unique draws
+        </defn-code>
+        <t-b>
+          For cryptographic randomness use <c-s>secrets</c-s>; for statistical distributions
+          use <c-s>random.gauss()</c-s>, <c-s>random.uniform()</c-s>, etc.
+        </t-b>
+      </indent-blocks>
+
+      <a id="logging"></a>
+      <h3>8.6  logging</h3>
+      <indent-blocks>
+        <t-b>
+          The <c-s>logging</c-s> module provides a flexible framework for emitting log messages
+          with configurable handlers and levels. Prefer it over <c-s>print()</c-s> for
+          production code:
+        </t-b>
+        <defn-code>
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+)
+
+log = logging.getLogger(__name__)
+log.info("application started")
+log.warning("disk usage high: %d%%", 92)
+log.error("connection failed", exc_info=True)
+        </defn-code>
+        <t-b>
+          Levels in ascending order: <c-s>DEBUG</c-s>, <c-s>INFO</c-s>,
+          <c-s>WARNING</c-s>, <c-s>ERROR</c-s>, <c-s>CRITICAL</c-s>.
+          Configure handlers (file, rotating, syslog) and formatters to route messages
+          appropriately.
+        </t-b>
+      </indent-blocks>
+
+      <a id="third_party"></a>
+      <h3>8.7  Key Third-Party Packages</h3>
+      <indent-blocks>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">Package</th>
+              <th class="darkItem">Purpose</th>
+            </tr>
+            <tr><td class="defn"><c-s>requests</c-s></td><td class="defn">HTTP client with a simple API</td></tr>
+            <tr><td class="defn"><c-s>httpx</c-s></td><td class="defn">async-capable HTTP client</td></tr>
+            <tr><td class="defn"><c-s>numpy</c-s></td><td class="defn">N-dimensional arrays and math</td></tr>
+            <tr><td class="defn"><c-s>pandas</c-s></td><td class="defn">tabular data analysis (DataFrame)</td></tr>
+            <tr><td class="defn"><c-s>pydantic</c-s></td><td class="defn">data validation using type hints</td></tr>
+            <tr><td class="defn"><c-s>pytest</c-s></td><td class="defn">testing framework</td></tr>
+            <tr><td class="defn"><c-s>fastapi</c-s></td><td class="defn">modern async web API framework</td></tr>
+            <tr><td class="defn"><c-s>sqlalchemy</c-s></td><td class="defn">ORM and database toolkit</td></tr>
+          </table>
+        </t-b>
+        <t-b>
+          Install packages with <c-s>pip install &lt;package&gt;</c-s> inside a virtual
+          environment. Pin versions in <c-s>requirements.txt</c-s> or
+          <c-s>pyproject.toml</c-s>.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue8"></a>
+      <h3>8.8  Epilogue</h3>
+      <t-b>
+        This chapter surveyed frequently used standard library modules and key third-party
+        packages. The next two chapters dive deeper into the I/O and collections libraries.
+      </t-b>
+      <a id="refs"></a>
+      <h3>8.9  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://docs.python.org/3/library/">Python standard library &mdash; python.org</a><br />
+        <a target="_blank" href="https://docs.python.org/3/library/pathlib.html">pathlib &mdash; python.org</a><br />
+        <a target="_blank" href="https://docs.python.org/3/library/logging.html">logging &mdash; python.org</a><br />
+        <a target="_blank" href="https://pypi.org/">PyPI &mdash; Python Package Index</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#os_sys">os &amp; sys</a></menu-elem>
+        <menu-elem class="secElem"><a href="#pathlib">pathlib</a></menu-elem>
+        <menu-elem class="secElem"><a href="#datetime">datetime</a></menu-elem>
+        <menu-elem class="secElem"><a href="#re">re</a></menu-elem>
+        <menu-elem class="secElem"><a href="#math_random">math &amp; random</a></menu-elem>
+        <menu-elem class="secElem"><a href="#logging">logging</a></menu-elem>
+        <menu-elem class="secElem"><a href="#third_party">third-party</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/PythonStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 8, 10);
+  </script>
+</body>
+</html>

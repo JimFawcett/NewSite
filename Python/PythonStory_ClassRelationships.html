@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  PythonStory_ClassRelationships.html
+-->
+<head>
+  <title>Python Story Class Relationships</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemePython.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code { font-size: 0.95rem; background-color: #2b1408; color: #fef9c3; width: max-content; border-radius: 0.25rem; padding: 0rem 2rem; margin-bottom: 1rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExplorePython.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    PythonStory_ClassRelationships.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Python Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #6 &ndash; Class Relationships</h2>
+        <h4 class="indent" id="subtitle">inheritance, MRO, super(), mixins, ABCs, composition</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">6.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Classes rarely stand alone. This chapter examines how Python classes relate to each
+          other: single and multiple inheritance, the Method Resolution Order, mixin patterns,
+          abstract base classes for interface contracts, and composition as an alternative to
+          inheritance.
+        </t-b>
+      </indent-blocks>
+
+      <a id="inheritance"></a>
+      <h3>6.1  Single Inheritance</h3>
+      <indent-blocks>
+        <t-b>
+          A class inherits all attributes and methods of its parent. Override a method by
+          redefining it; call the parent implementation via <c-s>super()</c-s>:
+        </t-b>
+        <defn-code>
+class Animal:
+    def __init__(self, name: str) -&gt; None:
+        self.name = name
+
+    def speak(self) -&gt; str:
+        raise NotImplementedError
+
+    def __repr__(self) -&gt; str:
+        return f"{type(self).__name__}({self.name!r})"
+
+class Dog(Animal):
+    def speak(self) -&gt; str:
+        return f"{self.name} says Woof!"
+
+class GuideDog(Dog):
+    def __init__(self, name: str, owner: str) -&gt; None:
+        super().__init__(name)
+        self.owner = owner
+
+    def speak(self) -&gt; str:
+        return super().speak() + " (guide)"
+        </defn-code>
+      </indent-blocks>
+
+      <a id="mro"></a>
+      <h3>6.2  Multiple Inheritance and MRO</h3>
+      <indent-blocks>
+        <t-b>
+          Python supports multiple inheritance. The <strong>Method Resolution Order</strong> (MRO)
+          &mdash; computed by the C3 linearization algorithm &mdash; determines which class's
+          method is called when the same name appears in multiple bases:
+        </t-b>
+        <defn-code>
+class A:
+    def greet(self): return "A"
+
+class B(A):
+    def greet(self): return "B-&gt;" + super().greet()
+
+class C(A):
+    def greet(self): return "C-&gt;" + super().greet()
+
+class D(B, C):
+    pass
+
+print(D().greet())   # B-&gt;C-&gt;A
+print(D.__mro__)     # (D, B, C, A, object)
+        </defn-code>
+        <t-b>
+          Inspect the MRO with <c-s>ClassName.__mro__</c-s> or
+          <c-s>ClassName.mro()</c-s>. Always use <c-s>super()</c-s> (not hard-coded parent
+          names) to cooperate correctly with the MRO.
+        </t-b>
+      </indent-blocks>
+
+      <a id="mixins"></a>
+      <h3>6.3  Mixins</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>mixin</strong> is a class that provides methods for reuse without being a
+          meaningful base type on its own. Mixins are listed as additional bases and rely on the
+          MRO to combine cleanly:
+        </t-b>
+        <defn-code>
+class JsonMixin:
+    def to_json(self) -&gt; str:
+        import json
+        return json.dumps(self.__dict__)
+
+class LogMixin:
+    def log(self, msg: str) -&gt; None:
+        print(f"[{type(self).__name__}] {msg}")
+
+class User(JsonMixin, LogMixin):
+    def __init__(self, name: str, email: str) -&gt; None:
+        self.name = name
+        self.email = email
+
+u = User("Alice", "alice@example.com")
+print(u.to_json())
+u.log("created")
+        </defn-code>
+      </indent-blocks>
+
+      <a id="abc"></a>
+      <h3>6.4  Abstract Base Classes</h3>
+      <indent-blocks>
+        <t-b>
+          The <c-s>abc</c-s> module provides <c-s>ABC</c-s> and <c-s>abstractmethod</c-s> to
+          declare interface contracts that subclasses must fulfill. Instantiating a class with
+          unimplemented abstract methods raises <c-s>TypeError</c-s>:
+        </t-b>
+        <defn-code>
+from abc import ABC, abstractmethod
+
+class Shape(ABC):
+    @abstractmethod
+    def area(self) -&gt; float: ...
+
+    @abstractmethod
+    def perimeter(self) -&gt; float: ...
+
+    def describe(self) -&gt; str:
+        return f"area={self.area():.2f}, perim={self.perimeter():.2f}"
+
+class Circle(Shape):
+    def __init__(self, radius: float) -&gt; None:
+        self.radius = radius
+
+    def area(self) -&gt; float:
+        import math
+        return math.pi * self.radius ** 2
+
+    def perimeter(self) -&gt; float:
+        import math
+        return 2 * math.pi * self.radius
+        </defn-code>
+        <t-b>
+          The <c-s>collections.abc</c-s> module also defines ABCs for standard protocols:
+          <c-s>Iterable</c-s>, <c-s>Mapping</c-s>, <c-s>Sequence</c-s>, <c-s>Callable</c-s>, etc.
+        </t-b>
+      </indent-blocks>
+
+      <a id="composition"></a>
+      <h3>6.5  Composition vs Inheritance</h3>
+      <indent-blocks>
+        <t-b>
+          Inheritance models an <em>is-a</em> relationship; composition models a <em>has-a</em>
+          relationship. Composition is often more flexible because it avoids tight coupling and
+          deep hierarchies:
+        </t-b>
+        <defn-code>
+class Engine:
+    def start(self) -&gt; str:
+        return "vroom"
+
+class Car:
+    def __init__(self) -&gt; None:
+        self._engine = Engine()   # composition
+
+    def start(self) -&gt; str:
+        return self._engine.start()
+        </defn-code>
+        <t-b>
+          A useful heuristic: prefer composition when you want to reuse behavior; prefer
+          inheritance when you need polymorphism through a common base type.
+        </t-b>
+      </indent-blocks>
+
+      <a id="isinstance"></a>
+      <h3>6.6  isinstance and issubclass</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>isinstance(obj, T)</c-s> returns <c-s>True</c-s> if <c-s>obj</c-s> is an
+          instance of <c-s>T</c-s> or any subclass.
+          <c-s>issubclass(Sub, Base)</c-s> checks the class hierarchy.
+          Both accept a tuple of types: <c-s>isinstance(x, (int, float))</c-s>.
+        </t-b>
+        <t-b>
+          In duck-typed code, prefer checking for the <em>protocol</em> (e.g., <c-s>hasattr</c-s>)
+          rather than the class, unless you specifically need to guard against an exact type.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue6"></a>
+      <h3>6.7  Epilogue</h3>
+      <t-b>
+        This chapter covered Python's inheritance model, the MRO, mixins, abstract base classes,
+        and the composition alternative. The next chapter examines Python's generic type system
+        through the <c-s>typing</c-s> module.
+      </t-b>
+      <a id="refs"></a>
+      <h3>6.8  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://docs.python.org/3/library/abc.html">abc module &mdash; python.org</a><br />
+        <a target="_blank" href="https://docs.python.org/3/library/collections.abc.html">collections.abc &mdash; python.org</a><br />
+        <a target="_blank" href="https://realpython.com/python-super/">super() &mdash; Real Python</a><br />
+        <a target="_blank" href="https://realpython.com/inheritance-composition-python/">Inheritance vs Composition &mdash; Real Python</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#inheritance">inheritance</a></menu-elem>
+        <menu-elem class="secElem"><a href="#mro">MRO</a></menu-elem>
+        <menu-elem class="secElem"><a href="#mixins">mixins</a></menu-elem>
+        <menu-elem class="secElem"><a href="#abc">ABCs</a></menu-elem>
+        <menu-elem class="secElem"><a href="#composition">composition</a></menu-elem>
+        <menu-elem class="secElem"><a href="#isinstance">isinstance</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/PythonStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 6, 10);
+  </script>
+</body>
+</html>

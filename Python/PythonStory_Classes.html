@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  PythonStory_Classes.html
+-->
+<head>
+  <title>Python Story Classes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemePython.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code { font-size: 0.95rem; background-color: #2b1408; color: #fef9c3; width: max-content; border-radius: 0.25rem; padding: 0rem 2rem; margin-bottom: 1rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExplorePython.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    PythonStory_Classes.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Python Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #5 &ndash; Classes</h2>
+        <h4 class="indent" id="subtitle">anatomy, __init__, properties, dunder methods, dataclasses</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">5.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>class</strong> is the primary way Python bundles data (attributes) and behavior
+          (methods). This chapter walks through every member kind a class can contain, from the
+          initializer to special dunder methods to the modern <c-s>@dataclass</c-s> decorator.
+        </t-b>
+      </indent-blocks>
+
+      <a id="anatomy"></a>
+      <h3>5.1  Class Anatomy</h3>
+      <indent-blocks>
+        <t-b>
+          A class body may contain:
+          <ul class="tight">
+            <li><strong>Class variables</strong> &mdash; shared by all instances</li>
+            <li><strong>Instance variables</strong> &mdash; per-instance state set in <c-s>__init__</c-s></li>
+            <li><strong>Instance methods</strong> &mdash; receive <c-s>self</c-s> as the first parameter</li>
+            <li><strong>Class methods</strong> &mdash; decorated with <c-s>@classmethod</c-s>; receive <c-s>cls</c-s></li>
+            <li><strong>Static methods</strong> &mdash; decorated with <c-s>@staticmethod</c-s>; no implicit first parameter</li>
+            <li><strong>Properties</strong> &mdash; managed attribute access via <c-s>@property</c-s></li>
+            <li><strong>Dunder methods</strong> &mdash; special names like <c-s>__repr__</c-s>, <c-s>__len__</c-s></li>
+          </ul>
+        </t-b>
+        <defn-code>
+class BankAccount:
+    interest_rate = 0.03          # class variable
+
+    def __init__(self, owner: str, balance: float = 0.0) -&gt; None:
+        self.owner = owner
+        self._balance = balance   # _ prefix = private by convention
+
+    @property
+    def balance(self) -&gt; float:
+        return self._balance
+
+    def deposit(self, amount: float) -&gt; None:
+        if amount &lt;= 0:
+            raise ValueError("amount must be positive")
+        self._balance += amount
+
+    def withdraw(self, amount: float) -&gt; bool:
+        if amount &gt; self._balance:
+            return False
+        self._balance -= amount
+        return True
+
+    @classmethod
+    def from_dict(cls, data: dict) -&gt; "BankAccount":
+        return cls(data["owner"], data.get("balance", 0.0))
+
+    @staticmethod
+    def validate_amount(amount: float) -&gt; bool:
+        return amount &gt; 0
+
+    def __repr__(self) -&gt; str:
+        return f"BankAccount({self.owner!r}, {self._balance:.2f})"
+        </defn-code>
+      </indent-blocks>
+
+      <a id="init"></a>
+      <h3>5.2  __init__ and Instance Variables</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>__init__</c-s> is the initializer, called immediately after a new instance is
+          created. It sets up instance variables by assigning to <c-s>self.name</c-s>.
+          Python has no access modifiers; a single underscore prefix (<c-s>_attr</c-s>) signals
+          "internal use" and a double underscore (<c-s>__attr</c-s>) triggers name-mangling.
+        </t-b>
+        <t-b>
+          <c-s>__new__</c-s> is the allocator (rarely overridden). The common pattern is
+          <c-s>__init__</c-s> only.
+        </t-b>
+      </indent-blocks>
+
+      <a id="properties"></a>
+      <h3>5.3  Properties</h3>
+      <indent-blocks>
+        <t-b>
+          The <c-s>@property</c-s> decorator turns a method into a read-only attribute.
+          Adding <c-s>@name.setter</c-s> enables controlled writes:
+        </t-b>
+        <defn-code>
+class Temperature:
+    def __init__(self, celsius: float) -&gt; None:
+        self._celsius = celsius
+
+    @property
+    def celsius(self) -&gt; float:
+        return self._celsius
+
+    @celsius.setter
+    def celsius(self, value: float) -&gt; None:
+        if value &lt; -273.15:
+            raise ValueError("below absolute zero")
+        self._celsius = value
+
+    @property
+    def fahrenheit(self) -&gt; float:
+        return self._celsius * 9 / 5 + 32
+        </defn-code>
+      </indent-blocks>
+
+      <a id="dunders"></a>
+      <h3>5.4  Dunder Methods</h3>
+      <indent-blocks>
+        <t-b>
+          Dunder (double-underscore) methods let user-defined classes integrate with Python's
+          built-in syntax and functions:
+        </t-b>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">Method</th>
+              <th class="darkItem">Triggered by</th>
+            </tr>
+            <tr><td class="defn"><c-s>__repr__</c-s></td><td class="defn"><c-s>repr(obj)</c-s>, interactive display</td></tr>
+            <tr><td class="defn"><c-s>__str__</c-s></td><td class="defn"><c-s>str(obj)</c-s>, <c-s>print(obj)</c-s></td></tr>
+            <tr><td class="defn"><c-s>__len__</c-s></td><td class="defn"><c-s>len(obj)</c-s></td></tr>
+            <tr><td class="defn"><c-s>__contains__</c-s></td><td class="defn"><c-s>item in obj</c-s></td></tr>
+            <tr><td class="defn"><c-s>__getitem__</c-s></td><td class="defn"><c-s>obj[key]</c-s></td></tr>
+            <tr><td class="defn"><c-s>__iter__</c-s></td><td class="defn"><c-s>for x in obj</c-s></td></tr>
+            <tr><td class="defn"><c-s>__eq__</c-s>, <c-s>__lt__</c-s>, ...</td><td class="defn">comparison operators</td></tr>
+            <tr><td class="defn"><c-s>__add__</c-s>, <c-s>__mul__</c-s>, ...</td><td class="defn">arithmetic operators</td></tr>
+            <tr><td class="defn"><c-s>__enter__</c-s>, <c-s>__exit__</c-s></td><td class="defn"><c-s>with obj as x</c-s></td></tr>
+            <tr><td class="defn"><c-s>__call__</c-s></td><td class="defn"><c-s>obj()</c-s></td></tr>
+          </table>
+        </t-b>
+      </indent-blocks>
+
+      <a id="dataclasses"></a>
+      <h3>5.5  Dataclasses</h3>
+      <indent-blocks>
+        <t-b>
+          The <c-s>@dataclass</c-s> decorator (Python 3.7+) auto-generates <c-s>__init__</c-s>,
+          <c-s>__repr__</c-s>, and <c-s>__eq__</c-s> from annotated fields:
+        </t-b>
+        <defn-code>
+from dataclasses import dataclass, field
+
+@dataclass(order=True, frozen=True)
+class Point:
+    x: float
+    y: float
+    label: str = ""
+    tags: list[str] = field(default_factory=list)
+
+    def distance(self) -&gt; float:
+        return (self.x**2 + self.y**2) ** 0.5
+
+p1 = Point(3.0, 4.0, "origin")
+p2 = Point(0.0, 0.0)
+print(p1 &gt; p2)     # True (order=True compares fields in order)
+        </defn-code>
+        <t-b>
+          <c-s>frozen=True</c-s> makes instances immutable (and hashable). <c-s>order=True</c-s>
+          generates comparison methods. Use <c-s>field(default_factory=...)</c-s> for mutable
+          defaults.
+        </t-b>
+      </indent-blocks>
+
+      <a id="slots"></a>
+      <h3>5.6  __slots__</h3>
+      <indent-blocks>
+        <t-b>
+          By default, every instance stores attributes in a <c-s>__dict__</c-s>. Declaring
+          <c-s>__slots__</c-s> replaces that dict with a fixed set of slots, reducing memory and
+          speeding up attribute access:
+        </t-b>
+        <defn-code>
+class Pixel:
+    __slots__ = ("x", "y", "color")
+
+    def __init__(self, x: int, y: int, color: str) -&gt; None:
+        self.x = x
+        self.y = y
+        self.color = color
+        </defn-code>
+        <t-b>
+          Slotted classes cannot have arbitrary extra attributes and do not inherit a
+          <c-s>__dict__</c-s> unless explicitly added.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue5"></a>
+      <h3>5.7  Epilogue</h3>
+      <t-b>
+        This chapter detailed the anatomy of Python classes: instance and class variables,
+        properties, dunder methods, dataclasses, and slots. The next chapter examines how
+        classes relate to one another through inheritance and composition.
+      </t-b>
+      <a id="refs"></a>
+      <h3>5.8  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://docs.python.org/3/reference/datamodel.html">Data model (dunder methods) &mdash; python.org</a><br />
+        <a target="_blank" href="https://docs.python.org/3/library/dataclasses.html">dataclasses module &mdash; python.org</a><br />
+        <a target="_blank" href="https://realpython.com/python-classes/">Python classes &mdash; Real Python</a><br />
+        <a target="_blank" href="https://docs.python.org/3/reference/expressions.html#slots">__slots__ &mdash; python.org</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#anatomy">anatomy</a></menu-elem>
+        <menu-elem class="secElem"><a href="#init">__init__</a></menu-elem>
+        <menu-elem class="secElem"><a href="#properties">properties</a></menu-elem>
+        <menu-elem class="secElem"><a href="#dunders">dunders</a></menu-elem>
+        <menu-elem class="secElem"><a href="#dataclasses">dataclasses</a></menu-elem>
+        <menu-elem class="secElem"><a href="#slots">__slots__</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/PythonStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  PythonStory_LibraryCollections.html
+-->
+<head>
+  <title>Python Story Collections Library</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemePython.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code { font-size: 0.95rem; background-color: #2b1408; color: #fef9c3; width: max-content; border-radius: 0.25rem; padding: 0rem 2rem; margin-bottom: 1rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExplorePython.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    PythonStory_LibraryCollections.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Python Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #10 &ndash; Collections Library</h2>
+        <h4 class="indent" id="subtitle">collections, itertools, functools</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">10.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Three standard library modules &mdash; <c-s>collections</c-s>, <c-s>itertools</c-s>,
+          and <c-s>functools</c-s> &mdash; extend Python's built-in data structures and
+          functional programming tools. Knowing them avoids reinventing common patterns.
+        </t-b>
+      </indent-blocks>
+
+      <a id="counter"></a>
+      <h3>10.1  Counter</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>Counter</c-s> is a dict subclass that counts hashable objects. It supports
+          arithmetic operations on counts:
+        </t-b>
+        <defn-code>
+from collections import Counter
+
+text = "abracadabra"
+c = Counter(text)
+print(c)                      # Counter({'a': 5, 'b': 2, 'r': 2, 'c': 1, 'd': 1})
+print(c.most_common(3))       # [('a', 5), ('b', 2), ('r', 2)]
+
+words = "the cat sat on the mat".split()
+wc = Counter(words)
+print(wc["the"])              # 2
+wc.update(["the", "cat"])     # add more counts
+        </defn-code>
+      </indent-blocks>
+
+      <a id="defaultdict"></a>
+      <h3>10.2  defaultdict</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>defaultdict</c-s> calls a factory function to create default values for missing
+          keys, eliminating explicit <c-s>KeyError</c-s> handling:
+        </t-b>
+        <defn-code>
+from collections import defaultdict
+
+# group words by first letter
+words = ["apple", "apricot", "banana", "avocado", "blueberry"]
+by_letter = defaultdict(list)
+for w in words:
+    by_letter[w[0]].append(w)
+# {'a': ['apple', 'apricot', 'avocado'], 'b': ['banana', 'blueberry']}
+
+# count without Counter
+freq = defaultdict(int)
+for w in words:
+    freq[w] += 1
+        </defn-code>
+      </indent-blocks>
+
+      <a id="deque"></a>
+      <h3>10.3  deque</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>deque</c-s> (double-ended queue) provides O(1) append and pop from both ends,
+          unlike a list where left-end operations are O(n):
+        </t-b>
+        <defn-code>
+from collections import deque
+
+q = deque([1, 2, 3])
+q.appendleft(0)     # [0, 1, 2, 3]
+q.append(4)         # [0, 1, 2, 3, 4]
+q.popleft()         # 0 — O(1)
+q.rotate(1)         # [4, 1, 2, 3]  — rotate right by 1
+
+# bounded buffer: automatically discards oldest when full
+recent = deque(maxlen=5)
+for i in range(10):
+    recent.append(i)
+print(list(recent))  # [5, 6, 7, 8, 9]
+        </defn-code>
+      </indent-blocks>
+
+      <a id="namedtuple"></a>
+      <h3>10.4  namedtuple and OrderedDict</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>namedtuple</c-s> creates lightweight immutable classes with named fields.
+          <c-s>typing.NamedTuple</c-s> is the typed equivalent:
+        </t-b>
+        <defn-code>
+from collections import namedtuple
+from typing import NamedTuple
+
+Point = namedtuple("Point", ["x", "y"])
+p = Point(3, 4)
+print(p.x, p.y)      # 3 4
+print(p._asdict())   # {'x': 3, 'y': 4}
+
+class Color(NamedTuple):
+    r: int
+    g: int
+    b: int
+    alpha: float = 1.0
+
+red = Color(255, 0, 0)
+        </defn-code>
+        <t-b>
+          <c-s>OrderedDict</c-s> was the insertion-order-preserving dict before Python 3.7.
+          Today regular <c-s>dict</c-s> preserves order; <c-s>OrderedDict</c-s> is mainly
+          useful for its <c-s>move_to_end()</c-s> method and for LRU-cache implementations.
+        </t-b>
+      </indent-blocks>
+
+      <a id="itertools"></a>
+      <h3>10.5  itertools</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>itertools</c-s> provides composable building blocks for lazy iteration:
+        </t-b>
+        <defn-code>
+import itertools
+
+# infinite iterators
+counter  = itertools.count(start=1, step=2)   # 1, 3, 5, ...
+cycle    = itertools.cycle("ABC")             # A B C A B C ...
+repeated = itertools.repeat(42, times=3)      # 42 42 42
+
+# slicing infinite iterators
+first10 = list(itertools.islice(counter, 10))
+
+# combinatorics
+perms = list(itertools.permutations("ABC", 2))   # 6 pairs
+combs = list(itertools.combinations("ABCD", 2))  # 6 pairs
+
+# chaining and grouping
+chained = list(itertools.chain([1, 2], [3, 4], [5]))  # [1,2,3,4,5]
+
+data = sorted([("a", 1), ("b", 2), ("a", 3)], key=lambda t: t[0])
+for key, group in itertools.groupby(data, key=lambda t: t[0]):
+    print(key, list(group))
+        </defn-code>
+      </indent-blocks>
+
+      <a id="functools"></a>
+      <h3>10.6  functools</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>functools</c-s> provides higher-order functions for functional-style programming:
+        </t-b>
+        <defn-code>
+import functools, operator
+
+# reduce — fold a sequence
+total = functools.reduce(operator.add, [1, 2, 3, 4, 5])  # 15
+
+# partial — fix some arguments
+double = functools.partial(operator.mul, 2)
+print(double(7))   # 14
+
+# lru_cache — memoization
+@functools.lru_cache(maxsize=None)
+def fib(n: int) -&gt; int:
+    return n if n &lt; 2 else fib(n - 1) + fib(n - 2)
+
+print(fib(50))   # fast, O(n) due to caching
+print(fib.cache_info())
+
+# cached_property — compute once, store as attribute
+class Circle:
+    def __init__(self, r: float) -&gt; None:
+        self.r = r
+
+    @functools.cached_property
+    def area(self) -&gt; float:
+        import math
+        return math.pi * self.r ** 2
+        </defn-code>
+        <t-b>
+          <c-s>@functools.wraps(f)</c-s> preserves the wrapped function's name, docstring, and
+          annotations &mdash; always use it inside decorator wrappers.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue10"></a>
+      <h3>10.7  Epilogue</h3>
+      <t-b>
+        This chapter covered the <c-s>collections</c-s>, <c-s>itertools</c-s>, and
+        <c-s>functools</c-s> modules &mdash; workhorses that replace verbose manual patterns
+        with concise, well-tested utilities. The final chapter explores Python's most
+        interesting advanced features.
+      </t-b>
+      <a id="refs"></a>
+      <h3>10.8  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://docs.python.org/3/library/collections.html">collections module &mdash; python.org</a><br />
+        <a target="_blank" href="https://docs.python.org/3/library/itertools.html">itertools module &mdash; python.org</a><br />
+        <a target="_blank" href="https://docs.python.org/3/library/functools.html">functools module &mdash; python.org</a><br />
+        <a target="_blank" href="https://realpython.com/python-itertools/">itertools &mdash; Real Python</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#counter">Counter</a></menu-elem>
+        <menu-elem class="secElem"><a href="#defaultdict">defaultdict</a></menu-elem>
+        <menu-elem class="secElem"><a href="#deque">deque</a></menu-elem>
+        <menu-elem class="secElem"><a href="#namedtuple">namedtuple</a></menu-elem>
+        <menu-elem class="secElem"><a href="#itertools">itertools</a></menu-elem>
+        <menu-elem class="secElem"><a href="#functools">functools</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/PythonStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 10, 10);
+  </script>
+</body>
+</html>

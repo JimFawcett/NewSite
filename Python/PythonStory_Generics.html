@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  PythonStory_Generics.html
+-->
+<head>
+  <title>Python Story Generics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemePython.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code { font-size: 0.95rem; background-color: #2b1408; color: #fef9c3; width: max-content; border-radius: 0.25rem; padding: 0rem 2rem; margin-bottom: 1rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExplorePython.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    PythonStory_Generics.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Python Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #7 &ndash; Generics</h2>
+        <h4 class="indent" id="subtitle">typing module, TypeVar, Generic, Protocol, type aliases</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">7.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Python's duck typing already provides a form of generic behavior &mdash; a function
+          that works on any type with the right protocol. The <c-s>typing</c-s> module (and later
+          Python 3.12 syntax) gives names to these patterns so that static analyzers can verify
+          them and IDEs can auto-complete them.
+        </t-b>
+      </indent-blocks>
+
+      <a id="builtin_generics"></a>
+      <h3>7.1  Built-In Generic Types</h3>
+      <indent-blocks>
+        <t-b>
+          Since Python 3.9 the built-in collection types accept subscripts directly as type hints.
+          No import is needed:
+        </t-b>
+        <defn-code>
+def first(items: list[int]) -&gt; int | None:
+    return items[0] if items else None
+
+def invert(d: dict[str, int]) -&gt; dict[int, str]:
+    return {v: k for k, v in d.items()}
+        </defn-code>
+        <t-b>
+          For Python 3.7&ndash;3.8 use <c-s>from __future__ import annotations</c-s> or import
+          from <c-s>typing</c-s>: <c-s>List[int]</c-s>, <c-s>Dict[str, int]</c-s>, etc.
+        </t-b>
+      </indent-blocks>
+
+      <a id="typevar"></a>
+      <h3>7.2  TypeVar</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>TypeVar</c-s> defines a type parameter &mdash; a placeholder that a static
+          checker replaces with the concrete type inferred from usage:
+        </t-b>
+        <defn-code>
+from typing import TypeVar
+
+T = TypeVar("T")
+
+def identity(x: T) -&gt; T:
+    return x
+
+def first_of(items: list[T]) -&gt; T | None:
+    return items[0] if items else None
+
+reveal_type(first_of([1, 2, 3]))     # int | None
+reveal_type(first_of(["a", "b"]))    # str | None
+        </defn-code>
+        <t-b>
+          Constrain a <c-s>TypeVar</c-s> to a set of types with <c-s>bound=</c-s> or explicit
+          union: <c-s>Numeric = TypeVar("Numeric", int, float, complex)</c-s>.
+        </t-b>
+      </indent-blocks>
+
+      <a id="generic_classes"></a>
+      <h3>7.3  Generic Classes</h3>
+      <indent-blocks>
+        <t-b>
+          Inherit from <c-s>Generic[T]</c-s> to make a class parameterize over a type.
+          Python 3.12 introduces a cleaner <c-s>class Stack[T]:</c-s> syntax:
+        </t-b>
+        <defn-code>
+from typing import Generic, TypeVar
+
+T = TypeVar("T")
+
+class Stack(Generic[T]):
+    def __init__(self) -&gt; None:
+        self._items: list[T] = []
+
+    def push(self, item: T) -&gt; None:
+        self._items.append(item)
+
+    def pop(self) -&gt; T:
+        if not self._items:
+            raise IndexError("pop from empty stack")
+        return self._items.pop()
+
+    def __len__(self) -&gt; int:
+        return len(self._items)
+
+s: Stack[int] = Stack()
+s.push(1)
+s.push(2)
+print(s.pop())   # 2
+        </defn-code>
+      </indent-blocks>
+
+      <a id="protocol"></a>
+      <h3>7.4  Protocol (Structural Subtyping)</h3>
+      <indent-blocks>
+        <t-b>
+          A <c-s>Protocol</c-s> defines a structural interface: any class that implements the
+          required attributes and methods satisfies the protocol <em>without explicitly inheriting
+          from it</em>. This is Python's formalization of duck typing:
+        </t-b>
+        <defn-code>
+from typing import Protocol
+
+class Drawable(Protocol):
+    def draw(self) -&gt; None: ...
+
+class Circle:
+    def draw(self) -&gt; None:
+        print("drawing circle")
+
+class Square:
+    def draw(self) -&gt; None:
+        print("drawing square")
+
+def render(shape: Drawable) -&gt; None:
+    shape.draw()
+
+render(Circle())   # OK — Circle has draw()
+render(Square())   # OK — Square has draw()
+        </defn-code>
+        <t-b>
+          Decorate a <c-s>Protocol</c-s> with <c-s>@runtime_checkable</c-s> to support
+          <c-s>isinstance(obj, Drawable)</c-s> checks.
+        </t-b>
+      </indent-blocks>
+
+      <a id="aliases"></a>
+      <h3>7.5  Type Aliases and NewType</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>type alias</strong> gives a descriptive name to a complex hint.
+          Python 3.12 uses <c-s>type Name = ...</c-s>; earlier versions use
+          <c-s>TypeAlias</c-s> from <c-s>typing</c-s>:
+        </t-b>
+        <defn-code>
+from typing import TypeAlias
+
+Vector: TypeAlias = list[float]
+Matrix: TypeAlias = list[Vector]
+
+def dot(a: Vector, b: Vector) -&gt; float:
+    return sum(x * y for x, y in zip(a, b))
+        </defn-code>
+        <t-b>
+          <c-s>NewType</c-s> creates a distinct type that behaves like the underlying type at
+          runtime but is treated as separate by the type checker:
+        </t-b>
+        <defn-code>
+from typing import NewType
+
+UserId = NewType("UserId", int)
+
+def get_user(uid: UserId) -&gt; str: ...
+
+get_user(UserId(42))   # OK
+get_user(42)           # type error — plain int is not UserId
+        </defn-code>
+      </indent-blocks>
+
+      <a id="special"></a>
+      <h3>7.6  Special Forms</h3>
+      <indent-blocks>
+        <t-b>
+          Common <c-s>typing</c-s> utilities:
+          <table>
+            <tr>
+              <th class="darkItem">Form</th>
+              <th class="darkItem">Meaning</th>
+            </tr>
+            <tr><td class="defn"><c-s>Optional[X]</c-s></td><td class="defn"><c-s>X | None</c-s></td></tr>
+            <tr><td class="defn"><c-s>Union[X, Y]</c-s></td><td class="defn"><c-s>X | Y</c-s></td></tr>
+            <tr><td class="defn"><c-s>Any</c-s></td><td class="defn">escape hatch — compatible with every type</td></tr>
+            <tr><td class="defn"><c-s>Callable[[A, B], R]</c-s></td><td class="defn">callable with arg types A, B returning R</td></tr>
+            <tr><td class="defn"><c-s>ClassVar[T]</c-s></td><td class="defn">class variable, not instance variable</td></tr>
+            <tr><td class="defn"><c-s>Final[T]</c-s></td><td class="defn">constant — cannot be reassigned</td></tr>
+            <tr><td class="defn"><c-s>Literal["a", "b"]</c-s></td><td class="defn">one of the given literal values</td></tr>
+          </table>
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue7"></a>
+      <h3>7.7  Epilogue</h3>
+      <t-b>
+        This chapter covered Python's generic type machinery: TypeVar, Generic classes, Protocol
+        for structural typing, type aliases, and common special forms. The next chapter surveys
+        the Python standard library.
+      </t-b>
+      <a id="refs"></a>
+      <h3>7.8  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://docs.python.org/3/library/typing.html">typing module &mdash; python.org</a><br />
+        <a target="_blank" href="https://mypy.readthedocs.io/en/stable/generics.html">Generics &mdash; mypy docs</a><br />
+        <a target="_blank" href="https://peps.python.org/pep-0544/">PEP 544 &mdash; Protocols</a><br />
+        <a target="_blank" href="https://peps.python.org/pep-0695/">PEP 695 &mdash; Type Parameter Syntax (3.12)</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#builtin_generics">built-in generics</a></menu-elem>
+        <menu-elem class="secElem"><a href="#typevar">TypeVar</a></menu-elem>
+        <menu-elem class="secElem"><a href="#generic_classes">Generic classes</a></menu-elem>
+        <menu-elem class="secElem"><a href="#protocol">Protocol</a></menu-elem>
+        <menu-elem class="secElem"><a href="#aliases">type aliases</a></menu-elem>
+        <menu-elem class="secElem"><a href="#special">special forms</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/PythonStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 7, 10);
+  </script>
+</body>
+</html>

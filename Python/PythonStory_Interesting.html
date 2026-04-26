@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  PythonStory_Interesting.html
+-->
+<head>
+  <title>Python Story Interesting</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemePython.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code { font-size: 0.95rem; background-color: #2b1408; color: #fef9c3; width: max-content; border-radius: 0.25rem; padding: 0rem 2rem; margin-bottom: 1rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExplorePython.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    PythonStory_Interesting.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Python Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #11 &ndash; Interesting</h2>
+        <h4 class="indent" id="subtitle">async/await, metaclasses, descriptors, context managers, pattern matching</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">11.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          This final chapter explores advanced Python features that you will encounter in
+          production codebases and that reward deeper study: cooperative async programming,
+          metaclass machinery, the descriptor protocol, custom context managers, and structural
+          pattern matching.
+        </t-b>
+      </indent-blocks>
+
+      <a id="async"></a>
+      <h3>11.1  Async / Await</h3>
+      <indent-blocks>
+        <t-b>
+          Python's <c-s>asyncio</c-s> library provides cooperative multitasking on a single
+          thread. An <c-s>async def</c-s> function is a <strong>coroutine</strong>; calling it
+          returns a coroutine object. Use <c-s>await</c-s> to suspend until the awaited work
+          completes:
+        </t-b>
+        <defn-code>
+import asyncio, httpx
+
+async def fetch(url: str) -&gt; str:
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(url)
+        return resp.text
+
+async def main() -&gt; None:
+    urls = [
+        "https://example.com",
+        "https://python.org",
+    ]
+    tasks = [asyncio.create_task(fetch(u)) for u in urls]
+    results = await asyncio.gather(*tasks)
+    for r in results:
+        print(len(r), "chars")
+
+asyncio.run(main())
+        </defn-code>
+        <t-b>
+          Key rules:
+          <ul class="tight">
+            <li><c-s>await</c-s> can only appear inside <c-s>async def</c-s> functions.</li>
+            <li>CPU-bound work blocks the event loop; offload to <c-s>loop.run_in_executor()</c-s>.</li>
+            <li><c-s>asyncio.gather()</c-s> runs tasks concurrently; <c-s>asyncio.create_task()</c-s>
+                schedules them immediately.</li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="context_managers"></a>
+      <h3>11.2  Context Managers</h3>
+      <indent-blocks>
+        <t-b>
+          Any object that implements <c-s>__enter__</c-s> and <c-s>__exit__</c-s> can be
+          used in a <c-s>with</c-s> statement. The <c-s>contextlib</c-s> module makes it
+          easy to create context managers from generator functions:
+        </t-b>
+        <defn-code>
+from contextlib import contextmanager
+import time
+
+@contextmanager
+def timer(label: str):
+    start = time.perf_counter()
+    try:
+        yield                          # body of the with-block runs here
+    finally:
+        elapsed = time.perf_counter() - start
+        print(f"{label}: {elapsed:.4f}s")
+
+with timer("sorting"):
+    data = sorted(range(1_000_000), reverse=True)
+        </defn-code>
+        <t-b>
+          <c-s>contextlib.suppress(ExcType)</c-s> silences specific exceptions.
+          <c-s>contextlib.ExitStack</c-s> manages a dynamic number of context managers.
+        </t-b>
+      </indent-blocks>
+
+      <a id="descriptors"></a>
+      <h3>11.3  Descriptors</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>descriptor</strong> is an object that defines <c-s>__get__</c-s>,
+          <c-s>__set__</c-s>, and/or <c-s>__delete__</c-s>. When placed as a class attribute,
+          these methods intercept attribute access on instances. <c-s>@property</c-s> is
+          built on descriptors:
+        </t-b>
+        <defn-code>
+class Validated:
+    """Descriptor that rejects non-positive values."""
+    def __set_name__(self, owner, name):
+        self.name = name
+
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        return getattr(obj, f"_{self.name}")
+
+    def __set__(self, obj, value):
+        if value &lt;= 0:
+            raise ValueError(f"{self.name} must be positive, got {value}")
+        setattr(obj, f"_{self.name}", value)
+
+class Rectangle:
+    width  = Validated()
+    height = Validated()
+
+    def __init__(self, w: float, h: float) -&gt; None:
+        self.width = w
+        self.height = h
+        </defn-code>
+      </indent-blocks>
+
+      <a id="metaclasses"></a>
+      <h3>11.4  Metaclasses</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>metaclass</strong> is the class of a class. Just as an instance is built by
+          its class, a class is built by its metaclass. The default metaclass is <c-s>type</c-s>.
+          Override it to customize class creation &mdash; enforcing conventions, registering
+          subclasses, or injecting methods:
+        </t-b>
+        <defn-code>
+class RegistryMeta(type):
+    _registry: dict = {}
+
+    def __new__(mcs, name, bases, namespace):
+        cls = super().__new__(mcs, name, bases, namespace)
+        if bases:                           # skip the base class itself
+            mcs._registry[name] = cls
+        return cls
+
+class Plugin(metaclass=RegistryMeta):
+    pass
+
+class AudioPlugin(Plugin): pass
+class VideoPlugin(Plugin): pass
+
+print(RegistryMeta._registry)
+# {'AudioPlugin': &lt;class '...'&gt;, 'VideoPlugin': &lt;class '...'&gt;}
+        </defn-code>
+        <t-b>
+          In modern Python, <c-s>__init_subclass__</c-s> and class decorators often provide a
+          simpler alternative to a full metaclass.
+        </t-b>
+      </indent-blocks>
+
+      <a id="pattern_matching"></a>
+      <h3>11.5  Structural Pattern Matching</h3>
+      <indent-blocks>
+        <t-b>
+          Introduced in Python 3.10, <c-s>match / case</c-s> destructures data structures and
+          matches against patterns, far beyond what <c-s>if/elif</c-s> chains can express:
+        </t-b>
+        <defn-code>
+from dataclasses import dataclass
+
+@dataclass
+class Point:
+    x: float
+    y: float
+
+def classify(obj):
+    match obj:
+        case Point(x=0, y=0):
+            return "origin"
+        case Point(x=0, y=y):
+            return f"on y-axis at {y}"
+        case Point(x=x, y=0):
+            return f"on x-axis at {x}"
+        case Point(x=x, y=y) if x == y:
+            return f"on diagonal at {x}"
+        case Point():
+            return "other point"
+        case {"action": action, "data": data}:
+            return f"dict: {action}"
+        case [first, *rest]:
+            return f"list starting with {first}"
+        case _:
+            return "unknown"
+        </defn-code>
+      </indent-blocks>
+
+      <a id="walrus"></a>
+      <h3>11.6  Walrus Operator and Other Modern Syntax</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Walrus operator</strong> <c-s>:=</c-s> (Python 3.8+) assigns and tests in
+          one expression, reducing repeated function calls in loops and comprehensions:
+        </t-b>
+        <defn-code>
+import re
+
+data = ["100px", "20em", "not a size", "50px"]
+sizes = [m.group() for s in data if (m := re.search(r"\d+px", s))]
+# ['100px', '50px']
+
+# read chunks until empty
+with open("large.txt") as f:
+    while chunk := f.read(4096):
+        process(chunk)
+        </defn-code>
+        <t-b>
+          Other notable modern Python additions:
+          <ul class="tight">
+            <li><strong>f-string debugging</strong> (3.8): <c-s>f"{value=}"</c-s> prints
+                <c-s>value=42</c-s></li>
+            <li><strong>Positional-only parameters</strong> (3.8): <c-s>/</c-s> in signature</li>
+            <li><strong>ParamSpec and Concatenate</strong> (3.10): type-check decorator
+                signatures</li>
+            <li><strong>Exception groups</strong> (3.11): <c-s>ExceptionGroup</c-s> and
+                <c-s>except*</c-s></li>
+            <li><strong>Type parameter syntax</strong> (3.12):
+                <c-s>def first[T](lst: list[T]) -&gt; T</c-s></li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue11"></a>
+      <h3>11.7  Epilogue</h3>
+      <t-b>
+        This chapter closed the Python Story with its most advanced features. Taken together,
+        the eleven chapters provide a comprehensive map of modern Python from basic types to
+        coroutines, metaclasses, and the newest language syntax. The best next step is to apply
+        these patterns in real projects.
+      </t-b>
+      <a id="refs"></a>
+      <h3>11.8  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://docs.python.org/3/library/asyncio.html">asyncio &mdash; python.org</a><br />
+        <a target="_blank" href="https://docs.python.org/3/library/contextlib.html">contextlib &mdash; python.org</a><br />
+        <a target="_blank" href="https://docs.python.org/3/howto/descriptor.html">Descriptor How-To Guide &mdash; python.org</a><br />
+        <a target="_blank" href="https://peps.python.org/pep-0634/">PEP 634 &mdash; Structural Pattern Matching</a><br />
+        <a target="_blank" href="https://peps.python.org/pep-0572/">PEP 572 &mdash; Walrus Operator</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#async">async/await</a></menu-elem>
+        <menu-elem class="secElem"><a href="#context_managers">context managers</a></menu-elem>
+        <menu-elem class="secElem"><a href="#descriptors">descriptors</a></menu-elem>
+        <menu-elem class="secElem"><a href="#metaclasses">metaclasses</a></menu-elem>
+        <menu-elem class="secElem"><a href="#pattern_matching">pattern matching</a></menu-elem>
+        <menu-elem class="secElem"><a href="#walrus">walrus &amp; modern syntax</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/PythonStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 11, 10);
+  </script>
+</body>
+</html>

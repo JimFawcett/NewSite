@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  PythonStory_LibraryIO.html
+-->
+<head>
+  <title>Python Story I/O Library</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemePython.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code { font-size: 0.95rem; background-color: #2b1408; color: #fef9c3; width: max-content; border-radius: 0.25rem; padding: 0rem 2rem; margin-bottom: 1rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExplorePython.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    PythonStory_LibraryIO.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Python Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #9 &ndash; I/O Library</h2>
+        <h4 class="indent" id="subtitle">file I/O, context managers, pathlib, csv, json, pickle</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">9.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Reading and writing data is a core programming task. This chapter covers Python's
+          built-in file I/O, the <c-s>with</c-s> statement for safe resource management,
+          and the standard modules for structured data formats.
+        </t-b>
+      </indent-blocks>
+
+      <a id="file_open"></a>
+      <h3>9.1  open() and the with Statement</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>open(path, mode, encoding)</c-s> returns a file object. Always use a
+          <c-s>with</c-s> block so the file is closed automatically even if an exception occurs:
+        </t-b>
+        <defn-code>
+# text mode — default, newlines translated, encoding applies
+with open("notes.txt", "w", encoding="utf-8") as f:
+    f.write("line one\n")
+    f.write("line two\n")
+
+with open("notes.txt", encoding="utf-8") as f:
+    for line in f:               # iterate line by line
+        print(line.rstrip())
+
+# binary mode — no encoding, no newline translation
+with open("data.bin", "rb") as f:
+    header = f.read(4)           # read exactly 4 bytes
+        </defn-code>
+        <t-b>
+          Common modes:
+          <c-s>"r"</c-s> (read), <c-s>"w"</c-s> (write/create), <c-s>"a"</c-s> (append),
+          <c-s>"x"</c-s> (exclusive create, fails if exists), <c-s>"b"</c-s> (binary),
+          <c-s>"+"</c-s> (read+write).
+        </t-b>
+      </indent-blocks>
+
+      <a id="text_read"></a>
+      <h3>9.2  Reading Text Files</h3>
+      <indent-blocks>
+        <t-b>
+          Several patterns for reading:
+        </t-b>
+        <defn-code>
+from pathlib import Path
+
+# read entire file as a string
+text = Path("notes.txt").read_text(encoding="utf-8")
+
+# read all lines into a list (newlines included)
+with open("notes.txt") as f:
+    lines = f.readlines()
+
+# read lines stripping newlines
+with open("notes.txt") as f:
+    lines = [line.rstrip("\n") for line in f]
+
+# read fixed-size chunks
+with open("large.dat") as f:
+    while chunk := f.read(4096):
+        process(chunk)
+        </defn-code>
+      </indent-blocks>
+
+      <a id="csv_module"></a>
+      <h3>9.3  csv Module</h3>
+      <indent-blocks>
+        <t-b>
+          The <c-s>csv</c-s> module handles comma-separated values, including quoting and
+          different delimiters. <c-s>DictReader</c-s> maps each row to a dict keyed by
+          the header row:
+        </t-b>
+        <defn-code>
+import csv
+
+# write
+with open("people.csv", "w", newline="", encoding="utf-8") as f:
+    writer = csv.DictWriter(f, fieldnames=["name", "age"])
+    writer.writeheader()
+    writer.writerow({"name": "Alice", "age": 30})
+    writer.writerow({"name": "Bob",   "age": 25})
+
+# read
+with open("people.csv", encoding="utf-8") as f:
+    for row in csv.DictReader(f):
+        print(row["name"], int(row["age"]))
+        </defn-code>
+        <t-b>
+          Use <c-s>newline=""</c-s> when opening for writing to prevent double newlines
+          on Windows. Set <c-s>delimiter="\t"</c-s> for TSV files.
+        </t-b>
+      </indent-blocks>
+
+      <a id="json_module"></a>
+      <h3>9.4  json Module</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>json</c-s> serializes Python objects (dicts, lists, str, int, float, bool, None)
+          to JSON strings and vice versa:
+        </t-b>
+        <defn-code>
+import json
+from pathlib import Path
+
+data = {"name": "Alice", "scores": [95, 87, 91], "active": True}
+
+# serialize to string
+text = json.dumps(data, indent=2)
+
+# write to file
+Path("data.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+# read from file
+loaded = json.loads(Path("data.json").read_text(encoding="utf-8"))
+
+# use json.dump / json.load for file objects
+with open("out.json", "w") as f:
+    json.dump(data, f, indent=2)
+        </defn-code>
+        <t-b>
+          For types not natively serializable (e.g., <c-s>datetime</c-s>, <c-s>Decimal</c-s>)
+          provide a custom <c-s>default</c-s> function or subclass <c-s>json.JSONEncoder</c-s>.
+        </t-b>
+      </indent-blocks>
+
+      <a id="pickle_module"></a>
+      <h3>9.5  pickle Module</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>pickle</c-s> serializes arbitrary Python objects to binary data. Unlike JSON it
+          can round-trip almost any Python object, but the output is Python-specific and should
+          never be loaded from untrusted sources:
+        </t-b>
+        <defn-code>
+import pickle
+
+obj = {"key": [1, 2, 3], "fn": lambda x: x * 2}  # lambdas are NOT picklable
+
+# safe objects
+data = {"key": [1, 2, 3], "value": 42.0}
+
+with open("data.pkl", "wb") as f:
+    pickle.dump(data, f)
+
+with open("data.pkl", "rb") as f:
+    loaded = pickle.load(f)       # ONLY load trusted pickle files
+        </defn-code>
+        <t-b>
+          Prefer JSON or other portable formats when interoperability or security matters.
+          Use pickle for caching Python-specific objects (ML models, numpy arrays) in a
+          trusted environment.
+        </t-b>
+      </indent-blocks>
+
+      <a id="stringio"></a>
+      <h3>9.6  io.StringIO and io.BytesIO</h3>
+      <indent-blocks>
+        <t-b>
+          In-memory file-like objects are useful for testing and for functions that expect a
+          file object:
+        </t-b>
+        <defn-code>
+import io, csv
+
+# build a CSV in memory, then parse it
+buf = io.StringIO()
+writer = csv.writer(buf)
+writer.writerows([["a", 1], ["b", 2]])
+buf.seek(0)
+for row in csv.reader(buf):
+    print(row)
+        </defn-code>
+      </indent-blocks>
+
+      <a id="epilogue9"></a>
+      <h3>9.7  Epilogue</h3>
+      <t-b>
+        This chapter covered text and binary file I/O, the <c-s>with</c-s> statement, and the
+        csv, json, and pickle modules. The next chapter covers the collections, itertools, and
+        functools modules.
+      </t-b>
+      <a id="refs"></a>
+      <h3>9.8  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://docs.python.org/3/library/io.html">io module &mdash; python.org</a><br />
+        <a target="_blank" href="https://docs.python.org/3/library/csv.html">csv module &mdash; python.org</a><br />
+        <a target="_blank" href="https://docs.python.org/3/library/json.html">json module &mdash; python.org</a><br />
+        <a target="_blank" href="https://docs.python.org/3/library/pickle.html">pickle module &mdash; python.org</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#file_open">open()</a></menu-elem>
+        <menu-elem class="secElem"><a href="#text_read">reading text</a></menu-elem>
+        <menu-elem class="secElem"><a href="#csv_module">csv</a></menu-elem>
+        <menu-elem class="secElem"><a href="#json_module">json</a></menu-elem>
+        <menu-elem class="secElem"><a href="#pickle_module">pickle</a></menu-elem>
+        <menu-elem class="secElem"><a href="#stringio">StringIO</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/PythonStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 9, 10);
+  </script>
+</body>
+</html>

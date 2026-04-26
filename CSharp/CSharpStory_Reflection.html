@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CSharpStory_Reflection.html
+-->
+<head>
+  <title>C# Story Reflection</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCSharp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code { font-size: 0.95rem; background-color: #0d1b2a; color: #c8e4e8; width: max-content; border-radius: 0.25rem; padding: 0rem 2rem; margin-bottom: 1rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCSharp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CSharpStory_Reflection.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">C# Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #8 &ndash; Reflection</h2>
+        <h4 class="indent" id="subtitle">runtime type inspection, dynamic invocation, attributes, emit</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">8.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Reflection</strong> is the ability of a program to inspect and manipulate its
+          own structure at runtime — discovering types, reading metadata, invoking methods by name,
+          and even creating new types on the fly. The <c-s>System.Reflection</c-s> namespace
+          provides the full API. Reflection powers serializers, dependency-injection containers,
+          ORMs, test frameworks, and many other infrastructure libraries.
+        </t-b>
+      </indent-blocks>
+
+      <a id="type"></a>
+      <h3>8.1  The Type Object</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>System.Type</c-s> is the entry point for all reflection. Three ways to obtain one:
+        </t-b>
+        <defn-code>
+// 1. From a compile-time type name
+Type t1 = typeof(List&lt;int&gt;);
+
+// 2. From an instance at runtime
+object obj = new Dictionary&lt;string, int&gt;();
+Type t2 = obj.GetType();
+
+// 3. By name (late-bound; may return null)
+Type? t3 = Type.GetType("System.Collections.Generic.List`1");
+        </defn-code>
+        <t-b>
+          Useful <c-s>Type</c-s> properties:
+          <ul class="tight">
+            <li><c-s>Name</c-s>, <c-s>FullName</c-s>, <c-s>Namespace</c-s>, <c-s>AssemblyQualifiedName</c-s></li>
+            <li><c-s>IsClass</c-s>, <c-s>IsInterface</c-s>, <c-s>IsValueType</c-s>, <c-s>IsEnum</c-s>, <c-s>IsGenericType</c-s></li>
+            <li><c-s>BaseType</c-s> &mdash; the direct base class</li>
+            <li><c-s>GetInterfaces()</c-s> &mdash; all implemented interfaces</li>
+            <li><c-s>IsAssignableTo(other)</c-s> / <c-s>IsAssignableFrom(other)</c-s></li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="members"></a>
+      <h3>8.2  Inspecting Members</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>Type</c-s> exposes methods to enumerate every member. Pass
+          <c-s>BindingFlags</c-s> to control which members are returned:
+        </t-b>
+        <defn-code>
+Type t = typeof(string);
+BindingFlags pub = BindingFlags.Public | BindingFlags.Instance;
+
+// Methods
+foreach (MethodInfo m in t.GetMethods(pub))
+    Console.WriteLine($"  {m.ReturnType.Name} {m.Name}");
+
+// Properties
+foreach (PropertyInfo p in t.GetProperties(pub))
+    Console.WriteLine($"  {p.PropertyType.Name} {p.Name}");
+
+// Fields (usually private; add NonPublic flag)
+BindingFlags priv = pub | BindingFlags.NonPublic;
+foreach (FieldInfo f in t.GetFields(priv))
+    Console.WriteLine($"  {f.FieldType.Name} {f.Name}");
+
+// Constructors
+foreach (ConstructorInfo c in t.GetConstructors(pub))
+    Console.WriteLine($"  .ctor({string.Join(", ", c.GetParameters().Select(p => p.ParameterType.Name))})");
+        </defn-code>
+        <t-b>
+          <c-s>BindingFlags.DeclaredOnly</c-s> restricts results to members declared on the type
+          itself (not inherited). <c-s>BindingFlags.Static</c-s> includes static members.
+        </t-b>
+      </indent-blocks>
+
+      <a id="assembly"></a>
+      <h3>8.3  Assembly Inspection</h3>
+      <indent-blocks>
+        <t-b>
+          An <c-s>Assembly</c-s> object represents a loaded .dll or .exe. You can enumerate
+          all types it defines, load it from a file path, or load it by name:
+        </t-b>
+        <defn-code>
+// Assembly containing a known type
+Assembly asm = typeof(string).Assembly;
+Console.WriteLine(asm.FullName);
+
+// All public types in the assembly
+foreach (Type t in asm.GetExportedTypes())
+    Console.WriteLine(t.FullName);
+
+// Load from file path
+Assembly plugin = Assembly.LoadFrom("MyPlugin.dll");
+Type? entry = plugin.GetType("MyPlugin.EntryPoint");
+        </defn-code>
+        <t-b>
+          Assemblies loaded with <c-s>Assembly.LoadFrom</c-s> cannot be unloaded individually
+          in the default context. Use <c-s>AssemblyLoadContext</c-s> (collectible) if you need
+          plugin hot-reload or unloading.
+        </t-b>
+      </indent-blocks>
+
+      <a id="create"></a>
+      <h3>8.4  Dynamic Creation and Invocation</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>Activator.CreateInstance</c-s> constructs an object when the type is only known
+          at runtime. <c-s>MethodInfo.Invoke</c-s> calls a method by its reflected descriptor:
+        </t-b>
+        <defn-code>
+// Create instance of a type known only at runtime
+Type t = Type.GetType("System.Text.StringBuilder")!;
+object? sb = Activator.CreateInstance(t, "hello");   // calls ctor(string)
+
+// Invoke a method by name
+MethodInfo? append = t.GetMethod("Append", new[] { typeof(string) });
+append?.Invoke(sb, new object[] { " world" });
+
+// Read a property value
+PropertyInfo? length = t.GetProperty("Length");
+int len = (int)length?.GetValue(sb)!;
+Console.WriteLine(len);   // 11
+
+// Generic method: must supply type arguments
+MethodInfo? parse = typeof(int).GetMethod("Parse", new[] { typeof(string) });
+int n = (int)parse!.Invoke(null, new object[] { "42" })!;
+        </defn-code>
+        <t-b>
+          For generic methods, call <c-s>MakeGenericMethod(typeArgs)</c-s> before invoking:
+        </t-b>
+        <defn-code>
+MethodInfo? max = typeof(Enumerable)
+    .GetMethods()
+    .First(m =&gt; m.Name == "Max" &amp;&amp; m.GetParameters().Length == 1);
+MethodInfo maxInt = max.MakeGenericMethod(typeof(int));
+int result = (int)maxInt.Invoke(null, new object[] { new[] { 3, 1, 4, 1, 5 } })!;
+        </defn-code>
+      </indent-blocks>
+
+      <a id="attrs"></a>
+      <h3>8.5  Reading Attributes at Runtime</h3>
+      <indent-blocks>
+        <t-b>
+          Attributes are metadata attached to types, methods, properties, or parameters. Reflection
+          reads them with <c-s>GetCustomAttributes</c-s> or the generic
+          <c-s>GetCustomAttribute&lt;T&gt;</c-s>:
+        </t-b>
+        <defn-code>
+[AttributeUsage(AttributeTargets.Class)]
+public sealed class VersionAttribute : Attribute {
+    public int Major { get; }
+    public int Minor { get; }
+    public VersionAttribute(int major, int minor) { Major = major; Minor = minor; }
+}
+
+[Version(2, 1)]
+public class MyService { }
+
+// Reading at runtime
+Type t = typeof(MyService);
+var ver = t.GetCustomAttribute&lt;VersionAttribute&gt;();
+if (ver is not null)
+    Console.WriteLine($"v{ver.Major}.{ver.Minor}");   // v2.1
+
+// Enumerate all attributes on a method
+MethodInfo? m = t.GetMethod("Run");
+foreach (Attribute a in m?.GetCustomAttributes() ?? [])
+    Console.WriteLine(a.GetType().Name);
+        </defn-code>
+      </indent-blocks>
+
+      <a id="emit"></a>
+      <h3>8.6  Reflection.Emit — Generating Code at Runtime</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>System.Reflection.Emit</c-s> lets you generate IL code and create new types
+          at runtime. This is how expression-tree compilers, mock-object generators, and
+          some serializers achieve near-native performance from dynamically generated code:
+        </t-b>
+        <defn-code>
+AssemblyBuilder ab = AssemblyBuilder.DefineDynamicAssembly(
+    new AssemblyName("DynamicAsm"), AssemblyBuilderAccess.Run);
+ModuleBuilder mb = ab.DefineDynamicModule("DynamicMod");
+
+TypeBuilder tb = mb.DefineType("Greeter", TypeAttributes.Public);
+MethodBuilder method = tb.DefineMethod(
+    "Hello", MethodAttributes.Public | MethodAttributes.Static,
+    typeof(string), Type.EmptyTypes);
+
+ILGenerator il = method.GetILGenerator();
+il.Emit(OpCodes.Ldstr, "Hello from emitted code!");
+il.Emit(OpCodes.Ret);
+
+Type finished = tb.CreateType()!;
+string msg = (string)finished.GetMethod("Hello")!.Invoke(null, null)!;
+Console.WriteLine(msg);
+        </defn-code>
+        <t-b>
+          For most use cases, <strong>source generators</strong> (Roslyn, C# 9+) and
+          <strong>compiled expression trees</strong> (<c-s>Expression.Lambda(...).Compile()</c-s>)
+          are simpler and more maintainable alternatives to raw Emit.
+        </t-b>
+      </indent-blocks>
+
+      <a id="perf"></a>
+      <h3>8.7  Performance and Alternatives</h3>
+      <indent-blocks>
+        <t-b>
+          Reflection carries runtime costs:
+          <ul class="tight">
+            <li><strong>Type lookup</strong> — cheap if cached; expensive if repeated via <c-s>Type.GetType(string)</c-s></li>
+            <li><strong>Member lookup</strong> (<c-s>GetMethod</c-s>, <c-s>GetProperty</c-s>) — moderate; cache the <c-s>MethodInfo</c-s></li>
+            <li><strong>Invoke</strong> — significant boxing/unboxing overhead per call for value types</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Mitigation strategies:
+          <ul class="tight">
+            <li>Cache <c-s>Type</c-s>, <c-s>MethodInfo</c-s>, <c-s>PropertyInfo</c-s> objects in static fields</li>
+            <li>Compile a delegate from a <c-s>MethodInfo</c-s> via <c-s>CreateDelegate</c-s> for hot paths</li>
+            <li>Use <c-s>Expression&lt;Func&lt;T,TResult&gt;&gt;</c-s> trees compiled to delegates</li>
+            <li>Use Roslyn source generators to move reflection work to compile time</li>
+            <li>Enable <c-s>System.Text.Json</c-s> source generation for AOT-safe serialization</li>
+          </ul>
+        </t-b>
+        <defn-code>
+// Convert MethodInfo to a direct delegate — called at native speed
+MethodInfo? mi = typeof(string).GetMethod("IsNullOrEmpty");
+var isNullOrEmpty = (Func&lt;string?, bool&gt;)
+    Delegate.CreateDelegate(typeof(Func&lt;string?, bool&gt;), mi!);
+
+bool result = isNullOrEmpty(null);   // fast — no reflection overhead per call
+        </defn-code>
+      </indent-blocks>
+
+      <a id="epilogue8"></a>
+      <h3>8.8  Epilogue</h3>
+      <t-b>
+        This chapter covered the <c-s>System.Reflection</c-s> API: obtaining <c-s>Type</c-s>
+        objects, inspecting members and assemblies, creating instances dynamically, reading
+        attributes, generating IL with Emit, and managing performance through caching and
+        compiled delegates. The next chapter surveys the .NET Base Class Library.
+      </t-b>
+      <a id="refs"></a>
+      <h3>8.9  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/advanced-topics/reflection-and-attributes/">Reflection and attributes &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.reflection">System.Reflection &mdash; API docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.reflection.emit">System.Reflection.Emit &mdash; API docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/core/extensions/assembly-load-contexts">AssemblyLoadContext &mdash; Microsoft docs</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#type">Type object</a></menu-elem>
+        <menu-elem class="secElem"><a href="#members">inspecting members</a></menu-elem>
+        <menu-elem class="secElem"><a href="#assembly">assembly</a></menu-elem>
+        <menu-elem class="secElem"><a href="#create">dynamic creation</a></menu-elem>
+        <menu-elem class="secElem"><a href="#attrs">attributes</a></menu-elem>
+        <menu-elem class="secElem"><a href="#emit">emit</a></menu-elem>
+        <menu-elem class="secElem"><a href="#perf">performance</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CSharpStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 8, 10);
+  </script>
+</body>
+</html>

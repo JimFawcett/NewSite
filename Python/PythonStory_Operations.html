@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  PythonStory_Operations.html
+-->
+<head>
+  <title>Python Story Operations</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemePython.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code { font-size: 0.95rem; background-color: #2b1408; color: #fef9c3; width: max-content; border-radius: 0.25rem; padding: 0rem 2rem; margin-bottom: 1rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExplorePython.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    PythonStory_Operations.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Python Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #4 &ndash; Operations</h2>
+        <h4 class="indent" id="subtitle">functions, lambdas, decorators, comprehensions, generators</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">4.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          This chapter covers the ways Python transforms data: function definition and calling
+          conventions, anonymous functions, decorators for cross-cutting behavior, comprehensions
+          for concise collection building, and generators for lazy evaluation.
+        </t-b>
+      </indent-blocks>
+
+      <a id="functions"></a>
+      <h3>4.1  Functions</h3>
+      <indent-blocks>
+        <t-b>
+          Functions are first-class objects: they can be stored in variables, passed as arguments,
+          and returned from other functions. Define them with <c-s>def</c-s>:
+        </t-b>
+        <defn-code>
+def power(base: float, exp: int = 2) -&gt; float:
+    return base ** exp
+
+power(3)          # 9.0
+power(2, 10)      # 1024.0
+power(base=5)     # 25.0   — keyword argument
+        </defn-code>
+        <t-b>
+          <strong>Positional-only parameters</strong> (before <c-s>/</c-s>) and
+          <strong>keyword-only parameters</strong> (after <c-s>*</c-s>) give fine control over
+          the calling convention:
+        </t-b>
+        <defn-code>
+def strict(pos_only, /, normal, *, kwd_only):
+    ...
+        </defn-code>
+      </indent-blocks>
+
+      <a id="varargs"></a>
+      <h3>4.2  Variadic Arguments</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>*args</c-s> collects extra positional arguments into a tuple;
+          <c-s>**kwargs</c-s> collects extra keyword arguments into a dict:
+        </t-b>
+        <defn-code>
+def report(title: str, *items: str, sep: str = ", ") -&gt; str:
+    return title + ": " + sep.join(items)
+
+report("Colors", "red", "green", "blue")
+# Colors: red, green, blue
+        </defn-code>
+        <t-b>
+          The splat operators unpack sequences and mappings at call sites:
+          <c-s>func(*lst, **dct)</c-s>
+        </t-b>
+      </indent-blocks>
+
+      <a id="lambdas"></a>
+      <h3>4.3  Lambda Expressions</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>lambda</strong> is a single-expression anonymous function. Use them for
+          short callbacks where a full <c-s>def</c-s> would be verbose:
+        </t-b>
+        <defn-code>
+square = lambda x: x * x
+pairs = [(1, 'b'), (3, 'a'), (2, 'c')]
+pairs.sort(key=lambda p: p[0])   # sort by first element
+        </defn-code>
+        <t-b>
+          Lambdas are limited to a single expression; prefer named functions for anything
+          more complex.
+        </t-b>
+      </indent-blocks>
+
+      <a id="closures"></a>
+      <h3>4.4  Closures</h3>
+      <indent-blocks>
+        <t-b>
+          A function defined inside another function <strong>closes over</strong> the enclosing
+          scope's variables, capturing them by reference:
+        </t-b>
+        <defn-code>
+def make_adder(n: int):
+    def adder(x: int) -&gt; int:
+        return x + n        # n is captured from make_adder's scope
+    return adder
+
+add5 = make_adder(5)
+print(add5(3))   # 8
+        </defn-code>
+        <t-b>
+          Use <c-s>nonlocal</c-s> to rebind an enclosing variable from inside the inner function.
+        </t-b>
+      </indent-blocks>
+
+      <a id="decorators"></a>
+      <h3>4.5  Decorators</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>decorator</strong> is a callable that wraps a function (or class) to add
+          behavior. The <c-s>@name</c-s> syntax is shorthand for
+          <c-s>func = name(func)</c-s>:
+        </t-b>
+        <defn-code>
+import time, functools
+
+def timed(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        elapsed = time.perf_counter() - start
+        print(f"{func.__name__} took {elapsed:.4f}s")
+        return result
+    return wrapper
+
+@timed
+def slow_sum(n: int) -&gt; int:
+    return sum(range(n))
+
+slow_sum(1_000_000)
+        </defn-code>
+        <t-b>
+          <strong>Parameterized decorators</strong> add an extra layer: the outermost callable
+          receives the parameters and returns the actual decorator.
+        </t-b>
+        <t-b>
+          Standard library decorators:
+          <ul class="tight">
+            <li><c-s>@functools.lru_cache(maxsize=128)</c-s> &mdash; memoization</li>
+            <li><c-s>@functools.cached_property</c-s> &mdash; lazy attribute computed once</li>
+            <li><c-s>@staticmethod</c-s>, <c-s>@classmethod</c-s>, <c-s>@property</c-s></li>
+            <li><c-s>@dataclasses.dataclass</c-s> &mdash; auto-generate class boilerplate</li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="comprehensions"></a>
+      <h3>4.6  Comprehensions</h3>
+      <indent-blocks>
+        <t-b>
+          Comprehensions build collections concisely and are generally faster than equivalent
+          <c-s>for</c-s> loops:
+        </t-b>
+        <defn-code>
+# list comprehension
+evens = [x for x in range(20) if x % 2 == 0]
+
+# dict comprehension
+word_len = {w: len(w) for w in ["apple", "fig", "banana"]}
+
+# set comprehension
+unique_lens = {len(w) for w in ["hi", "hello", "hey"]}
+
+# nested comprehension — flatten a matrix
+matrix = [[1, 2], [3, 4], [5, 6]]
+flat = [n for row in matrix for n in row]  # [1, 2, 3, 4, 5, 6]
+        </defn-code>
+      </indent-blocks>
+
+      <a id="generators"></a>
+      <h3>4.7  Generators</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>generator function</strong> uses <c-s>yield</c-s> to produce values one
+          at a time, suspending between yields. This enables memory-efficient pipelines over
+          large or infinite sequences:
+        </t-b>
+        <defn-code>
+def fibonacci():
+    a, b = 0, 1
+    while True:
+        yield a
+        a, b = b, a + b
+
+fib = fibonacci()
+print([next(fib) for _ in range(8)])   # [0, 1, 1, 2, 3, 5, 8, 13]
+        </defn-code>
+        <t-b>
+          <strong>Generator expressions</strong> use <c-s>()</c-s> syntax and are consumed once:
+          <c-s>total = sum(x*x for x in range(10**6))</c-s>
+        </t-b>
+        <t-b>
+          <c-s>yield from</c-s> delegates to a sub-generator, enabling generator composition
+          without manual forwarding loops.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue4"></a>
+      <h3>4.8  Epilogue</h3>
+      <t-b>
+        This chapter covered Python's function model: calling conventions, closures, decorators,
+        comprehensions, and generators. The next chapter applies these ideas inside classes.
+      </t-b>
+      <a id="refs"></a>
+      <h3>4.9  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://docs.python.org/3/reference/expressions.html#lambda">Lambda expressions &mdash; python.org</a><br />
+        <a target="_blank" href="https://docs.python.org/3/glossary.html#term-generator">Generators &mdash; python.org</a><br />
+        <a target="_blank" href="https://peps.python.org/pep-0289/">PEP 289 &mdash; Generator Expressions</a><br />
+        <a target="_blank" href="https://realpython.com/primer-on-python-decorators/">Decorators &mdash; Real Python</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#functions">functions</a></menu-elem>
+        <menu-elem class="secElem"><a href="#varargs">variadic args</a></menu-elem>
+        <menu-elem class="secElem"><a href="#lambdas">lambdas</a></menu-elem>
+        <menu-elem class="secElem"><a href="#closures">closures</a></menu-elem>
+        <menu-elem class="secElem"><a href="#decorators">decorators</a></menu-elem>
+        <menu-elem class="secElem"><a href="#comprehensions">comprehensions</a></menu-elem>
+        <menu-elem class="secElem"><a href="#generators">generators</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/PythonStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+</body>
+</html>
