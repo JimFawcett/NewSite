@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CSharpStory_Generics.html
+-->
+<head>
+  <title>C# Story Generics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCSharp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCSharp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CSharpStory_Generics.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">C# Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #7 &ndash; Generics</h2>
+        <h4 class="indent" id="subtitle">generic types, methods, constraints, variance</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">7.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Generics let you write type-safe, reusable code without duplicating logic for every
+          data type you need to support. They eliminate boxing overhead for value types and catch
+          type mismatches at compile time.
+        </t-b>
+      </indent-blocks>
+
+      <a id="classes"></a>
+      <h3>7.1  Generic Classes</h3>
+      <indent-blocks>
+        <t-b>
+          A generic class is parameterized by one or more type arguments in angle brackets.
+          The type argument is substituted at use-site:
+        </t-b>
+        <defn-code>
+public class Stack&lt;T&gt; {
+    private readonly List&lt;T&gt; _items = new();
+
+    public void Push(T item) =&gt; _items.Add(item);
+
+    public T Pop() {
+        if (_items.Count == 0) throw new InvalidOperationException("empty");
+        T top = _items[^1];
+        _items.RemoveAt(_items.Count - 1);
+        return top;
+    }
+
+    public int Count =&gt; _items.Count;
+}
+
+var s = new Stack&lt;int&gt;();
+s.Push(1); s.Push(2);
+int top = s.Pop();   // 2
+        </defn-code>
+        <t-b>
+          Multiple type parameters are allowed: <c-s>class Pair&lt;TFirst, TSecond&gt;</c-s>.
+        </t-b>
+      </indent-blocks>
+
+      <a id="methods"></a>
+      <h3>7.2  Generic Methods</h3>
+      <indent-blocks>
+        <t-b>
+          A method may have its own type parameters independent of its enclosing class:
+        </t-b>
+        <defn-code>
+public static T Max&lt;T&gt;(T a, T b) where T : IComparable&lt;T&gt; =&gt;
+    a.CompareTo(b) &gt;= 0 ? a : b;
+
+int bigger = Max(3, 7);           // T inferred as int
+string later = Max("apple", "banana");  // T inferred as string
+        </defn-code>
+        <t-b>
+          The compiler infers type arguments from method arguments in most cases, so you rarely
+          need to supply them explicitly: <c-s>Max(3, 7)</c-s> rather than
+          <c-s>Max&lt;int&gt;(3, 7)</c-s>.
+        </t-b>
+      </indent-blocks>
+
+      <a id="constraints"></a>
+      <h3>7.3  Constraints</h3>
+      <indent-blocks>
+        <t-b>
+          Constraints narrow the set of types that can be supplied for a type parameter.
+          They appear after the <c-s>where</c-s> keyword:
+        </t-b>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">Constraint</th>
+              <th class="darkItem">Meaning</th>
+            </tr>
+            <tr><td class="defn"><c-s>where T : class</c-s></td><td class="defn">T must be a reference type</td></tr>
+            <tr><td class="defn"><c-s>where T : struct</c-s></td><td class="defn">T must be a non-nullable value type</td></tr>
+            <tr><td class="defn"><c-s>where T : new()</c-s></td><td class="defn">T must have a public parameterless constructor</td></tr>
+            <tr><td class="defn"><c-s>where T : SomeBaseClass</c-s></td><td class="defn">T must derive from SomeBaseClass</td></tr>
+            <tr><td class="defn"><c-s>where T : ISomeInterface</c-s></td><td class="defn">T must implement ISomeInterface</td></tr>
+            <tr><td class="defn"><c-s>where T : notnull</c-s></td><td class="defn">T must be a non-nullable type (C# 8+)</td></tr>
+            <tr><td class="defn"><c-s>where T : unmanaged</c-s></td><td class="defn">T must be an unmanaged type (C# 7.3+)</td></tr>
+          </table>
+        </t-b>
+        <t-b>
+          Multiple constraints may be combined: <c-s>where T : class, IComparable&lt;T&gt;, new()</c-s>
+        </t-b>
+        <t-b>
+          <strong>Static abstract members in interfaces</strong> (C# 11) enable constraints that
+          require static operators, enabling generic math:
+          <c-s>where T : INumber&lt;T&gt;</c-s>
+        </t-b>
+      </indent-blocks>
+
+      <a id="variance"></a>
+      <h3>7.4  Variance</h3>
+      <indent-blocks>
+        <t-b>
+          Generic interfaces and delegate types may declare <strong>variance</strong> on their
+          type parameters to allow safe assignment between instantiations:
+        </t-b>
+        <t-b>
+          <ul class="tight">
+            <li>
+              <strong>Covariance</strong> (<c-s>out T</c-s>): used for producer/output positions.
+              If <c-s>Dog</c-s> derives from <c-s>Animal</c-s>, an
+              <c-s>IEnumerable&lt;Dog&gt;</c-s> can be assigned to an
+              <c-s>IEnumerable&lt;Animal&gt;</c-s>.
+            </li>
+            <li>
+              <strong>Contravariance</strong> (<c-s>in T</c-s>): used for consumer/input positions.
+              An <c-s>IComparer&lt;Animal&gt;</c-s> can be used where an
+              <c-s>IComparer&lt;Dog&gt;</c-s> is needed.
+            </li>
+          </ul>
+        </t-b>
+        <defn-code>
+// IEnumerable&lt;out T&gt; is covariant
+IEnumerable&lt;Dog&gt; dogs = new List&lt;Dog&gt; { new Dog("Rex") };
+IEnumerable&lt;Animal&gt; animals = dogs;    // valid — covariant
+
+// Action&lt;in T&gt; is contravariant
+Action&lt;Animal&gt; feedAnimal = a =&gt; Console.WriteLine($"feeding {a.Name}");
+Action&lt;Dog&gt; feedDog = feedAnimal;       // valid — contravariant
+        </defn-code>
+      </indent-blocks>
+
+      <a id="bcl"></a>
+      <h3>7.5  Generic Types in the BCL</h3>
+      <indent-blocks>
+        <t-b>
+          The .NET Base Class Library is built on generics. Commonly used generic types include:
+          <ul class="tight">
+            <li><c-s>List&lt;T&gt;</c-s>, <c-s>LinkedList&lt;T&gt;</c-s>, <c-s>Queue&lt;T&gt;</c-s>,
+              <c-s>Stack&lt;T&gt;</c-s>, <c-s>HashSet&lt;T&gt;</c-s>, <c-s>SortedSet&lt;T&gt;</c-s></li>
+            <li><c-s>Dictionary&lt;TKey, TValue&gt;</c-s>, <c-s>SortedDictionary&lt;TKey, TValue&gt;</c-s></li>
+            <li><c-s>IEnumerable&lt;T&gt;</c-s>, <c-s>ICollection&lt;T&gt;</c-s>,
+              <c-s>IList&lt;T&gt;</c-s>, <c-s>IReadOnlyList&lt;T&gt;</c-s></li>
+            <li><c-s>Nullable&lt;T&gt;</c-s>, <c-s>Task&lt;T&gt;</c-s>,
+              <c-s>Lazy&lt;T&gt;</c-s>, <c-s>Memory&lt;T&gt;</c-s>, <c-s>Span&lt;T&gt;</c-s></li>
+            <li><c-s>Func&lt;&hellip;&gt;</c-s>, <c-s>Action&lt;&hellip;&gt;</c-s>,
+              <c-s>Predicate&lt;T&gt;</c-s>, <c-s>Comparison&lt;T&gt;</c-s></li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="vscpp"></a>
+      <h3>7.6  C# Generics vs C++ Templates</h3>
+      <indent-blocks>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">Aspect</th>
+              <th class="darkItem">C# Generics</th>
+              <th class="darkItem">C++ Templates</th>
+            </tr>
+            <tr>
+              <td class="defn">Compilation</td>
+              <td class="defn">Compiled once to IL; JIT specializes for value types</td>
+              <td class="defn">Each instantiation compiled separately (code bloat possible)</td>
+            </tr>
+            <tr>
+              <td class="defn">Constraints</td>
+              <td class="defn">Explicit <c-s>where</c-s> clauses; checked at compile time</td>
+              <td class="defn">Duck typing; errors may be cryptic; concepts (C++20) improve this</td>
+            </tr>
+            <tr>
+              <td class="defn">Specialization</td>
+              <td class="defn">Not directly supported; achieved via method overloads or interfaces</td>
+              <td class="defn">Full / partial specialization supported</td>
+            </tr>
+            <tr>
+              <td class="defn">Reflection</td>
+              <td class="defn">Generic type information available at runtime</td>
+              <td class="defn">No runtime type info for templates</td>
+            </tr>
+            <tr>
+              <td class="defn">Value types</td>
+              <td class="defn">Specialized native code per value type; no boxing</td>
+              <td class="defn">Inlined at each instantiation; very efficient</td>
+            </tr>
+          </table>
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue7"></a>
+      <h3>7.7  Epilogue</h3>
+      <t-b>
+        This chapter covered generic classes, generic methods, constraints, variance, and how C#
+        generics compare with C++ templates. The next chapter surveys the .NET Base Class Library.
+      </t-b>
+      <a id="refs"></a>
+      <h3>7.8  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/generics/">Generics &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/standard/generics/covariance-and-contravariance">Covariance &amp; contravariance</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/standard/generics/collections">Generic collections in .NET</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#classes">generic classes</a></menu-elem>
+        <menu-elem class="secElem"><a href="#methods">generic methods</a></menu-elem>
+        <menu-elem class="secElem"><a href="#constraints">constraints</a></menu-elem>
+        <menu-elem class="secElem"><a href="#variance">variance</a></menu-elem>
+        <menu-elem class="secElem"><a href="#bcl">BCL types</a></menu-elem>
+        <menu-elem class="secElem"><a href="#vscpp">vs C++</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CSharpStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 7, 10);
+  </script>
+</body>
+</html>

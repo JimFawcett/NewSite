@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CSharpStory_Classes.html
+-->
+<head>
+  <title>C# Story Classes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCSharp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCSharp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CSharpStory_Classes.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">C# Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #5 &ndash; Classes</h2>
+        <h4 class="indent" id="subtitle">anatomy, properties, constructors, records, interfaces</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">5.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>class</strong> is the primary way C# bundles data and behavior. This chapter
+          walks through every member a class can contain and describes how records and interfaces
+          complement the class model.
+        </t-b>
+      </indent-blocks>
+
+      <a id="anatomy"></a>
+      <h3>5.1  Class Anatomy</h3>
+      <indent-blocks>
+        <t-b>
+          A class definition may include any combination of these member kinds:
+          <ul class="tight">
+            <li><strong>Fields</strong> &mdash; per-instance storage (keep private or protected)</li>
+            <li><strong>Properties</strong> &mdash; controlled access to data via get/set accessors</li>
+            <li><strong>Constructors</strong> &mdash; initialize the object on creation</li>
+            <li><strong>Methods</strong> &mdash; behavior</li>
+            <li><strong>Events</strong> &mdash; delegate-typed notification hooks</li>
+            <li><strong>Nested types</strong> &mdash; helper types scoped to the class</li>
+            <li><strong>Static members</strong> &mdash; shared by all instances (or the type itself)</li>
+            <li><strong>Finalizer</strong> &mdash; <c-s>~ClassName()</c-s>, called by the GC before reclaim</li>
+          </ul>
+        </t-b>
+        <defn-code>
+public class BankAccount {
+    private decimal _balance;                          // field
+
+    public string Owner { get; }                       // auto property (get-only)
+    public decimal Balance =&gt; _balance;               // computed property
+
+    public BankAccount(string owner, decimal initial) { // constructor
+        Owner = owner;
+        _balance = initial;
+    }
+
+    public void Deposit(decimal amount) {              // method
+        if (amount &lt;= 0) throw new ArgumentException("amount");
+        _balance += amount;
+    }
+
+    public bool Withdraw(decimal amount) {
+        if (amount &gt; _balance) return false;
+        _balance -= amount;
+        return true;
+    }
+
+    public override string ToString() =&gt;
+        $"{Owner}: {_balance:C}";
+}
+        </defn-code>
+      </indent-blocks>
+
+      <a id="access"></a>
+      <h3>5.2  Access Modifiers</h3>
+      <indent-blocks>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">Modifier</th>
+              <th class="darkItem">Accessible from</th>
+            </tr>
+            <tr><td class="defn"><c-s>public</c-s></td><td class="defn">anywhere</td></tr>
+            <tr><td class="defn"><c-s>private</c-s></td><td class="defn">same class only (default for members)</td></tr>
+            <tr><td class="defn"><c-s>protected</c-s></td><td class="defn">same class + derived classes</td></tr>
+            <tr><td class="defn"><c-s>internal</c-s></td><td class="defn">same assembly (default for top-level types)</td></tr>
+            <tr><td class="defn"><c-s>protected internal</c-s></td><td class="defn">same assembly or derived class</td></tr>
+            <tr><td class="defn"><c-s>private protected</c-s></td><td class="defn">same class or derived class in same assembly</td></tr>
+          </table>
+        </t-b>
+      </indent-blocks>
+
+      <a id="properties"></a>
+      <h3>5.3  Properties</h3>
+      <indent-blocks>
+        <t-b>
+          Properties look like fields to callers but execute code. They are the idiomatic way to
+          expose data in C#:
+        </t-b>
+        <defn-code>
+public class Person {
+    private string _name = "";
+
+    // full property with validation
+    public string Name {
+        get =&gt; _name;
+        set =&gt; _name = value?.Trim() ?? throw new ArgumentNullException();
+    }
+
+    // auto property with init-only setter (C# 9+)
+    public int Age { get; init; }
+
+    // computed property (no backing field)
+    public bool IsAdult =&gt; Age &gt;= 18;
+}
+        </defn-code>
+        <t-b>
+          <strong>Object initializers</strong> work with settable or init-only properties:
+          <c-s>var p = new Person { Name = "Alice", Age = 30 };</c-s>
+        </t-b>
+      </indent-blocks>
+
+      <a id="ctors"></a>
+      <h3>5.4  Constructors</h3>
+      <indent-blocks>
+        <t-b>
+          Constructors initialize instances. You may define multiple overloads.
+          <c-s>this(...)</c-s> chains to another constructor in the same class;
+          <c-s>base(...)</c-s> chains to the base class constructor.
+        </t-b>
+        <defn-code>
+public class Point {
+    public double X { get; }
+    public double Y { get; }
+
+    public Point() : this(0, 0) { }          // calls below
+    public Point(double x, double y) {
+        X = x; Y = y;
+    }
+}
+        </defn-code>
+        <t-b>
+          <strong>Primary constructors</strong> (C# 12) let you declare parameters directly on the
+          class declaration, keeping frequently injected dependencies concise:
+          <c-s>class Logger(IOutput output) { /* output is in scope */ }</c-s>
+        </t-b>
+        <t-b>
+          <strong>Static constructors</strong> run once before any instance is created or static
+          member is accessed. They take no arguments and cannot be called explicitly.
+        </t-b>
+      </indent-blocks>
+
+      <a id="static"></a>
+      <h3>5.5  Static Members and Classes</h3>
+      <indent-blocks>
+        <t-b>
+          Static members belong to the type itself. A <strong>static class</strong> contains only
+          static members, cannot be instantiated, and is sealed. It is the natural home for
+          utility methods and extension methods:
+        </t-b>
+        <defn-code>
+public static class MathUtils {
+    public static double DegreesToRadians(double deg) =&gt; deg * Math.PI / 180;
+    public static double Clamp(double v, double lo, double hi) =&gt;
+        Math.Max(lo, Math.Min(hi, v));
+}
+        </defn-code>
+      </indent-blocks>
+
+      <a id="records"></a>
+      <h3>5.6  Records</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>record</strong> (C# 9+) is a class (or struct) with compiler-generated
+          value-equality, a readable <c-s>ToString()</c-s>, and a
+          <strong>non-destructive copy</strong> via <c-s>with</c-s>:
+        </t-b>
+        <defn-code>
+record Point(double X, double Y);           // positional record
+
+var p1 = new Point(1, 2);
+var p2 = p1 with { Y = 5 };                // p2 = Point(1, 5)
+Console.WriteLine(p1 == new Point(1, 2));  // True — value equality
+        </defn-code>
+        <t-b>
+          Records are ideal for immutable data transfer objects, domain value objects, and
+          pattern-matching targets. A <c-s>record struct</c-s> gives the same semantics on a
+          value type.
+        </t-b>
+      </indent-blocks>
+
+      <a id="interfaces"></a>
+      <h3>5.7  Interfaces</h3>
+      <indent-blocks>
+        <t-b>
+          An <strong>interface</strong> defines a contract: a set of members a type must implement.
+          A class or struct may implement any number of interfaces.
+        </t-b>
+        <defn-code>
+public interface IShape {
+    double Area { get; }
+    double Perimeter { get; }
+    string Describe() =&gt; $"Area={Area:F2}, Perim={Perimeter:F2}";  // default impl C# 8+
+}
+
+public class Circle : IShape {
+    public double Radius { get; }
+    public Circle(double r) =&gt; Radius = r;
+    public double Area =&gt; Math.PI * Radius * Radius;
+    public double Perimeter =&gt; 2 * Math.PI * Radius;
+}
+        </defn-code>
+        <t-b>
+          Interfaces support <strong>default implementations</strong> (C# 8+), static abstract
+          members (C# 11), and generic constraints (
+          <c-s>where T : IShape</c-s>).
+        </t-b>
+      </indent-blocks>
+
+      <a id="disposable"></a>
+      <h3>5.8  IDisposable and Finalizers</h3>
+      <indent-blocks>
+        <t-b>
+          Classes that hold unmanaged resources (file handles, network connections) should implement
+          <c-s>IDisposable</c-s> and follow the dispose pattern so callers can use the
+          <c-s>using</c-s> statement for deterministic cleanup:
+        </t-b>
+        <defn-code>
+public class ResourceHolder : IDisposable {
+    private bool _disposed;
+    private readonly FileStream _stream;
+
+    public ResourceHolder(string path) =&gt;
+        _stream = File.OpenRead(path);
+
+    public void Dispose() {
+        if (!_disposed) {
+            _stream.Dispose();
+            _disposed = true;
+        }
+        GC.SuppressFinalize(this);
+    }
+
+    ~ResourceHolder() =&gt; Dispose();   // safety net finalizer
+}
+        </defn-code>
+      </indent-blocks>
+
+      <a id="epilogue5"></a>
+      <h3>5.9  Epilogue</h3>
+      <t-b>
+        This chapter detailed the anatomy of C# classes: fields, properties, constructors, methods,
+        access control, static members, records, and interfaces. The next chapter examines how
+        classes relate to one another through inheritance and composition.
+      </t-b>
+      <a id="refs"></a>
+      <h3>5.10  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/types/classes">Classes &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/record">Records &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/types/interfaces">Interfaces &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/standard/garbage-collection/implementing-dispose">IDisposable pattern</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#anatomy">anatomy</a></menu-elem>
+        <menu-elem class="secElem"><a href="#access">access</a></menu-elem>
+        <menu-elem class="secElem"><a href="#properties">properties</a></menu-elem>
+        <menu-elem class="secElem"><a href="#ctors">constructors</a></menu-elem>
+        <menu-elem class="secElem"><a href="#static">static</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <menu-elem class="secElem"><a href="#interfaces">interfaces</a></menu-elem>
+        <menu-elem class="secElem"><a href="#disposable">disposable</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CSharpStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+</body>
+</html>

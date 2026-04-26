@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CSharpStory_LibraryCollections.html
+-->
+<head>
+  <title>C# Story Collections Library</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCSharp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCSharp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CSharpStory_LibraryCollections.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">C# Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #10 &ndash; Collections Library</h2>
+        <h4 class="indent" id="subtitle">System.Collections.Generic, LINQ on collections, concurrent types</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">10.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>System.Collections.Generic</c-s> provides type-safe, generic collection classes
+          that replace the non-generic <c-s>ArrayList</c-s> and <c-s>Hashtable</c-s> from the
+          early .NET era. Choosing the right collection for a task dramatically affects both
+          correctness and performance.
+        </t-b>
+      </indent-blocks>
+
+      <a id="interfaces"></a>
+      <h3>10.1  Collection Interfaces</h3>
+      <indent-blocks>
+        <t-b>
+          The collection hierarchy is built on a small set of interfaces:
+          <ul class="tight">
+            <li><c-s>IEnumerable&lt;T&gt;</c-s> &mdash; supports <c-s>foreach</c-s> and LINQ</li>
+            <li><c-s>ICollection&lt;T&gt;</c-s> &mdash; adds Count, Add, Remove, Contains</li>
+            <li><c-s>IList&lt;T&gt;</c-s> &mdash; adds index access and IndexOf</li>
+            <li><c-s>IReadOnlyList&lt;T&gt;</c-s> &mdash; read-only index access</li>
+            <li><c-s>IDictionary&lt;TKey, TValue&gt;</c-s> &mdash; key-value access</li>
+            <li><c-s>ISet&lt;T&gt;</c-s> &mdash; set operations (union, intersect, except)</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Code to the interface rather than the concrete type where possible — this makes it
+          easy to swap implementations later.
+        </t-b>
+      </indent-blocks>
+
+      <a id="list"></a>
+      <h3>10.2  List&lt;T&gt;</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>List&lt;T&gt;</c-s> is a dynamically resizing array. It provides O(1) indexed
+          access, O(1) amortized append, and O(n) insert/remove at arbitrary positions.
+        </t-b>
+        <defn-code>
+var words = new List&lt;string&gt; { "cat", "dog", "fox" };
+words.Add("owl");
+words.Insert(1, "bee");         // ["cat","bee","dog","fox","owl"]
+words.Remove("dog");
+words.Sort();
+
+foreach (string w in words)
+    Console.WriteLine(w);
+
+// LINQ
+var long_ = words.Where(w =&gt; w.Length &gt; 3).ToList();
+        </defn-code>
+        <t-b>
+          <strong>Capacity vs Count</strong>: <c-s>Count</c-s> is the number of items;
+          <c-s>Capacity</c-s> is the allocated backing array size. Pre-set capacity with
+          <c-s>new List&lt;T&gt;(expectedCount)</c-s> to avoid reallocations when the
+          final size is known.
+        </t-b>
+      </indent-blocks>
+
+      <a id="dict"></a>
+      <h3>10.3  Dictionary&lt;TKey, TValue&gt;</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>Dictionary&lt;TKey, TValue&gt;</c-s> is a hash table that provides O(1) average
+          lookup, insert, and remove by key. Keys must implement <c-s>GetHashCode()</c-s> and
+          <c-s>Equals()</c-s>; the default comparer uses these automatically.
+        </t-b>
+        <defn-code>
+var freq = new Dictionary&lt;string, int&gt;();
+string[] tokens = "the cat sat on the mat".Split();
+
+foreach (string t in tokens)
+    freq[t] = freq.GetValueOrDefault(t) + 1;
+
+foreach (var (word, count) in freq.OrderByDescending(p =&gt; p.Value))
+    Console.WriteLine($"{word}: {count}");
+
+// safe lookup
+if (freq.TryGetValue("cat", out int n))
+    Console.WriteLine($"cat appears {n} times");
+        </defn-code>
+        <t-b>
+          <c-s>SortedDictionary&lt;TKey, TValue&gt;</c-s> keeps keys sorted (O(log n) operations
+          via a red-black tree). Use it when you need ordered iteration over keys.
+        </t-b>
+      </indent-blocks>
+
+      <a id="hashset"></a>
+      <h3>10.4  HashSet&lt;T&gt; and SortedSet&lt;T&gt;</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>HashSet&lt;T&gt;</c-s> stores unique elements with O(1) average
+          Contains/Add/Remove. <c-s>SortedSet&lt;T&gt;</c-s> does the same in sorted order
+          (O(log n)):
+        </t-b>
+        <defn-code>
+var a = new HashSet&lt;int&gt; { 1, 2, 3, 4 };
+var b = new HashSet&lt;int&gt; { 3, 4, 5, 6 };
+
+var union     = new HashSet&lt;int&gt;(a);  union.UnionWith(b);
+var intersect = new HashSet&lt;int&gt;(a);  intersect.IntersectWith(b);
+var diff      = new HashSet&lt;int&gt;(a);  diff.ExceptWith(b);
+
+Console.WriteLine(string.Join(",", intersect));  // 3,4
+        </defn-code>
+      </indent-blocks>
+
+      <a id="queue"></a>
+      <h3>10.5  Queue&lt;T&gt; and Stack&lt;T&gt;</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>Queue&lt;T&gt;</c-s> is a FIFO container. <c-s>Stack&lt;T&gt;</c-s> is LIFO.
+          Both provide O(1) operations:
+        </t-b>
+        <defn-code>
+var q = new Queue&lt;string&gt;();
+q.Enqueue("first");
+q.Enqueue("second");
+string head = q.Dequeue();    // "first"
+bool hasNext = q.TryPeek(out string? next);
+
+var s = new Stack&lt;int&gt;();
+s.Push(1); s.Push(2);
+int top = s.Pop();            // 2
+        </defn-code>
+        <t-b>
+          <c-s>PriorityQueue&lt;TElement, TPriority&gt;</c-s> (C# 10 / .NET 6) dequeues the
+          element with the lowest priority value, providing a min-heap.
+        </t-b>
+      </indent-blocks>
+
+      <a id="linkedlist"></a>
+      <h3>10.6  LinkedList&lt;T&gt;</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>LinkedList&lt;T&gt;</c-s> is a doubly linked list. O(1) insert and remove at any
+          node when you already hold the <c-s>LinkedListNode&lt;T&gt;</c-s>, but O(n) indexed
+          access. Use it when you need frequent mid-sequence insertions and deletions:
+        </t-b>
+        <defn-code>
+var list = new LinkedList&lt;int&gt;(new[] { 1, 2, 4, 5 });
+var node3 = list.Find(4)!;
+list.AddBefore(node3, 3);    // 1 → 2 → 3 → 4 → 5
+        </defn-code>
+      </indent-blocks>
+
+      <a id="concurrent"></a>
+      <h3>10.7  Concurrent Collections</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>System.Collections.Concurrent</c-s> provides thread-safe collections that avoid
+          coarse-grained locking:
+          <ul class="tight">
+            <li><c-s>ConcurrentDictionary&lt;TKey, TValue&gt;</c-s> &mdash; lock-free reads, fine-grained writes</li>
+            <li><c-s>ConcurrentQueue&lt;T&gt;</c-s> &mdash; lock-free FIFO</li>
+            <li><c-s>ConcurrentStack&lt;T&gt;</c-s> &mdash; lock-free LIFO</li>
+            <li><c-s>ConcurrentBag&lt;T&gt;</c-s> &mdash; unordered, per-thread storage optimized for same-thread produce/consume</li>
+            <li><c-s>BlockingCollection&lt;T&gt;</c-s> &mdash; bounded producer-consumer with blocking Add/Take</li>
+          </ul>
+        </t-b>
+        <defn-code>
+var counts = new ConcurrentDictionary&lt;string, int&gt;();
+Parallel.ForEach(tokens, t =&gt; counts.AddOrUpdate(t, 1, (_, c) =&gt; c + 1));
+        </defn-code>
+      </indent-blocks>
+
+      <a id="immutable"></a>
+      <h3>10.8  Immutable Collections</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>System.Collections.Immutable</c-s> (NuGet: <c-s>System.Collections.Immutable</c-s>,
+          included in .NET 5+) provides collections that return new instances on mutation rather
+          than modifying in place — safe to share across threads without locks:
+        </t-b>
+        <defn-code>
+var list = ImmutableList&lt;int&gt;.Empty
+           .Add(1).Add(2).Add(3);    // ImmutableList&lt;int&gt;
+
+var list2 = list.Add(4);             // original unchanged
+        </defn-code>
+      </indent-blocks>
+
+      <a id="vcpp"></a>
+      <h3>10.9  Comparison with C++ STL Containers</h3>
+      <indent-blocks>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">C# Type</th>
+              <th class="darkItem">C++ Equivalent</th>
+              <th class="darkItem">Notes</th>
+            </tr>
+            <tr><td class="defn"><c-s>List&lt;T&gt;</c-s></td><td class="defn"><c-s>std::vector&lt;T&gt;</c-s></td><td class="defn">Dynamic array; O(1) append</td></tr>
+            <tr><td class="defn"><c-s>LinkedList&lt;T&gt;</c-s></td><td class="defn"><c-s>std::list&lt;T&gt;</c-s></td><td class="defn">Doubly linked list</td></tr>
+            <tr><td class="defn"><c-s>Dictionary&lt;K,V&gt;</c-s></td><td class="defn"><c-s>std::unordered_map&lt;K,V&gt;</c-s></td><td class="defn">Hash map; O(1) average</td></tr>
+            <tr><td class="defn"><c-s>SortedDictionary&lt;K,V&gt;</c-s></td><td class="defn"><c-s>std::map&lt;K,V&gt;</c-s></td><td class="defn">Tree map; O(log n)</td></tr>
+            <tr><td class="defn"><c-s>HashSet&lt;T&gt;</c-s></td><td class="defn"><c-s>std::unordered_set&lt;T&gt;</c-s></td><td class="defn">Hash set; O(1) average</td></tr>
+            <tr><td class="defn"><c-s>SortedSet&lt;T&gt;</c-s></td><td class="defn"><c-s>std::set&lt;T&gt;</c-s></td><td class="defn">Tree set; O(log n)</td></tr>
+            <tr><td class="defn"><c-s>Queue&lt;T&gt;</c-s></td><td class="defn"><c-s>std::queue&lt;T&gt;</c-s></td><td class="defn">FIFO</td></tr>
+            <tr><td class="defn"><c-s>Stack&lt;T&gt;</c-s></td><td class="defn"><c-s>std::stack&lt;T&gt;</c-s></td><td class="defn">LIFO</td></tr>
+            <tr><td class="defn"><c-s>PriorityQueue&lt;E,P&gt;</c-s></td><td class="defn"><c-s>std::priority_queue&lt;T&gt;</c-s></td><td class="defn">Min-heap (.NET) vs max-heap (C++)</td></tr>
+          </table>
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue10"></a>
+      <h3>10.10  Epilogue</h3>
+      <t-b>
+        This chapter covered the generic collection types in <c-s>System.Collections.Generic</c-s>
+        and the concurrent and immutable variants. The final chapter looks at several advanced and
+        interesting language features.
+      </t-b>
+      <a id="refs"></a>
+      <h3>10.11  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/standard/collections/commonly-used-collection-types">Commonly used collection types</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic">System.Collections.Generic &mdash; API docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.collections.concurrent">System.Collections.Concurrent &mdash; API docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/standard/collections/thread-safe/">Thread-safe collections</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#interfaces">interfaces</a></menu-elem>
+        <menu-elem class="secElem"><a href="#list">List</a></menu-elem>
+        <menu-elem class="secElem"><a href="#dict">Dictionary</a></menu-elem>
+        <menu-elem class="secElem"><a href="#hashset">HashSet</a></menu-elem>
+        <menu-elem class="secElem"><a href="#queue">Queue/Stack</a></menu-elem>
+        <menu-elem class="secElem"><a href="#linkedlist">LinkedList</a></menu-elem>
+        <menu-elem class="secElem"><a href="#concurrent">concurrent</a></menu-elem>
+        <menu-elem class="secElem"><a href="#immutable">immutable</a></menu-elem>
+        <menu-elem class="secElem"><a href="#vcpp">vs C++</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CSharpStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 10, 10);
+  </script>
+</body>
+</html>

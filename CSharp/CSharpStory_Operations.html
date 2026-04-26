@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CSharpStory_Operations.html
+-->
+<head>
+  <title>C# Story Operations</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCSharp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCSharp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CSharpStory_Operations.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">C# Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #4 &ndash; Operations</h2>
+        <h4 class="indent" id="subtitle">methods, delegates, lambdas, LINQ, extension methods</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">4.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          This chapter covers the mechanisms C# provides for expressing computation: methods in all
+          their forms, function-typed delegates, compact lambda expressions, and the powerful LINQ
+          query model that ties them together.
+        </t-b>
+      </indent-blocks>
+
+      <a id="methods"></a>
+      <h3>4.1  Methods</h3>
+      <indent-blocks>
+        <t-b>
+          A method belongs to a type. Its signature includes the return type, name, and parameter list.
+          Parameters are passed by value by default; <c-s>ref</c-s> and <c-s>out</c-s> pass by
+          reference; <c-s>in</c-s> passes a read-only reference.
+        </t-b>
+        <defn-code>
+int Add(int a, int b) =&gt; a + b;                  // expression-bodied
+
+void Swap(ref int x, ref int y) {                 // ref parameters
+    (x, y) = (y, x);
+}
+
+bool TryParse(string s, out int result) {         // out parameter
+    return int.TryParse(s, out result);
+}
+        </defn-code>
+        <t-b>
+          <strong>Optional parameters</strong> have defaults and must trail required ones.
+          <strong>Named arguments</strong> let callers supply values in any order:
+          <c-s>Print(message: "hi", color: ConsoleColor.Green);</c-s>
+        </t-b>
+        <t-b>
+          <strong>params</strong> lets a method accept a variable number of arguments:
+          <c-s>int Sum(params int[] values) =&gt; values.Sum();</c-s>
+        </t-b>
+        <t-b>
+          <strong>Local functions</strong> (C# 7+) are methods defined inside another method. They
+          can capture outer variables, have full type inference, and are invisible outside their
+          enclosing method.
+        </t-b>
+        <t-b>
+          <strong>Overloading</strong>: multiple methods may share a name if their parameter lists
+          differ in count or type. Return type alone does not distinguish overloads.
+        </t-b>
+      </indent-blocks>
+
+      <a id="operators"></a>
+      <h3>4.2  Operators</h3>
+      <indent-blocks>
+        <t-b>
+          C# provides the usual arithmetic, relational, logical, and bitwise operators.
+          Operator precedence follows mathematical convention; use parentheses when in doubt.
+        </t-b>
+        <t-b>
+          <strong>Operator overloading</strong>: value types and classes may define custom behavior
+          for operators such as <c-s>+</c-s>, <c-s>-</c-s>, <c-s>==</c-s>, and comparison
+          operators:
+        </t-b>
+        <defn-code>
+readonly struct Vec2 {
+    public double X { get; init; }
+    public double Y { get; init; }
+    public static Vec2 operator+(Vec2 a, Vec2 b) =&gt;
+        new Vec2 { X = a.X + b.X, Y = a.Y + b.Y };
+    public static bool operator==(Vec2 a, Vec2 b) =&gt;
+        a.X == b.X &amp;&amp; a.Y == b.Y;
+    public static bool operator!=(Vec2 a, Vec2 b) =&gt; !(a == b);
+}
+        </defn-code>
+        <t-b>
+          If you overload <c-s>==</c-s> you should also override <c-s>Equals()</c-s> and
+          <c-s>GetHashCode()</c-s> to keep them consistent.
+        </t-b>
+        <t-b>
+          <strong>Conversion operators</strong> (<c-s>implicit</c-s> / <c-s>explicit</c-s>) define
+          how a type converts to or from another type.
+        </t-b>
+      </indent-blocks>
+
+      <a id="delegates"></a>
+      <h3>4.3  Delegates</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>delegate</strong> is a type-safe reference to a method (or group of methods).
+          The BCL supplies two generic families that cover almost all use cases:
+          <ul class="tight">
+            <li><c-s>Action&lt;T1, T2, &hellip;&gt;</c-s> &mdash; void return</li>
+            <li><c-s>Func&lt;T1, T2, &hellip;, TResult&gt;</c-s> &mdash; non-void return</li>
+            <li><c-s>Predicate&lt;T&gt;</c-s> &mdash; equivalent to <c-s>Func&lt;T, bool&gt;</c-s></li>
+          </ul>
+        </t-b>
+        <defn-code>
+Func&lt;int, int, int&gt; add = (a, b) =&gt; a + b;
+Action&lt;string&gt; print = Console.WriteLine;
+
+int result = add(3, 4);        // 7
+print("hello");                // writes hello
+        </defn-code>
+        <t-b>
+          Delegates are <strong>multicast</strong>: use <c-s>+=</c-s> to chain multiple methods onto
+          the same delegate variable. Invoking the delegate calls all chained methods in order.
+        </t-b>
+        <t-b>
+          <strong>Events</strong> wrap a delegate field and restrict outside callers to only
+          <c-s>+=</c-s> and <c-s>-=</c-s> operations — the owning class retains the right to raise
+          the event:
+        </t-b>
+        <defn-code>
+class Button {
+    public event Action? Clicked;
+    public void Click() =&gt; Clicked?.Invoke();
+}
+        </defn-code>
+      </indent-blocks>
+
+      <a id="lambdas"></a>
+      <h3>4.4  Lambdas and Anonymous Methods</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>lambda expression</strong> is an inline anonymous function. It can be assigned
+          to a compatible delegate type or passed directly as an argument:
+        </t-b>
+        <defn-code>
+Func&lt;int, bool&gt; isEven = n =&gt; n % 2 == 0;
+
+// statement lambda (multiple lines)
+Func&lt;int, int&gt; factorial = n =&gt; {
+    int r = 1;
+    for (int i = 2; i &lt;= n; i++) r *= i;
+    return r;
+};
+        </defn-code>
+        <t-b>
+          Lambdas <strong>capture</strong> variables from the enclosing scope by reference (a
+          closure). Be careful when capturing loop variables — each iteration shares the same
+          variable unless you copy it to a local.
+        </t-b>
+        <t-b>
+          <strong>Static lambdas</strong> (C# 9+, prefix <c-s>static</c-s>) are forbidden from
+          capturing instance state, helping avoid unintended allocations.
+        </t-b>
+      </indent-blocks>
+
+      <a id="linq"></a>
+      <h3>4.5  LINQ</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Language Integrated Query (LINQ)</strong> provides a unified model for querying
+          any sequence that implements <c-s>IEnumerable&lt;T&gt;</c-s>, including arrays, lists,
+          XML trees, database result sets, and more.
+        </t-b>
+        <t-b>
+          Two equivalent syntaxes — <strong>query syntax</strong> (SQL-like) and
+          <strong>method syntax</strong> (fluent extension methods):
+        </t-b>
+        <defn-code>
+int[] nums = { 5, 3, 8, 1, 9, 2, 6 };
+
+// query syntax
+var q1 = from n in nums
+         where n &gt; 4
+         orderby n descending
+         select n * n;
+
+// method syntax (identical result)
+var q2 = nums.Where(n =&gt; n &gt; 4)
+             .OrderByDescending(n =&gt; n)
+             .Select(n =&gt; n * n);
+        </defn-code>
+        <t-b>
+          Key LINQ operators:
+          <ul class="tight">
+            <li><c-s>Where</c-s> &mdash; filter by predicate</li>
+            <li><c-s>Select</c-s> &mdash; transform each element</li>
+            <li><c-s>SelectMany</c-s> &mdash; flatten nested sequences</li>
+            <li><c-s>OrderBy</c-s> / <c-s>OrderByDescending</c-s> &mdash; sort</li>
+            <li><c-s>GroupBy</c-s> &mdash; partition into keyed groups</li>
+            <li><c-s>Join</c-s> / <c-s>GroupJoin</c-s> &mdash; correlate two sequences</li>
+            <li><c-s>Distinct</c-s> / <c-s>Union</c-s> / <c-s>Intersect</c-s> / <c-s>Except</c-s> &mdash; set operations</li>
+            <li><c-s>First</c-s> / <c-s>Last</c-s> / <c-s>Single</c-s> / <c-s>ElementAt</c-s> &mdash; element access</li>
+            <li><c-s>Any</c-s> / <c-s>All</c-s> / <c-s>Count</c-s> / <c-s>Sum</c-s> / <c-s>Min</c-s> / <c-s>Max</c-s> / <c-s>Average</c-s> &mdash; aggregation</li>
+            <li><c-s>ToList</c-s> / <c-s>ToArray</c-s> / <c-s>ToDictionary</c-s> &mdash; materialize</li>
+          </ul>
+        </t-b>
+        <t-b>
+          LINQ queries are <strong>lazy</strong>: they do not execute until the sequence is
+          enumerated (e.g., in a <c-s>foreach</c-s>, or when calling <c-s>ToList()</c-s>).
+          This enables efficient pipelining and deferred evaluation.
+        </t-b>
+      </indent-blocks>
+
+      <a id="ext"></a>
+      <h3>4.6  Extension Methods</h3>
+      <indent-blocks>
+        <t-b>
+          An <strong>extension method</strong> is a static method defined in a static class whose
+          first parameter is prefixed with <c-s>this</c-s>. It is called as if it were an instance
+          method on the target type:
+        </t-b>
+        <defn-code>
+public static class StringExtensions {
+    public static bool IsPalindrome(this string s) {
+        int n = s.Length;
+        for (int i = 0; i &lt; n / 2; i++)
+            if (s[i] != s[n - 1 - i]) return false;
+        return true;
+    }
+}
+
+// usage
+bool ok = "racecar".IsPalindrome();  // true
+        </defn-code>
+        <t-b>
+          All LINQ operators are extension methods on <c-s>IEnumerable&lt;T&gt;</c-s> defined in
+          <c-s>System.Linq</c-s>. Extension methods can be defined for interfaces, sealed classes,
+          or any type you cannot modify.
+        </t-b>
+      </indent-blocks>
+
+      <a id="iter"></a>
+      <h3>4.7  Iterators</h3>
+      <indent-blocks>
+        <t-b>
+          A method that contains <c-s>yield return</c-s> becomes an <strong>iterator</strong>.
+          It returns an <c-s>IEnumerable&lt;T&gt;</c-s> and produces values lazily — each call to
+          the enumerator's <c-s>MoveNext()</c-s> resumes execution at the next
+          <c-s>yield return</c-s>:
+        </t-b>
+        <defn-code>
+IEnumerable&lt;int&gt; Fibonacci() {
+    int a = 0, b = 1;
+    while (true) {
+        yield return a;
+        (a, b) = (b, a + b);
+    }
+}
+
+foreach (int f in Fibonacci().Take(10))
+    Console.Write(f + " ");   // 0 1 1 2 3 5 8 13 21 34
+        </defn-code>
+        <t-b>
+          <c-s>yield break</c-s> ends the iteration early. Iterators compose naturally with LINQ
+          operators.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue4"></a>
+      <h3>4.8  Epilogue</h3>
+      <t-b>
+        This chapter covered C# computation: methods in all their forms, operators, delegates and
+        events, lambdas, LINQ, extension methods, and iterators. The next chapter explores how data
+        and operations are packaged into classes.
+      </t-b>
+      <a id="refs"></a>
+      <h3>4.9  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/linq/">LINQ &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/delegates/">Delegates &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/statements-expressions-operators/lambda-expressions">Lambda expressions</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/extension-methods">Extension methods</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#methods">methods</a></menu-elem>
+        <menu-elem class="secElem"><a href="#operators">operators</a></menu-elem>
+        <menu-elem class="secElem"><a href="#delegates">delegates</a></menu-elem>
+        <menu-elem class="secElem"><a href="#lambdas">lambdas</a></menu-elem>
+        <menu-elem class="secElem"><a href="#linq">LINQ</a></menu-elem>
+        <menu-elem class="secElem"><a href="#ext">extension methods</a></menu-elem>
+        <menu-elem class="secElem"><a href="#iter">iterators</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CSharpStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+</body>
+</html>

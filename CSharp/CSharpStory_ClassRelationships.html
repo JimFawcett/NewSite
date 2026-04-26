@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CSharpStory_ClassRelationships.html
+-->
+<head>
+  <title>C# Story Class Relationships</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCSharp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCSharp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CSharpStory_ClassRelationships.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">C# Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #6 &ndash; Class Relationships</h2>
+        <h4 class="indent" id="subtitle">inheritance, interfaces, abstract classes, composition, polymorphism</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">6.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Classes rarely stand alone. This chapter covers the relationships between classes:
+          how one class inherits from another, how interfaces define shared contracts across
+          unrelated types, and how composition and polymorphism shape extensible designs.
+        </t-b>
+      </indent-blocks>
+
+      <a id="inheritance"></a>
+      <h3>6.1  Inheritance</h3>
+      <indent-blocks>
+        <t-b>
+          C# supports <strong>single implementation inheritance</strong>: a class derives from
+          at most one base class. All classes ultimately derive from <c-s>System.Object</c-s>.
+        </t-b>
+        <defn-code>
+public class Animal {
+    public string Name { get; }
+    public Animal(string name) =&gt; Name = name;
+    public virtual string Sound() =&gt; "...";
+    public override string ToString() =&gt; $"{Name} says {Sound()}";
+}
+
+public class Dog : Animal {
+    public Dog(string name) : base(name) { }
+    public override string Sound() =&gt; "Woof";
+}
+
+public class Cat : Animal {
+    public Cat(string name) : base(name) { }
+    public override string Sound() =&gt; "Meow";
+}
+        </defn-code>
+        <t-b>
+          A <c-s>sealed</c-s> class cannot be derived from. A <c-s>sealed</c-s> override
+          prevents further overriding in deeper derived classes.
+        </t-b>
+        <t-b>
+          Use the <c-s>new</c-s> modifier to intentionally hide (not override) a base member.
+          Hiding breaks runtime polymorphism for the hidden member.
+        </t-b>
+      </indent-blocks>
+
+      <a id="abstract"></a>
+      <h3>6.2  Abstract Classes</h3>
+      <indent-blocks>
+        <t-b>
+          An <strong>abstract class</strong> cannot be instantiated directly and may contain
+          abstract members (signature only, no body). Derived classes must implement all abstract
+          members:
+        </t-b>
+        <defn-code>
+public abstract class Shape {
+    public abstract double Area { get; }
+    public abstract double Perimeter { get; }
+
+    public void Print() =&gt;                          // concrete shared behavior
+        Console.WriteLine($"A={Area:F2} P={Perimeter:F2}");
+}
+
+public class Rectangle : Shape {
+    public double W { get; }
+    public double H { get; }
+    public Rectangle(double w, double h) { W = w; H = h; }
+    public override double Area =&gt; W * H;
+    public override double Perimeter =&gt; 2 * (W + H);
+}
+        </defn-code>
+        <t-b>
+          Use abstract classes when you want to share implementation code among related types.
+          Use interfaces when you want to define a contract that unrelated types can satisfy.
+        </t-b>
+      </indent-blocks>
+
+      <a id="interfaces"></a>
+      <h3>6.3  Interface Implementation</h3>
+      <indent-blocks>
+        <t-b>
+          A class or struct may implement any number of interfaces simultaneously. Interface members
+          are <c-s>public</c-s> by default. <strong>Explicit implementation</strong> hides a member
+          from the type's public surface and exposes it only through the interface type:
+        </t-b>
+        <defn-code>
+public interface IReadable  { string Read(); }
+public interface IWritable  { void Write(string data); }
+
+public class File : IReadable, IWritable {
+    private string _content = "";
+    public string Read() =&gt; _content;
+    public void Write(string data) =&gt; _content += data;
+}
+
+// Explicit implementation hides method unless cast to interface
+public class SecureFile : IReadable {
+    private string _data = "secret";
+    string IReadable.Read() =&gt; _data;   // only accessible via IReadable ref
+}
+        </defn-code>
+      </indent-blocks>
+
+      <a id="composition"></a>
+      <h3>6.4  Composition</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Composition</strong> (a &ldquo;has-a&rdquo; relationship) is often preferable to
+          inheritance. Instead of deriving a <c-s>Car</c-s> from <c-s>Engine</c-s>, a
+          <c-s>Car</c-s> holds an <c-s>Engine</c-s>:
+        </t-b>
+        <defn-code>
+public class Engine {
+    public int Horsepower { get; }
+    public Engine(int hp) =&gt; Horsepower = hp;
+    public void Start() =&gt; Console.WriteLine("Engine started");
+}
+
+public class Car {
+    private readonly Engine _engine;
+    public string Model { get; }
+
+    public Car(string model, int hp) {
+        Model = model;
+        _engine = new Engine(hp);
+    }
+
+    public void Drive() {
+        _engine.Start();
+        Console.WriteLine($"{Model} moving");
+    }
+}
+        </defn-code>
+        <t-b>
+          Prefer composition over inheritance when the relationship is not truly &ldquo;is-a&rdquo;,
+          when you need to vary the component at runtime, or when deep inheritance hierarchies
+          become fragile and hard to reason about.
+        </t-b>
+      </indent-blocks>
+
+      <a id="polymorphism"></a>
+      <h3>6.5  Polymorphism</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Runtime polymorphism</strong> in C# works through virtual dispatch. When a method
+          is called on a base-class or interface reference, the CLR dispatches to the most-derived
+          override:
+        </t-b>
+        <defn-code>
+List&lt;Animal&gt; animals = new() {
+    new Dog("Rex"), new Cat("Whiskers"), new Dog("Buddy")
+};
+
+foreach (var a in animals)
+    Console.WriteLine(a);   // calls each override of Sound()
+        </defn-code>
+        <t-b>
+          <strong>Interface polymorphism</strong> allows unrelated types to be treated uniformly:
+        </t-b>
+        <defn-code>
+IEnumerable&lt;IShape&gt; shapes = new IShape[] {
+    new Circle(3), new Rectangle(4, 5)
+};
+double total = shapes.Sum(s =&gt; s.Area);
+        </defn-code>
+        <t-b>
+          <strong>Pattern matching</strong> (C# 7+) provides a type-safe alternative to downcasts.
+          The <c-s>switch</c-s> expression dispatches on the runtime type and can simultaneously
+          deconstruct and test properties:
+        </t-b>
+        <defn-code>
+string Describe(Shape s) =&gt; s switch {
+    Circle c when c.Radius &gt; 10  =&gt; "large circle",
+    Circle c                      =&gt; "small circle",
+    Rectangle { W: var w, H: var h } when w == h =&gt; "square",
+    Rectangle                     =&gt; "rectangle",
+    _                             =&gt; "unknown shape"
+};
+        </defn-code>
+      </indent-blocks>
+
+      <a id="covariance"></a>
+      <h3>6.6  Covariance and Contravariance</h3>
+      <indent-blocks>
+        <t-b>
+          Generic interfaces and delegates support variance declarations:
+          <ul class="tight">
+            <li><c-s>out T</c-s> &mdash; <strong>covariant</strong>: <c-s>IEnumerable&lt;Dog&gt;</c-s>
+              can be used where <c-s>IEnumerable&lt;Animal&gt;</c-s> is expected</li>
+            <li><c-s>in T</c-s> &mdash; <strong>contravariant</strong>: <c-s>Action&lt;Animal&gt;</c-s>
+              can be used where <c-s>Action&lt;Dog&gt;</c-s> is expected</li>
+          </ul>
+        </t-b>
+        <t-b>
+          These variance annotations let you write more flexible APIs without explicit casting and
+          without sacrificing type safety.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue6"></a>
+      <h3>6.7  Epilogue</h3>
+      <t-b>
+        This chapter covered the relationships between C# classes: inheritance, abstract classes,
+        interface implementation, composition, runtime polymorphism, pattern matching, and variance.
+        The next chapter dives into generics.
+      </t-b>
+      <a id="refs"></a>
+      <h3>6.8  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/object-oriented/inheritance">Inheritance &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/types/interfaces">Interfaces &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/functional/pattern-matching">Pattern matching &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/standard/generics/covariance-and-contravariance">Covariance &amp; contravariance</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#inheritance">inheritance</a></menu-elem>
+        <menu-elem class="secElem"><a href="#abstract">abstract</a></menu-elem>
+        <menu-elem class="secElem"><a href="#interfaces">interfaces</a></menu-elem>
+        <menu-elem class="secElem"><a href="#composition">composition</a></menu-elem>
+        <menu-elem class="secElem"><a href="#polymorphism">polymorphism</a></menu-elem>
+        <menu-elem class="secElem"><a href="#covariance">covariance</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CSharpStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 6, 10);
+  </script>
+</body>
+</html>

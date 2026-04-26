@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CSharpStory_Interesting.html
+-->
+<head>
+  <title>C# Story Interesting</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCSharp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCSharp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CSharpStory_Interesting.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">C# Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #11 &ndash; Interesting</h2>
+        <h4 class="indent" id="subtitle">async/await, reflection, attributes, Span&lt;T&gt;, unsafe, source generators</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">11.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          This final chapter collects several features that are particularly useful, distinctive,
+          or worth understanding deeply: the async/await model in detail, reflection, attributes,
+          high-performance Span&lt;T&gt;, unsafe code, and the source-generator pipeline.
+        </t-b>
+      </indent-blocks>
+
+      <a id="async"></a>
+      <h3>11.1  Async / Await in Depth</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>async</c-s> / <c-s>await</c-s> transforms a method into a state machine that
+          suspends at each <c-s>await</c-s> of an incomplete <c-s>Task</c-s> and resumes when
+          that task completes — without blocking a thread.
+        </t-b>
+        <defn-code>
+async Task&lt;int&gt; SumPageLengthsAsync(IEnumerable&lt;string&gt; urls) {
+    using var http = new HttpClient();
+    var tasks = urls.Select(u =&gt; http.GetStringAsync(u));
+    string[] pages = await Task.WhenAll(tasks);      // concurrent fetch
+    return pages.Sum(p =&gt; p.Length);
+}
+        </defn-code>
+        <t-b>
+          Key rules:
+          <ul class="tight">
+            <li>Prefer <c-s>Task</c-s> return types; avoid <c-s>async void</c-s> except for event handlers</li>
+            <li>Use <c-s>ConfigureAwait(false)</c-s> in library code to avoid deadlocks in UI/ASP.NET contexts</li>
+            <li>Use <c-s>CancellationToken</c-s> for cooperative cancellation:
+              <c-s>await DoWorkAsync(token)</c-s></li>
+            <li><c-s>ValueTask&lt;T&gt;</c-s> avoids heap allocation when the result is often
+              synchronously available</li>
+            <li><c-s>IAsyncEnumerable&lt;T&gt;</c-s> and <c-s>await foreach</c-s> enable async
+              streaming (C# 8+)</li>
+          </ul>
+        </t-b>
+        <defn-code>
+// async streaming
+async IAsyncEnumerable&lt;int&gt; CountAsync(int n,
+    [EnumeratorCancellation] CancellationToken ct = default) {
+    for (int i = 0; i &lt; n; i++) {
+        await Task.Delay(100, ct);
+        yield return i;
+    }
+}
+
+await foreach (int v in CountAsync(10))
+    Console.WriteLine(v);
+        </defn-code>
+      </indent-blocks>
+
+      <a id="span"></a>
+      <h3>11.2  Span&lt;T&gt; and Memory&lt;T&gt;</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>Span&lt;T&gt;</c-s> is a stack-only, ref struct that represents a contiguous
+          region of memory (an array slice, stack-allocated block, or native buffer) without
+          copying. It enables high-performance parsing and data processing:
+        </t-b>
+        <defn-code>
+void ProcessBuffer(ReadOnlySpan&lt;byte&gt; data) {
+    while (!data.IsEmpty) {
+        int len = data[0];
+        ReadOnlySpan&lt;byte&gt; chunk = data.Slice(1, len);
+        Handle(chunk);
+        data = data.Slice(1 + len);
+    }
+}
+
+// zero-copy string slicing
+ReadOnlySpan&lt;char&gt; csv = "Alice,30,Engineer".AsSpan();
+int comma = csv.IndexOf(',');
+ReadOnlySpan&lt;char&gt; name = csv[..comma];   // "Alice" — no allocation
+        </defn-code>
+        <t-b>
+          <c-s>Memory&lt;T&gt;</c-s> is the heap-safe counterpart — it can be stored in fields
+          and used across async boundaries. It wraps an array segment and provides a
+          <c-s>Span</c-s> on demand via <c-s>.Span</c-s>.
+        </t-b>
+        <t-b>
+          <c-s>ArrayPool&lt;T&gt;.Shared.Rent(n)</c-s> / <c-s>.Return(buf)</c-s> avoids
+          allocating large temporary arrays on the heap.
+        </t-b>
+      </indent-blocks>
+
+      <a id="reflection"></a>
+      <h3>11.3  Reflection</h3>
+      <indent-blocks>
+        <t-b>
+          Reflection allows code to inspect and invoke types, methods, and properties at runtime
+          through the <c-s>System.Reflection</c-s> namespace:
+        </t-b>
+        <defn-code>
+Type t = typeof(List&lt;int&gt;);
+Console.WriteLine(t.FullName);         // System.Collections.Generic.List`1
+
+foreach (var m in t.GetMethods(BindingFlags.Public | BindingFlags.Instance))
+    Console.WriteLine(m.Name);
+
+// late-bound invocation
+object? obj = Activator.CreateInstance(t);
+MethodInfo? add = t.GetMethod("Add");
+add?.Invoke(obj, new object[] { 42 });
+        </defn-code>
+        <t-b>
+          Reflection is used by serializers, dependency injection frameworks, ORMs, and testing
+          tools. It carries a runtime cost; for hot paths prefer source generators or compiled
+          expressions.
+        </t-b>
+      </indent-blocks>
+
+      <a id="attributes"></a>
+      <h3>11.4  Attributes</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Attributes</strong> attach declarative metadata to types, methods, parameters,
+          or assemblies. They are read at runtime via reflection and at compile time via source
+          generators or Roslyn analyzers:
+        </t-b>
+        <defn-code>
+[Obsolete("Use NewMethod instead", error: false)]
+public void OldMethod() { }
+
+[Serializable]
+public class Config {
+    [JsonPropertyName("max_retries")]
+    public int MaxRetries { get; set; }
+}
+
+// custom attribute
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+public sealed class AuditAttribute : Attribute {
+    public string Reason { get; }
+    public AuditAttribute(string reason) =&gt; Reason = reason;
+}
+
+[Audit("PCI compliance")]
+public class PaymentProcessor { /* ... */ }
+        </defn-code>
+        <t-b>
+          Important built-in attributes:
+          <c-s>[Obsolete]</c-s>, <c-s>[Serializable]</c-s>,
+          <c-s>[Flags]</c-s> (on enums), <c-s>[ThreadStatic]</c-s>,
+          <c-s>[MethodImpl(MethodImplOptions.AggressiveInlining)]</c-s>,
+          <c-s>[CallerMemberName]</c-s> / <c-s>[CallerFilePath]</c-s> / <c-s>[CallerLineNumber]</c-s>.
+        </t-b>
+      </indent-blocks>
+
+      <a id="unsafe"></a>
+      <h3>11.5  Unsafe Code and Pointers</h3>
+      <indent-blocks>
+        <t-b>
+          C# lets you drop out of managed memory safety within <c-s>unsafe</c-s> blocks.
+          Unsafe code is required for pointer arithmetic, pinning objects for native interop,
+          and calling certain P/Invoke signatures.
+        </t-b>
+        <defn-code>
+unsafe void Xor(byte* buf, int len, byte key) {
+    for (int i = 0; i &lt; len; i++)
+        buf[i] ^= key;
+}
+
+// pin a managed array so GC won't move it
+byte[] data = { 1, 2, 3, 4 };
+fixed (byte* p = data) {
+    Xor(p, data.Length, 0xFF);
+}
+        </defn-code>
+        <t-b>
+          Enable unsafe code with <c-s>&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;</c-s>
+          in the project file. Use <c-s>Span&lt;T&gt;</c-s> and <c-s>Marshal</c-s> as safer
+          alternatives before resorting to raw pointers.
+        </t-b>
+      </indent-blocks>
+
+      <a id="srcgen"></a>
+      <h3>11.6  Source Generators</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Source generators</strong> (Roslyn incremental generators, C# 9+) run as part
+          of compilation and emit additional C# source files. They replace reflection-based
+          patterns with zero-cost generated code:
+          <ul class="tight">
+            <li><c-s>System.Text.Json</c-s> source generation &mdash; AOT-safe JSON serialization</li>
+            <li><c-s>LoggerMessage.Define</c-s> &mdash; high-performance structured logging</li>
+            <li>Regex source generator (<c-s>[GeneratedRegex]</c-s>) &mdash; compile-time regex compilation</li>
+            <li>DI source generation &mdash; compile-time service wiring</li>
+          </ul>
+        </t-b>
+        <defn-code>
+// Regex source generator — no runtime compilation overhead
+[GeneratedRegex(@"\d{4}-\d{2}-\d{2}")]
+private static partial Regex DatePattern();
+
+bool ok = DatePattern().IsMatch("2026-04-26");   // true
+        </defn-code>
+      </indent-blocks>
+
+      <a id="pattern"></a>
+      <h3>11.7  Advanced Pattern Matching</h3>
+      <indent-blocks>
+        <t-b>
+          C# pattern matching has grown substantially since its introduction in C# 7. Patterns
+          can be combined with logical operators and used in <c-s>if</c-s>, <c-s>switch</c-s>,
+          and <c-s>is</c-s> expressions:
+        </t-b>
+        <defn-code>
+object obj = new Point(3, -1);
+
+// type, deconstruct, and property patterns combined
+string msg = obj switch {
+    Point { X: 0, Y: 0 }               =&gt; "origin",
+    Point { X: var x, Y: var y } when x == y =&gt; "on diagonal",
+    Point { Y: &lt; 0 }                   =&gt; "below x-axis",
+    Point (var x, _) when x &gt; 0        =&gt; "right half-plane",
+    null                               =&gt; "null",
+    _                                  =&gt; "other"
+};
+        </defn-code>
+        <t-b>
+          <strong>List patterns</strong> (C# 11) match array or list shapes:
+          <c-s>if (data is [1, 2, .., &gt; 0])</c-s>
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue11"></a>
+      <h3>11.8  Epilogue</h3>
+      <t-b>
+        This chapter sampled some of the more advanced and interesting corners of C#: the async
+        state-machine model, zero-copy Span&lt;T&gt;, runtime reflection, declarative attributes,
+        unsafe pointer code, source generators, and advanced pattern matching. C# continues to
+        evolve; each release brings new features that make the language safer, faster, and more
+        expressive.
+      </t-b>
+      <a id="refs"></a>
+      <h3>11.9  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/">Async programming &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.memory-1">Memory&lt;T&gt; &amp; Span&lt;T&gt; &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/advanced-topics/reflection-and-attributes/">Reflection and attributes</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview">Source generators overview</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/functional/pattern-matching">Pattern matching &mdash; Microsoft docs</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#async">async/await</a></menu-elem>
+        <menu-elem class="secElem"><a href="#span">Span&lt;T&gt;</a></menu-elem>
+        <menu-elem class="secElem"><a href="#reflection">reflection</a></menu-elem>
+        <menu-elem class="secElem"><a href="#attributes">attributes</a></menu-elem>
+        <menu-elem class="secElem"><a href="#unsafe">unsafe</a></menu-elem>
+        <menu-elem class="secElem"><a href="#srcgen">source generators</a></menu-elem>
+        <menu-elem class="secElem"><a href="#pattern">pattern matching</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CSharpStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 11, 10);
+  </script>
+</body>
+</html>

@@ -19,6 +19,8 @@ function buildPages() {
       <a href='RepoCSharp_DependencyAnalysis.html'>Dependency Analysis</a>\
       <a href='RepoCSharp_CommPrototype.html'>Comm Prototype</a>\
       <a href='RepoCSharp_RemoteRepo.html'>Remote Pluggable Repo</a>\
+      <a href='RepoCSharp_PrettyPrint.html'>Pretty Print</a>\
+      <a href='RepoCSharp_CodeWebifier.html'>Code Webifier</a>\
       <a href='RepoCSharp_BasicDemos.html'>Basic Demos</a>\
       <a href='RepoCSharp_PubSub.html'>PublisherSubscriber</a>\
       <a href='RepoCSharp_Process.html'>Win Process</a>\

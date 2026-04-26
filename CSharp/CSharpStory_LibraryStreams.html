@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CSharpStory_LibraryStreams.html
+-->
+<head>
+  <title>C# Story Streams Library</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCSharp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCSharp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CSharpStory_LibraryStreams.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">C# Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #9 &ndash; Streams Library</h2>
+        <h4 class="indent" id="subtitle">System.IO: streams, readers, writers, paths</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">9.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          The <c-s>System.IO</c-s> namespace provides the building blocks for reading and writing
+          data: abstract streams, concrete file and memory streams, text readers and writers, and
+          helper types for working with paths and directories.
+        </t-b>
+      </indent-blocks>
+
+      <a id="stream"></a>
+      <h3>9.1  The Stream Abstraction</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>System.IO.Stream</c-s> is the abstract base for all I/O streams. Key members:
+          <ul class="tight">
+            <li><c-s>Read(byte[] buf, int offset, int count)</c-s> &mdash; read bytes</li>
+            <li><c-s>Write(byte[] buf, int offset, int count)</c-s> &mdash; write bytes</li>
+            <li><c-s>Seek(long offset, SeekOrigin origin)</c-s> &mdash; random-access positioning</li>
+            <li><c-s>Flush()</c-s> &mdash; force buffered data to the underlying sink</li>
+            <li><c-s>ReadAsync</c-s> / <c-s>WriteAsync</c-s> &mdash; async overloads (preferred for I/O-bound work)</li>
+            <li><c-s>CanRead</c-s>, <c-s>CanWrite</c-s>, <c-s>CanSeek</c-s>, <c-s>Length</c-s>, <c-s>Position</c-s> &mdash; properties</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Concrete stream types include:
+          <ul class="tight">
+            <li><c-s>FileStream</c-s> &mdash; file I/O</li>
+            <li><c-s>MemoryStream</c-s> &mdash; in-memory byte buffer</li>
+            <li><c-s>NetworkStream</c-s> &mdash; TCP socket I/O</li>
+            <li><c-s>GZipStream</c-s> / <c-s>DeflateStream</c-s> &mdash; compression wrappers</li>
+            <li><c-s>CryptoStream</c-s> &mdash; encryption/decryption wrapper</li>
+            <li><c-s>BufferedStream</c-s> &mdash; adds buffering to an unbuffered stream</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Always dispose streams — use a <c-s>using</c-s> statement or declaration:
+        </t-b>
+        <defn-code>
+using var fs = new FileStream("data.bin", FileMode.Open, FileAccess.Read);
+byte[] buf = new byte[fs.Length];
+int bytesRead = fs.Read(buf, 0, buf.Length);
+        </defn-code>
+      </indent-blocks>
+
+      <a id="file"></a>
+      <h3>9.2  FileStream</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>FileStream</c-s> accepts a <c-s>FileMode</c-s> and optional
+          <c-s>FileAccess</c-s> and <c-s>FileShare</c-s> arguments:
+        </t-b>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">FileMode</th>
+              <th class="darkItem">Behavior</th>
+            </tr>
+            <tr><td class="defn"><c-s>Open</c-s></td><td class="defn">Open existing; exception if absent</td></tr>
+            <tr><td class="defn"><c-s>OpenOrCreate</c-s></td><td class="defn">Open if present, create if absent</td></tr>
+            <tr><td class="defn"><c-s>Create</c-s></td><td class="defn">Create new (truncate if exists)</td></tr>
+            <tr><td class="defn"><c-s>CreateNew</c-s></td><td class="defn">Create new; exception if exists</td></tr>
+            <tr><td class="defn"><c-s>Append</c-s></td><td class="defn">Open/create; position at end; no seek before end</td></tr>
+            <tr><td class="defn"><c-s>Truncate</c-s></td><td class="defn">Open existing and truncate to zero bytes</td></tr>
+          </table>
+        </t-b>
+        <defn-code>
+// Write binary data
+using var ws = new FileStream("out.bin", FileMode.Create, FileAccess.Write);
+ws.Write(BitConverter.GetBytes(42));      // write int as 4 bytes
+ws.Write(BitConverter.GetBytes(3.14));    // write double as 8 bytes
+        </defn-code>
+      </indent-blocks>
+
+      <a id="text"></a>
+      <h3>9.3  Text Readers and Writers</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>StreamReader</c-s> and <c-s>StreamWriter</c-s> wrap any stream with character
+          encoding (default UTF-8). They provide line-oriented methods:
+        </t-b>
+        <defn-code>
+// Write text
+using var sw = new StreamWriter("log.txt", append: true);
+sw.WriteLine($"[{DateTime.Now:HH:mm:ss}] started");
+
+// Read text
+using var sr = new StreamReader("log.txt");
+string? line;
+while ((line = sr.ReadLine()) is not null)
+    Console.WriteLine(line);
+        </defn-code>
+        <t-b>
+          <strong>Convenience helpers</strong> on the <c-s>File</c-s> static class avoid manual
+          stream management for simple cases:
+        </t-b>
+        <defn-code>
+// one-shot reads
+string all    = File.ReadAllText("data.txt");
+string[] lines = File.ReadAllLines("data.txt");
+byte[]   bytes = File.ReadAllBytes("data.bin");
+
+// one-shot writes
+File.WriteAllText("out.txt", "hello\n");
+File.AppendAllText("out.txt", "world\n");
+
+// lazy line-by-line (avoids loading entire file)
+foreach (string ln in File.ReadLines("big.txt"))
+    Process(ln);
+        </defn-code>
+        <t-b>
+          <c-s>StringReader</c-s> and <c-s>StringWriter</c-s> apply the same reader/writer
+          interface to in-memory strings, making it easy to unit-test code that works with a
+          <c-s>TextReader</c-s> or <c-s>TextWriter</c-s> without touching the filesystem.
+        </t-b>
+      </indent-blocks>
+
+      <a id="binary"></a>
+      <h3>9.4  BinaryReader and BinaryWriter</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>BinaryWriter</c-s> writes primitive values in their binary representation.
+          <c-s>BinaryReader</c-s> reads them back. They are type-safe and endian-consistent
+          (always little-endian on .NET):
+        </t-b>
+        <defn-code>
+// write
+using var bw = new BinaryWriter(File.Create("data.bin"));
+bw.Write(42);
+bw.Write(3.14);
+bw.Write("hello");   // length-prefixed UTF-8 string
+
+// read
+using var br = new BinaryReader(File.OpenRead("data.bin"));
+int n   = br.ReadInt32();
+double d = br.ReadDouble();
+string s = br.ReadString();
+        </defn-code>
+      </indent-blocks>
+
+      <a id="memory"></a>
+      <h3>9.5  MemoryStream</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>MemoryStream</c-s> is backed by a resizable byte array. Use it to build up a byte
+          sequence in memory and then use its <c-s>ToArray()</c-s> or <c-s>GetBuffer()</c-s>
+          method to get the result, or seek back to the beginning and wrap it with another reader:
+        </t-b>
+        <defn-code>
+using var ms = new MemoryStream();
+using (var bw = new BinaryWriter(ms, Encoding.UTF8, leaveOpen: true)) {
+    bw.Write(100);
+    bw.Write("test");
+}
+ms.Position = 0;
+using var br = new BinaryReader(ms);
+Console.WriteLine(br.ReadInt32());    // 100
+Console.WriteLine(br.ReadString());   // test
+        </defn-code>
+      </indent-blocks>
+
+      <a id="paths"></a>
+      <h3>9.6  Path and Directory Helpers</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>System.IO.Path</c-s> manipulates path strings without touching the filesystem.
+          <c-s>Directory</c-s> and <c-s>File</c-s> operate on the filesystem:
+        </t-b>
+        <defn-code>
+string dir  = Path.GetDirectoryName("C:/data/log.txt")!;  // C:/data
+string name = Path.GetFileName("C:/data/log.txt");          // log.txt
+string ext  = Path.GetExtension("C:/data/log.txt");         // .txt
+string full = Path.Combine("C:/data", "sub", "out.txt");    // cross-platform join
+
+Directory.CreateDirectory("output/2026");
+bool exists = File.Exists("config.json");
+string[] files = Directory.GetFiles(".", "*.cs", SearchOption.AllDirectories);
+        </defn-code>
+        <t-b>
+          Use <c-s>Path.Combine</c-s> rather than string concatenation so that your code works
+          on both Windows (backslash) and Unix (forward slash) without modification.
+        </t-b>
+      </indent-blocks>
+
+      <a id="async9"></a>
+      <h3>9.7  Async File I/O</h3>
+      <indent-blocks>
+        <t-b>
+          File I/O is I/O-bound. Prefer async APIs so the calling thread is not blocked while
+          the OS moves data:
+        </t-b>
+        <defn-code>
+async Task WriteLogAsync(string path, string message) {
+    await using var sw = new StreamWriter(path, append: true);
+    await sw.WriteLineAsync($"[{DateTime.UtcNow:O}] {message}");
+}
+
+async Task&lt;string&gt; ReadFileAsync(string path) =&gt;
+    await File.ReadAllTextAsync(path);
+        </defn-code>
+        <t-b>
+          Note <c-s>await using</c-s>: when a disposable type also implements
+          <c-s>IAsyncDisposable</c-s>, use <c-s>await using</c-s> to await the async dispose,
+          which flushes the buffer before releasing the file handle.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue9"></a>
+      <h3>9.8  Epilogue</h3>
+      <t-b>
+        This chapter covered the stream abstraction, file and memory streams, text and binary
+        readers/writers, path utilities, and async I/O. The next chapter examines
+        <c-s>System.Collections.Generic</c-s>.
+      </t-b>
+      <a id="refs"></a>
+      <h3>9.9  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.io.stream">Stream &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.io.filestream">FileStream &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.io.streamreader">StreamReader &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/standard/io/">File and stream I/O overview</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#stream">stream</a></menu-elem>
+        <menu-elem class="secElem"><a href="#file">FileStream</a></menu-elem>
+        <menu-elem class="secElem"><a href="#text">text I/O</a></menu-elem>
+        <menu-elem class="secElem"><a href="#binary">binary I/O</a></menu-elem>
+        <menu-elem class="secElem"><a href="#memory">MemoryStream</a></menu-elem>
+        <menu-elem class="secElem"><a href="#paths">paths</a></menu-elem>
+        <menu-elem class="secElem"><a href="#async9">async I/O</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CSharpStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 9, 10);
+  </script>
+</body>
+</html>
