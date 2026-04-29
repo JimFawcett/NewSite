@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  WebDevStory_JavaScript_Summary.html
+-->
+<head>
+  <title>WebDev Story JavaScript Summary</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeWebDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github table.reftable {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #github table.reftable th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+      padding: 0.25rem 0.5rem;
+    }
+    #github table.reftable td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreWebDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    WebDevStory_JavaScript_Summary.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/28/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">WebDev Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">WebDev Story: JavaScript Summary</h2>
+        <h4 class="indent" id="subtitle">definition, execution model, syntax, usage patterns</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="defn"></a>
+      <h3>4.0  What is JavaScript?</h3>
+      <t-b>
+        JavaScript is a high-level, dynamically typed, interpreted programming language based on
+        <strong>objects composed of key-value pairs</strong>. Keys are names; values may be a
+        function, a literal, or another object.
+      </t-b>
+      <pre><code class="language-javascript">let jim = {
+  "name": "Fawcett",
+  "job":  "Instructor",
+  show: function() {
+    return `{ name: ${this.name}, job: ${this.job} }`;
+  }
+};
+console.log(jim.show());
+// output: { name: Fawcett, job: Instructor }</code></pre>
+      <t-b>
+        JavaScript uses a <strong>prototype model</strong> to support specialization. When a
+        method call cannot be resolved on an object, function lookup walks up the object's
+        prototype chain toward <c-s>Object.prototype</c-s>, the root of all plain objects.
+      </t-b>
+
+      <a id="exec"></a>
+      <h4>4.1  Execution Engine</h4>
+      <t-b>
+        JavaScript in the browser runs on a single-threaded execution engine built around an
+        <strong>Event Loop</strong>:
+      </t-b>
+      <t-b class="indent">
+        <ol class="tight">
+          <li>
+            When a JavaScript function is called, its execution context is pushed onto the
+            <strong>Call Stack</strong>.
+          </li>
+          <li>
+            When an event fires (click, load, timer, fetch response, …), its handler is placed
+            on the <strong>Event Queue</strong> (also called the Message Queue).
+          </li>
+          <li>
+            The event loop picks the next queued handler only when the call stack is <em>empty</em>
+            — meaning all synchronous code has finished.
+          </li>
+          <li>
+            <strong>Microtasks</strong> (Promise callbacks, <c-s>queueMicrotask</c-s>) drain
+            completely after each task, before the next task is dequeued.
+          </li>
+        </ol>
+      </t-b>
+      <t-b>
+        This model means: keep event handlers short and non-blocking. Long synchronous operations
+        freeze the UI because no other events can be processed until the call stack empties.
+        Use <c-s>async/await</c-s> or Promises for operations that take time.
+      </t-b>
+      <t-b>
+        Web Workers run JavaScript on background threads but <em>cannot</em> access the DOM.
+        They communicate with the main thread through <c-s>postMessage</c-s>.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">
+            <a target="_blank" href="https://262.ecma-international.org/">JavaScript (ECMAScript) specification</a>
+          </summary>
+          <t-b>
+            The JavaScript language is standardized by ECMA International as ECMAScript (ECMA-262).
+            The living draft at
+            <a target="_blank" href="https://tc39.es/ecma262/">tc39.es/ecma262</a> reflects
+            the latest approved and in-flight changes.
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <a id="syntax"></a>
+      <h3>4.2  Syntax Overview</h3>
+      <t-b>
+        The code block below is a quick-reference tour of JavaScript syntax, covering all the
+        major features a web developer uses regularly.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">JavaScript Syntax Quick Reference</summary>
+<pre style="font-size:0.875rem; line-height:1.4;"><code class="language-javascript">// ── Values, variables, and scope ─────────────────────────────────────
+// Numbers, strings, booleans, null, undefined, BigInt, Symbol
+let n = 42, s = "hi", ok = true, z = null;
+
+const PI = 3.1416;    // cannot be reassigned
+let count = 0;        // can be reassigned
+
+// ── Expressions and operators ─────────────────────────────────────────
+1 + 2 * 3;            // 7
+10 ** 2;              // 100 (exponent)
+a === b;              // strict equality (no coercion)
+a && b || c;          // short-circuiting
+
+const name = user.name ?? "Anonymous";      // nullish coalescing
+const city = user.address?.city;            // optional chaining
+
+// ── Control flow ──────────────────────────────────────────────────────
+if (x > 0) { ... } else { ... }
+
+for (let i = 0; i &lt; 3; i++) { ... }
+for (const v of [1, 2, 3]) { ... }         // iterable loop
+while (cond) { ... }
+
+switch (kind) {
+  case "cat": doCat(); break;
+  default: fallback();
+}
+
+// ── Functions ─────────────────────────────────────────────────────────
+function add(a, b = 0) { return a + b; }   // default param
+
+const mul = function(a, b) { return a * b; };  // expression
+
+const dbl = x => x * 2;                    // arrow (lexical `this`)
+
+// ── Objects and arrays ────────────────────────────────────────────────
+const person = { id: 1, name: "Ada" };
+const team   = ["A", "B", "C"];
+
+const { name } = person;                   // destructuring
+const [first, ...rest] = team;
+
+const x = 1, y = 2;
+const point = { x, y, ["p" + "3"]: 3 };   // shorthand + computed keys
+
+const withAge = { ...person, age: 36 };    // spread/merge
+const bigger  = [...team, "D"];
+
+// ── Template literals ─────────────────────────────────────────────────
+const who = "world";
+const msg = `Hello, ${who}!
+This spans multiple lines.`;
+
+// ── Classes (ES2015+) ─────────────────────────────────────────────────
+class Counter {
+  #n = 0;                            // private field
+  inc() { this.#n++; }
+  get value() { return this.#n; }
+  static from(n) { const c = new Counter(); c.#n = n; return c; }
+}
+
+// ── Modules ───────────────────────────────────────────────────────────
+// export.js
+export const PI = 3.14;
+export default function area(r) { return PI * r * r; }
+
+// import.js
+import area, { PI } from "./export.js";
+
+// ── Promises and async/await ──────────────────────────────────────────
+fetch("/api/user")
+  .then(r => r.json())
+  .then(data => console.log(data))
+  .catch(err => console.error(err));
+
+async function load() {
+  try {
+    const r    = await fetch("/api/user");
+    const data = await r.json();
+    console.log(data);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// ── Errors ────────────────────────────────────────────────────────────
+try {
+  risky();
+} catch (err) {
+  console.error(err.message);
+} finally {
+  cleanup();
+}
+
+// ── DOM basics ────────────────────────────────────────────────────────
+const btn = document.querySelector("#go");
+btn.addEventListener("click", () => {
+  document.body.style.backgroundColor = "papayawhip";
+});
+
+// ── Truthy / falsy and equality ───────────────────────────────────────
+// falsy: false, 0, -0, 0n, "", null, undefined, NaN
+if ("0") { /* runs — non-empty string is truthy */ }
+
+"5" == 5    // true  (coerces)
+"5" === 5   // false (strict)
+</code></pre>
+        </details>
+      </indent-blocks>
+
+      <a id="uses"></a>
+      <h3>4.3  Three Ways JavaScript is Used</h3>
+      <t-b>
+        In practice, JavaScript is used in one of three main patterns on a web page:
+      </t-b>
+      <t-b class="indent">
+        <ol class="tight">
+          <li>
+            <strong>Event-driven DOM mutation</strong> &mdash; functions that run in response to
+            user actions:
+            <pre><code class="language-html">&lt;div id="demo" onclick="toggle('demo')"&gt;Hello World&lt;/div&gt;</code></pre>
+          </li>
+          <li>
+            <strong>Shared menu and navigation objects</strong> &mdash; objects that build and
+            manage menus used by many pages. A single change in the shared script updates every
+            page automatically.
+          </li>
+          <li>
+            <strong>Stateful widget objects</strong> &mdash; objects that encapsulate complex
+            visual components by holding and mutating private state (e.g., a sortable table,
+            collapsible tree, or auto-complete input).
+          </li>
+        </ol>
+      </t-b>
+      <t-b>
+        Methods and properties are appended to plain objects with simple property assignment.
+        ES2015 class syntax provides a more structured alternative, wrapping the same
+        prototype model (see Chapter 5).
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>4.4  References</h3>
+      <table class="reftable">
+        <colgroup>
+          <col style="width:16rem;">
+          <col style="width:auto;">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a target="_blank" href="https://262.ecma-international.org/">ECMAScript 2025 Spec (ECMA-262)</a></td>
+            <td>Normative spec for the current ECMAScript edition (June 2025).</td>
+          </tr>
+          <tr>
+            <td><a target="_blank" href="https://tc39.es/ecma262/">ECMA-262 Living Draft</a></td>
+            <td>Continuously updated draft reflecting approved and in-flight changes.</td>
+          </tr>
+          <tr>
+            <td><a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference">MDN JavaScript Reference</a></td>
+            <td>Authoritative task-oriented reference with examples and caveats.</td>
+          </tr>
+          <tr>
+            <td><a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide">MDN JavaScript Guide</a></td>
+            <td>Big-picture language guide with how-tos and best practices.</td>
+          </tr>
+          <tr>
+            <td><a target="_blank" href="https://www.digitalocean.com/community/tutorials/understanding-data-types-in-javascript">Understanding data types in JS</a></td>
+            <td>Clear and complete overview of JavaScript's type system.</td>
+          </tr>
+          <tr>
+            <td><a target="_blank" href="https://www.digitalocean.com/community/tutorials/understanding-objects-in-javascript">Understanding Objects in JS</a></td>
+            <td>Thorough explanation of how JavaScript objects work.</td>
+          </tr>
+          <tr>
+            <td><a target="_blank" href="https://www.digitalocean.com/community/tutorials/understanding-prototypes-and-inheritance-in-javascript">Prototypes and Inheritance</a></td>
+            <td>Describes the JavaScript inheritance model clearly.</td>
+          </tr>
+          <tr>
+            <td><a target="_blank" href="https://www.digitalocean.com/community/tutorials/understanding-modules-and-import-and-export-statements-in-javascript">Modules, Import, and Export</a></td>
+            <td>How modules factor complex code into simpler parts.</td>
+          </tr>
+          <tr>
+            <td><a target="_blank" href="https://www.digitalocean.com/community/tutorials/understanding-the-event-loop-callbacks-promises-and-async-await-in-javascript">Event Loop, Callbacks, Promises, Async/Await</a></td>
+            <td>How JavaScript reacts to user events over time.</td>
+          </tr>
+          <tr>
+            <td><a target="_blank" href="https://www.digitalocean.com/community/tutorial-series/how-to-code-in-javascript">DigitalOcean JS tutorial series</a></td>
+            <td>Large collection of beginner-to-intermediate tutorials.</td>
+          </tr>
+          <tr>
+            <td><a target="_blank" href="https://github.com/tc39/proposals">TC39 ECMAScript Proposals (Stage 2+)</a></td>
+            <td>Tracks features likely to land in future ECMAScript editions.</td>
+          </tr>
+          <tr>
+            <td><a target="_blank" href="https://onlinejsplayground.com/">onlinejsplayground.com</a></td>
+            <td>Browser-based JS sandbox &mdash; run snippets without installing anything.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#defn">definition</a></menu-elem>
+        <menu-elem class="secElem"><a href="#exec">execution</a></menu-elem>
+        <menu-elem class="secElem"><a href="#syntax">syntax</a></menu-elem>
+        <menu-elem class="secElem"><a href="#uses">usage</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/WebDevStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+</body>
+</html>

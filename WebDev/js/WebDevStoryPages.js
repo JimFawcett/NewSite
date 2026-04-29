@@ -1,6 +1,6 @@
 /*
- * PagesTest.js - Builds thread page list
- * ver 1.0 - 19 Dec 2024
+ * WebDevStoryPages.js - Builds WebDev Story page list
+ * ver 1.0 - 28 Apr 2026
  * Jim Fawcett
  */
 
@@ -8,9 +8,18 @@ function buildPages() {
   const pgs = document.getElementById('pages');
   if(isDefined(pgs)) {
     pgs.innerHTML =
-    "<div class='darkItem menuHeader' onclick='togglePages()'>Thread Pages</div>\
+    "<div class='darkItem listheader' onclick='togglePages()'>Story Pages</div>\
     <div class='menuBody'>\
-      <a href='PagePrototype.html'>Page Prototype</a>\
+      <a href='WebDevStory_Prologue.html'>Prologue</a>\
+      <a href='WebDevStory_HtmlElements.html'>Chap 1 - HTML Elements</a>\
+      <a href='WebDevStory_HtmlDom.html'>Chap 2 - HTML DOM</a>\
+      <a href='WebDevStory_HtmlModels.html'>Chap 3 - HTML Models</a>\
+      <a href='WebDevStory_JavaScript_Summary.html'>Chap 4 - JS Summary</a>\
+      <a href='WebDevStory_JavaScript_Objects.html'>Chap 5 - JS Objects</a>\
+      <a href='WebDevStory_JavaScript_Dom.html'>Chap 6 - JS DOM &amp; Styles</a>\
+      <a href='WebDevStory_CSS_Summary.html'>Chap 7 - CSS Summary</a>\
+      <a href='WebDevStory_CSS_Layout.html'>Chap 8 - CSS Layout</a>\
+      <a href='WebDevStory_CSS_Features.html'>Chap 9 - CSS Features</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
