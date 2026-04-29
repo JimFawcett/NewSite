@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsStory_DataStructures.html
+-->
+<head>
+  <title>Basics Story Data Structures</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsStory_DataStructures.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/29/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Basics Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #5 &ndash; Data Structures &amp; Algorithms</h2>
+        <h4 class="indent" id="subtitle">arrays, lists, stacks, queues, maps, trees, graphs, Big-O</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>5.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Data structures organise information so it can be efficiently stored and retrieved.
+          Algorithms are the procedures that operate on them. Choosing the right data structure
+          is often the single largest factor in program performance: a hash map lookup is O(1)
+          while a linear scan through an unsorted array is O(n) &mdash; a difference of millions
+          of operations at scale.
+        </t-b>
+      </indent-blocks>
+
+      <a id="arrays"></a>
+      <h3>5.1&nbsp; Arrays</h3>
+      <indent-blocks>
+        <t-b>
+          An array is a contiguous block of same-type elements stored sequentially in memory.
+          It is the foundation of nearly every other data structure.
+          <ul class="tight">
+            <li><strong>Random access:</strong> O(1) &mdash; element <c-s>i</c-s> is at address
+                <c-s>base + i &times; element_size</c-s>.</li>
+            <li><strong>Append (dynamic array):</strong> amortised O(1) &mdash; when the backing
+                buffer is full, double it and copy.</li>
+            <li><strong>Insert/delete in middle:</strong> O(n) &mdash; must shift subsequent
+                elements.</li>
+            <li><strong>Cache-friendly:</strong> elements are adjacent; accessing them sequentially
+                maximises cache line utilisation.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Language names: <c-s>Vec&lt;T&gt;</c-s> (Rust), <c-s>list</c-s> (Python),
+          <c-s>ArrayList&lt;T&gt;</c-s> (Java), <c-s>std::vector&lt;T&gt;</c-s> (C++),
+          <c-s>Array&lt;T&gt;</c-s> (C#).
+        </t-b>
+      </indent-blocks>
+
+      <a id="lists"></a>
+      <h3>5.2&nbsp; Linked Lists</h3>
+      <indent-blocks>
+        <t-b>
+          A linked list is a chain of nodes where each node holds a value and a pointer to the
+          next node. A doubly-linked list also holds a pointer to the previous node.
+          <ul class="tight">
+            <li><strong>Insert/delete at known node:</strong> O(1) &mdash; just rewire pointers.</li>
+            <li><strong>Search / access by index:</strong> O(n) &mdash; must traverse from the head.</li>
+            <li><strong>Cache-unfriendly:</strong> nodes are scattered in the heap; accessing
+                consecutive nodes often causes cache misses.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Use linked lists when you need frequent insertion or deletion in the middle and
+          never need random access by index. In practice, arrays are almost always faster
+          for real workloads due to cache effects, even when a linked list would have better
+          theoretical complexity.
+        </t-b>
+      </indent-blocks>
+
+      <a id="stacks"></a>
+      <h3>5.3&nbsp; Stacks and Queues</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Stack (LIFO &mdash; Last In, First Out):</strong>
+          <ul class="tight">
+            <li>Operations: <c-s>push</c-s> (add to top), <c-s>pop</c-s> (remove from top),
+                <c-s>peek</c-s> (view top) &mdash; all O(1).</li>
+            <li>Uses: function call frames, undo/redo history, expression evaluation,
+                DFS graph traversal.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>Queue (FIFO &mdash; First In, First Out):</strong>
+          <ul class="tight">
+            <li>Operations: <c-s>enqueue</c-s> (add to back), <c-s>dequeue</c-s>
+                (remove from front) &mdash; O(1) with a circular buffer or deque.</li>
+            <li>Uses: task scheduling, BFS graph traversal, message passing between threads.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          A <strong>deque</strong> (double-ended queue) supports O(1) insert and remove at
+          both ends. Python&rsquo;s <c-s>collections.deque</c-s>, Rust&rsquo;s
+          <c-s>VecDeque&lt;T&gt;</c-s>.
+        </t-b>
+      </indent-blocks>
+
+      <a id="maps"></a>
+      <h3>5.4&nbsp; Hash Maps</h3>
+      <indent-blocks>
+        <t-b>
+          A hash map (dictionary, associative array) maps arbitrary keys to values using a
+          hash function. The hash function converts a key to an integer bucket index.
+          <ul class="tight">
+            <li><strong>Lookup, insert, delete:</strong> average O(1); worst case O(n) if
+                all keys hash to the same bucket (collisions).</li>
+            <li><strong>Unordered:</strong> iteration order is not guaranteed to match
+                insertion order (though Python dicts and Java LinkedHashMap preserve it).</li>
+            <li><strong>Load factor:</strong> the ratio of stored entries to buckets. When
+                it exceeds a threshold (typically 0.75), the map is rehashed into a larger
+                array, an O(n) operation that happens infrequently.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Hash maps are used for: symbol tables, caches, frequency counting, de-duplication,
+          and any mapping from one type to another. They are the most widely used non-array
+          data structure in practice.
+        </t-b>
+      </indent-blocks>
+
+      <a id="trees"></a>
+      <h3>5.5&nbsp; Trees</h3>
+      <indent-blocks>
+        <t-b>
+          A tree is a hierarchical data structure where each node has zero or more children
+          and exactly one parent (except the root). Important variants:
+          <ul class="tight">
+            <li>
+              <strong>Binary Search Tree (BST):</strong> each node&rsquo;s left subtree has
+              smaller keys, right has larger. O(log n) search, insert, and delete <em>if</em>
+              balanced; O(n) worst case for a degenerate (sorted-input) tree.
+            </li>
+            <li>
+              <strong>Self-balancing BST (Red-Black, AVL):</strong> guarantees O(log n) by
+              rebalancing after inserts and deletes. Used in most standard library sorted maps
+              (<c-s>std::map</c-s> in C++, <c-s>TreeMap</c-s> in Java, <c-s>BTreeMap</c-s>
+              in Rust).
+            </li>
+            <li>
+              <strong>B-Tree:</strong> wide branching factor; each node holds many keys.
+              Minimises disk reads, so used in databases (PostgreSQL, SQLite) and file
+              systems (NTFS, HFS+).
+            </li>
+            <li>
+              <strong>Binary Heap:</strong> a complete binary tree where each parent is
+              &ge; its children (max-heap). O(1) maximum access, O(log n) insert and
+              remove-max. Used to implement priority queues and heap sort.
+            </li>
+            <li>
+              <strong>Trie (prefix tree):</strong> each edge represents one character of
+              a string. O(m) search (m = string length) regardless of the number of stored
+              strings. Used in autocomplete and IP routing tables.
+            </li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="graphs"></a>
+      <h3>5.6&nbsp; Graphs</h3>
+      <indent-blocks>
+        <t-b>
+          A graph is a set of nodes (vertices) connected by edges. Directed or undirected;
+          weighted or unweighted.
+          <ul class="tight">
+            <li><strong>Adjacency list:</strong> each node stores a list of its neighbours.
+                O(V + E) space (V = vertices, E = edges). Efficient for sparse graphs.</li>
+            <li><strong>Adjacency matrix:</strong> a V&times;V boolean (or weight) matrix.
+                O(V&sup2;) space; O(1) edge lookup. Efficient for dense graphs.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>Essential graph algorithms:</strong>
+          <ul class="tight">
+            <li><strong>BFS (Breadth-First Search):</strong> visits all nodes at distance k
+                before nodes at distance k+1. Finds shortest paths in unweighted graphs.
+                O(V + E).</li>
+            <li><strong>DFS (Depth-First Search):</strong> explores as deep as possible before
+                backtracking. Used for cycle detection, topological sort, connected components.
+                O(V + E).</li>
+            <li><strong>Dijkstra&rsquo;s algorithm:</strong> shortest path in a weighted graph
+                (non-negative weights). O((V + E) log V) with a priority queue.</li>
+            <li><strong>Topological sort:</strong> linear ordering of vertices in a DAG such
+                that all edges go forward. Used by build systems, package managers, and
+                task schedulers.</li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="bigo"></a>
+      <h3>5.7&nbsp; Algorithmic Complexity (Big-O)</h3>
+      <indent-blocks>
+        <t-b>
+          Big-O notation describes how an algorithm&rsquo;s resource use (time or space)
+          grows as the input size <em>n</em> grows, ignoring constant factors.
+        </t-b>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">Class</th>
+              <th class="darkItem">Name</th>
+              <th class="darkItem">Example</th>
+              <th class="darkItem">n=1&nbsp;000&nbsp;000</th>
+            </tr>
+            <tr>
+              <td class="defn">O(1)</td>
+              <td class="defn">Constant</td>
+              <td class="defn">Array index, hash map lookup</td>
+              <td class="defn">1 op</td>
+            </tr>
+            <tr>
+              <td class="defn">O(log n)</td>
+              <td class="defn">Logarithmic</td>
+              <td class="defn">Binary search, balanced BST</td>
+              <td class="defn">~20 ops</td>
+            </tr>
+            <tr>
+              <td class="defn">O(n)</td>
+              <td class="defn">Linear</td>
+              <td class="defn">Linear scan, BFS/DFS</td>
+              <td class="defn">1 M ops</td>
+            </tr>
+            <tr>
+              <td class="defn">O(n log n)</td>
+              <td class="defn">Linearithmic</td>
+              <td class="defn">Merge sort, heap sort</td>
+              <td class="defn">~20 M ops</td>
+            </tr>
+            <tr>
+              <td class="defn">O(n&sup2;)</td>
+              <td class="defn">Quadratic</td>
+              <td class="defn">Bubble sort, naive string match</td>
+              <td class="defn">10&sup1;&sup2; ops</td>
+            </tr>
+            <tr>
+              <td class="defn">O(2&sup;n)</td>
+              <td class="defn">Exponential</td>
+              <td class="defn">Naive subset enumeration</td>
+              <td class="defn">vastly infeasible</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          Rule of thumb: O(n&sup2;) is fine for n &lt; 1&nbsp;000 in a non-critical path;
+          O(n log n) is the typical target for sorting; O(n) or O(n log n) for everything
+          in a hot loop.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue5"></a>
+      <h3>5.8&nbsp; Epilogue</h3>
+      <t-b>
+        Data structures and algorithms are the vocabulary of efficient software. A working
+        knowledge of the structures above &mdash; when to use each and what their complexity
+        guarantees are &mdash; is the foundation for reading and writing performant code in
+        any language. The next chapter addresses concurrency: running multiple tasks at once.
+      </t-b>
+      <a id="refs"></a>
+      <h3>5.9&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://visualgo.net/">VisuAlgo &mdash; interactive data structure animations</a><br />
+        <a target="_blank" href="https://www.geeksforgeeks.org/data-structures/">GeeksforGeeks &mdash; Data Structures</a><br />
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Big_O_notation">Big O Notation &mdash; Wikipedia</a><br />
+        <a target="_blank" href="https://leetcode.com/">LeetCode &mdash; practice problems</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#arrays">arrays</a></menu-elem>
+        <menu-elem class="secElem"><a href="#lists">linked lists</a></menu-elem>
+        <menu-elem class="secElem"><a href="#stacks">stacks/queues</a></menu-elem>
+        <menu-elem class="secElem"><a href="#maps">hash maps</a></menu-elem>
+        <menu-elem class="secElem"><a href="#trees">trees</a></menu-elem>
+        <menu-elem class="secElem"><a href="#graphs">graphs</a></menu-elem>
+        <menu-elem class="secElem"><a href="#bigo">Big-O</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+</body>
+</html>

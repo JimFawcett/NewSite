@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsStory_Deployment.html
+-->
+<head>
+  <title>Basics Story Deployment</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsStory_Deployment.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/29/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Basics Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #7 &ndash; Deployment</h2>
+        <h4 class="indent" id="subtitle">packaging, containers, cloud, CI/CD, monitoring, security</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>7.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Deployment is the process of making software available to users. Writing correct
+          code is necessary but not sufficient &mdash; software must also be packaged,
+          configured, delivered to a runtime environment, observed in production, and updated
+          without downtime. Modern deployment is automated, repeatable, and designed to fail
+          fast with minimal user impact.
+        </t-b>
+      </indent-blocks>
+
+      <a id="packaging"></a>
+      <h3>7.1&nbsp; Building and Packaging</h3>
+      <indent-blocks>
+        <t-b>
+          Software must be packaged into a distributable form before deployment:
+          <ul class="tight">
+            <li><strong>Native executable + installer:</strong> Windows (<c-s>.msi</c-s>,
+                <c-s>.exe</c-s>), macOS (<c-s>.pkg</c-s>, <c-s>.dmg</c-s>), Linux
+                (<c-s>.deb</c-s>, <c-s>.rpm</c-s>, AppImage). Self-contained; targets
+                one OS and architecture.</li>
+            <li><strong>Language runtime package:</strong> Python wheel (<c-s>.whl</c-s>),
+                Java JAR, npm package. Requires the appropriate runtime on the target machine.</li>
+            <li><strong>Container image (Docker):</strong> a portable, layered bundle that
+                includes the application, its runtime, and all system libraries. Runs identically
+                on any host with a container runtime.</li>
+            <li><strong>Serverless bundle:</strong> a zip file or container image deployed
+                to a FaaS (Function as a Service) platform; the cloud provider manages the
+                runtime environment.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>Reproducibility:</strong> the same source code + same environment should
+          always produce the same build artifact. Lock files, pinned dependency versions, and
+          hermetic build systems (Bazel, Nix) all serve this goal.
+        </t-b>
+      </indent-blocks>
+
+      <a id="containers"></a>
+      <h3>7.2&nbsp; Virtual Machines and Containers</h3>
+      <indent-blocks>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">&nbsp;</th>
+              <th class="darkItem">Virtual Machine (VM)</th>
+              <th class="darkItem">Container (Docker / Podman)</th>
+            </tr>
+            <tr>
+              <td class="defn">Isolation</td>
+              <td class="defn">Full OS virtualisation; separate kernel</td>
+              <td class="defn">Shared host kernel; isolated namespace + cgroup</td>
+            </tr>
+            <tr>
+              <td class="defn">Startup time</td>
+              <td class="defn">30 s &ndash; 2 min</td>
+              <td class="defn">&lt;1 s (or milliseconds for pre-pulled images)</td>
+            </tr>
+            <tr>
+              <td class="defn">Overhead</td>
+              <td class="defn">Several GB per VM</td>
+              <td class="defn">Tens to hundreds of MB</td>
+            </tr>
+            <tr>
+              <td class="defn">Security boundary</td>
+              <td class="defn">Stronger (separate kernel)</td>
+              <td class="defn">Weaker (shared kernel; container escape is possible)</td>
+            </tr>
+            <tr>
+              <td class="defn">Best for</td>
+              <td class="defn">Strong isolation, running different OSes</td>
+              <td class="defn">Microservices, CI jobs, fast horizontal scaling</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          A minimal Dockerfile for a Python web service:
+        </t-b>
+        <defn-code>FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["python", "server.py"]</defn-code>
+        <t-b>
+          <strong>Container orchestration (Kubernetes):</strong> manages containers across
+          a cluster. Handles scheduling (which node?), scaling (how many replicas?), rolling
+          updates, health checks, and service discovery. The dominant orchestration platform
+          in cloud-native deployments.
+        </t-b>
+      </indent-blocks>
+
+      <a id="cloud"></a>
+      <h3>7.3&nbsp; Cloud Computing</h3>
+      <indent-blocks>
+        <t-b>
+          Cloud providers (AWS, Azure, GCP, and others) rent compute, storage, and
+          network infrastructure on demand. Three primary service models:
+          <ul class="tight">
+            <li>
+              <strong>IaaS (Infrastructure as a Service):</strong> rent VMs and storage;
+              you manage the OS, runtime, and application. Examples: EC2 (AWS), Azure VMs.
+            </li>
+            <li>
+              <strong>PaaS (Platform as a Service):</strong> rent a managed runtime; you
+              deploy the application only. Examples: Heroku, Google App Engine, Azure App
+              Service. The provider handles patching, scaling, and availability zones.
+            </li>
+            <li>
+              <strong>Serverless / FaaS (Function as a Service):</strong> rent individual
+              function invocations; you provide the function and it runs in response to
+              events. Examples: AWS Lambda, Azure Functions, Google Cloud Run. Scales to
+              zero; you pay only for invocations.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>Commonly used managed services:</strong>
+          <ul class="tight">
+            <li>Databases: RDS / Aurora (AWS), Cloud SQL (GCP), Azure SQL</li>
+            <li>Object storage: S3 (AWS), GCS, Azure Blob Storage</li>
+            <li>Queues: SQS (AWS), Pub/Sub (GCP), Azure Service Bus</li>
+            <li>Caches: ElastiCache / Redis (AWS), Azure Cache</li>
+            <li>CDN: CloudFront (AWS), Cloudflare, Azure CDN</li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="cicd"></a>
+      <h3>7.4&nbsp; Continuous Integration / Continuous Delivery (CI/CD)</h3>
+      <indent-blocks>
+        <t-b>
+          CI/CD pipelines automate the path from a developer&rsquo;s commit to running software
+          in production, making deployments frequent, fast, and low-risk.
+        </t-b>
+        <t-b>
+          <strong>Typical pipeline stages:</strong>
+          <ol class="tight">
+            <li>Developer pushes a commit to version control.</li>
+            <li>CI server (GitHub Actions, GitLab CI, Jenkins, CircleCI) detects the push.</li>
+            <li><strong>Build:</strong> compile, transpile, or package the application.</li>
+            <li><strong>Test:</strong> run unit tests, integration tests, static analysis
+                (linting, type checking), security scanners.</li>
+            <li><strong>Publish:</strong> push the built artifact or container image to a registry.</li>
+            <li><strong>Deploy:</strong> update the staging or production environment.</li>
+            <li><strong>Verify:</strong> smoke tests, health checks; roll back automatically
+                on failure.</li>
+          </ol>
+        </t-b>
+        <t-b>
+          <strong>Advanced deployment patterns:</strong>
+          <ul class="tight">
+            <li><strong>Blue/green:</strong> run the old version (blue) alongside the new
+                (green); switch traffic in one step; instant rollback by switching back.</li>
+            <li><strong>Canary release:</strong> gradually shift traffic from old to new
+                (1% &rarr; 10% &rarr; 100%), monitoring error rates at each step.</li>
+            <li><strong>Feature flags:</strong> enable new features for a subset of users
+                without redeployment. Decouples deploy from release.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          A minimal GitHub Actions workflow:
+        </t-b>
+        <defn-code>on: [push]
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo build --release
+      - run: cargo test</defn-code>
+      </indent-blocks>
+
+      <a id="monitoring"></a>
+      <h3>7.5&nbsp; Monitoring and Observability</h3>
+      <indent-blocks>
+        <t-b>
+          You cannot fix what you cannot see. The <em>three pillars of observability</em>
+          are:
+          <ul class="tight">
+            <li>
+              <strong>Logs:</strong> structured records of events (<c-s>2026-04-29 INFO request
+              completed in 42ms</c-s>). Collected by the application, shipped to an aggregator
+              (Elasticsearch/Kibana, Grafana Loki, Datadog Logs).
+            </li>
+            <li>
+              <strong>Metrics:</strong> numeric time-series measurements (CPU %, request rate,
+              error rate, latency p99). Collected by Prometheus; visualised in Grafana.
+              Commercial alternatives: Datadog, New Relic, CloudWatch.
+            </li>
+            <li>
+              <strong>Traces:</strong> records of a single request&rsquo;s path through multiple
+              services, with timing for each hop. Essential for diagnosing latency in
+              microservice architectures. Tools: Jaeger, Zipkin, Honeycomb, AWS X-Ray.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>Alerts:</strong> rules that fire when a metric crosses a threshold
+          (error rate &gt; 1%, p99 latency &gt; 500 ms), notifying an on-call engineer
+          via PagerDuty, Opsgenie, or Slack.
+        </t-b>
+        <t-b>
+          <strong>SLO (Service Level Objective):</strong> a measurable target for reliability
+          (e.g., 99.9% of requests succeed in &lt;200 ms, measured over a 30-day window).
+          SLOs drive prioritisation: when you are within the SLO, you can take risks; when
+          you are burning your error budget, reliability work takes precedence.
+        </t-b>
+      </indent-blocks>
+
+      <a id="security"></a>
+      <h3>7.6&nbsp; Security Basics</h3>
+      <indent-blocks>
+        <t-b>
+          Security is not a feature to add at the end &mdash; it is a property to maintain
+          throughout the software lifecycle. Key principles:
+          <ul class="tight">
+            <li>
+              <strong>Principle of least privilege:</strong> processes, users, and services
+              should have the minimum permissions needed for their function. A web server
+              should not run as root.
+            </li>
+            <li>
+              <strong>Keep dependencies updated:</strong> most real-world vulnerabilities
+              are known CVEs in third-party libraries. Use <c-s>dependabot</c-s>,
+              <c-s>cargo audit</c-s>, or <c-s>pip-audit</c-s> to detect them.
+            </li>
+            <li>
+              <strong>HTTPS everywhere:</strong> TLS encrypts data in transit. Never transmit
+              credentials or sensitive data over plain HTTP.
+            </li>
+            <li>
+              <strong>Input validation:</strong> never trust data from outside the system.
+              SQL injection, cross-site scripting (XSS), and command injection all exploit
+              unvalidated user input.
+            </li>
+            <li>
+              <strong>Secrets management:</strong> do not hardcode API keys, passwords, or
+              certificates in source code. Use environment variables, a secrets manager
+              (HashiCorp Vault, AWS Secrets Manager), or a CI secret store.
+            </li>
+            <li>
+              <strong>Authentication vs. authorisation:</strong> authentication confirms
+              <em>who you are</em> (login with password / OAuth / certificate);
+              authorisation determines <em>what you may do</em> (RBAC, ACLs).
+            </li>
+            <li>
+              <strong>Defence in depth:</strong> assume one layer will be breached; design
+              so that a breach in one layer does not immediately compromise everything.
+            </li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue7"></a>
+      <h3>7.7&nbsp; Epilogue</h3>
+      <t-b>
+        Deployment closes the loop between writing software and delivering value. The tools
+        and practices described in this chapter &mdash; containers, cloud services, CI/CD
+        pipelines, observability, and security hygiene &mdash; form the operational
+        foundation of modern software engineering. Mastering them, alongside the hardware,
+        OS, language, and algorithm knowledge in the preceding chapters, gives you a
+        complete picture of how software is built and run.
+      </t-b>
+      <a id="refs"></a>
+      <h3>7.8&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://docs.docker.com/get-started/">Docker Getting Started</a><br />
+        <a target="_blank" href="https://kubernetes.io/docs/tutorials/kubernetes-basics/">Kubernetes Basics Tutorial</a><br />
+        <a target="_blank" href="https://12factor.net/">The Twelve-Factor App</a><br />
+        <a target="_blank" href="https://docs.github.com/en/actions">GitHub Actions Documentation</a><br />
+        <a target="_blank" href="https://owasp.org/www-project-top-ten/">OWASP Top 10 Security Risks</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#packaging">packaging</a></menu-elem>
+        <menu-elem class="secElem"><a href="#containers">containers</a></menu-elem>
+        <menu-elem class="secElem"><a href="#cloud">cloud</a></menu-elem>
+        <menu-elem class="secElem"><a href="#cicd">CI/CD</a></menu-elem>
+        <menu-elem class="secElem"><a href="#monitoring">monitoring</a></menu-elem>
+        <menu-elem class="secElem"><a href="#security">security</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 7, 10);
+  </script>
+</body>
+</html>

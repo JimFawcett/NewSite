@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsStory_Software.html
+-->
+<head>
+  <title>Basics Story Software</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsStory_Software.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/29/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Basics Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #2 &ndash; Software &amp; Operating Systems</h2>
+        <h4 class="indent" id="subtitle">OS role, kernel, processes, threads, virtual memory, file systems</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>2.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          An operating system is the layer between hardware and user applications. It provides the
+          illusion of exclusive hardware access, manages shared resources safely, and enforces
+          isolation between processes. Without an OS, every program would need to directly manage
+          the display, disk, keyboard, and network &mdash; and could crash any other running program.
+        </t-b>
+      </indent-blocks>
+
+      <a id="osprovides"></a>
+      <h3>2.1&nbsp; What the OS Provides</h3>
+      <indent-blocks>
+        <t-b>
+          <ul class="tight">
+            <li><strong>Process management:</strong> creates, schedules, and terminates processes;
+                enforces isolation between them.</li>
+            <li><strong>Memory management:</strong> gives each process a private virtual address
+                space; maps virtual to physical pages.</li>
+            <li><strong>File system:</strong> persistent named storage, directory hierarchy,
+                permissions.</li>
+            <li><strong>I/O management:</strong> device drivers, buffering, and a uniform
+                read/write API regardless of device type.</li>
+            <li><strong>Networking:</strong> TCP/IP stack, socket API.</li>
+            <li><strong>Security:</strong> user accounts, access permissions, process isolation.</li>
+            <li><strong>System calls:</strong> the controlled gateway that lets user-mode code
+                request kernel services.</li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="kernel"></a>
+      <h3>2.2&nbsp; Kernel Space vs. User Space</h3>
+      <indent-blocks>
+        <t-b>
+          Modern CPUs provide (at least) two protection rings:
+          <ul class="tight">
+            <li><strong>Kernel mode (ring 0):</strong> unrestricted hardware access. OS kernel code
+                runs here. A bug here can crash or corrupt the entire system.</li>
+            <li><strong>User mode (ring 3):</strong> restricted. Applications run here. Hardware
+                access is mediated through system calls &mdash; software interrupts that transfer
+                control to the kernel.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          A <strong>system call</strong> (e.g., <c-s>read()</c-s>, <c-s>write()</c-s>,
+          <c-s>open()</c-s> on Linux) crosses from user space to kernel space, performs the
+          requested operation, then returns. The crossing costs ~100&ndash;500 ns, which
+          is why applications use buffered I/O &mdash; accumulating data and flushing in
+          large chunks rather than calling <c-s>write()</c-s> for every byte.
+        </t-b>
+      </indent-blocks>
+
+      <a id="processes"></a>
+      <h3>2.3&nbsp; Processes</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>process</strong> is a running instance of a program. Each process has:
+          <ul class="tight">
+            <li>An isolated virtual address space (code, heap, stack, mapped files)</li>
+            <li>One or more threads of execution</li>
+            <li>File descriptors (open files, sockets, pipes)</li>
+            <li>A PID (process identifier) assigned by the OS</li>
+            <li>Environment variables and command-line arguments</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Isolation is enforced by the hardware MMU: one process cannot read or write another
+          process&rsquo;s memory without explicit sharing (shared memory or IPC). A crash in one
+          process does not take down others.
+        </t-b>
+        <t-b>
+          <strong>Process creation:</strong>
+          <ul class="tight">
+            <li>POSIX (Linux/macOS): <c-s>fork()</c-s> clones the calling process; the child
+                typically calls <c-s>exec()</c-s> to replace its image with a new program.</li>
+            <li>Windows: <c-s>CreateProcess()</c-s> creates a new process from an executable
+                path, optionally inheriting handles.</li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="threads"></a>
+      <h3>2.4&nbsp; Threads</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>thread</strong> is a unit of execution within a process. All threads in a
+          process share:
+          <ul class="tight">
+            <li>The virtual address space (heap, globals, code)</li>
+            <li>File descriptors</li>
+          </ul>
+          Each thread has its own:
+          <ul class="tight">
+            <li>Stack (typically 1&ndash;8 MB)</li>
+            <li>CPU registers (including the instruction pointer)</li>
+            <li>Thread-local storage (TLS)</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Context switching between threads in the same process is faster than between
+          processes (no address-space switch, no TLB flush) but still costs ~1&ndash;5 &micro;s.
+          Shared address space enables communication without copying but also introduces
+          the possibility of data races (see Chapter 6).
+        </t-b>
+        <t-b>
+          The OS scheduler decides which thread runs on which core and for how long.
+          Most schedulers use time slices of 1&ndash;10 ms on desktop systems.
+        </t-b>
+      </indent-blocks>
+
+      <a id="virtmem"></a>
+      <h3>2.5&nbsp; Virtual Memory</h3>
+      <indent-blocks>
+        <t-b>
+          The OS gives each process the illusion of a private, contiguous address space.
+          On a 64-bit system the <em>virtual</em> address space is typically 48 bits
+          (256 TB), though physical RAM may be only 16 GB. The CPU&rsquo;s
+          <strong>Memory Management Unit (MMU)</strong> translates virtual to physical
+          addresses using page tables maintained by the OS.
+        </t-b>
+        <t-b>
+          <strong>Key concepts:</strong>
+          <ul class="tight">
+            <li><strong>Page:</strong> the granularity of virtual-physical mapping, typically
+                4 KB.</li>
+            <li><strong>Page fault:</strong> accessing a virtual page that has no physical
+                mapping. The OS handler either allocates a physical frame (minor fault) or
+                reads the page from disk/swap (major fault, ~1&ndash;10 ms).</li>
+            <li><strong>Demand paging:</strong> pages are loaded only when first accessed,
+                not when the process starts.</li>
+            <li><strong>Copy-on-write (CoW):</strong> after <c-s>fork()</c-s>, parent and
+                child share pages marked read-only; a write by either side triggers a
+                copy &mdash; only then does each get its own page.</li>
+            <li><strong>Swap:</strong> infrequently used pages are written to disk and
+                reclaimed. Swap access is &sim;10,000&times; slower than RAM.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>Typical virtual address space layout (Linux x86-64):</strong>
+        </t-b>
+        <defn-code>High  [kernel space  — not accessible from user mode]
+      [stack        — grows downward]
+      [memory maps  — mmap, shared libraries]
+      [heap         — grows upward via brk/mmap]
+      [BSS          — uninitialised globals]
+      [data         — initialised globals]
+Low   [text (code)  — read-only program instructions]</defn-code>
+      </indent-blocks>
+
+      <a id="filesys"></a>
+      <h3>2.6&nbsp; File Systems</h3>
+      <indent-blocks>
+        <t-b>
+          A file system organises persistent data into named files and directories.
+          The kernel&rsquo;s <strong>Virtual File System (VFS)</strong> layer provides a
+          uniform API to applications regardless of the underlying implementation.
+        </t-b>
+        <t-b>
+          <strong>Common file systems:</strong>
+          <ul class="tight">
+            <li><strong>ext4</strong> (Linux): journaled, reliable, default on most Linux distributions.</li>
+            <li><strong>NTFS</strong> (Windows): supports large files, access-control lists, compression,
+                and journaling.</li>
+            <li><strong>APFS</strong> (macOS/iOS): copy-on-write, snapshots, strong SSD optimisation.</li>
+            <li><strong>FAT32 / exFAT:</strong> simple, portable; used on SD cards and USB drives for
+                cross-platform compatibility.</li>
+            <li><strong>ZFS / Btrfs:</strong> advanced file systems with snapshots, checksums, and
+                pooled storage.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>Key abstractions:</strong> files (byte streams with a name and metadata),
+          directories (hierarchical namespaces), inodes (per-file metadata record: size,
+          permissions, timestamps, block pointers), and the path hierarchy rooted at
+          <c-s>/</c-s> (Linux/macOS) or a drive letter (Windows).
+        </t-b>
+      </indent-blocks>
+
+      <a id="platforms"></a>
+      <h3>2.7&nbsp; Major Platforms</h3>
+      <indent-blocks>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">Platform</th>
+              <th class="darkItem">Kernel</th>
+              <th class="darkItem">Primary API</th>
+              <th class="darkItem">Main use</th>
+            </tr>
+            <tr>
+              <td class="defn">Windows</td>
+              <td class="defn">NT kernel</td>
+              <td class="defn">Win32 / Win64, WinRT</td>
+              <td class="defn">Desktop, enterprise</td>
+            </tr>
+            <tr>
+              <td class="defn">Linux</td>
+              <td class="defn">Monolithic + modules</td>
+              <td class="defn">POSIX / glibc</td>
+              <td class="defn">Servers, embedded, Android</td>
+            </tr>
+            <tr>
+              <td class="defn">macOS</td>
+              <td class="defn">XNU (hybrid)</td>
+              <td class="defn">POSIX + Cocoa / Swift APIs</td>
+              <td class="defn">Apple desktops, iOS base</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          Linux dominates servers and cloud; Windows dominates enterprise desktops and gaming;
+          macOS is the platform of choice for iOS/macOS development. All three offer a POSIX-compatible
+          (or POSIX-like) C API, so much system-level code is portable with modest effort.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue2"></a>
+      <h3>2.8&nbsp; Epilogue</h3>
+      <t-b>
+        The operating system builds a safe, managed environment on top of the hardware described
+        in Chapter 1. Applications live entirely in this managed environment, speaking to the
+        hardware only through system calls. The next chapter looks at the programming languages
+        used to write those applications.
+      </t-b>
+      <a id="refs"></a>
+      <h3>2.9&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://pages.cs.wisc.edu/~remzi/OSTEP/">Operating Systems: Three Easy Pieces (free online book)</a><br />
+        <a target="_blank" href="https://www.kernel.org/doc/html/latest/">Linux Kernel Documentation</a><br />
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Virtual_memory">Virtual Memory &mdash; Wikipedia</a><br />
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Process_(computing)">Process &mdash; Wikipedia</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#osprovides">OS role</a></menu-elem>
+        <menu-elem class="secElem"><a href="#kernel">kernel</a></menu-elem>
+        <menu-elem class="secElem"><a href="#processes">processes</a></menu-elem>
+        <menu-elem class="secElem"><a href="#threads">threads</a></menu-elem>
+        <menu-elem class="secElem"><a href="#virtmem">virtual mem</a></menu-elem>
+        <menu-elem class="secElem"><a href="#filesys">file systems</a></menu-elem>
+        <menu-elem class="secElem"><a href="#platforms">platforms</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>

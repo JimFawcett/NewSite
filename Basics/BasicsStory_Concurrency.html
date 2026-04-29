@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsStory_Concurrency.html
+-->
+<head>
+  <title>Basics Story Concurrency</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsStory_Concurrency.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/29/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Basics Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #6 &ndash; Concurrency</h2>
+        <h4 class="indent" id="subtitle">threads, shared state, synchronisation, message passing, async/await</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>6.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Modern hardware has many cores; modern software handles many simultaneous requests.
+          Concurrency is the practice of managing multiple tasks that can overlap in time.
+          It is also one of the hardest areas of software to reason about correctly, because
+          the interactions between concurrent tasks depend on timing that varies at runtime.
+        </t-b>
+      </indent-blocks>
+
+      <a id="parallel"></a>
+      <h3>6.1&nbsp; Parallelism vs. Concurrency</h3>
+      <indent-blocks>
+        <t-b>
+          These terms are related but distinct:
+          <ul class="tight">
+            <li>
+              <strong>Concurrency</strong> means tasks can start, run, and complete in
+              overlapping time periods. On a single core this is achieved by interleaving:
+              the OS rapidly switches between tasks, giving the appearance of simultaneous
+              progress.
+            </li>
+            <li>
+              <strong>Parallelism</strong> means tasks literally run at the same instant
+              on different CPU cores or different machines. Parallelism requires multiple
+              execution units.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          A web server is concurrent (handles many requests, each waiting for I/O) even on
+          one core. Matrix multiplication is parallel (uses all cores for pure computation).
+          Many real systems are both: concurrent for managing I/O, parallel for compute.
+        </t-b>
+      </indent-blocks>
+
+      <a id="threads"></a>
+      <h3>6.2&nbsp; OS Threads</h3>
+      <indent-blocks>
+        <t-b>
+          OS threads are the OS-managed unit of execution. They share the process address
+          space and are scheduled by the OS kernel onto available CPU cores. Creating a thread
+          costs ~1&ndash;50 &micro;s; switching between threads costs ~1&ndash;5 &micro;s (a
+          context switch). A typical server can run hundreds to a few thousand threads before
+          overhead becomes significant.
+        </t-b>
+        <t-b>
+          Language threading APIs:
+          <ul class="tight">
+            <li>C++: <c-s>std::thread</c-s></li>
+            <li>Java: <c-s>Thread</c-s>, <c-s>ExecutorService</c-s></li>
+            <li>Python: <c-s>threading.Thread</c-s> (limited by the GIL for CPU-bound work)</li>
+            <li>Rust: <c-s>std::thread::spawn</c-s></li>
+            <li>Go: goroutines (lightweight; runtime-scheduled, not OS threads)</li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>Green threads / goroutines / fibers:</strong> lightweight user-space threads
+          managed by the language runtime rather than the OS. Go goroutines start at ~2 KB of
+          stack and can number in the millions on one machine.
+        </t-b>
+      </indent-blocks>
+
+      <a id="sharedstate"></a>
+      <h3>6.3&nbsp; Shared State and Data Races</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>data race</strong> occurs when:
+          <ol class="tight">
+            <li>Two or more threads access the same memory location concurrently, and</li>
+            <li>at least one access is a write, and</li>
+            <li>there is no synchronisation between the threads.</li>
+          </ol>
+        </t-b>
+        <t-b>
+          Data races produce undefined behaviour: wrong results, crashes, security
+          vulnerabilities, or intermittent failures that are nearly impossible to reproduce.
+          They are the number-one source of bugs in concurrent code.
+        </t-b>
+        <t-b>
+          Consider a shared integer counter incremented by two threads:
+        </t-b>
+        <defn-code>// Thread A                Thread B
+read counter (= 5)        read counter (= 5)
+add 1        (= 6)        add 1        (= 6)
+write counter (= 6)       write counter (= 6)
+// Expected final value: 7.  Actual: 6.  Lost update.</defn-code>
+      </indent-blocks>
+
+      <a id="sync"></a>
+      <h3>6.4&nbsp; Synchronisation Primitives</h3>
+      <indent-blocks>
+        <t-b>
+          Synchronisation ensures that concurrent accesses to shared state are ordered correctly:
+          <ul class="tight">
+            <li>
+              <strong>Mutex (mutual exclusion lock):</strong> only one thread may hold the lock
+              at a time. Other threads block until it is released. Eliminates data races on the
+              protected data at the cost of contention overhead and potential deadlock.
+            </li>
+            <li>
+              <strong>Read-write lock (RWLock):</strong> allows multiple concurrent readers
+              or one exclusive writer. Better throughput for read-heavy workloads.
+            </li>
+            <li>
+              <strong>Semaphore:</strong> a counter; threads may proceed only if the counter
+              is positive, decrementing it on entry and incrementing on exit. Limits concurrent
+              access to a resource pool (e.g., a connection pool of N database connections).
+            </li>
+            <li>
+              <strong>Condition variable:</strong> paired with a mutex; lets a thread sleep
+              until another thread signals that a condition holds (e.g., the queue is non-empty).
+            </li>
+            <li>
+              <strong>Atomic operations:</strong> single indivisible read-modify-write (e.g.,
+              compare-and-swap, fetch-add). No locking overhead; the CPU guarantees atomicity.
+              Suitable for simple shared counters and lock-free data structures.
+            </li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="msgpassing"></a>
+      <h3>6.5&nbsp; Message Passing</h3>
+      <indent-blocks>
+        <t-b>
+          Instead of sharing memory with locks, threads or processes can communicate by
+          passing messages through channels. The sender writes a message; the receiver reads
+          it. Data ownership transfers with the message &mdash; no shared mutable state,
+          no data races.
+        </t-b>
+        <t-b>
+          Go&rsquo;s motto captures the intent:
+          <em>&ldquo;Do not communicate by sharing memory; instead, share memory by
+          communicating.&rdquo;</em>
+        </t-b>
+        <t-b>
+          Message-passing APIs:
+          <ul class="tight">
+            <li><strong>Go:</strong> built-in <c-s>chan</c-s> type; <c-s>ch &lt;- value</c-s>
+                to send, <c-s>value := &lt;-ch</c-s> to receive.</li>
+            <li><strong>Rust:</strong> <c-s>std::sync::mpsc::channel()</c-s> (multi-producer,
+                single-consumer); async channels in Tokio.</li>
+            <li><strong>Erlang / Elixir:</strong> actor model; every actor is a process;
+                <c-s>send</c-s> and <c-s>receive</c-s> are the only communication primitives.</li>
+            <li><strong>Python:</strong> <c-s>multiprocessing.Queue</c-s>,
+                <c-s>asyncio.Queue</c-s>.</li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="async"></a>
+      <h3>6.6&nbsp; Async/Await and Event Loops</h3>
+      <indent-blocks>
+        <t-b>
+          For I/O-bound work, spawning an OS thread per request is wasteful: each blocked
+          thread still holds ~1&ndash;8 MB of stack and a kernel-side control block while
+          waiting for the network. An <strong>event loop</strong> solves this with one
+          thread that services many pending I/O operations concurrently.
+        </t-b>
+        <t-b>
+          The pattern:
+          <ol class="tight">
+            <li>An async function runs until it hits an <c-s>await</c-s> point (e.g.,
+                waiting for a database response).</li>
+            <li>The runtime suspends the function (saving its state in a tiny heap object)
+                and switches to another ready task.</li>
+            <li>When the I/O completes, the runtime marks the suspended function ready and
+                resumes it.</li>
+          </ol>
+        </t-b>
+        <t-b>
+          This cooperative multitasking allows thousands of concurrent I/O operations on
+          one thread with very low memory overhead. CPU-bound work must be offloaded to a
+          thread pool to avoid blocking the event loop.
+        </t-b>
+        <t-b>
+          Async runtimes: Node.js (JavaScript), <c-s>asyncio</c-s> (Python), Tokio (Rust),
+          <c-s>async/await</c-s> in C# (TPL), Project Loom virtual threads (Java 21+).
+        </t-b>
+      </indent-blocks>
+
+      <a id="bugs"></a>
+      <h3>6.7&nbsp; Common Concurrency Bugs</h3>
+      <indent-blocks>
+        <t-b>
+          <ul class="tight">
+            <li>
+              <strong>Deadlock:</strong> thread A holds lock X and waits for lock Y;
+              thread B holds lock Y and waits for lock X. Both block forever. Prevention:
+              always acquire locks in the same order, or use a lock hierarchy.
+            </li>
+            <li>
+              <strong>Livelock:</strong> threads keep retrying and yielding but make no
+              progress, like two people stepping aside for each other in a corridor.
+            </li>
+            <li>
+              <strong>Starvation:</strong> a thread is perpetually denied access to a
+              resource because higher-priority threads always win.
+            </li>
+            <li>
+              <strong>Priority inversion:</strong> a high-priority thread waits on a lock
+              held by a low-priority thread. The low-priority thread may itself be preempted
+              by medium-priority threads, delaying the high-priority one indefinitely.
+              Mitigated by priority inheritance in real-time systems.
+            </li>
+            <li>
+              <strong>False sharing:</strong> two threads modify different variables that
+              happen to occupy the same CPU cache line. Each write invalidates the other
+              core&rsquo;s cached copy, causing unnecessary cache-coherence traffic.
+              Mitigated by padding or aligning data to cache-line boundaries.
+            </li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue6"></a>
+      <h3>6.8&nbsp; Epilogue</h3>
+      <t-b>
+        Concurrency is unavoidable in modern software. The key insight is that most problems
+        stem from mutable shared state. Minimise sharing, prefer message passing or immutable
+        data, use atomic operations for simple counters, and reach for mutexes only when
+        necessary. The final chapter covers deployment: how to take working software and
+        make it available to users reliably.
+      </t-b>
+      <a id="refs"></a>
+      <h3>6.9&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://pages.cs.wisc.edu/~remzi/OSTEP/threads-intro.pdf">OSTEP &mdash; Concurrency Introduction (PDF chapter)</a><br />
+        <a target="_blank" href="https://go.dev/doc/effective_go#concurrency">Effective Go &mdash; Concurrency</a><br />
+        <a target="_blank" href="https://docs.rs/tokio/latest/tokio/">Tokio &mdash; async Rust runtime</a><br />
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Deadlock">Deadlock &mdash; Wikipedia</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#parallel">parallelism</a></menu-elem>
+        <menu-elem class="secElem"><a href="#threads">threads</a></menu-elem>
+        <menu-elem class="secElem"><a href="#sharedstate">shared state</a></menu-elem>
+        <menu-elem class="secElem"><a href="#sync">synchronisation</a></menu-elem>
+        <menu-elem class="secElem"><a href="#msgpassing">msg passing</a></menu-elem>
+        <menu-elem class="secElem"><a href="#async">async/await</a></menu-elem>
+        <menu-elem class="secElem"><a href="#bugs">bugs</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 6, 10);
+  </script>
+</body>
+</html>
