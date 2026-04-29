@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  CodeBites_SpecDev.html
+-->
+<head>
+  <title>Spec-Driven Development</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <script src="../WebDev/Components/CodeViewerComponent/js/CodeViewer.js" defer></script>
+  <link rel="stylesheet" href="../WebDev/Components/CodeViewerComponent/css/CodeViewer.css">
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    details div h3 {
+      margin:0.25rem 0rem;
+    }
+    details div ol {
+      padding:0.5rem 0rem;
+      margin: 0rem;
+    }
+    details div ul {
+      padding:0.5rem 0rem;
+      margin: 0rem;
+    }
+    details div li {
+      padding:0.05rem 0.0rem;
+      margin:0rem;
+    }
+    .spec-box {
+      border: 1px solid rgba(5,2,3,0.7);
+      padding:0.25rem 1.5rem;
+      width: max-content;
+    }
+    .workflow-step {
+      border-left: 3px solid var(-atten);
+      padding: 0.25rem 0.75rem;
+      margin: 0.5rem 0rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CodeBites_SpecDev.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 04/28/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">CodeBites: Spec-Driven Development</h2>
+        <h4 id="subtitle" class="indent">
+          using specifications to guide AI-assisted code generation<br />
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0rem 0rem 0.25rem 0rem; margin-top:0.125rem; border:2px solid var(-dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(-atten); margin-top:0.25rem; margin-left:1.5rem;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects" style="margin-left: 1rem; color:var(-atten); ">Projects Repo</a>
+      </div>
+    </header>
+    <tm-b style="margin-left:1.5rem;">
+      "Write the spec first. The code follows from the spec, not the other way around."
+    </tm-b>
+    <hr class="spread">
+
+    <h3 id="intro">1.0 - Introduction</h3>
+    <tm-b>
+      Spec-driven development is a practice where a written specification is the primary
+      artifact of a project. Code is generated from - and must remain consistent with -
+      the spec. With AI coding tools this becomes practical at every scale: the AI reads
+      the spec and generates code; the developer reviews and updates the spec when intent
+      changes.
+    </tm-b>
+    <t-b>
+      The projects in <code>Code/Projects/</code> - TextFinder and PageValidator - are
+      concrete examples. Each has:
+      <ul class="tight" style="margin-left:2rem;">
+        <li>A <strong>Constitution.md</strong> - language-agnostic governing document</li>
+        <li>A <strong>Structure.md</strong> - language-specific decomposition into directories and files</li>
+        <li>Per-component <strong>Spec.md</strong> files - detailed API and behavior specifications</li>
+        <li>Per-component <strong>Notes.md</strong> files - recorded AI conversation history</li>
+        <li>Implementations in four languages (Rust, C++, C#, Python) generated from the same specs</li>
+      </ul>
+    </t-b>
+    <t-b>
+      This spec process was inspired by
+      <a target="_blank" rel="noopener" href="https://github.com/github/spec-kit">github.com/github/spec-kit</a>
+      but simplified for smallish projects where a lightweight set of Markdown documents
+      is sufficient to guide AI-assisted development without the overhead of a full
+      specification framework.
+    </t-b>
+
+    <h3 id="constitution">2.0 - Constitution.md — The Governing Document</h3>
+    <tm-b>
+      Each project starts with a <code>Constitution.md</code> that is intentionally
+      language-agnostic. It defines what the project does, how it decomposes into
+      components, and the design principles that every implementation must follow
+      regardless of programming language.
+    </tm-b>
+    <t-b>
+      For <strong>TextFinder</strong> the constitution specifies four components:
+      <ul class="tight" style="margin-left:2rem;">
+        <li><strong>EntryPoint</strong> - parses CLI, wires components, drives execution</li>
+        <li><strong>CommandLine</strong> - parses <code>/Key [Value]</code> tokens; exposes typed option values</li>
+        <li><strong>DirNav</strong> - depth-first directory walk; fires callbacks on each dir/file</li>
+        <li><strong>TextFinder</strong> - performs regex match; writes results to console</li>
+      </ul>
+    </t-b>
+    <t-b>
+      For <strong>PageValidator</strong> the constitution specifies a linear pipeline:
+      <pre>  Tokenizer &larr; Lexer &larr; Validator &larr; EntryPoint</pre>
+      No component depends on anything to its right. Each component has one job
+      and no knowledge of its callers.
+    </t-b>
+    <details>
+      <summary class="darkItem">Design Principles from the Constitutions</summary>
+      <div class="spec-box">
+        <h3>Principles shared by both projects</h3>
+        <ol>
+          <li>
+            <strong>Spec-First</strong> — implementation follows the spec; deviations require the
+            spec to be updated first, not the other way around.
+          </li>
+          <li>
+            <strong>Single Responsibility</strong> — each component does exactly one thing and
+            exposes only what its callers need.
+          </li>
+          <li>
+            <strong>Dependency Direction</strong> — EntryPoint depends on all libraries; libraries
+            never depend on each other.
+          </li>
+          <li>
+            <strong>Non-Failing Parse</strong> — parsers and navigators never abort; they forward
+            problems to the caller (DirNav skips unreadable files; Tokenizer and Lexer emit error
+            tokens rather than panicking).
+          </li>
+          <li>
+            <strong>Complete Reporting</strong> — errors are collected, never short-circuited.
+            PageValidator's Validator visits the entire file before returning a report.
+          </li>
+          <li>
+            <strong>Caller-Defined Interfaces</strong> — components expose traits or callbacks
+            (e.g., the <code>DirEvent</code> trait) so callers control behavior without modifying
+            library code.
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <h3 id="structuremd">3.0 - Structure.md - The Implementation Layout</h3>
+    <tm-b>
+      Where Constitution.md governs logical decomposition, <code>Structure.md</code>
+      governs the physical implementation: directory trees, file names, build-system
+      files, toolchain settings, build steps, and external dependencies. It is
+      language-specific - each language implementation has its own Structure.md.
+    </tm-b>
+    <t-b>
+      The separation matters. Constitution.md never changes between Rust, C++, C#, and
+      Python. Structure.md is completely different for each because the build systems
+      and source-file conventions differ.
+    </t-b>
+    <details>
+      <summary class="darkItem">Structure.md - Rust TextFinder (excerpt)</summary>
+      <div class="spec-box">
+        <h3>Toolchain</h3>
+        <pre><code>  Language: Rust (edition 2018)
+  Build:    Cargo - each crate builds independently (no workspace manifest)</code></pre>
+        <h3>Directory layout</h3>
+        <pre><code>  rs_textfinder/
+  ├── Constitution.md
+  ├── Structure.md
+  ├── RustCmdLine/
+  │   ├── Cargo.toml          ← library crate: rust_cmd_line
+  │   └── src/cmd_line_lib.rs
+  ├── RustDirNav/
+  │   ├── Cargo.toml          ← library crate: rust_dir_nav
+  │   └── src/dir_nav_lib.rs
+  ├── RustTextFinder/
+  │   ├── Cargo.toml          ← binary crate: rust_text_finder
+  │   └── src/text_finder.rs
+  └── RustTfVerify/
+      ├── Cargo.toml          ← binary crate: tf_verify
+      └── src/main.rs         ← integration verification harness</code></pre>
+        <h3>Dependency graph (physical)</h3>
+        <pre><code>  RustCmdLine   RustDirNav
+       \            /
+        \          /
+      RustTextFinder
+
+  RustTfVerify ──(subprocess)──► text_finder binary</code></pre>
+      </div>
+    </details>
+    <details>
+      <summary class="darkItem">Structure.md - C++ TextFinder (excerpt)</summary>
+      <div class="spec-box">
+        <h3>Toolchain</h3>
+        <pre><code>  Language: C++23 with named modules (.ixx files)
+  Build:    CMake 3.28+ (FILE_SET CXX_MODULES support required)</code></pre>
+        <h3>Directory layout</h3>
+        <pre><code>  CppTextFinder/
+  ├── CMakeLists.txt       ← top-level; sets standard, adds subdirectories
+  ├── Constitution.md
+  ├── Structure.md
+  ├── CommandLine/
+  │   ├── CMakeLists.txt
+  │   └── src/
+  │       ├── CmdLine.ixx  ← export module cmd_line;
+  │       └── test.cpp
+  ├── DirNav/
+  │   └── src/DirNav.ixx   ← export module dir_nav;
+  ├── Output/
+  │   └── src/Output.ixx   ← export module output;
+  └── EntryPoint/
+      └── src/main.cpp     ← imports all three modules</code></pre>
+        <h3>Rule from Structure.md</h3>
+        <p>
+          Each part folder owns its own <code>CMakeLists.txt</code>.
+          No part's build file references another part's source directory directly.
+          Only the top-level <code>CMakeLists.txt</code> names the parts.
+        </p>
+      </div>
+    </details>
+    <details>
+      <summary class="darkItem">Structure.md - Rust PageValidator (excerpt)</summary>
+      <div class="spec-box">
+        <h3>Toolchain</h3>
+        <pre><code>  Language: Rust (edition 2021)
+  Build:    Cargo workspace - each component is a separate crate</code></pre>
+        <h3>Directory layout</h3>
+        <pre><code>  rs_page_validator/
+  ├── Cargo.toml       ← workspace root
+  ├── Constitution.md
+  ├── Structure.md
+  ├── tokenizer/
+  │   ├── Cargo.toml   ← library crate: tokenizer
+  │   ├── Spec.md
+  │   ├── Notes.md
+  │   └── src/lib.rs
+  ├── lexer/
+  │   ├── Cargo.toml   ← library crate: lexer
+  │   ├── Spec.md
+  │   ├── Notes.md
+  │   └── src/lib.rs
+  ├── validator/
+  │   ├── Cargo.toml   ← library crate: validator
+  │   ├── Spec.md
+  │   ├── Notes.md
+  │   └── src/lib.rs
+  └── entry_point/
+      ├── Cargo.toml   ← binary crate: rs_page_validator
+      ├── Spec.md
+      ├── Notes.md
+      └── src/main.rs</code></pre>
+        <h3>Workspace Cargo.toml</h3>
+        <pre><code>  [workspace]
+  members = ["tokenizer", "lexer", "validator", "entry_point"]
+  resolver = "2"</code></pre>
+      </div>
+    </details>
+
+    <h3 id="specmd">4.0 - Component Spec.md Files</h3>
+    <tm-b>
+      Each component has its own <code>Spec.md</code> that specifies the public API in detail:
+      struct names, method signatures, return types, algorithms, and invariants.
+      The AI generates code from this spec; the spec is the source of truth.
+    </tm-b>
+    <t-b>
+      Example from <code>RustDirNav_Spec.md</code> (TextFinder):
+    </t-b>
+    <details>
+      <summary class="darkItem">DirNav Component Spec (excerpt)</summary>
+      <div class="spec-box">
+        <h3>DirEvent trait</h3>
+        <pre><code>  pub trait DirEvent {
+    fn do_dir(&amp;mut self, d: &amp;str);
+    fn do_file(&amp;mut self, f: &amp;str);
+  }</code></pre>
+        <h3>DirNav&lt;App: DirEvent&gt; struct — methods</h3>
+        <pre><code>  DirNav::new() -&gt; DirNav&lt;App&gt;
+  recurse(p: bool) -&gt; &amp;mut Self   // default: true
+  hide(p: bool) -&gt; &amp;mut Self      // hide empty dirs, default: true
+  add_skip(s: &amp;str) -&gt; &amp;mut Self  // add dir name to skip list
+  add_pat(p: &amp;str) -&gt; &amp;mut Self   // add file extension filter
+  clear() -&gt; &amp;mut Self            // reset skip list and patterns
+  visit(path: &amp;str)               // execute depth-first walk
+  get_dirs() -&gt; usize             // count of visited directories
+  get_files() -&gt; usize            // count of visited files</code></pre>
+        <h3>Default skip list</h3>
+        <pre><code>  bin  obj  target  build  out  __pycache__
+  .venv  venv  dist  .git  .vs  .idea  archive</code></pre>
+        <h3>Invariants</h3>
+        <ul class="tight" style="margin-left:1rem;">
+          <li>Never aborts on read errors — skips and continues</li>
+          <li>Fires <code>do_dir</code> before any <code>do_file</code> in that directory</li>
+          <li>Counts are cumulative across the full walk</li>
+        </ul>
+      </div>
+    </details>
+    <t-b>
+      Example from <code>Validator_Spec.md</code> (PageValidator) — eight validation rules:
+    </t-b>
+    <details>
+      <summary class="darkItem">PageValidator Rule Spec (excerpt)</summary>
+      <div class="spec-box">
+        <h3>ValidationError and Report types</h3>
+        <pre><code>  struct ValidationError {
+    rule:    &amp;'static str,
+    message: String,
+    line:    usize,
+    col:     usize,
+  }
+
+  struct Report {
+    file:   PathBuf,
+    errors: Vec&lt;ValidationError&gt;,
+    // is_valid() -&gt; bool
+  }</code></pre>
+        <h3>Eight structural rules</h3>
+        <pre><code>  doctype       document begins with &lt;!DOCTYPE html&gt;
+  root-element  exactly one &lt;html&gt; wraps the document
+  head-required &lt;head&gt; present, contains at least one &lt;title&gt;
+  body-required &lt;body&gt; present as direct child of &lt;html&gt;
+  tag-nesting   every open tag has a matching close in stack order
+  void-elements void elements carry no close tag
+  attr-quotes   all attribute values are quoted
+  duplicate-id  id attribute values are unique within the document</code></pre>
+        <h3>Invariant</h3>
+        <ul class="tight" style="margin-left:1rem;">
+          <li>Never short-circuits — all errors collected before Report is returned</li>
+        </ul>
+      </div>
+    </details>
+
+    <h3 id="notesmd">5.0 - Notes.md — The Development Record</h3>
+    <tm-b>
+      Alongside each <code>Spec.md</code> sits a <code>Notes.md</code> that records the
+      conversation history with the AI used to develop that component. It captures:
+      <ul class="tight" style="margin-left:2rem;">
+        <li>The prompts submitted to the AI (often the Spec.md content itself)</li>
+        <li>The AI's generated code and explanations</li>
+        <li>Refinement rounds - where the spec was updated and code regenerated</li>
+        <li>Design decisions and the reasoning behind them</li>
+      </ul>
+    </tm-b>
+    <t-b>
+      Notes.md is the traceability record. If a future developer asks why DirNav
+      silently skips unreadable files, the answer is in Notes.md: the spec required
+      non-failing parse behavior and the AI implemented it that way from the first round.
+    </t-b>
+
+    <h3 id="workflow">6.0 - The Workflow</h3>
+    <tm-b>
+      The full spec-driven workflow used in these projects:
+    </tm-b>
+    <t-b>
+      <div class="workflow-step">
+        <strong>1. Write Constitution.md</strong> - decompose the project into components,
+        state design principles, define the CLI. This document is shared across all language
+        implementations unchanged.
+      </div>
+      <div class="workflow-step">
+        <strong>2. Write Structure.md</strong> - define the physical structure: directory tree,
+        file names, build-system files (Cargo.toml, CMakeLists.txt, etc.), toolchain settings,
+        and build steps. One Structure.md per language implementation.
+      </div>
+      <div class="workflow-step">
+        <strong>3. Write Component Spec.md</strong> - for each component, specify the public
+        API: struct names, method signatures, return types, error handling, and invariants.
+        Language-agnostic. Precise enough for the AI to implement without clarification.
+      </div>
+      <div class="workflow-step">
+        <strong>4. Submit Spec to AI</strong> - open a terminal in the component directory and
+        run <code>claude</code> to start a Claude Code session. Paste or reference the Spec.md
+        content as your prompt - for example: <code>implement this component following Spec.md</code>.
+        Claude Code reads the spec, creates or edits the source file in place, and reports what
+        it did. No copy-paste of generated code is needed; the file is written directly.
+      </div>
+      <div class="workflow-step">
+        <strong>5. Review and Refine</strong> - read the generated code against the spec.
+        If behavior is wrong or incomplete, update the spec first, then regenerate. The spec
+        is always authoritative.
+      </div>
+      <div class="workflow-step">
+        <strong>6. Record in Notes.md</strong> - save the conversation. This creates the
+        development record: which prompts produced which code, and what was refined.
+      </div>
+      <div class="workflow-step">
+        <strong>7. Repeat for each language</strong> - the same Spec.md generates Rust, C++,
+        C#, and Python implementations. Language idioms differ; the design does not.
+      </div>
+    </t-b>
+
+    <h3 id="multilang">7.0 - One Spec, Four Languages</h3>
+    <tm-b>
+      The most visible outcome of spec-driven development here is that the same
+      Constitution.md and component Spec.md files produced four independent implementations
+      that behave identically from the user's perspective.
+    </tm-b>
+    <t-b>
+      TextFinder code metrics across implementations:
+      <ul class="tight" style="margin-left:2rem;">
+        <li>Rust: ~1,715 lines, 348 scopes</li>
+        <li>C++, C#, Python: comparable scale</li>
+      </ul>
+      Performance varies (Python slowest, Rust/C++ fastest), but the CLI options,
+      component boundaries, and output format are identical across all four.
+    </t-b>
+    <t-b>
+      PageValidator code metrics:
+      <ul class="tight" style="margin-left:2rem;">
+        <li>Rust: 902 lines, 233 scopes</li>
+        <li>C++: 1,098 lines, 235 scopes</li>
+        <li>C#: 1,022 lines, 170 scopes</li>
+        <li>Python: 919 lines, 200 scopes</li>
+      </ul>
+      The eight validation rules and the output format are identical in every language.
+    </t-b>
+
+    <h3 id="regenerate">8.0 - Regeneration from Specs</h3>
+    <t-b>
+      TextFinder includes <code>generate_part.py</code> scripts in each language variant.
+      A command like:
+      <pre><code>  python generate_part.py CommandLine</code></pre>
+      reads the corresponding <code>Spec.md</code>, submits it to the Claude API, and writes
+      the generated source file. This means:
+      <ul class="tight" style="margin-left:2rem;">
+        <li>The spec is the source of truth, not the code</li>
+        <li>Any component can be regenerated from scratch if the implementation is lost or broken</li>
+        <li>Updating the spec and regenerating is the correct way to change behavior</li>
+        <li>Code is always derivable from the spec; the spec is never derivable from the code</li>
+      </ul>
+    </t-b>
+
+    <h3 id="takeaway">9.0 - Takeaways</h3>
+    <t-b>
+      These projects demonstrate several lessons about spec-driven development with AI tools:
+      <ul class="tight" style="margin-left:2rem;">
+        <li>
+          <strong>Spec quality determines code quality.</strong> Vague specs produce code that
+          needs heavy correction. Specs that specify types, invariants, and error handling
+          produce working code on the first or second round.
+        </li>
+        <li>
+          <strong>Language-agnostic specs are reusable.</strong> Writing the spec without
+          language idioms means the same document generates Rust, C++, C#, and Python —
+          only the syntax differs.
+        </li>
+        <li>
+          <strong>Notes.md is underrated.</strong> Recording the AI conversation creates a
+          traceability record that commit messages never achieve. Future developers can see
+          not just what was changed, but why and how the AI arrived at it.
+        </li>
+        <li>
+          <strong>The spec enforces design discipline.</strong> The Constitution's principles
+          (single responsibility, dependency direction, non-failing parse) are enforced because
+          the spec says so — not because the AI guessed them. Design intent is explicit.
+        </li>
+        <li>
+          <strong>Regeneration is a forcing function.</strong> Knowing code can be regenerated
+          from the spec motivates keeping the spec accurate. When a bug is found, fix the spec
+          first — then regenerate or patch the code to match.
+        </li>
+      </ul>
+    </t-b>
+    <div style="height:15rem;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#intro">introduction</a>
+        <a href="#constitution">constitution.md</a>
+        <a href="#structuremd">structure.md</a>
+        <a href="#specmd">component specs</a>
+        <a href="#notesmd">notes.md</a>
+        <a href="#workflow">workflow</a>
+        <a href="#multilang">one spec, four languages</a>
+        <a href="#regenerate">regeneration</a>
+        <a href="#takeaway">takeaways</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CodeBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 6, 10);
+  </script>
+</body>
+</html>
