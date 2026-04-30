@@ -155,6 +155,10 @@ function buildRes() {
       <a class='undef' href='javascript:;'>Site</a>\
       <a href='../Rust/ExploreRust.html?src=RustStory_Prologue.html'>Rust</a>\
       <a href='../Cpp/ExploreCpp.html?src=CppStory_Prologue.html'>C++</a>\
+      <a href='../CSharp/ExploreCSharp.html?src=CSharpStory_Prologue.html'>C#</a>\
+      <a href='../Python/ExplorePython.html?src=PythonStory_Prologue.html'>Python</a>\
+      <a href='../WebDev/ExploreWebDev.html?src=WebDevStory_Prologue.html'>WebDev</a>\
+      <a href='../Basics/ExploreBasics.html?src=BasicsStory_Prologue.html'>Basics</a>\
       <div class='category'>-documents-</div>\
       <details style='margin-left:0.5rem;'>\
         <summary>ChatGPT Topics</summary>\
