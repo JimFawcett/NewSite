@@ -1,1 +1,0 @@
-C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\target\debug\libcompute.rlib: C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Compute\src\lib.rs C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Fileutils\src\lib.rs C:\github\JimFawcett\NewSite\Code\DesignStructure\PlugInWithTraitObjects\Input\src\lib.rs
