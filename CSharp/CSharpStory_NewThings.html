@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CSharpStory_NewThings.html
+-->
+<head>
+  <title>C# Story New Things</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCSharp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code { font-size: 0.95rem; background-color: #0d1b2a; color: #c8e4e8; width: max-content; border-radius: 0.25rem; padding: 0rem 2rem; margin-bottom: 1rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCSharp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CSharpStory_NewThings.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/01/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">C# Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #13 &ndash; New Things</h2>
+        <h4 class="indent" id="subtitle">significant additions in C# 11, 12, and 13</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">13.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          C# 10 (.NET 6, 2021) established a strong baseline with record structs, global
+          <c-s>using</c-s> directives, file-scoped namespaces, and interpolated string handlers.
+          The three releases that followed — C# 11, 12, and 13 — added features that have a
+          significant impact on how everyday C# code is written: less boilerplate for constructors
+          and initialization, a unified syntax for all collection types, and richer pattern
+          matching. This chapter surveys the most impactful additions.
+        </t-b>
+      </indent-blocks>
+
+      <a id="rawstr"></a>
+      <h3>13.1  C# 11 &mdash; Raw String Literals</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Raw string literals</strong> begin and end with three or more double-quote
+          characters (<c-s>"""</c-s>). The content is taken literally — no escape sequences,
+          no doubling of backslashes. They are ideal for embedded JSON, XML, SQL, HTML, and
+          regular expressions:
+        </t-b>
+        <defn-code>
+// Before C# 11 — escape sequences everywhere
+string json1 = "{\n  \"name\": \"Alice\",\n  \"age\": 30\n}";
+
+// C# 11 raw string literal — no escaping at all
+string json2 = """
+    {
+      "name": "Alice",
+      "age": 30
+    }
+    """;
+
+// Interpolated raw string — $""" ... """
+string name = "Alice";
+string html = $"""
+    &lt;p class="greeting"&gt;Hello, {name}!&lt;/p&gt;
+    """;
+        </defn-code>
+        <t-b>
+          The closing <c-s>"""</c-s> controls indentation: the compiler strips leading
+          whitespace equal to the indentation of the closing delimiter, so the resulting string
+          is not polluted by source-code indentation. Newlines in string interpolation
+          expressions (also C# 11) allow multi-line expressions inside the <c-s>{&nbsp;}</c-s>
+          braces of any interpolated string.
+        </t-b>
+      </indent-blocks>
+
+      <a id="required"></a>
+      <h3>13.2  C# 11 &mdash; Required Members</h3>
+      <indent-blocks>
+        <t-b>
+          The <c-s>required</c-s> modifier on a field or property forces callers to supply
+          a value through an object initializer. The compiler enforces this — missing a required
+          member is a compile error, without the need for a constructor that takes every property
+          as a parameter:
+        </t-b>
+        <defn-code>
+public class Address {
+    public required string Street { get; init; }
+    public required string City   { get; init; }
+    public string? PostalCode { get; init; }    // optional
+}
+
+// Compiler error if Street or City is omitted
+var addr = new Address { Street = "123 Main St", City = "Springfield" };
+
+// A constructor can opt out of the requirement with [SetsRequiredMembers]
+[SetsRequiredMembers]
+public Address(string street, string city) {
+    Street = street; City = city;
+}
+        </defn-code>
+        <t-b>
+          <c-s>required</c-s> pairs naturally with <c-s>init</c-s>-only properties and
+          records, making immutable data transfer objects concise and safe.
+        </t-b>
+      </indent-blocks>
+
+      <a id="listpat"></a>
+      <h3>13.3  C# 11 &mdash; List Patterns</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>List patterns</strong> match arrays and lists by shape and element values
+          inside <c-s>switch</c-s> expressions, <c-s>switch</c-s> statements, and
+          <c-s>is</c-s> expressions. The <c-s>..</c-s> slice pattern matches any number of
+          elements:
+        </t-b>
+        <defn-code>
+int[] nums = { 1, 2, 3, 4, 5 };
+
+string desc = nums switch {
+    []                          =&gt; "empty",
+    [var only]                  =&gt; $"one element: {only}",
+    [1, 2, ..]                  =&gt; "starts with 1, 2",
+    [.., &gt; 0]                =&gt; "last element is positive",
+    [var first, .., var last]   =&gt; $"first={first}, last={last}",
+    _                           =&gt; "other"
+};
+
+// In an if statement
+if (nums is [_, _, 3, ..])
+    Console.WriteLine("Third element is 3");
+        </defn-code>
+        <t-b>
+          List patterns complement the property and deconstruct patterns from earlier C# versions,
+          completing the ability to match on both the structure and the contents of any sequence.
+        </t-b>
+      </indent-blocks>
+
+      <a id="genmath"></a>
+      <h3>13.4  C# 11 &mdash; Generic Math</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Static abstract members in interfaces</strong> (C# 11) allow interfaces to
+          declare static methods and operators. The <c-s>System.Numerics</c-s> library uses this
+          to expose generic math interfaces such as <c-s>INumber&lt;T&gt;</c-s>,
+          <c-s>IAdditionOperators&lt;T,T,T&gt;</c-s>, and <c-s>IComparisonOperators&lt;T,T,bool&gt;</c-s>.
+          You can write numeric algorithms that work over any numeric type:
+        </t-b>
+        <defn-code>
+using System.Numerics;
+
+// T.Zero and + operator resolved at compile time for each concrete type
+static T Sum&lt;T&gt;(IEnumerable&lt;T&gt; values) where T : INumber&lt;T&gt;
+    =&gt; values.Aggregate(T.Zero, (acc, x) =&gt; acc + x);
+
+Console.WriteLine(Sum(new[] { 1, 2, 3, 4 }));          // 10    (int)
+Console.WriteLine(Sum(new[] { 1.5, 2.5, 3.0 }));       // 7.0   (double)
+Console.WriteLine(Sum(new[] { 1m, 2.5m, 0.75m }));     // 4.25  (decimal)
+
+// Interface-level operator overloads on your own type
+public readonly struct Celsius(double value) : IAdditionOperators&lt;Celsius, Celsius, Celsius&gt; {
+    public double Value =&gt; value;
+    public static Celsius operator +(Celsius a, Celsius b) =&gt; new(a.Value + b.Value);
+}
+        </defn-code>
+      </indent-blocks>
+
+      <a id="utf8"></a>
+      <h3>13.5  C# 11 &mdash; UTF-8 String Literals</h3>
+      <indent-blocks>
+        <t-b>
+          Appending <c-s>u8</c-s> to a string literal produces a
+          <c-s>ReadOnlySpan&lt;byte&gt;</c-s> containing the UTF-8 encoded bytes with no
+          heap allocation. This is useful in network, serialization, and I/O code that works
+          directly with byte buffers:
+        </t-b>
+        <defn-code>
+// Type is ReadOnlySpan&lt;byte&gt; — no allocation
+ReadOnlySpan&lt;byte&gt; crlf = "\r\n"u8;
+
+// Writing HTTP response headers directly to a stream
+static async Task WriteResponseAsync(Stream s) {
+    await s.WriteAsync("HTTP/1.1 200 OK\r\n"u8.ToArray());
+    await s.WriteAsync("Content-Type: application/json\r\n"u8.ToArray());
+    await s.WriteAsync("\r\n"u8.ToArray());
+}
+
+// Efficient constant-time comparisons in parsers
+static bool IsGet(ReadOnlySpan&lt;byte&gt; method) =&gt; method.SequenceEqual("GET"u8);
+        </defn-code>
+        <t-b>
+          UTF-8 literals are evaluated entirely at compile time and stored in the read-only
+          data section of the assembly, so there is zero runtime cost to obtaining the span.
+        </t-b>
+      </indent-blocks>
+
+      <a id="primaryctor"></a>
+      <h3>13.6  C# 12 &mdash; Primary Constructors</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Primary constructors</strong> place parameters directly on the class or struct
+          declaration. The parameters are in scope throughout the entire type body — in field
+          initializers, properties, and methods — eliminating the backing-field + constructor +
+          assignment boilerplate that dominated dependency-injection code:
+        </t-b>
+        <defn-code>
+// Before C# 12 — explicit fields and constructor body
+public class OrderService {
+    private readonly IOrderRepo _repo;
+    private readonly ILogger&lt;OrderService&gt; _logger;
+    public OrderService(IOrderRepo repo, ILogger&lt;OrderService&gt; logger) {
+        _repo = repo; _logger = logger;
+    }
+    public Task&lt;Order&gt; GetAsync(int id) =&gt; _repo.FindAsync(id);
+}
+
+// C# 12 primary constructor — same behaviour, far less code
+public class OrderService(IOrderRepo repo, ILogger&lt;OrderService&gt; logger) {
+    public async Task&lt;Order&gt; GetAsync(int id) {
+        logger.LogInformation("Fetching order {Id}", id);
+        return await repo.FindAsync(id);
+    }
+}
+
+// Also works on structs and records
+public readonly struct Vector2(double x, double y) {
+    public double X { get; } = x;
+    public double Y { get; } = y;
+    public double Length =&gt; Math.Sqrt(X * X + Y * Y);
+}
+        </defn-code>
+        <t-b>
+          If a primary constructor parameter needs to be captured as a field (for mutation or
+          to prevent capture of a mutable local), declare an explicit field initialized from the
+          parameter: <c-s>private readonly IOrderRepo _repo = repo;</c-s>
+        </t-b>
+      </indent-blocks>
+
+      <a id="collexpr"></a>
+      <h3>13.7  C# 12 &mdash; Collection Expressions</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Collection expressions</strong> introduce a single <c-s>[&nbsp;]</c-s> syntax
+          that works uniformly for arrays, <c-s>List&lt;T&gt;</c-s>, <c-s>Span&lt;T&gt;</c-s>,
+          immutable collections, and any type that opts in via
+          <c-s>[CollectionBuilder]</c-s>. This replaces four different initialization syntaxes
+          that existed before:
+        </t-b>
+        <defn-code>
+// All four use identical syntax
+int[]              arr  = [1, 2, 3];
+List&lt;int&gt;          list = [1, 2, 3];
+Span&lt;int&gt;          span = [1, 2, 3];
+ImmutableArray&lt;int&gt; imm = [1, 2, 3];
+
+// Spread operator .. inlines another collection inline
+int[] a = [1, 2, 3];
+int[] b = [4, 5, 6];
+int[] c = [..a, ..b, 7];   // [1, 2, 3, 4, 5, 6, 7]
+
+// Works directly in method calls
+static void Print(int[] vals) =&gt; Console.WriteLine(string.Join(", ", vals));
+Print([10, 20, 30]);
+        </defn-code>
+        <t-b>
+          The compiler selects the most efficient construction path for each target type.
+          For <c-s>Span&lt;T&gt;</c-s> it can stack-allocate the buffer; for
+          <c-s>ImmutableArray&lt;T&gt;</c-s> it calls the appropriate factory.
+        </t-b>
+      </indent-blocks>
+
+      <a id="cs12more"></a>
+      <h3>13.8  C# 12 &mdash; Additional Features</h3>
+      <indent-blocks>
+        <t-b>
+          Two smaller additions round out C# 12:
+        </t-b>
+        <t-b>
+          <strong>Default lambda parameters</strong> — lambdas can now have optional parameters
+          with defaults, just like regular methods:
+        </t-b>
+        <defn-code>
+var greet = (string name, string prefix = "Hello") =&gt; $"{prefix}, {name}!";
+Console.WriteLine(greet("Alice"));           // Hello, Alice!
+Console.WriteLine(greet("Bob", "Hi"));      // Hi, Bob!
+
+// Useful when passing a lambda to an API that supplies the argument optionally
+Func&lt;int, int, int&gt; add = (x, y = 0) =&gt; x + y;
+        </defn-code>
+        <t-b>
+          <strong>Alias any type</strong> — <c-s>using</c-s> aliases can now name tuples,
+          arrays, nullable types, and pointer types, not only named types:
+        </t-b>
+        <defn-code>
+using Point   = (double X, double Y);
+using Matrix  = double[,];
+using MaybeId = int?;
+
+Point  origin = (0.0, 0.0);
+Point  offset = (3.5, -1.2);
+MaybeId id    = null;
+        </defn-code>
+      </indent-blocks>
+
+      <a id="params"></a>
+      <h3>13.9  C# 13 &mdash; params Collections</h3>
+      <indent-blocks>
+        <t-b>
+          Before C# 13 the <c-s>params</c-s> modifier only accepted arrays. C# 13 lifts that
+          restriction: <c-s>params</c-s> works with any collection type, including
+          <c-s>ReadOnlySpan&lt;T&gt;</c-s> — which avoids the heap allocation that a
+          <c-s>params T[]</c-s> parameter forces at every call site:
+        </t-b>
+        <defn-code>
+// Before C# 13 — array allocated on each call
+void LogAll(params string[] messages) { ... }
+
+// C# 13 — no allocation when called with a fixed argument list
+void LogAll(params ReadOnlySpan&lt;string&gt; messages) { ... }
+
+// Works with any collection interface too
+void AddRange&lt;T&gt;(List&lt;T&gt; target, params IEnumerable&lt;T&gt; items)
+    =&gt; target.AddRange(items);
+
+// Call sites look identical
+LogAll("starting", "loading", "done");
+AddRange(myList, 10, 20, 30);
+        </defn-code>
+        <t-b>
+          When the call site passes a fixed-length argument list to a
+          <c-s>params ReadOnlySpan&lt;T&gt;</c-s> parameter, the compiler can stack-allocate
+          the buffer, making the call as efficient as a direct span creation.
+        </t-b>
+      </indent-blocks>
+
+      <a id="field"></a>
+      <h3>13.10  C# 13 &mdash; field Keyword (Semi-auto Properties)</h3>
+      <indent-blocks>
+        <t-b>
+          The contextual keyword <c-s>field</c-s> refers to the compiler-generated backing
+          field of a property. This makes it possible to add validation or transformation logic
+          to one accessor while keeping the other auto-generated — without declaring an explicit
+          backing field:
+        </t-b>
+        <defn-code>
+// Before C# 13 — explicit backing field required just to add one guard
+private int _count;
+public int Count {
+    get =&gt; _count;
+    set { ArgumentOutOfRangeException.ThrowIfNegative(value); _count = value; }
+}
+
+// C# 13 — field refers to the hidden backing field
+public int Count {
+    get;
+    set { ArgumentOutOfRangeException.ThrowIfNegative(value); field = value; }
+}
+
+// Computed get with lazily stored value
+public string Label {
+    get =&gt; field ?? "(none)";
+    set;
+}
+
+// Trimming on set, auto get
+public string Name {
+    get;
+    set =&gt; field = value.Trim();
+}
+        </defn-code>
+      </indent-blocks>
+
+      <a id="cs13more"></a>
+      <h3>13.11  C# 13 &mdash; Additional Features</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>System.Threading.Lock</strong> — a new dedicated lock type that replaces
+          <c-s>object</c-s> as the monitor target. The <c-s>lock</c-s> statement recognises
+          <c-s>Lock</c-s> and calls <c-s>Lock.EnterScope()</c-s> instead of
+          <c-s>Monitor.Enter</c-s>, eliminating boxing and providing a faster,
+          allocation-free scope:
+        </t-b>
+        <defn-code>
+// Before C# 13 — object used as monitor; boxes on every lock
+private readonly object _sync = new();
+void SafeUpdate() { lock (_sync) { /* ... */ } }
+
+// C# 13 — dedicated Lock type, no boxing, faster scope enter/exit
+private readonly Lock _lock = new();
+void SafeUpdate() { lock (_lock) { /* ... */ } }
+
+// Explicit scope for try/finally patterns
+using (_lock.EnterScope()) {
+    /* guaranteed exit even on exception */
+}
+        </defn-code>
+        <t-b>
+          <strong>Partial properties</strong> extend partial classes so that a property can be
+          declared in one file and its accessor bodies implemented in another. This completes
+          source-generator support for properties — generators previously had to work around the
+          limitation that only methods could be partial:
+        </t-b>
+        <defn-code>
+// ViewModel.cs — declaration (written by developer)
+public partial class PersonViewModel {
+    public partial string Name { get; set; }
+}
+
+// ViewModel.g.cs — implementation (generated by source generator)
+public partial class PersonViewModel {
+    private string _name = "";
+    public partial string Name {
+        get =&gt; _name;
+        set { _name = value; OnPropertyChanged(); }
+    }
+}
+        </defn-code>
+      </indent-blocks>
+
+      <a id="epilogue13"></a>
+      <h3>13.12  Epilogue</h3>
+      <t-b>
+        This chapter surveyed the most impactful additions in C# 11, 12, and 13: raw string
+        literals and UTF-8 literals that simplify text and binary work; required members and
+        list patterns that improve initialization safety and expressive matching; generic math
+        that generalises numeric algorithms; primary constructors and collection expressions
+        that cut boilerplate; and params collections, the field keyword, the dedicated Lock
+        type, and partial properties that sharpen performance and tooling in C# 13. The
+        language continues to evolve with each annual .NET release.
+      </t-b>
+      <a id="refs"></a>
+      <h3>13.13  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-11">What's new in C# 11 &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-12">What's new in C# 12 &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-13">What's new in C# 13 &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/collection-expressions">Collection expressions &mdash; language reference</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/required">required modifier &mdash; language reference</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#rawstr">raw strings</a></menu-elem>
+        <menu-elem class="secElem"><a href="#required">required</a></menu-elem>
+        <menu-elem class="secElem"><a href="#listpat">list patterns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#genmath">generic math</a></menu-elem>
+        <menu-elem class="secElem"><a href="#utf8">UTF-8 literals</a></menu-elem>
+        <menu-elem class="secElem"><a href="#primaryctor">primary ctors</a></menu-elem>
+        <menu-elem class="secElem"><a href="#collexpr">collection expr</a></menu-elem>
+        <menu-elem class="secElem"><a href="#cs12more">C# 12 more</a></menu-elem>
+        <menu-elem class="secElem"><a href="#params">params</a></menu-elem>
+        <menu-elem class="secElem"><a href="#field">field keyword</a></menu-elem>
+        <menu-elem class="secElem"><a href="#cs13more">C# 13 more</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CSharpStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 13, 10);
+  </script>
+</body>
+</html>

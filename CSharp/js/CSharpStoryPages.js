@@ -23,6 +23,7 @@ function buildPages() {
       <a href='CSharpStory_LibraryStreams.html'>Chap 10 - Streams</a>\
       <a href='CSharpStory_LibraryCollections.html'>Chap 11 - Collections</a>\
       <a href='CSharpStory_Interesting.html'>Chap 12 - Interesting</a>\
+      <a href='CSharpStory_NewThings.html'>Chap 13 - New Things</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
