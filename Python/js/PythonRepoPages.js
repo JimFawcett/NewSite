@@ -10,7 +10,7 @@ function buildPages() {
     pgs.innerHTML =
     "<div class='darkItem listheader' onclick='togglePages()'>Python Repo Pages</div>\
     <div class='menuBody'>\
-      <a href='RepoPython_Prototype.html'>Prototype</a>\
+      <a href='RepoPython_PyCodeMetrics.html'>PyCodeMetrics</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
