@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  SWDevStory_Scripting.html
+-->
+<head>
+  <title>SWDev Story Automation and Scripting</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table.reftable {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #github table.reftable th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+      padding: 0.25rem 0.5rem;
+    }
+    #github table.reftable td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDevStory_Scripting.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/03/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">SWDev Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">SWDev Story: Automation and Scripting</h2>
+        <h4 class="indent" id="subtitle">bash, powershell, build automation, common patterns</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="why"></a>
+      <h3>7.0  Why Automate?</h3>
+      <t-b>
+        Manual processes are slow, error-prone, and hard to reproduce. Scripts replace
+        manual steps with repeatable, auditable sequences that run identically every time.
+        Good automation:
+        <ul class="tight">
+          <li>Reduces the chance of forgetting a step in a multi-stage build or deployment.</li>
+          <li>Makes it easy to run the full test suite before committing, not just before
+            a release.</li>
+          <li>Allows CI/CD pipelines (next chapter) to trigger builds automatically on
+            every push.</li>
+          <li>Serves as executable documentation - a build script describes exactly how
+            the project is built.</li>
+        </ul>
+      </t-b>
+
+      <a id="bash"></a>
+      <h3>7.1  Bash</h3>
+      <t-b>
+        Bash is the default shell on Linux and macOS and is available on Windows through
+        WSL (Windows Subsystem for Linux) and Git Bash. It is the standard language for
+        Unix automation scripts.
+      </t-b>
+      <t-b>
+        A minimal Bash build script for a Rust project:
+      </t-b>
+      <pre><code class="language-bash">#!/usr/bin/env bash
+set -euo pipefail          # exit on error, undefined variable, or pipe failure
+
+echo "=== Building TextFinder ==="
+cargo build --release
+
+echo "=== Running tests ==="
+cargo test
+
+echo "=== Done ==="</code></pre>
+      <t-b>
+        Key Bash constructs:
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Bash Language Summary</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:14rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Construct</th><th>Example / Notes</th></tr></thead>
+            <tbody>
+              <tr><td>Variables</td><td><code>NAME="TextFinder"; echo "$NAME"</code> - use double quotes around variables.</td></tr>
+              <tr><td>Command substitution</td><td><code>FILES=$(find . -name "*.rs")</code> - capture command output.</td></tr>
+              <tr><td>Conditionals</td><td><code>if [ -f "Cargo.toml" ]; then ...; fi</code></td></tr>
+              <tr><td>Loops</td><td><code>for f in *.rs; do echo "$f"; done</code></td></tr>
+              <tr><td>Functions</td><td><code>build() { cargo build "$@"; }</code></td></tr>
+              <tr><td>Exit codes</td><td><code>command || { echo "failed"; exit 1; }</code> - chain with ||.</td></tr>
+              <tr><td>set -e</td><td>Exit immediately on any non-zero exit code.</td></tr>
+              <tr><td>set -u</td><td>Treat undefined variables as errors.</td></tr>
+              <tr><td>set -o pipefail</td><td>Propagate failure through pipes.</td></tr>
+              <tr><td>Heredoc</td><td><code>cat &lt;&lt;EOF ... EOF</code> - multi-line string literal.</td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="pwsh"></a>
+      <h3>7.2  PowerShell</h3>
+      <t-b>
+        PowerShell is the standard shell on Windows and is cross-platform (PowerShell 7+
+        runs on Linux and macOS). Unlike Bash, which passes text through pipes, PowerShell
+        passes objects - the output of one command is a structured object that the next
+        command can filter and transform.
+      </t-b>
+      <t-b>
+        A PowerShell build script for the same project:
+      </t-b>
+      <pre><code class="language-powershell">Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+Write-Host "=== Building TextFinder ===" -ForegroundColor Cyan
+cargo build --release
+
+Write-Host "=== Running tests ===" -ForegroundColor Cyan
+cargo test
+
+Write-Host "=== Done ===" -ForegroundColor Green</code></pre>
+      <t-b>
+        Key PowerShell constructs:
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">PowerShell Language Summary</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:16rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Construct</th><th>Example / Notes</th></tr></thead>
+            <tbody>
+              <tr><td>Variables</td><td><code>$name = "TextFinder"</code> - always prefixed with $.</td></tr>
+              <tr><td>Cmdlets</td><td><code>Get-ChildItem *.rs | Where-Object { $_.Length -gt 0 }</code></td></tr>
+              <tr><td>Pipeline</td><td>Passes objects, not text: <code>Get-Process | Sort-Object CPU</code></td></tr>
+              <tr><td>Conditionals</td><td><code>if (Test-Path "Cargo.toml") { ... }</code></td></tr>
+              <tr><td>Loops</td><td><code>foreach ($f in Get-ChildItem *.rs) { ... }</code></td></tr>
+              <tr><td>Functions</td><td><code>function Build { param($Config) cargo build --$Config }</code></td></tr>
+              <tr><td>Error handling</td><td><code>$ErrorActionPreference = 'Stop'</code> - treat errors as exceptions.</td></tr>
+              <tr><td>Strict mode</td><td><code>Set-StrictMode -Version Latest</code> - flag undefined variables.</td></tr>
+              <tr><td>String interpolation</td><td><code>"Building $name in $config mode"</code></td></tr>
+              <tr><td>Here-string</td><td><code>@" ... "@</code> - multi-line string literal.</td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="patterns"></a>
+      <h3>7.3  Common Automation Patterns</h3>
+      <t-b>
+        Scripts in a development project typically handle these tasks:
+      </t-b>
+      <t-b class="indent">
+        <ul class="tight">
+          <li>
+            <strong>Build scripts</strong> - compile, link, and package the project.
+            Usually wrap the native build tool (cargo, cmake, dotnet, make) with
+            project-specific flags and environment setup.
+          </li>
+          <li>
+            <strong>Test scripts</strong> - run the test suite, capture exit codes,
+            and fail the build if any test fails. Often include integration tests that
+            require a specific environment.
+          </li>
+          <li>
+            <strong>Clean scripts</strong> - delete build artifacts so the next build
+            starts from a known state. Important for reproducible builds.
+          </li>
+          <li>
+            <strong>Environment setup scripts</strong> - install dependencies, set
+            environment variables, or configure paths. Run once when setting up a
+            new developer machine or CI agent.
+          </li>
+          <li>
+            <strong>Release scripts</strong> - tag the git commit, build release
+            binaries, produce changelogs, and upload artifacts. Sequencing matters;
+            scripts enforce the correct order.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        A few principles for maintainable scripts:
+        <ul class="tight">
+          <li>Fail fast and loudly - use <c-s>set -e</c-s> (Bash) or
+            <c-s>$ErrorActionPreference='Stop'</c-s> (PowerShell) so errors do not
+            silently continue.</li>
+          <li>Be idempotent where possible - running the script twice should not
+            leave the system in a broken state.</li>
+          <li>Print what you are doing - users and CI logs become readable when each
+            major step is announced.</li>
+          <li>Keep scripts short; move reusable logic into functions or shared helper
+            scripts rather than repeating it.</li>
+        </ul>
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>7.4  References</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Scripting References</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:14rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Resource</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><a target="_blank" href="https://www.gnu.org/software/bash/manual/">GNU Bash Manual</a></td>
+                <td>Complete Bash language reference - variables, conditionals, loops, functions, and process control.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="https://learn.microsoft.com/en-us/powershell/">PowerShell Docs</a></td>
+                <td>Microsoft's official PowerShell reference - cmdlets, scripting patterns, and cross-platform usage.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="https://www.shellcheck.net/">ShellCheck</a></td>
+                <td>Online Bash linter - paste a script and get immediate feedback on common mistakes.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="https://google.github.io/styleguide/shellguide.html">Google Shell Style Guide</a></td>
+                <td>Practical conventions for readable, maintainable Bash scripts.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#why">why automate</a></menu-elem>
+        <menu-elem class="secElem"><a href="#bash">bash</a></menu-elem>
+        <menu-elem class="secElem"><a href="#pwsh">powershell</a></menu-elem>
+        <menu-elem class="secElem"><a href="#patterns">patterns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 7, 10);
+  </script>
+</body>
+</html>

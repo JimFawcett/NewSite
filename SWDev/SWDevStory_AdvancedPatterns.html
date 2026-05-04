@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  SWDevStory_AdvancedPatterns.html
+-->
+<head>
+  <title>SWDev Story Advanced Patterns</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table.reftable {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #github table.reftable th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+      padding: 0.25rem 0.5rem;
+    }
+    #github table.reftable td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDevStory_AdvancedPatterns.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/03/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">SWDev Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">SWDev Story: Advanced Patterns</h2>
+        <h4 class="indent" id="subtitle">type erasure, plugin, choosing a pattern</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="intro"></a>
+      <h3>4.0  Advanced Structural Patterns</h3>
+      <t-b>
+        The two patterns in this chapter - type erasure and plugin - build on the factored
+        structure from the previous chapter. Both extend the concept of hiding concrete types
+        behind abstractions, but do so in different ways and at different points in a
+        program's lifecycle.
+      </t-b>
+      <t-b>
+        Type erasure hides concrete types at compile time, storing heterogeneous
+        implementations through a common interface. Plugin structure goes further: it
+        defers the choice of implementation until runtime, loading behavior from external
+        shared libraries or modules.
+      </t-b>
+
+      <a id="erasure"></a>
+      <h3>4.1  Type Erasure</h3>
+      <t-b>
+        Type erasure is the technique of storing objects of different concrete types through
+        a single abstract interface, so the caller never needs to know what concrete type
+        it holds.
+      </t-b>
+      <t-b>
+        In Rust this is done with <c-s>Box&lt;dyn Trait&gt;</c-s> or
+        <c-s>Arc&lt;dyn Trait&gt;</c-s>. In C++ with pointers or references to abstract base
+        classes. In C# with interface references. In Python, duck typing provides it
+        naturally.
+      </t-b>
+      <pre><code class="language-rust">// Rust example - type erasure with trait objects
+trait Processor {
+    fn process(&amp;self, path: &amp;Path) -&gt; Vec&lt;String&gt;;
+}
+
+struct LineCounter;
+struct WordCounter;
+
+impl Processor for LineCounter { ... }
+impl Processor for WordCounter { ... }
+
+// callers work only with Box&lt;dyn Processor&gt;
+fn run_all(processors: &amp;[Box&lt;dyn Processor&gt;], path: &amp;Path) {
+    for p in processors {
+        let results = p.process(path);
+        // ...
+    }
+}</code></pre>
+      <t-b>
+        The caller holds a collection of <c-s>Box&lt;dyn Processor&gt;</c-s> and can iterate
+        over them without knowing their concrete types. New processors can be added without
+        changing the calling code.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Type Erasure - Pros and Cons</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Pros</strong></td><td>
+                Heterogeneous collections without templates or enums; callers are fully
+                decoupled from concrete implementations; easy to inject mocks for testing.
+              </td></tr>
+              <tr><td><strong>Cons</strong></td><td>
+                Virtual dispatch overhead (small but real); in Rust, Box allocation per
+                object; loss of type information makes some optimizations harder.
+              </td></tr>
+              <tr><td><strong>Best for</strong></td><td>
+                Collections of related but distinct implementations - e.g., a list of
+                document processors, rendering backends, or transformation passes.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="plugin"></a>
+      <h3>4.2  Plugin Structure</h3>
+      <t-b>
+        A plugin structure takes type erasure one step further: the concrete implementations
+        are not compiled into the main binary. They are loaded at runtime from shared
+        libraries (<c-s>.so</c-s> on Linux, <c-s>.dll</c-s> on Windows) or from Python
+        modules discovered on disk.
+      </t-b>
+      <t-b>
+        The host application defines and publishes the plugin interface - a trait, abstract
+        class, or protocol. Each plugin is a separate artifact that implements the interface.
+        At startup the host scans a plugin directory, loads each artifact, and calls a
+        registration function to obtain an implementation of the interface.
+      </t-b>
+      <pre><code class="language-text">Plugin architecture for TextFinder:
+
+  Host binary defines:
+    trait OutputPlugin { fn write(&amp;self, match: Match); }
+
+  host loads plugins at startup:
+    - plugins/json_output.so   -&gt; implements OutputPlugin
+    - plugins/csv_output.so    -&gt; implements OutputPlugin
+    - plugins/html_output.so   -&gt; implements OutputPlugin
+
+  Host calls each plugin through the trait interface;
+  concrete types are never visible to the host.</code></pre>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Plugin - Pros and Cons</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Pros</strong></td><td>
+                New behavior can be added without recompiling the host; users or third
+                parties can contribute plugins; the host binary stays small; different
+                plugins can be built with different toolchains.
+              </td></tr>
+              <tr><td><strong>Cons</strong></td><td>
+                Significant additional complexity - dynamic loading, ABI stability across
+                compiler versions, error handling for missing or corrupt plugins; security
+                implications if plugins come from untrusted sources.
+              </td></tr>
+              <tr><td><strong>Best for</strong></td><td>
+                Extensible applications where end users or third parties add capabilities -
+                editors, media players, IDEs, rendering engines.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="choose"></a>
+      <h3>4.3  Choosing a Pattern</h3>
+      <t-b>
+        The five structural patterns form a progression from simplest to most flexible:
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Pattern Selection Guide</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup>
+              <col style="width:10rem;">
+              <col style="width:12rem;">
+              <col style="width:auto;">
+            </colgroup>
+            <thead><tr><th>Pattern</th><th>Choose when...</th><th>Avoid when...</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Monolithic</td>
+                <td>Small, short-lived program; simplicity is the only goal.</td>
+                <td>Code will grow, be tested in parts, or be reused.</td>
+              </tr>
+              <tr>
+                <td>Data Flow</td>
+                <td>Processing naturally decomposes into stages; concurrent execution is desired.</td>
+                <td>Stages are tightly interdependent or event contracts are expensive to define.</td>
+              </tr>
+              <tr>
+                <td>Factored</td>
+                <td>Core algorithm is stable; implementations of steps are expected to vary.</td>
+                <td>Abstractions are premature - the variation hasn't appeared yet.</td>
+              </tr>
+              <tr>
+                <td>Type Erasure</td>
+                <td>Heterogeneous collection of implementations must be treated uniformly.</td>
+                <td>All types are known at compile time and a generic (static dispatch) works.</td>
+              </tr>
+              <tr>
+                <td>Plugin</td>
+                <td>New behavior must be loadable without recompiling the host.</td>
+                <td>ABI stability is not feasible or the added complexity is not justified.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+      <t-b>
+        Start simple. Use a monolithic structure until complexity forces a split. Move to
+        data flow when stages need to evolve independently. Introduce factoring when a
+        policy/mechanism separation clarifies the design. Add type erasure when you need
+        heterogeneous collections. Reserve plugins for systems that genuinely need
+        runtime extensibility.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>4.4  References</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Advanced Patterns References</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:14rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Resource</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><a target="_blank" href="SWDesignBites_StructureTypeErase.html">Design Bites: Type Erasure</a></td>
+                <td>Type erasure walkthrough with code in Rust and C++.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="SWDesignBites_StructurePlugin.html">Design Bites: Plugin</a></td>
+                <td>Plugin structure with dynamic loading examples.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="https://doc.rust-lang.org/book/ch17-02-trait-objects.html">Rust Book - Trait Objects</a></td>
+                <td>Official Rust explanation of trait objects and dynamic dispatch.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="https://refactoring.guru/design-patterns/strategy">Refactoring Guru - Strategy Pattern</a></td>
+                <td>The Strategy pattern - closely related to factored and type-erased structures.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#intro">intro</a></menu-elem>
+        <menu-elem class="secElem"><a href="#erasure">type erasure</a></menu-elem>
+        <menu-elem class="secElem"><a href="#plugin">plugin</a></menu-elem>
+        <menu-elem class="secElem"><a href="#choose">choosing</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+</body>
+</html>

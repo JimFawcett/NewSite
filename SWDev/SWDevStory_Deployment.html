@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  SWDevStory_Deployment.html
+-->
+<head>
+  <title>SWDev Story Deployment</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table.reftable {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #github table.reftable th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+      padding: 0.25rem 0.5rem;
+    }
+    #github table.reftable td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDevStory_Deployment.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/03/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">SWDev Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">SWDev Story: Deployment</h2>
+        <h4 class="indent" id="subtitle">artifacts, containers, CI/CD, platforms</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="what"></a>
+      <h3>8.0  What is Deployment?</h3>
+      <t-b>
+        Deployment is the process of moving a finished software artifact - a binary,
+        library, web application, or service - to the environment where it will be used.
+        A good deployment process is repeatable, auditable, and fast enough to run on
+        every significant change.
+      </t-b>
+      <t-b>
+        The deployment chain typically looks like this:
+      </t-b>
+      <pre><code class="language-text">Source code  -&gt;  build  -&gt;  test  -&gt;  package  -&gt;  deploy  -&gt;  running system
+                                          |
+                                   (artifact: binary, image, archive)</code></pre>
+      <t-b>
+        Each arrow is an opportunity for automation. Continuous Integration (CI) automates
+        the build and test steps. Continuous Delivery (CD) automates packaging and
+        deployment to staging or production.
+      </t-b>
+
+      <a id="artifacts"></a>
+      <h3>8.1  Build Artifacts</h3>
+      <t-b>
+        A build artifact is the output of a build - what you actually deploy. Common artifact
+        types by language:
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Artifact Types by Language</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup>
+              <col style="width:8rem;">
+              <col style="width:10rem;">
+              <col style="width:auto;">
+            </colgroup>
+            <thead><tr><th>Language</th><th>Artifact</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Rust</td>
+                <td>Native binary or <code>.so</code>/<code>.dll</code></td>
+                <td>Statically linked by default - one file, no runtime dependency.</td>
+              </tr>
+              <tr>
+                <td>C++</td>
+                <td>Native binary, static lib (<code>.a</code>), or shared lib (<code>.so</code>/<code>.dll</code>)</td>
+                <td>Dynamic linking requires the matching runtime on the target machine.</td>
+              </tr>
+              <tr>
+                <td>C#</td>
+                <td><code>.dll</code> assembly, self-contained executable, or NuGet package</td>
+                <td>Self-contained publish bundles the .NET runtime - no installation needed.</td>
+              </tr>
+              <tr>
+                <td>Python</td>
+                <td><code>.whl</code> wheel, PyPI package, or frozen executable (PyInstaller)</td>
+                <td>Wheel is the standard distributable; PyInstaller bundles the interpreter.</td>
+              </tr>
+              <tr>
+                <td>Any</td>
+                <td>Docker image</td>
+                <td>Packages the binary and all dependencies into an isolated container image.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="containers"></a>
+      <h3>8.2  Containers</h3>
+      <t-b>
+        A container packages an application and all its dependencies into a single, portable
+        unit. The container runs identically on any machine that has a container runtime
+        (Docker, Podman). It eliminates "works on my machine" problems.
+      </t-b>
+      <t-b>
+        Docker is the most widely used container tool. A <c-s>Dockerfile</c-s> describes
+        how to build a container image:
+      </t-b>
+      <pre><code class="language-dockerfile"># Build stage - compile the binary
+FROM rust:1.78 AS builder
+WORKDIR /app
+COPY . .
+RUN cargo build --release
+
+# Runtime stage - minimal image with just the binary
+FROM debian:bookworm-slim
+COPY --from=builder /app/target/release/textfinder /usr/local/bin/textfinder
+ENTRYPOINT ["textfinder"]</code></pre>
+      <t-b>
+        Key Docker concepts:
+        <ul class="tight">
+          <li><strong>Image</strong> - an immutable snapshot built from a Dockerfile.
+            Stored in a registry (Docker Hub, GitHub Container Registry).</li>
+          <li><strong>Container</strong> - a running instance of an image. Isolated
+            filesystem and network; ephemeral by default.</li>
+          <li><strong>Volume</strong> - a persistent storage mount that survives container
+            restarts.</li>
+          <li><strong>Compose</strong> - <c-s>docker-compose.yml</c-s> defines a
+            multi-container application (app + database + cache) as a single unit.</li>
+          <li><strong>Multi-stage build</strong> - separate build and runtime stages
+            keep the final image small; the builder stage is discarded.</li>
+        </ul>
+      </t-b>
+
+      <a id="cicd"></a>
+      <h3>8.3  CI/CD Pipelines</h3>
+      <t-b>
+        A CI/CD pipeline runs automatically on every push or pull request. It ensures that
+        code is always in a deployable state and gives the team immediate feedback when
+        a change breaks something.
+      </t-b>
+      <t-b>
+        GitHub Actions is the CI/CD system built into GitHub. A workflow is defined in
+        a YAML file under <c-s>.github/workflows/</c-s>:
+      </t-b>
+      <pre><code class="language-yaml">name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        run: cargo build --release
+      - name: Test
+        run: cargo test</code></pre>
+      <t-b>
+        This workflow runs on every push and pull request, builds the project in release
+        mode, and runs all tests. A failed test blocks merging the PR.
+      </t-b>
+      <t-b>
+        A continuous delivery pipeline extends CI with deployment steps:
+        <ol class="tight">
+          <li>Build and test (same as CI).</li>
+          <li>Build and push the Docker image to a registry.</li>
+          <li>Deploy to a staging environment and run smoke tests.</li>
+          <li>After manual approval (or automatically), deploy to production.</li>
+        </ol>
+      </t-b>
+
+      <a id="platforms"></a>
+      <h3>8.4  Deployment Platforms</h3>
+      <t-b>
+        Where software runs after deployment depends on the type of application:
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Platform Options</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup>
+              <col style="width:12rem;">
+              <col style="width:auto;">
+            </colgroup>
+            <thead><tr><th>Platform</th><th>Description and Typical Use</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Local machine</td>
+                <td>CLI tools and desktop applications run directly on the developer's or user's
+                  machine. The artifact is a native binary or language-runtime-dependent package.</td>
+              </tr>
+              <tr>
+                <td>Virtual Machine (VM)</td>
+                <td>A full OS running inside a hypervisor (VMware, Hyper-V, VirtualBox).
+                  Strong isolation; heavier than containers; common in enterprise environments.</td>
+              </tr>
+              <tr>
+                <td>Container (Docker/Podman)</td>
+                <td>Lightweight process isolation sharing the host OS kernel.
+                  Faster startup than VMs; portable across any host with a container runtime.</td>
+              </tr>
+              <tr>
+                <td>GitHub Pages / Netlify</td>
+                <td>Static site hosting - deploy HTML/CSS/JS by pushing to a branch.
+                  Zero server management; suitable for documentation and static web apps.</td>
+              </tr>
+              <tr>
+                <td>Cloud (AWS, Azure, GCP)</td>
+                <td>Scalable compute, storage, and managed services. Applications run
+                  in VMs, containers (ECS, AKS), or serverless functions (Lambda, Functions).</td>
+              </tr>
+              <tr>
+                <td>GitHub Codespaces</td>
+                <td>Cloud-hosted development environment - the entire dev setup runs in a
+                  browser-accessible container configured by a <code>devcontainer.json</code>.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="refs"></a>
+      <h3>8.5  References</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Deployment References</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:14rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Resource</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><a target="_blank" href="https://docs.docker.com/get-started/">Docker Get Started</a></td>
+                <td>Docker's official tutorial - images, containers, Dockerfiles, and Compose.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="https://docs.github.com/en/actions">GitHub Actions Docs</a></td>
+                <td>Complete reference for GitHub Actions workflows, triggers, and marketplace actions.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-rust">GitHub Actions - Rust</a></td>
+                <td>Official guide for building and testing Rust projects in GitHub Actions.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="SWDeployBites_Intro.html">SW Deploy Bites: Introduction</a></td>
+                <td>Deploy Bites introduction with outline of deployment topics from this track.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#what">what is deployment</a></menu-elem>
+        <menu-elem class="secElem"><a href="#artifacts">artifacts</a></menu-elem>
+        <menu-elem class="secElem"><a href="#containers">containers</a></menu-elem>
+        <menu-elem class="secElem"><a href="#cicd">CI/CD</a></menu-elem>
+        <menu-elem class="secElem"><a href="#platforms">platforms</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 8, 10);
+  </script>
+</body>
+</html>

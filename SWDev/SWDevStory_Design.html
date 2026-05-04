@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  SWDevStory_Design.html
+-->
+<head>
+  <title>SWDev Story Software Design</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table.reftable {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #github table.reftable th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+      padding: 0.25rem 0.5rem;
+    }
+    #github table.reftable td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDevStory_Design.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/03/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">SWDev Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">SWDev Story: Software Design</h2>
+        <h4 class="indent" id="subtitle">concept, architecture, specification, documentation</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="what"></a>
+      <h3>1.0  What is Software Design?</h3>
+      <t-b>
+        Software design is the process of deciding what a software system should do, how it
+        should be structured, and how its parts should communicate - before writing the bulk
+        of the code. A good design makes the intent of the system visible, keeps components
+        loosely coupled, and produces documentation that guides both implementation and future
+        maintenance.
+      </t-b>
+      <t-b>
+        Design need not be a large bureaucratic exercise. Its scope should match the project.
+        For a small project like TextFinder, a day or two of thinking and a few pages of notes
+        is enough. For a system with dozens of developers, a more formal process is warranted.
+        In both cases the core questions are the same:
+        <ul class="tight">
+          <li>Who will use this, and what do they need to accomplish?</li>
+          <li>What components are needed, and what are their responsibilities?</li>
+          <li>How do the components communicate and share data?</li>
+          <li>What constraints (performance, security, cost) must the design satisfy?</li>
+        </ul>
+      </t-b>
+
+      <a id="concept"></a>
+      <h3>1.1  Concept Development</h3>
+      <t-b>
+        Concept development is the earliest design activity. Its goal is to answer the question:
+        <em>what problem are we solving?</em>
+      </t-b>
+      <t-b>
+        Good concept development involves:
+        <ul class="tight">
+          <li>
+            <strong>User analysis</strong> - who are the users, what are their goals, and
+            what activities do they perform?
+          </li>
+          <li>
+            <strong>Use cases</strong> - brief narratives describing how users interact with
+            the system to accomplish specific goals.
+          </li>
+          <li>
+            <strong>Constraint identification</strong> - performance targets, platform
+            requirements, budget and schedule limits, security and compliance obligations.
+          </li>
+          <li>
+            <strong>Scope definition</strong> - what the system will and will not do,
+            stated clearly enough that the team can build to it.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        For TextFinder, concept development is brief: the user is a developer who needs to
+        find text matching a regex in a directory tree. The scope is command-line input,
+        recursive directory traversal, and matched-line output. The constraints are: fast
+        enough for interactive use, portable across Rust/C++/C#/Python.
+      </t-b>
+
+      <a id="arch"></a>
+      <h3>1.2  Architecture</h3>
+      <t-b>
+        Architecture describes the high-level structure: what packages (modules, libraries,
+        assemblies) exist, what each is responsible for, and how they depend on one another.
+      </t-b>
+      <t-b>
+        A clean architecture has a few key properties:
+        <ul class="tight">
+          <li>
+            <strong>Single responsibility</strong> - each component does one thing well.
+            DirNav traverses directories; TextSearch matches text; Executive coordinates them.
+          </li>
+          <li>
+            <strong>Directed dependencies</strong> - dependencies flow in one direction,
+            typically from higher-level coordinators down to lower-level utilities. Cycles
+            between packages make code harder to test and reason about.
+          </li>
+          <li>
+            <strong>Defined interfaces</strong> - components communicate through explicit
+            interfaces or type signatures, not through shared global state.
+          </li>
+          <li>
+            <strong>Testability</strong> - components with clear boundaries and injected
+            dependencies can be unit-tested without spinning up the whole system.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        TextFinder's architecture consists of four packages:
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">TextFinder Package Architecture</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup>
+              <col style="width:10rem;">
+              <col style="width:auto;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Package</th>
+                <th>Responsibility</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Executive</td>
+                <td>Parses command-line arguments and coordinates the other packages.</td>
+              </tr>
+              <tr>
+                <td>DirNav</td>
+                <td>Recursively traverses a directory tree and invokes a callback for each matching file.</td>
+              </tr>
+              <tr>
+                <td>TextSearch</td>
+                <td>Opens a file, applies the regex, and returns matched lines.</td>
+              </tr>
+              <tr>
+                <td>Display</td>
+                <td>Formats and writes matched results to standard output.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="spec"></a>
+      <h3>1.3  Specification</h3>
+      <t-b>
+        A specification states precisely what each component must do - its inputs, outputs,
+        preconditions, postconditions, and error behavior. Specifications are the contract
+        between the designer and the implementer.
+      </t-b>
+      <t-b>
+        A useful specification for a function or method describes:
+        <ul class="tight">
+          <li><strong>Signature</strong> - parameter types, return type</li>
+          <li><strong>Preconditions</strong> - what must be true before the call</li>
+          <li><strong>Postconditions</strong> - what is guaranteed after a successful call</li>
+          <li><strong>Error conditions</strong> - what happens when inputs are invalid or
+            operations fail (panic, return an error type, throw an exception)</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Example - DirNav specification (language-independent):
+      </t-b>
+      <pre><code class="language-text">DirNav::new(root: path, extensions: list&lt;string&gt;) -&gt; DirNav
+  pre:  root exists and is a directory; extensions is non-empty
+  post: DirNav ready to traverse; no filesystem access yet
+
+DirNav::search(visitor: fn(path)) -&gt; Result
+  pre:  DirNav constructed; visitor accepts a file path
+  post: visitor called once for each file matching extensions
+  err:  returns Err if root is not accessible</code></pre>
+      <t-b>
+        Specifications need not be this formal. What matters is enough precision that an
+        implementer does not have to guess, and a reviewer can tell whether the implementation
+        is correct.
+      </t-b>
+
+      <a id="docs"></a>
+      <h3>1.4  Design Documentation</h3>
+      <t-b>
+        Documentation serves two audiences: the team building the software now, and
+        maintainers working on it later. Useful design documents include:
+        <ul class="tight">
+          <li>
+            <strong>Architecture diagrams</strong> - package dependency graphs,
+            data flow diagrams, sequence diagrams for key interactions.
+          </li>
+          <li>
+            <strong>Interface tables</strong> - one row per function, listing its
+            signature, preconditions, and postconditions.
+          </li>
+          <li>
+            <strong>Design rationale</strong> - why a key decision was made, and what
+            alternatives were considered. This is the most valuable documentation
+            because it cannot be recovered from the code alone.
+          </li>
+          <li>
+            <strong>Inline comments</strong> - for non-obvious constraints, subtle
+            invariants, or workarounds for specific bugs. Code should not need comments
+            to explain what it does, only why it does something surprising.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        For small projects, a single README or wiki page covering architecture and key
+        decisions is usually sufficient. Keep documentation close to the code - in the
+        repository itself - so it stays in sync with changes.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>1.5  References</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Software Design References</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup>
+              <col style="width:14rem;">
+              <col style="width:auto;">
+            </colgroup>
+            <thead><tr><th>Resource</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><a target="_blank" href="https://refactoring.guru/design-patterns">Refactoring Guru</a></td>
+                <td>Illustrated catalog of design patterns with examples in multiple languages.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="https://www.martinfowler.com/architecture/">Martin Fowler - Architecture</a></td>
+                <td>Articles on software architecture patterns, microservices, and design tradeoffs.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="SWDesignBites_Intro.html">SW Design Bites: Introduction</a></td>
+                <td>The Design Bites sequence from this track - concept through structure.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="SWDevProjects.html">SWDev Projects</a></td>
+                <td>TextFinder and CodeAnalyzer project specifications and implementations.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#what">what is design</a></menu-elem>
+        <menu-elem class="secElem"><a href="#concept">concept</a></menu-elem>
+        <menu-elem class="secElem"><a href="#arch">architecture</a></menu-elem>
+        <menu-elem class="secElem"><a href="#spec">specification</a></menu-elem>
+        <menu-elem class="secElem"><a href="#docs">documentation</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 1, 10);
+  </script>
+</body>
+</html>

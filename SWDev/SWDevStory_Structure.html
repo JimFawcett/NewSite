@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  SWDevStory_Structure.html
+-->
+<head>
+  <title>SWDev Story Design Structure</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table.reftable {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #github table.reftable th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+      padding: 0.25rem 0.5rem;
+    }
+    #github table.reftable td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDevStory_Structure.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/03/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">SWDev Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">SWDev Story: Design Structure</h2>
+        <h4 class="indent" id="subtitle">packages, components, dependencies, interfaces</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="why"></a>
+      <h3>2.0  Why Structure Matters</h3>
+      <t-b>
+        Structure is the arrangement of code into packages, modules, and components. Good
+        structure makes a program easier to understand, test, and change. Poor structure
+        - everything entangled, no clear boundaries - makes every change risky and every
+        bug hard to isolate.
+      </t-b>
+      <t-b>
+        Two forces drive structural decisions:
+        <ul class="tight">
+          <li>
+            <strong>Cohesion</strong> - code that belongs together should be packaged
+            together. A package that does one focused thing is easier to understand
+            and reuse than one that handles unrelated concerns.
+          </li>
+          <li>
+            <strong>Coupling</strong> - packages that must change together should be
+            few in number. High coupling means a change in one package ripples through
+            many others; low coupling means changes stay local.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        The goal is high cohesion within packages and low coupling between them.
+      </t-b>
+
+      <a id="packages"></a>
+      <h3>2.1  Packages and Components</h3>
+      <t-b>
+        A <strong>package</strong> is the unit of compilation and deployment. In Rust it is
+        a crate; in C++ a set of source and header files; in C# a project or assembly; in
+        Python a module or package directory.
+      </t-b>
+      <t-b>
+        A <strong>component</strong> is a logical unit within a package - typically a struct,
+        class, or set of functions that together implement one responsibility. A package may
+        contain one or several components.
+      </t-b>
+      <t-b>
+        Useful rules for package design:
+        <ul class="tight">
+          <li>One primary responsibility per package.</li>
+          <li>Public items form the interface; implementation details are private.</li>
+          <li>Packages that change for the same reasons should be grouped; packages
+            that change for different reasons should be separated.</li>
+          <li>Packages consumed by many others should be stable - resist the urge to
+            change their interfaces frequently.</li>
+        </ul>
+      </t-b>
+
+      <a id="deps"></a>
+      <h3>2.2  Dependencies and Coupling</h3>
+      <t-b>
+        A <strong>dependency</strong> exists when one package uses types or functions defined
+        in another. Dependencies have direction: package A depends on package B if A calls
+        into B, but not the reverse.
+      </t-b>
+      <t-b>
+        Dependency diagrams show this structure visually. An arrow from A to B means A
+        depends on B. Healthy architectures have acyclic dependency graphs - no package
+        depends on itself transitively. Cycles are a design smell: they make independent
+        deployment and testing impossible.
+      </t-b>
+      <pre><code class="language-text">TextFinder dependency graph (acyclic):
+
+  Executive  -&gt;  DirNav  -&gt;  (filesystem)
+      |       -&gt;  TextSearch
+      |       -&gt;  Display
+      |       -&gt;  CmdlnParser</code></pre>
+      <t-b>
+        Coupling types - from tightest (most problematic) to loosest (preferred):
+        <ul class="tight">
+          <li><strong>Content coupling</strong> - one component directly modifies another's
+            internal data. Avoid completely.</li>
+          <li><strong>Common coupling</strong> - components share global state. Avoid;
+            makes concurrency and testing difficult.</li>
+          <li><strong>Control coupling</strong> - one component passes a flag telling
+            another what to do. Usually a sign of missing abstraction.</li>
+          <li><strong>Data coupling</strong> - components communicate only through
+            well-typed parameters and return values. This is the target.</li>
+          <li><strong>Message coupling</strong> - components communicate via events or
+            channels with no shared state. Best for concurrent systems.</li>
+        </ul>
+      </t-b>
+
+      <a id="ifaces"></a>
+      <h3>2.3  Interfaces and Abstraction</h3>
+      <t-b>
+        An <strong>interface</strong> is the visible boundary of a component - the set of
+        functions, types, and constants that external callers can use. Everything else is
+        an implementation detail and should be hidden.
+      </t-b>
+      <t-b>
+        Good interfaces have three properties:
+        <ul class="tight">
+          <li>
+            <strong>Narrow</strong> - expose only what callers need. Every public item is
+            a commitment you must maintain; keep the surface small.
+          </li>
+          <li>
+            <strong>Stable</strong> - changing an interface breaks all callers. Design
+            interfaces that can evolve without breaking existing code (add parameters with
+            defaults, use versioned names, or model behavior with traits and interfaces
+            rather than concrete types).
+          </li>
+          <li>
+            <strong>Abstract</strong> - interfaces should describe <em>what</em> a component
+            does, not <em>how</em>. A search function returns matched lines; callers do not
+            need to know whether it uses a regex engine, a finite automaton, or a simple
+            string scan.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        In Rust, interfaces are expressed as traits. In C++ as abstract base classes or
+        template concepts. In C# as interfaces. In Python as duck-typed protocols or
+        abstract base classes. The syntax differs; the principle is identical.
+      </t-b>
+
+      <a id="cohesion"></a>
+      <h3>2.4  Measuring Structure Quality</h3>
+      <t-b>
+        A few practical tests for whether a structure is healthy:
+        <ul class="tight">
+          <li>
+            <strong>The one-sentence test:</strong> can you describe each package's
+            responsibility in one sentence without using "and"? If not, it likely
+            has too many responsibilities.
+          </li>
+          <li>
+            <strong>The change test:</strong> for a common type of change (add a
+            new search pattern, support a new file format), how many packages need
+            to be touched? The fewer the better.
+          </li>
+          <li>
+            <strong>The test isolation test:</strong> can you write a unit test for
+            each package without constructing the whole system? If not, coupling
+            is too tight somewhere.
+          </li>
+          <li>
+            <strong>The dependency cycle test:</strong> draw the dependency graph.
+            Are there cycles? Each cycle is a problem waiting to be felt.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>2.5  References</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Design Structure References</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup>
+              <col style="width:14rem;">
+              <col style="width:auto;">
+            </colgroup>
+            <thead><tr><th>Resource</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><a target="_blank" href="https://en.wikipedia.org/wiki/Coupling_(computer_programming)">Coupling - Wikipedia</a></td>
+                <td>Overview of coupling types with definitions and examples.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="https://en.wikipedia.org/wiki/Cohesion_(computer_science)">Cohesion - Wikipedia</a></td>
+                <td>Overview of cohesion types with definitions and examples.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="SWDesignBites_Structure.html">SW Design Bites: Structure</a></td>
+                <td>Structure overview from the Design Bites sequence in this track.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="SWDesignBites_Intro.html">SW Design Bites: Introduction</a></td>
+                <td>Introduction to the full Design Bites sequence using the TextFinder example.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#why">why structure</a></menu-elem>
+        <menu-elem class="secElem"><a href="#packages">packages</a></menu-elem>
+        <menu-elem class="secElem"><a href="#deps">dependencies</a></menu-elem>
+        <menu-elem class="secElem"><a href="#ifaces">interfaces</a></menu-elem>
+        <menu-elem class="secElem"><a href="#cohesion">quality</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  SWDevStory_Patterns.html
+-->
+<head>
+  <title>SWDev Story Structural Patterns</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table.reftable {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #github table.reftable th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+      padding: 0.25rem 0.5rem;
+    }
+    #github table.reftable td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDevStory_Patterns.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/03/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">SWDev Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">SWDev Story: Structural Patterns</h2>
+        <h4 class="indent" id="subtitle">monolithic, data flow, factored</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="what"></a>
+      <h3>3.0  What are Structural Patterns?</h3>
+      <t-b>
+        Structural patterns are recurring ways of organizing code into packages and components.
+        They are not frameworks or libraries - they are vocabulary for describing how
+        responsibilities are divided and how components communicate.
+      </t-b>
+      <t-b>
+        This chapter and the next cover five patterns that appear in the Design Bites sequence,
+        each illustrated with a line-counting program similar in scope to TextFinder:
+        <ul class="tight">
+          <li>Monolithic (Basic) - one package, one struct</li>
+          <li>Data Flow - components connected by typed event channels</li>
+          <li>Factored - policy separated from mechanism</li>
+          <li>Type Erasure - concrete types hidden behind trait objects (next chapter)</li>
+          <li>Plugin - behavior loaded at runtime (next chapter)</li>
+        </ul>
+      </t-b>
+      <t-b>
+        No pattern is universally best. Each has tradeoffs between simplicity, flexibility,
+        testability, and runtime cost. Knowing all five gives you the vocabulary to choose
+        deliberately rather than by default.
+      </t-b>
+
+      <a id="monolithic"></a>
+      <h3>3.1  Monolithic (Basic) Structure</h3>
+      <t-b>
+        In a monolithic structure all code lives in a single package. A single struct or
+        class holds the state and provides all the methods needed to read input, do the
+        work, and produce output.
+      </t-b>
+      <pre><code class="language-text">Package: LineCounter
+  struct LineCounter {
+    root: path,
+    extensions: list&lt;string&gt;
+  }
+  impl LineCounter {
+    fn new(root, exts) -&gt; Self
+    fn run() -&gt; counts      // walks dirs, opens files, counts lines
+    fn report(counts)       // formats output
+  }</code></pre>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Monolithic - Pros and Cons</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Pros</strong></td><td>
+                Simple to create and navigate; no inter-package plumbing; one piece to track
+                and deploy.
+              </td></tr>
+              <tr><td><strong>Cons</strong></td><td>
+                All concerns are mixed together; difficult to unit-test individual parts;
+                adding a new output format or traversal strategy requires editing the same
+                struct; grows harder to understand as the codebase expands.
+              </td></tr>
+              <tr><td><strong>Best for</strong></td><td>
+                Small, short-lived scripts or proofs of concept where simplicity is the only
+                priority.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="dataflow"></a>
+      <h3>3.2  Data Flow Structure</h3>
+      <t-b>
+        A data flow structure decomposes the program into components connected by typed
+        channels or event callbacks. Data flows from one component to the next; each
+        component has no knowledge of its neighbors' implementations.
+      </t-b>
+      <pre><code class="language-text">Packages: DirNav, TextProcessor, Collector
+
+  DirNav discovers files and fires a FileEvent for each.
+  TextProcessor receives FileEvents, opens files, emits LineEvents.
+  Collector receives LineEvents and accumulates counts.
+
+  Data flow: DirNav --FileEvent--&gt; TextProcessor --LineEvent--&gt; Collector</code></pre>
+      <t-b>
+        The event types are the contracts between stages. Each stage only depends on the
+        event type, not on the stage that produces it. You can swap DirNav for a network
+        source without changing TextProcessor.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Data Flow - Pros and Cons</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Pros</strong></td><td>
+                Components are decoupled at the event boundary; easy to insert new stages
+                or replace existing ones; natural fit for concurrent pipelines.
+              </td></tr>
+              <tr><td><strong>Cons</strong></td><td>
+                More indirection than monolithic; event types must be designed carefully
+                to carry enough context; debugging a broken pipeline requires tracing
+                events across stages.
+              </td></tr>
+              <tr><td><strong>Best for</strong></td><td>
+                Processing pipelines, streaming data, and systems where stages need to
+                evolve independently or run concurrently.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="factored"></a>
+      <h3>3.3  Factored Structure</h3>
+      <t-b>
+        A factored structure separates <em>policy</em> from <em>mechanism</em>. The policy
+        decides what to do and in what order. The mechanisms implement the individual
+        operations. The policy component depends on abstract interfaces, not on concrete
+        implementations.
+      </t-b>
+      <pre><code class="language-text">Packages: Executive (policy), DirNav, FileReader, Counter (mechanisms)
+
+  Executive holds references to abstract traits:
+    trait Traverser   { fn walk(root) -&gt; iter&lt;path&gt;; }
+    trait Reader      { fn read(path) -&gt; iter&lt;line&gt;; }
+    trait Accumulator { fn add(line); fn total() -&gt; usize; }
+
+  Executive::run() {
+    for path in self.traverser.walk(root) {
+      for line in self.reader.read(path) {
+        self.accumulator.add(line);
+      }
+    }
+  }</code></pre>
+      <t-b>
+        Concrete types (DirNav, FileReader, Counter) implement the traits. Executive
+        never imports them directly. To substitute a mock reader for testing, inject
+        a different implementation of Reader.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Factored - Pros and Cons</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Pros</strong></td><td>
+                Policy and mechanisms are independently testable and replaceable; adding
+                a new traversal strategy (e.g., zip file search) requires only a new
+                implementation of Traverser, not changes to Executive.
+              </td></tr>
+              <tr><td><strong>Cons</strong></td><td>
+                More upfront design effort; introduces trait objects or abstract base classes;
+                slight indirection cost at each interface call.
+              </td></tr>
+              <tr><td><strong>Best for</strong></td><td>
+                Systems where the core algorithm is stable but the implementations of its
+                steps are expected to vary or grow over time.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="refs"></a>
+      <h3>3.4  References</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Structural Patterns References</summary>
+          <table class="reftable" style="margin-top:0.5rem; width:90%;">
+            <colgroup><col style="width:14rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Resource</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><a target="_blank" href="SWDesignBites_StructureBasic.html">Design Bites: Monolithic</a></td>
+                <td>Detailed walkthrough of the basic monolithic structure with code examples.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="SWDesignBites_StructureFactored.html">Design Bites: Factored</a></td>
+                <td>Factored structure with trait-based policy and mechanism separation.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="SWDesignBites_StructureDataFlow.html">Design Bites: Data Flow</a></td>
+                <td>Data flow structure with event types and pipeline composition.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="SWDesignBites_StructureTypeErase.html">Design Bites: Type Erase</a></td>
+                <td>Type erasure structure hiding concrete types behind trait objects.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="SWDesignBites_StructurePlugin.html">Design Bites: Plugin</a></td>
+                <td>Plugin structure with behavior loaded at runtime via dynamic dispatch.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#what">what are patterns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#monolithic">monolithic</a></menu-elem>
+        <menu-elem class="secElem"><a href="#dataflow">data flow</a></menu-elem>
+        <menu-elem class="secElem"><a href="#factored">factored</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+</body>
+</html>
