@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  CodeStory_SkillsAI.html - Code Story Chapter 7
+-->
+<head>
+  <title>Code Story: Skills AI</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CodeStory_SkillsAI.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/04/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Code Story: Skills AI</h2>
+        <h4 class="indent" id="subtitle">skill library, anatomy of a skill, composing tools</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="skills"></a>
+      <h3>7. &nbsp;Skills AI</h3>
+      <t-b>
+        A <em>skill</em> is a reusable, named tool definition.  Building a skill library
+        means you write a tool once and use it across many agents and sessions.
+        This chapter covers the anatomy of a skill, a <code>code_metrics</code> example,
+        and composing multiple skills in a single agent call.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Why build a skill library?</summary>
+          <t-b class="indent">
+            <ol class="tight">
+              <li>Copy-pasting tool definitions into every script creates maintenance debt.
+                A shared library means a fix reaches every agent at once.</li>
+              <li>Named, well-described skills are self-documenting &mdash; the model reads
+                the description and knows what the tool does without explanation in the prompt.</li>
+              <li>A library of composable skills lets you assemble new agents quickly from
+                existing parts.</li>
+            </ol>
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <a id="anatomy"></a>
+      <h4>7.1 &nbsp;Anatomy of a Skill</h4>
+<pre><code class="language-python">def skill_code_metrics(path: str) -> dict:
+    """Count lines, functions, and blank lines in a Python source file.
+    Returns {"lines": int, "functions": int, "blanks": int}.
+    """
+    import ast, pathlib
+    src = pathlib.Path(path).read_text()
+    tree = ast.parse(src)
+    functions = sum(1 for n in ast.walk(tree) if isinstance(n, ast.FunctionDef))
+    lines = src.count("\n")
+    blanks = sum(1 for ln in src.splitlines() if not ln.strip())
+    return {"lines": lines, "functions": functions, "blanks": blanks}
+
+SKILL_CODE_METRICS = {
+    "name": "code_metrics",
+    "description": skill_code_metrics.__doc__,
+    "input_schema": {
+        "type": "object",
+        "properties": {"path": {"type": "string"}},
+        "required": ["path"]
+    }
+}</code></pre>
+
+      <a id="composing"></a>
+      <h4>7.2 &nbsp;Composing Skills</h4>
+      <t-b>
+        Pass a list of skill definitions to a single agent call.  The model chooses which
+        tools to invoke and in what order.  Keep each skill focused on one action &mdash;
+        composition happens at the agent level, not inside a skill.
+      </t-b>
+<pre><code class="language-python">all_skills = [SKILL_READ_FILE, SKILL_CODE_METRICS, SKILL_LIST_DIR]
+
+resp = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=2048,
+    tools=all_skills,
+    messages=[{
+        "role": "user",
+        "content": "Report metrics for every .py file in src/."
+    }]
+)</code></pre>
+
+      <a id="refs"></a>
+      <h4>7.3 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="CodeBites_SkillsAI.html">CodeBites: Skills AI</a></td>
+          <td class="lightItem">Track page with skill library design and examples.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/build-with-claude/tool-use">Anthropic Tool Use Docs</a>
+          </td>
+          <td class="lightItem">Reference for tool definition schema and multi-tool sessions.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#skills">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#anatomy">anatomy of a skill</a></menu-elem>
+        <menu-elem class="secElem"><a href="#composing">composing skills</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 7, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  RepoPython_PyPageValidator.html
+-->
+<head>
+  <title>Python PyPageValidator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <!-- <link rel="stylesheet" href="../css/help.css" /> -->
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemePython.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreReposPython.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    RepoPython_PyPageValidator.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/04/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle">
+        <h2 id="title">PyPageValidator</h2>
+        <h4 id="subtitle" class="indent">
+          validates HTML files for structural correctness<br />
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--light); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/PyPageValidator" style="margin-left:1.25em; color:var(--light);">PyPageValidator Repo</a>
+      </div>
+    </header>
+
+    <h3 id="concept">Concept:</h3>
+    <indent-blocks>
+      <t-b>
+        PyPageValidator checks HTML files for structural correctness. Given one or more
+        files or directories, it scans every <c-s>.html</c-s> / <c-s>.htm</c-s> file and reports
+        violations of eight structural rules with precise line and column locations.
+        Written in Python 3.10+, no build step required.
+      </t-b>
+      <t-b>
+        The tool is designed for batch use: validate a single page during development,
+        or sweep an entire static-site tree before publishing. Exit status
+        <c-s>0</c-s> means all files pass; exit status <c-s>1</c-s> means at least one violation
+        was found.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="packages">Packages:</h3>
+    <indent-blocks>
+      <t-b>
+        The project is composed of four packages in a strict linear dependency
+        chain, each with a companion test module.
+      </t-b>
+      <t-b>
+        <table>
+          <tr><th>Package</th><th>Kind</th><th>Role</th></tr>
+          <tr>
+            <td><c-s>Tokenizer</c-s></td>
+            <td>library</td>
+            <td>Raw lexical scanner; produces a <c-s>Token</c-s> stream with no grammar knowledge</td>
+          </tr>
+          <tr>
+            <td><c-s>Lexer</c-s></td>
+            <td>library</td>
+            <td>Groups tokens into structured <c-s>Lexeme</c-s> values; normalizes tag names to lowercase</td>
+          </tr>
+          <tr>
+            <td><c-s>Validator</c-s></td>
+            <td>library</td>
+            <td>Drives the Lexer, applies the eight structural rules, and returns a <c-s>Report</c-s> containing all errors</td>
+          </tr>
+          <tr>
+            <td><c-s>EntryPoint</c-s></td>
+            <td>executable (<c-s>page_validator.py</c-s>)</td>
+            <td>CLI orchestration — parses arguments, walks directories, calls Validator, prints the report</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>
+        The dependency chain is strictly linear:
+        <c-s>Tokenizer</c-s> &larr; <c-s>Lexer</c-s> &larr; <c-s>Validator</c-s> &larr; <c-s>EntryPoint</c-s>.
+        No package imports another laterally; all coupling flows through <c-s>EntryPoint</c-s>.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="quickstart">Quick Start:</h3>
+    <indent-blocks>
+      <t-b>
+        <pre>
+# Validate a single file
+python EntryPoint/page_validator.py index.html
+
+# Validate a directory tree, quiet mode (errors only)
+python EntryPoint/page_validator.py -r -q ./site
+
+# Validate with pass/fail summary
+python EntryPoint/page_validator.py -r -s ./site</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="options">Command-Line Options:</h3>
+    <indent-blocks>
+      <t-b>
+        <table>
+          <tr><th>Option</th><th>Argument</th><th>Default</th><th>Meaning</th></tr>
+          <tr>
+            <td><c-s>&lt;path&gt;...</c-s></td>
+            <td>file or directory</td>
+            <td><em>(required)</em></td>
+            <td>One or more HTML files or directories to validate</td>
+          </tr>
+          <tr>
+            <td><c-s>-r, --recursive</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Descend into subdirectories</td>
+          </tr>
+          <tr>
+            <td><c-s>-q, --quiet</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Print only files with errors; suppress PASS lines</td>
+          </tr>
+          <tr>
+            <td><c-s>-s, --summary</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Print pass/fail count after all files are processed</td>
+          </tr>
+          <tr>
+            <td><c-s>-h, --help</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Print help and exit</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>Running with no arguments displays help and exits cleanly.</t-b>
+    </indent-blocks>
+
+    <h3 id="output">Output:</h3>
+    <indent-blocks>
+      <t-b>Each file is reported as <c-s>PASS</c-s> or <c-s>FAIL</c-s>. Failing files list every
+      violation with rule name, line, and column:</t-b>
+      <t-b>
+        <pre>
+PASS  site/index.html
+FAIL  site/about.html
+      [tag-nesting] 14:3 — &lt;/div&gt; does not match open &lt;p&gt;
+      [duplicate-id] 22:10 — duplicate id 'header'
+PASS  site/contact.html
+
+2 passed, 1 failed</pre>
+      </t-b>
+      <t-b>
+        With <c-s>-q</c-s> (quiet), PASS lines are suppressed. With <c-s>-s</c-s> (summary), the
+        count line is appended. Both flags may be combined.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="rules">Rules Checked:</h3>
+    <indent-blocks>
+      <t-b>
+        <table>
+          <tr><th>Rule</th><th>What is checked</th></tr>
+          <tr>
+            <td><c-s>doctype</c-s></td>
+            <td>Document begins with <c-s>&lt;!DOCTYPE html&gt;</c-s></td>
+          </tr>
+          <tr>
+            <td><c-s>root-element</c-s></td>
+            <td>Exactly one <c-s>&lt;html&gt;</c-s> element at the top level</td>
+          </tr>
+          <tr>
+            <td><c-s>head-required</c-s></td>
+            <td><c-s>&lt;head&gt;</c-s> is present and contains a <c-s>&lt;title&gt;</c-s></td>
+          </tr>
+          <tr>
+            <td><c-s>body-required</c-s></td>
+            <td><c-s>&lt;body&gt;</c-s> element is present</td>
+          </tr>
+          <tr>
+            <td><c-s>tag-nesting</c-s></td>
+            <td>Every open tag has a matching close tag in the correct order</td>
+          </tr>
+          <tr>
+            <td><c-s>void-elements</c-s></td>
+            <td>Void elements (<c-s>br</c-s>, <c-s>img</c-s>, <c-s>input</c-s>, <c-s>hr</c-s>, <c-s>meta</c-s>, <c-s>link</c-s>, etc.) have no close tag</td>
+          </tr>
+          <tr>
+            <td><c-s>attr-quotes</c-s></td>
+            <td>All attribute values are quoted</td>
+          </tr>
+          <tr>
+            <td><c-s>duplicate-id</c-s></td>
+            <td>No two elements share the same <c-s>id</c-s> attribute value</td>
+          </tr>
+        </table>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="design">Design:</h3>
+    <indent-blocks>
+      <h4><c-s>Tokenizer</c-s></h4>
+      <t-b>
+        Reads raw HTML source and emits a flat stream of <c-s>Token</c-s> values.
+        <c-s>Token</c-s> is a plain base class with dataclass subtypes:
+        <pre>
+class Token: pass
+
+@dataclass class TagOpen(Token):      name: str
+@dataclass class TagClose(Token):     name: str
+@dataclass class AttrName(Token):     name: str
+@dataclass class AttrValue(Token):    value: str   # quoted
+@dataclass class AttrUnquoted(Token): value: str   # unquoted
+class SelfClose(Token): pass
+class TagEnd(Token):    pass
+@dataclass class Text(Token):    content: str
+@dataclass class Comment(Token): content: str
+@dataclass class Doctype(Token): content: str
+class Eof(Token): pass</pre>
+        The tokenizer holds no HTML grammar knowledge — it only recognises
+        <c-s>&lt;</c-s>, <c-s>&gt;</c-s>, <c-s>=</c-s>, <c-s>"</c-s>, <c-s>'</c-s>, <c-s>!</c-s>, <c-s>/</c-s>, and <c-s>-</c-s>
+        as structurally significant. Malformed input is never rejected at this stage.
+      </t-b>
+      <h4><c-s>Lexer</c-s></h4>
+      <t-b>
+        Consumes the <c-s>Token</c-s> stream and groups tokens into structured
+        <c-s>Lexeme</c-s> values. <c-s>Lexeme</c-s> is a plain base class with dataclass subtypes:
+        <pre>
+class Lexeme: pass
+
+@dataclass class OpenTag(Lexeme):        name: str; attrs: list[Attr]; pos: tuple[int,int]
+@dataclass class SelfClosingTag(Lexeme): name: str; attrs: list[Attr]; pos: tuple[int,int]
+@dataclass class CloseTag(Lexeme):       name: str; pos: tuple[int,int]
+@dataclass class TextNode(Lexeme):       content: str
+@dataclass class CommentNode(Lexeme):    content: str
+@dataclass class DoctypeDecl(Lexeme):    content: str</pre>
+        <c-s>OpenTag</c-s> and <c-s>SelfClosingTag</c-s> carry a <c-s>list[Attr]</c-s> with key, value,
+        and quoting status used later by the <c-s>attr-quotes</c-s> rule.
+        All tag names are normalized to lowercase; whitespace-only text nodes are discarded.
+      </t-b>
+      <h4><c-s>Validator</c-s></h4>
+      <t-b>
+        Drives the <c-s>Lexer</c-s> and applies all eight rules in a single pass. It
+        maintains an element stack (<c-s>list[tuple[str, tuple[int, int]]]</c-s>)
+        for nesting checks, a <c-s>set</c-s> for duplicate-ID detection,
+        and boolean flags for the document-level requirements (doctype, html, head,
+        title, body). All violations are collected into a list of
+        <c-s>ValidationError</c-s> instances before the <c-s>Report</c-s> is returned —
+        the validator never short-circuits on the first failure.
+      </t-b>
+      <t-b>
+        <c-s>Validator.validate(src, file)</c-s> is the single public entry point.
+        <c-s>Report.is_valid</c-s> returns <c-s>True</c-s> when the error list is empty.
+      </t-b>
+      <h4><c-s>EntryPoint</c-s> (<c-s>page_validator.py</c-s>)</h4>
+      <t-b>
+        Uses a standard <c-s>main(argv)</c-s> function with an <c-s>if __name__ == '__main__'</c-s>
+        guard. Parses command-line flags manually (no external dependency), collects
+        <c-s>.html</c-s> / <c-s>.htm</c-s> files from the supplied paths, and skips build and VCS
+        directories. For each file it calls <c-s>Validator.validate</c-s>, prints the
+        per-file report, and tracks the overall pass/fail count. Exits with status
+        <c-s>1</c-s> if any file fails or cannot be read.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="build">Running the Tool:</h3>
+    <indent-blocks>
+      <t-b>No build step is required. Python 3.10+ must be installed.</t-b>
+      <t-b>
+        <pre>
+# Verify Python version
+python --version    # should show 3.10 or later
+
+# From the PyPageValidator/ root:
+python EntryPoint/page_validator.py index.html
+python EntryPoint/page_validator.py -r -q -s ./site</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="test">Testing:</h3>
+    <indent-blocks>
+      <t-b>Each package has a <c-s>test_*.py</c-s> using the standard <c-s>unittest</c-s> framework:</t-b>
+      <t-b>
+        <table>
+          <tr><th>Test module</th><th>Coverage</th></tr>
+          <tr>
+            <td><c-s>Tokenizer/test_tokenizer.py</c-s></td>
+            <td>tags, attributes, doctypes, comments, self-closing elements</td>
+          </tr>
+          <tr>
+            <td><c-s>Lexer/test_lexer.py</c-s></td>
+            <td>tag grouping, attribute collection, case normalization</td>
+          </tr>
+          <tr>
+            <td><c-s>Validator/test_validator.py</c-s></td>
+            <td>valid documents, missing elements, nesting errors, void elements, duplicate IDs, unquoted attributes</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>
+        <pre>
+# Run one component's tests
+python -m unittest Tokenizer/test_tokenizer.py
+python -m unittest Lexer/test_lexer.py
+python -m unittest Validator/test_validator.py
+
+# Run all tests via discovery (from PyPageValidator/)
+python -m unittest discover -s . -p "test_*.py"</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="deps">External Dependencies:</h3>
+    <indent-blocks>
+      <t-b>None. All components use the Python 3.10+ standard library only.
+      No pip packages are required.</t-b>
+    </indent-blocks>
+
+    <spacer-15 class="clear"></spacer-15>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#concept">concept</a>
+        <a href="#packages">packages</a>
+        <a href="#quickstart">quick start</a>
+        <a href="#options">options</a>
+        <a href="#output">output</a>
+        <a href="#rules">rules</a>
+        <a href="#design">design</a>
+        <a href="#build">running</a>
+        <a href="#test">testing</a>
+        <a href="#deps">dependencies</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/PythonRepoPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>

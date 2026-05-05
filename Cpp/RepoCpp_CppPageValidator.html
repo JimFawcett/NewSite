@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  RepoCpp_CppPageValidator.html
+-->
+<head>
+  <title>CppPageValidator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <!-- <link rel="stylesheet" href="../css/help.css" /> -->
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreReposCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    RepoCpp_CppPageValidator.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/04/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle">
+        <h2 id="title">CppPageValidator</h2>
+        <h4 id="subtitle" class="indent">
+          validates HTML files for structural correctness<br />
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--light); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/CppPageValidator" style="margin-left:1.25em; color:var(--light);">CppPageValidator Repo</a>
+      </div>
+    </header>
+
+    <h3 id="concept">Concept:</h3>
+    <indent-blocks>
+      <t-b>
+        CppPageValidator checks HTML files for structural correctness. Given one or more
+        files or directories, it scans every <c-s>.html</c-s> / <c-s>.htm</c-s> file and reports
+        violations of eight structural rules with precise line and column locations.
+        It is a C++23 port of
+        <a href="https://github.com/JimFawcett/RsPageValidator">RsPageValidator</a>.
+      </t-b>
+      <t-b>
+        The tool is designed for batch use: validate a single page during development,
+        or sweep an entire static-site tree before publishing. Exit status
+        <c-s>0</c-s> means all files pass; exit status <c-s>1</c-s> means at least one violation
+        was found.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="packages">Packages:</h3>
+    <indent-blocks>
+      <t-b>
+        The project is a CMake workspace composed of four components in a strict linear
+        dependency chain. Each component is a C++23 named module (<c-s>.ixx</c-s> file).
+      </t-b>
+      <t-b>
+        <table>
+          <tr><th>Component</th><th>Kind</th><th>Role</th></tr>
+          <tr>
+            <td><c-s>tokenizer</c-s></td>
+            <td>static library</td>
+            <td>Raw lexical scanner; produces a <c-s>Token</c-s> stream with line/column tracking</td>
+          </tr>
+          <tr>
+            <td><c-s>lexer</c-s></td>
+            <td>static library</td>
+            <td>Groups tokens into structured <c-s>Lexeme</c-s> values; normalizes tag names to lowercase</td>
+          </tr>
+          <tr>
+            <td><c-s>validator</c-s></td>
+            <td>static library</td>
+            <td>Applies the eight structural rules; collects all errors before returning</td>
+          </tr>
+          <tr>
+            <td><c-s>entry_point</c-s></td>
+            <td>executable (<c-s>page_validator</c-s>)</td>
+            <td>CLI orchestration — parses arguments, walks directories, prints the report</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>
+        The dependency chain is strictly linear:
+        <c-s>tokenizer</c-s> &larr; <c-s>lexer</c-s> &larr; <c-s>validator</c-s> &larr; <c-s>entry_point</c-s>.
+        No external libraries are used; only the C++23 standard library (<c-s>import std;</c-s>).
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="quickstart">Quick Start:</h3>
+    <indent-blocks>
+      <t-b>
+        <pre>
+# 1. Configure and build (Release)
+cmake -B build -G "Visual Studio 17 2022"
+cmake --build build --config Release
+
+# 2. Validate a single file
+build\entry_point\Release\page_validator index.html
+
+# 3. Validate a directory tree, quiet mode (errors only)
+build\entry_point\Release\page_validator -r -q .\site
+
+# 4. Validate with pass/fail summary
+build\entry_point\Release\page_validator -r -s .\site</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="options">Command-Line Options:</h3>
+    <indent-blocks>
+      <t-b>
+        <table>
+          <tr><th>Option</th><th>Argument</th><th>Default</th><th>Meaning</th></tr>
+          <tr>
+            <td><c-s>&lt;path&gt;...</c-s></td>
+            <td>file or directory</td>
+            <td><em>(required)</em></td>
+            <td>One or more HTML files or directories to validate</td>
+          </tr>
+          <tr>
+            <td><c-s>-r, --recursive</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Descend into subdirectories</td>
+          </tr>
+          <tr>
+            <td><c-s>-q, --quiet</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Print only files with errors; suppress PASS lines</td>
+          </tr>
+          <tr>
+            <td><c-s>-s, --summary</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Print pass/fail count after all files are processed</td>
+          </tr>
+          <tr>
+            <td><c-s>-h, --help</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Print help and exit</td>
+          </tr>
+        </table>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="output">Output:</h3>
+    <indent-blocks>
+      <t-b>Each file is reported as <c-s>PASS</c-s> or <c-s>FAIL</c-s>. Failing files list every
+      violation with rule name, line, and column:</t-b>
+      <t-b>
+        <pre>
+PASS  site/index.html
+FAIL  site/about.html
+      [tag-nesting] 14:3 — &lt;/div&gt; does not match open &lt;p&gt;
+      [duplicate-id] 22:10 — duplicate id 'header'
+PASS  site/contact.html
+
+2 passed, 1 failed</pre>
+      </t-b>
+      <t-b>
+        With <c-s>-q</c-s> (quiet), PASS lines are suppressed. With <c-s>-s</c-s> (summary), the
+        count line is appended. Both flags may be combined.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="rules">Rules Checked:</h3>
+    <indent-blocks>
+      <t-b>
+        <table>
+          <tr><th>Rule</th><th>What is checked</th></tr>
+          <tr>
+            <td><c-s>doctype</c-s></td>
+            <td>Document begins with <c-s>&lt;!DOCTYPE html&gt;</c-s></td>
+          </tr>
+          <tr>
+            <td><c-s>root-element</c-s></td>
+            <td>Exactly one <c-s>&lt;html&gt;</c-s> element at the top level</td>
+          </tr>
+          <tr>
+            <td><c-s>head-required</c-s></td>
+            <td><c-s>&lt;head&gt;</c-s> is present and contains a <c-s>&lt;title&gt;</c-s></td>
+          </tr>
+          <tr>
+            <td><c-s>body-required</c-s></td>
+            <td><c-s>&lt;body&gt;</c-s> element is present</td>
+          </tr>
+          <tr>
+            <td><c-s>tag-nesting</c-s></td>
+            <td>Every open tag has a matching close tag in the correct order</td>
+          </tr>
+          <tr>
+            <td><c-s>void-elements</c-s></td>
+            <td>Void elements (<c-s>br</c-s>, <c-s>img</c-s>, <c-s>input</c-s>, <c-s>hr</c-s>, <c-s>meta</c-s>, <c-s>link</c-s>, etc.) have no close tag</td>
+          </tr>
+          <tr>
+            <td><c-s>attr-quotes</c-s></td>
+            <td>All attribute values are quoted</td>
+          </tr>
+          <tr>
+            <td><c-s>duplicate-id</c-s></td>
+            <td>No two elements share the same <c-s>id</c-s> attribute value</td>
+          </tr>
+        </table>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="design">Design:</h3>
+    <indent-blocks>
+      <h4><c-s>tokenizer</c-s> - <c-s>Tokenizer</c-s></h4>
+      <t-b>
+        Scans raw HTML source character by character and emits a flat stream of
+        <c-s>Token</c-s> values. <c-s>Token</c-s> is a <c-s>std::variant</c-s> over:
+        <pre>
+tok::TagOpen, tok::TagClose, tok::AttrName,
+tok::AttrValue, tok::AttrUnquoted, tok::SelfClose,
+tok::TagEnd, tok::Text, tok::Comment, tok::Doctype, tok::Eof</pre>
+        Every token carries a (line, col) position for precise error reporting.
+        The tokenizer holds no HTML grammar knowledge — it only recognises
+        <c-s>&lt;</c-s>, <c-s>&gt;</c-s>, <c-s>=</c-s>, <c-s>"</c-s>, <c-s>'</c-s>, and <c-s>!</c-s> as delimiters.
+        Malformed input is never rejected at this stage.
+      </t-b>
+      <h4><c-s>lexer</c-s> - <c-s>Lexer</c-s></h4>
+      <t-b>
+        Consumes the <c-s>Token</c-s> stream and groups tokens into structured
+        <c-s>Lexeme</c-s> values. <c-s>Lexeme</c-s> is a <c-s>std::variant</c-s> over:
+        <pre>
+lex::OpenTag, lex::SelfClosingTag, lex::CloseTag,
+lex::TextNode, lex::CommentNode, lex::DoctypeDecl</pre>
+        <c-s>OpenTag</c-s> and <c-s>SelfClosingTag</c-s> carry a <c-s>std::vector&lt;Attr&gt;</c-s> with
+        key, value, and quoting status used later by the <c-s>attr-quotes</c-s> rule.
+        All tag names are normalized to lowercase; whitespace-only text nodes
+        are discarded.
+      </t-b>
+      <h4><c-s>validator</c-s> - <c-s>Validator</c-s></h4>
+      <t-b>
+        Drives the <c-s>Lexer</c-s> and applies all eight rules in a single pass. It
+        maintains an element stack (<c-s>std::vector&lt;std::pair&lt;std::string, Pos&gt;&gt;</c-s>)
+        for nesting checks, an <c-s>std::unordered_set&lt;std::string&gt;</c-s> for duplicate-ID
+        detection, and boolean flags for the document-level requirements (doctype,
+        html, head, title, body). All violations are collected into a
+        <c-s>std::vector&lt;ValidationError&gt;</c-s> before the <c-s>Report</c-s> is returned —
+        the validator never aborts early on the first failure.
+      </t-b>
+      <t-b>
+        <c-s>Validator::validate(std::string_view src, const std::filesystem::path&amp; file)</c-s>
+        is the single public entry point.
+        <c-s>Report::is_valid()</c-s> returns <c-s>true</c-s> when the error list is empty.
+      </t-b>
+      <h4><c-s>entry_point</c-s> - CLI orchestration</h4>
+      <t-b>
+        Parses command-line flags manually (no external dependency), collects
+        <c-s>.html</c-s> / <c-s>.htm</c-s> files from the supplied paths, and skips build and VCS
+        directories (<c-s>build</c-s>, <c-s>bin</c-s>, <c-s>obj</c-s>, <c-s>.git</c-s>, etc.). For each file
+        it calls <c-s>Validator::validate</c-s>, prints the per-file report, and tracks the
+        overall pass/fail count. Exits with status <c-s>1</c-s> if any file fails.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="build">Build:</h3>
+    <indent-blocks>
+      <t-b>Requires CMake 3.28+ and MSVC 19.38+ (Visual Studio 2022 17.8) or Clang 18+.</t-b>
+      <t-b>
+        <pre>
+# Configure
+cmake -B build -G "Visual Studio 17 2022"
+
+# Build Release
+cmake --build build --config Release
+
+# Run all unit tests
+ctest --test-dir build --build-config Release --output-on-failure</pre>
+      </t-b>
+      <t-b>
+        C++23 named modules (<c-s>export module;</c-s> / <c-s>import std;</c-s>) require a compiler
+        and CMake version that support module scanning.  Visual Studio 2022 17.8 or
+        later is the recommended toolchain on Windows.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="test">Testing:</h3>
+    <indent-blocks>
+      <t-b>Each component has a <c-s>test.cpp</c-s> registered with CTest:</t-b>
+      <t-b>
+        <table>
+          <tr><th>Component</th><th>Tests</th><th>Coverage</th></tr>
+          <tr>
+            <td><c-s>tokenizer</c-s></td>
+            <td>12</td>
+            <td>tags, attributes, doctypes, comments, position tracking</td>
+          </tr>
+          <tr>
+            <td><c-s>lexer</c-s></td>
+            <td>11</td>
+            <td>tag grouping, attribute collection, case normalization</td>
+          </tr>
+          <tr>
+            <td><c-s>validator</c-s></td>
+            <td>12</td>
+            <td>valid documents, missing elements, nesting errors, void elements, duplicate IDs, unquoted attributes</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>
+        <pre>
+# Run all tests
+ctest --test-dir build --build-config Release --output-on-failure</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="deps">External Dependencies:</h3>
+    <indent-blocks>
+      <t-b>None. All four components use only the C++23 standard library
+      (<c-s>import std;</c-s>). No third-party packages are required.</t-b>
+    </indent-blocks>
+
+    <spacer-15 class="clear"></spacer-15>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#concept">concept</a>
+        <a href="#packages">packages</a>
+        <a href="#quickstart">quick start</a>
+        <a href="#options">options</a>
+        <a href="#output">output</a>
+        <a href="#rules">rules</a>
+        <a href="#design">design</a>
+        <a href="#build">build</a>
+        <a href="#test">testing</a>
+        <a href="#deps">dependencies</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppRepoPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 25, 10);
+  </script>
+</body>
+</html>

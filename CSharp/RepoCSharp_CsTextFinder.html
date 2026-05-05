@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  RepoCSharp_CsTextFinder.html
+-->
+<head>
+  <title>C# CsTextFinder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <!-- <link rel="stylesheet" href="../css/help.css" /> -->
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCSharp.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreReposCSharp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    RepoCSharp_CsTextFinder.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/04/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle">
+        <h2 id="title">CsTextFinder</h2>
+        <h4 id="subtitle" class="indent">
+          recursive, regex-based file-content search tool<br />
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--light); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/CsTextFinder" style="margin-left:1.25em; color:var(--light);">CsTextFinder Repo</a>
+      </div>
+    </header>
+
+    <h3 id="concept">Concept:</h3>
+    <indent-blocks>
+      <t-b>
+        A recursive, regex-based file-content search tool written in C# (.NET 10). Given a
+        root directory, a set of file extensions, and a regular expression, it walks
+        the directory tree and prints every file whose content contains a match.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="packages">Packages:</h3>
+    <indent-blocks>
+      <t-b>The project is composed of four packages linked by project references in the solution.</t-b>
+      <t-b>
+        <table>
+          <tr><th>Package</th><th>Kind</th><th>Role</th></tr>
+          <tr>
+            <td><c-s>CommandLine</c-s></td>
+            <td>library</td>
+            <td>Parses <c-s>/Key [Value]</c-s> or <c-s>-Key [Value]</c-s> command-line tokens into a key-value map</td>
+          </tr>
+          <tr>
+            <td><c-s>DirNav</c-s></td>
+            <td>library</td>
+            <td>Depth-first directory walker; fires <c-s>Action&lt;string&gt;</c-s> delegates for each directory and file</td>
+          </tr>
+          <tr>
+            <td><c-s>Output</c-s></td>
+            <td>library</td>
+            <td>Reads file content, tests it against a compiled regex, and writes matching results to the console</td>
+          </tr>
+          <tr>
+            <td><c-s>EntryPoint</c-s></td>
+            <td>executable</td>
+            <td>Application - wires the packages, parses options, and drives the search</td>
+          </tr>
+        </table>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="quickstart">Quick Start:</h3>
+    <indent-blocks>
+      <t-b>
+        <pre>
+# 1. Build (from the CsTextFinder/ solution root)
+dotnet build
+
+# 2. Search the current directory tree for C# files containing "Action"
+dotnet run --project EntryPoint -- /P . /p cs /r "Action"
+
+# 3. Or run the built executable directly
+EntryPoint/bin/Debug/net10.0/CsTextFinder.exe /P . /p cs /r "Action"
+
+# Git Bash / MINGW users - use - prefix to avoid shell path expansion
+dotnet run --project EntryPoint -- -P . -p cs -r "Action"</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="options">Command-Line Options:</h3>
+    <indent-blocks>
+      <t-b>
+        Options accept either a <c-s>/</c-s> prefix (Windows / PowerShell / cmd) or a <c-s>-</c-s> prefix
+        (bash / MINGW); both are equivalent.
+      </t-b>
+      <t-b>
+        <table>
+          <tr><th>Option</th><th>Argument</th><th>Default</th><th>Meaning</th></tr>
+          <tr>
+            <td><c-s>/P</c-s></td>
+            <td>path</td>
+            <td><c-s>.</c-s></td>
+            <td>Root directory for the search</td>
+          </tr>
+          <tr>
+            <td><c-s>/p</c-s></td>
+            <td>extensions</td>
+            <td><em>(all files)</em></td>
+            <td>Comma-separated file extensions to include, e.g. <c-s>cs,txt</c-s></td>
+          </tr>
+          <tr>
+            <td><c-s>/r</c-s></td>
+            <td>regex</td>
+            <td><c-s>.</c-s> <em>(any)</em></td>
+            <td>Regular expression matched against file content</td>
+          </tr>
+          <tr>
+            <td><c-s>/s</c-s></td>
+            <td><c-s>true</c-s>/<c-s>false</c-s></td>
+            <td><c-s>true</c-s></td>
+            <td>Recurse into subdirectories</td>
+          </tr>
+          <tr>
+            <td><c-s>/H</c-s></td>
+            <td><c-s>true</c-s>/<c-s>false</c-s></td>
+            <td><c-s>true</c-s></td>
+            <td>
+              <c-s>true</c-s>: print a directory only when it has a matching file (clean output).
+              <c-s>false</c-s>: print every directory as it is entered (real-time progress).
+            </td>
+          </tr>
+          <tr>
+            <td><c-s>/v</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Print all resolved options before searching</td>
+          </tr>
+          <tr>
+            <td><c-s>/h</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Print help and exit</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>
+        <strong>Examples:</strong>
+        <pre>
+# Find all C# files containing "interface" under the solution root
+CsTextFinder.exe /P . /p cs /r "interface"
+
+# Search source and markdown files for a TODO comment, show all directories
+CsTextFinder.exe /P . /p "cs,md" /r "TODO" /H false
+
+# Verbose output - shows resolved path, extensions, and regex before searching
+CsTextFinder.exe /P .. /p cs /r "Action" /v</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="output">Output:</h3>
+    <indent-blocks>
+      <t-b>Matching files are grouped under their containing directory:</t-b>
+      <t-b>
+        <pre>
+  CsTextFinder ver 1.0.0
+ ========================
+  searching path: "."
+  extensions: ["cs"]
+  matching files with regex: "Action"
+
+  ./DirNav
+      "DirNav.cs"
+
+  ./EntryPoint
+      "Program.cs"
+
+  2 files matched out of 12 visited in 4 dirs
+
+  That's all Folks!</pre>
+      </t-b>
+      <t-b>
+        Directories that contain no matching files are hidden by default (<c-s>/H true</c-s>).
+        Set <c-s>/H false</c-s> to print every directory as it is entered.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="design">Design:</h3>
+    <indent-blocks>
+      <h4><c-s>CommandLine</c-s></h4>
+      <t-b>
+        Parses raw <c-s>args</c-s> tokens into a dictionary of option keys to string values.
+        A token starting with <c-s>/</c-s> or <c-s>-</c-s> is treated as a key; the next token
+        (if it does not itself start with <c-s>/</c-s> or <c-s>-</c-s>) becomes its value,
+        otherwise the value is set to <c-s>"true"</c-s>.
+      </t-b>
+      <h4><c-s>DirNav</c-s></h4>
+      <t-b>
+        Depth-first directory walker. Callers register delegates:
+        <pre>
+Action&lt;string&gt; OnDir   // called when entering a directory
+Action&lt;string&gt; OnFile  // called for each file whose extension is in the filter list</pre>
+        <c-s>DirNav</c-s> fires <c-s>OnDir</c-s> when entering each directory and <c-s>OnFile</c-s> for
+        each matching file. Build-output and VCS directories
+        (<c-s>bin</c-s>, <c-s>obj</c-s>, <c-s>target</c-s>, <c-s>.git</c-s>, <c-s>.vs</c-s>, etc.) are
+        skipped automatically - never entered.
+      </t-b>
+      <h4><c-s>Output</c-s></h4>
+      <t-b>
+        Holds a compiled <c-s>Regex</c-s> instance and exposes <c-s>OnDir(string path)</c-s> and
+        <c-s>OnFile(string path)</c-s> methods that match the <c-s>DirNav</c-s> delegate signatures.
+        <c-s>OnFile</c-s> reads the file content with <c-s>File.ReadAllText</c-s> and applies
+        <c-s>Regex.IsMatch</c-s>. When a match is found the filename is printed; the containing
+        directory header is buffered and flushed on the first match (implementing the
+        hide-empty-dirs logic for <c-s>/H true</c-s>).
+      </t-b>
+      <h4><c-s>EntryPoint</c-s> (<c-s>Program.cs</c-s>)</h4>
+      <t-b>
+        Wires the three libraries together. <c-s>Program.cs</c-s> parses options via
+        <c-s>CmdLine</c-s>, constructs an <c-s>Output</c-s> instance with the resolved regex, then
+        constructs a <c-s>DirNav</c-s> instance and registers <c-s>output.OnDir</c-s> and
+        <c-s>output.OnFile</c-s> as the walk delegates before starting the traversal.
+        The three libraries never reference each other - all coupling flows through
+        <c-s>EntryPoint</c-s>.
+      </t-b>
+      <h4>Hide/show directory logic</h4>
+      <t-b>
+        When <c-s>/H true</c-s> (the default), a directory header is buffered rather than
+        printed immediately. It is flushed to output only when the first matching
+        file in that directory is found. Directories with no matches are never
+        printed.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="build">Building the Project:</h3>
+    <indent-blocks>
+      <t-b>The solution requires the .NET 10 SDK:</t-b>
+      <t-b>
+        <pre>
+# Verify SDK version
+dotnet --version    # should show 10.x
+
+# Build all projects (from the CsTextFinder/ solution root)
+dotnet build
+
+# Build Release configuration
+dotnet build -c Release
+
+# Run directly from source
+dotnet run --project EntryPoint -- /P . /p cs /r "TODO"
+
+# Clean build outputs
+dotnet clean</pre>
+      </t-b>
+      <t-b>
+        The self-contained executable is written to
+        <c-s>EntryPoint/bin/Debug/net10.0/CsTextFinder.exe</c-s> (or
+        <c-s>EntryPoint/bin/Release/net10.0/CsTextFinder.exe</c-s> for Release builds).
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="test">Testing:</h3>
+    <indent-blocks>
+      <t-b>
+        <pre>
+# Functional smoke test - search this repo for all C# files containing "Action"
+cd CsTextFinder
+dotnet run --project EntryPoint -- /P . /p cs /r "Action" /v
+
+# Search for interface definitions
+dotnet run --project EntryPoint -- /P . /p cs /r "interface\s+I\w+"
+
+# Test /H false (real-time directory output)
+dotnet run --project EntryPoint -- /P . /p cs /r "class" /H false</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="deps">External Dependencies:</h3>
+    <indent-blocks>
+      <t-b>
+        <table>
+          <tr><th>Namespace / Type</th><th>Source</th><th>Used by</th><th>Purpose</th></tr>
+          <tr>
+            <td><c-s>System.Text.RegularExpressions</c-s></td>
+            <td>.NET BCL</td>
+            <td><c-s>Output</c-s></td>
+            <td>Compile and match regular expressions against file content</td>
+          </tr>
+          <tr>
+            <td><c-s>System.IO</c-s></td>
+            <td>.NET BCL</td>
+            <td><c-s>DirNav</c-s>, <c-s>Output</c-s></td>
+            <td>Directory enumeration and file reading</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>All functionality uses the .NET Base Class Library only. No NuGet packages required.</t-b>
+    </indent-blocks>
+
+    <spacer-15 class="clear"></spacer-15>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#packages">packages</a>
+        <a href="#quickstart">quick start</a>
+        <a href="#options">options</a>
+        <a href="#output">output</a>
+        <a href="#design">design</a>
+        <a href="#build">build</a>
+        <a href="#test">testing</a>
+        <a href="#deps">dependencies</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CSharpRepoPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 6, 10);
+  </script>
+</body>
+</html>

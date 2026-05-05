@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  CodeStory_AgentAI.html - Code Story Chapter 5
+-->
+<head>
+  <title>Code Story: Agent AI</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CodeStory_AgentAI.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/04/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Code Story: Agent AI</h2>
+        <h4 class="indent" id="subtitle">tool use, agentic loop, file-reading agent, safety constraints</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="agents"></a>
+      <h3>5. &nbsp;Agent AI</h3>
+      <t-b>
+        An agent is a program that calls an LLM in a loop, giving the model access to
+        <em>tools</em> (functions it can invoke), and continuing until the model decides
+        it has finished.  This chapter covers the tool-use pattern, the agentic loop,
+        a working file-reading agent, and safety constraints.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Why agents instead of single calls?</summary>
+          <t-b class="indent">
+            <ol class="tight">
+              <li>A single call cannot react to its own output.  An agent can read a file,
+                see what&rsquo;s in it, and decide what to read next.</li>
+              <li>Tool use turns the model into an orchestrator: it plans, delegates to
+                tools, and synthesizes results &mdash; all without your intervention.</li>
+              <li>Agents can retry failed steps, ask clarifying questions, and handle
+                unexpected inputs gracefully.</li>
+            </ol>
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <a id="tool-def"></a>
+      <h4>5.1 &nbsp;Defining a Tool</h4>
+<pre><code class="language-python">tools = [{
+    "name": "read_file",
+    "description": "Read a source file and return its contents as a string.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "Relative path to the file"}
+        },
+        "required": ["path"]
+    }
+}]</code></pre>
+
+      <a id="tool-loop"></a>
+      <h4>5.2 &nbsp;The Tool Loop</h4>
+<pre><code class="language-python">import anthropic, pathlib
+
+client = anthropic.Anthropic()
+messages = [{"role": "user", "content": "Summarize the file main.py."}]
+
+while True:
+    resp = client.messages.create(
+        model="claude-sonnet-4-6", max_tokens=2048,
+        tools=tools, messages=messages
+    )
+    if resp.stop_reason == "end_turn":
+        print(resp.content[0].text)
+        break
+    for block in resp.content:
+        if block.type == "tool_use":
+            text = pathlib.Path(block.input["path"]).read_text()
+            messages += [
+                {"role": "assistant", "content": resp.content},
+                {"role": "user", "content": [{
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": text
+                }]}
+            ]</code></pre>
+
+      <a id="safety"></a>
+      <h4>5.3 &nbsp;Safety Constraints</h4>
+      <t-b>
+        An unconstrained agent can do more than intended.  Useful guards:
+        <ul class="tight">
+          <li>Cap iterations: <code>for _ in range(MAX_STEPS)</code> &mdash; raise an error if exceeded</li>
+          <li>Whitelist allowed paths: reject tool calls outside the sandbox directory</li>
+          <li>Separate read tools from write tools and require explicit user confirmation
+            before any write tool runs</li>
+          <li>Log every tool call and its result to a file for post-session review</li>
+        </ul>
+      </t-b>
+
+      <a id="refs"></a>
+      <h4>5.4 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/build-with-claude/tool-use">Tool Use Docs</a>
+          </td>
+          <td class="lightItem">Anthropic&rsquo;s guide to defining and using tools with the Claude API.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="CodeBites_AgentAI.html">CodeBites: Agent AI</a></td>
+          <td class="lightItem">Track page with agent demos and design notes.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#agents">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#tool-def">defining a tool</a></menu-elem>
+        <menu-elem class="secElem"><a href="#tool-loop">tool loop</a></menu-elem>
+        <menu-elem class="secElem"><a href="#safety">safety constraints</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+</body>
+</html>

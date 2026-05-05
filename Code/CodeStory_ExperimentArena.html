@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  CodeStory_ExperimentArena.html - Code Story Chapter 1
+-->
+<head>
+  <title>Code Story: Experimenting with Code</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CodeStory_ExperimentArena.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/04/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Code Story: Experimenting with Code</h2>
+        <h4 class="indent" id="subtitle">arena layout, build chains, metrics, timing, visualizers</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="arena"></a>
+      <h3>1. &nbsp;Experimenting with Code</h3>
+      <t-b>
+        Before using AI to help write code you need a place to run and measure code quickly.
+        This chapter sets up a <em>scratch arena</em> &mdash; a lightweight, disposable
+        workspace where experiments are cheap, failure is expected, and anything worth keeping
+        gets promoted to a real project.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Why isolate experiments?</summary>
+          <t-b class="indent">
+            <ol class="tight">
+              <li>
+                Real projects carry pressure: tests must pass, CI must be green, code
+                review is watching.  A scratch arena has none of that friction.
+              </li>
+              <li>
+                Separating &ldquo;trying something&rdquo; from &ldquo;building something&rdquo;
+                keeps both cleaner &mdash; the real project stays stable while experiments
+                fail fast.
+              </li>
+              <li>
+                A version-controlled scratch space lets you revisit a dead end without losing
+                it, and compare two approaches side by side.
+              </li>
+              <li>
+                Measuring code from the start &mdash; lines, complexity, timing &mdash; builds
+                the habit of treating metrics as feedback, not bureaucracy.
+              </li>
+            </ol>
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <a id="layout"></a>
+      <h4>1.1 &nbsp;Arena Layout</h4>
+      <t-b>
+        A flat directory at the root of your workspace gives each language its own folder.
+        The <code>metrics/</code> and <code>notes/</code> folders accumulate output and
+        observations across sessions.
+      </t-b>
+<pre><code class="language-plaintext">sandbox/
+  rust/        &larr; cargo workspace, or cargo new per experiment
+  cpp/         &larr; single-file programs; no CMake needed for scratch
+  csharp/      &larr; dotnet new console -o scratch; reuse between runs
+  python/      &larr; flat scripts; one .venv at this level
+  metrics/     &larr; tokei and code_metrics output, saved per session
+  notes/       &larr; scratchpad.md, one entry per session</code></pre>
+      <t-b>
+        Quick project init per language:
+      </t-b>
+<pre><code class="language-bash">## Rust
+cargo new scratch && cd scratch
+cargo run
+
+## C++  (no project file needed for single-file experiments)
+g++ -std=c++23 -Wall -o out main.cpp && ./out
+
+## C#
+dotnet new console -o scratch && cd scratch
+dotnet run
+
+## Python  (Windows; use forward slash on macOS/Linux)
+python -m venv .venv
+.venv\Scripts\activate
+python script.py
+python -i script.py     # run then drop into REPL with all names live</code></pre>
+
+      <a id="metrics"></a>
+      <h4>1.2 &nbsp;Code Metrics</h4>
+      <t-b>
+        Metrics tools answer &ldquo;how big?&rdquo; and &ldquo;how complex?&rdquo; before
+        and after a change.  Run them at the start of a session to establish a baseline, and
+        after each significant change to see what moved.
+      </t-b>
+      <t-b>
+        <strong>code_metrics.py</strong> (in track) &mdash;
+        Reports line counts, function counts, and blank/comment ratios per file.
+        Good for tracking growth of a scratch project over sessions.
+      </t-b>
+      <t-b>
+        <strong>tokei</strong> &mdash;
+        Cross-language line counter; breaks down by language and file type.
+        Run at the sandbox root to see the whole arena at a glance.<br />
+        <code>cargo install tokei</code>
+      </t-b>
+      <t-b>
+        <strong>scc</strong> (Sloc Cloc and Code) &mdash;
+        Like tokei but adds estimated complexity and cost columns.
+        Useful when comparing equivalent programs across languages.<br />
+        <code>cargo install scc</code>
+      </t-b>
+      <t-b>
+        <strong>radon</strong> (Python) &mdash;
+        Cyclomatic complexity and maintainability index per function.<br />
+        <code>pip install radon</code> &nbsp;&mdash;&nbsp; run: <code>radon cc -s script.py</code>
+      </t-b>
+      <t-b>
+        <strong>cargo clippy</strong> (Rust) &mdash;
+        Catches non-obvious mistakes and style issues that the compiler misses.
+        Treat warnings as a quality signal, not a failure condition.
+      </t-b>
+      <t-b>
+        <strong>cppcheck</strong> (C++) &mdash;
+        Static analysis for undefined behavior, memory issues, and style.<br />
+        <code>cppcheck --enable=all main.cpp</code>
+      </t-b>
+
+      <a id="perf"></a>
+      <h4>1.3 &nbsp;Performance and Timing</h4>
+      <t-b>
+        <strong>hyperfine</strong> &mdash;
+        Cross-language wall-clock benchmarker.  Runs a command N times, warms the cache,
+        and reports mean &plusmn; stddev with outlier detection.  Use it to compare the
+        same algorithm across languages directly.
+      </t-b>
+<pre><code class="language-bash">cargo install hyperfine
+hyperfine './out input.txt' 'python script.py input.txt'</code></pre>
+      <t-b>
+        <strong>tf_timer.py / pa_timer.py</strong> (in track) &mdash;
+        Purpose-built timing wrappers for TextFinder and PageValidator.
+        Model these for any experiment that needs repeated-run averaging.
+      </t-b>
+      <t-b>
+        <strong>Python cProfile</strong> (built-in) &mdash;
+        Function-level profiler; no install needed.
+        Pairs with snakeviz (see section 1.4) for visual output.<br />
+        <code>python -m cProfile -s cumtime script.py</code>
+      </t-b>
+      <t-b>
+        <strong>cargo flamegraph</strong> (Rust) &mdash;
+        Generates a flame graph SVG showing where CPU time actually goes.
+        Requires perf (Linux) or DTrace (macOS); works in WSL on Windows.<br />
+        <code>cargo install flamegraph</code>
+      </t-b>
+      <t-b>
+        <strong>BenchmarkDotNet</strong> (C#) &mdash;
+        Add as a NuGet package; annotate methods with <code>[Benchmark]</code>.
+        Produces statistically rigorous tables with warmup and GC stats.
+      </t-b>
+
+      <a id="viz"></a>
+      <h4>1.4 &nbsp;Visualizers</h4>
+      <t-b>
+        <strong>CodeWebifier</strong> (in track) &mdash;
+        Converts source files to syntax-highlighted HTML for display in the site.
+        Run it on any experiment worth keeping to publish it.
+      </t-b>
+      <t-b>
+        <strong>snakeviz</strong> (Python) &mdash;
+        Browser-based flame graph for cProfile output.
+      </t-b>
+<pre><code class="language-bash">pip install snakeviz
+python -m cProfile -o out.prof script.py
+snakeviz out.prof           # opens browser with interactive flame graph</code></pre>
+      <t-b>
+        <strong>graphviz / dot</strong> &mdash;
+        Renders dependency graphs, state machines, and call graphs as SVG.
+        Most build tools can emit <code>.dot</code> format (cargo metadata, doxygen).<br />
+        <code>winget install graphviz</code>
+      </t-b>
+      <t-b>
+        <strong>cargo doc --open</strong> (Rust) &mdash;
+        Not just for publishing &mdash; generated doc pages are the fastest way to browse
+        the public API of any crate you add to an experiment.
+      </t-b>
+      <t-b>
+        <strong>VS Code extensions worth installing for the arena:</strong>
+        <ul class="tight">
+          <li><strong>Error Lens</strong> &mdash; inline error messages next to the offending line</li>
+          <li><strong>GitLens</strong> &mdash; last-edit blame inline; useful for tracking what changed in scratch</li>
+          <li><strong>CodeMetrics</strong> (kisstkondoros) &mdash; per-function complexity score in the editor gutter</li>
+          <li><strong>Rust Analyzer</strong> &mdash; essential for Rust; includes inlay type hints</li>
+          <li><strong>clangd</strong> &mdash; C++ language server with inline diagnostics and completions</li>
+        </ul>
+      </t-b>
+
+      <a id="flow"></a>
+      <h4>1.5 &nbsp;A Typical Session Flow</h4>
+      <t-b>
+        A short ritual at the start and end of each session keeps the arena useful:
+        <ol class="tight">
+          <li>Create or reset the scratch project for today&rsquo;s language.</li>
+          <li>Write the simplest version that compiles and runs (15&ndash;20 lines max).</li>
+          <li>Run metrics: <code>tokei</code> and <code>code_metrics.py</code> for a
+            baseline snapshot.</li>
+          <li>Iterate: change one thing, re-run, compare metrics and timing.</li>
+          <li>If the result is worth keeping, run CodeWebifier and move it to a named
+            folder; otherwise delete and move on.</li>
+          <li>Add one line to <code>notes/scratchpad.md</code>: what you tried, what
+            you learned.</li>
+        </ol>
+      </t-b>
+
+      <a id="refs"></a>
+      <h4>1.6 &nbsp;References</h4>
+      <table>
+        <tr>
+          <th class="darkItem">Resource</th>
+          <th class="darkItem">Description</th>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="https://github.com/sharkdp/hyperfine">hyperfine</a></td>
+          <td class="lightItem">Cross-platform benchmarking tool for command-line programs.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="https://github.com/XAMPPRocky/tokei">tokei</a></td>
+          <td class="lightItem">Fast, accurate code line counter with language breakdown.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="https://github.com/boyter/scc">scc</a></td>
+          <td class="lightItem">Line counter with complexity and estimated cost columns.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="https://radon.readthedocs.io/">radon</a></td>
+          <td class="lightItem">Python complexity metrics: cyclomatic complexity, maintainability index.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="https://github.com/flamegraph-rs/flamegraph">cargo flamegraph</a></td>
+          <td class="lightItem">Flame graph profiler for Rust programs.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="https://benchmarkdotnet.org/">BenchmarkDotNet</a></td>
+          <td class="lightItem">Rigorous microbenchmark framework for .NET.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="https://jiffyclub.github.io/snakeviz/">snakeviz</a></td>
+          <td class="lightItem">Browser-based viewer for Python cProfile output.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#arena">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#layout">arena layout</a></menu-elem>
+        <menu-elem class="secElem"><a href="#metrics">code metrics</a></menu-elem>
+        <menu-elem class="secElem"><a href="#perf">perf &amp; timing</a></menu-elem>
+        <menu-elem class="secElem"><a href="#viz">visualizers</a></menu-elem>
+        <menu-elem class="secElem"><a href="#flow">session flow</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 1, 10);
+  </script>
+</body>
+</html>

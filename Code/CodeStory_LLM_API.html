@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  CodeStory_LLM_API.html - Code Story Chapter 4
+-->
+<head>
+  <title>Code Story: LLM API</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CodeStory_LLM_API.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/04/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Code Story: LLM API</h2>
+        <h4 class="indent" id="subtitle">messages API, structured output, streaming, prompt caching</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="llmapi"></a>
+      <h3>4. &nbsp;LLM API</h3>
+      <t-b>
+        Calling Claude directly from code gives you full programmatic control: you choose
+        the model, the system prompt, the context, the output format, and whether to stream.
+        This chapter covers the Anthropic Python SDK from a minimal completion through
+        structured output, streaming, and prompt caching.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Why write code that calls the API?</summary>
+          <t-b class="indent">
+            <ol class="tight">
+              <li>You can embed AI calls inside larger programs: scripts, batch processors,
+                analysis pipelines.</li>
+              <li>You control the system prompt precisely &mdash; the AI&rsquo;s persona,
+                constraints, and output format are not left to the chat interface defaults.</li>
+              <li>Structured output (JSON) lets you parse and act on AI responses
+                programmatically.</li>
+              <li>Prompt caching reduces cost and latency when the same large context is
+                reused across many calls.</li>
+            </ol>
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <a id="minimal"></a>
+      <h4>4.1 &nbsp;A Minimal Completion</h4>
+<pre><code class="language-python">import anthropic
+
+client = anthropic.Anthropic()   # reads ANTHROPIC_API_KEY from environment
+
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    messages=[{
+        "role": "user",
+        "content": "Explain Rust ownership in three sentences."
+    }]
+)
+print(response.content[0].text)</code></pre>
+
+      <a id="structured"></a>
+      <h4>4.2 &nbsp;Structured Output</h4>
+      <t-b>
+        Put the JSON schema in the system prompt; the model returns JSON you can
+        parse directly.  Validate with <code>pydantic</code> for robustness.
+      </t-b>
+<pre><code class="language-python">response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=512,
+    system='Respond only with valid JSON matching {"summary": str, "complexity": int}.',
+    messages=[{"role": "user", "content": code_text}]
+)
+import json
+result = json.loads(response.content[0].text)</code></pre>
+
+      <a id="streaming"></a>
+      <h4>4.3 &nbsp;Streaming</h4>
+<pre><code class="language-python">with client.messages.stream(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": prompt}]
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)</code></pre>
+
+      <a id="caching"></a>
+      <h4>4.4 &nbsp;Prompt Caching</h4>
+      <t-b>
+        Mark large, reused context blocks with <code>cache_control</code> to avoid
+        re-processing them on every call.  Cached tokens cost roughly 10&times; less and
+        return faster.  Useful when every call in a session loads the same large file.
+      </t-b>
+<pre><code class="language-python">messages=[{
+    "role": "user",
+    "content": [
+        {
+            "type": "text",
+            "text": large_context,
+            "cache_control": {"type": "ephemeral"}
+        },
+        {"type": "text", "text": "Summarize the above."}
+    ]
+}]</code></pre>
+
+      <a id="refs"></a>
+      <h4>4.5 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/api/getting-started">Anthropic API Docs</a>
+          </td>
+          <td class="lightItem">Messages API reference, models, rate limits, and SDK guides.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="CodeBites_LLM_API.html">CodeBites: LLM API</a></td>
+          <td class="lightItem">Track page with extended API examples and patterns.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#llmapi">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#minimal">minimal completion</a></menu-elem>
+        <menu-elem class="secElem"><a href="#structured">structured output</a></menu-elem>
+        <menu-elem class="secElem"><a href="#streaming">streaming</a></menu-elem>
+        <menu-elem class="secElem"><a href="#caching">prompt caching</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+</body>
+</html>

@@ -11,6 +11,8 @@ function buildPages() {
     "<div class='darkItem listheader' onclick='togglePages()'>Python Repo Pages</div>\
     <div class='menuBody'>\
       <a href='RepoPython_PyCodeMetrics.html'>PyCodeMetrics</a>\
+      <a href='RepoPython_PyTextFinder.html'>PyTextFinder</a>\
+      <a href='RepoPython_PyPageValidator.html'>PyPageValidator</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }

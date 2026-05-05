@@ -23,6 +23,8 @@ function buildPages() {
       <a href='RepoRust_RustBuildOn.html'>BuildOn</a>\
       <a href='RepoRust_RustCommExp.html'>Comm Experiments</a>\
       <a href='RepoRust_RustCommCompare.html'>CommCompare</a>\
+      <a href='RepoRust_RsTextFinder.html'>RsTextFinder</a>\
+      <a href='RepoRust_RsPageValidator.html'>RsPageValidator</a>\
       <a href='RepoRust_RustByteRecord.html'>Byte Record</a>\
       <a href='RepoRust_RustBasicDemos.html'>Basic Demos</a>\
       <a href='RepoRust_RustErrorHandling.html'>Error Handling</a>\

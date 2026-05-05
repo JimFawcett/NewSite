@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  CodeStory_SpecDev.html - Code Story Chapter 8
+-->
+<head>
+  <title>Code Story: Spec-Driven Development</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CodeStory_SpecDev.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/04/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Code Story: Spec-Driven Development</h2>
+        <h4 class="indent" id="subtitle">Constitution.md, Structure.md, Spec.md, AI-driven workflow</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="specdev"></a>
+      <h3>8. &nbsp;Spec-Driven Development</h3>
+      <t-b>
+        Spec-driven development reverses the usual order: you write what the software must do
+        before you write any code, then hand those documents to an AI to drive implementation.
+        This chapter covers three spec files &mdash; Constitution.md, Structure.md, and Spec.md
+        &mdash; and the workflow that uses them.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Why specs before prompts?</summary>
+          <t-b class="indent">
+            <ol class="tight">
+              <li>A prompt without a spec is ambiguous.  A spec makes the constraints
+                explicit and auditable before the AI writes a line of code.</li>
+              <li>The spec becomes the acceptance criterion: generated code that violates
+                the spec is wrong by definition, regardless of whether it compiles.</li>
+              <li>Separating &ldquo;what must be true&rdquo; (Constitution) from
+                &ldquo;how it is organized&rdquo; (Structure) from &ldquo;what each piece
+                does&rdquo; (Spec) keeps each document small and focused.</li>
+              <li>Specs are reusable &mdash; the same Constitution can govern implementations
+                in multiple languages.</li>
+            </ol>
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <a id="constitution"></a>
+      <h4>8.1 &nbsp;Constitution.md</h4>
+      <t-b>
+        States values and hard constraints that apply to all generated code.  Written in
+        plain imperative sentences; one page maximum.  Examples:
+        <ul class="tight">
+          <li>Never use <code>unwrap()</code> in library code.</li>
+          <li>All public functions must have a doc comment.</li>
+          <li>No external dependencies beyond the standard library.</li>
+          <li>Functions must not exceed 30 lines.</li>
+        </ul>
+      </t-b>
+
+      <a id="structure"></a>
+      <h4>8.2 &nbsp;Structure.md</h4>
+      <t-b>
+        Defines the package layout, file names, module boundaries, and dependency rules.
+        The AI reads this before generating any file so it knows where each piece belongs.
+      </t-b>
+<pre><code class="language-markdown">## Package Layout
+src/
+  lib.rs       -- public API re-exports only
+  config.rs    -- configuration types; no I/O
+  scanner.rs   -- directory traversal; depends on config only
+  matcher.rs   -- regex matching; depends on config only
+  reporter.rs  -- output formatting; depends on scanner and matcher
+  main.rs      -- entry point; depends on all others
+
+## Rules
+- scanner.rs must not import from matcher.rs
+- reporter.rs must not perform I/O beyond writing to a provided Writer</code></pre>
+
+      <a id="spec-md"></a>
+      <h4>8.3 &nbsp;Spec.md</h4>
+      <t-b>
+        Documents each public function or type: signature, preconditions, postconditions,
+        and one example.  Written before implementation; updated when requirements change.
+      </t-b>
+<pre><code class="language-markdown">## fn scan(root: &Path, config: &Config) -> Result&lt;Vec&lt;Match&gt;&gt;
+- root must exist and be a directory; returns Err otherwise
+- traverses root recursively, following symlinks if config.follow_symlinks
+- returns all Match records where config.pattern matches file content
+- excludes files whose extension is not in config.extensions
+- example: scan(Path::new("src"), &cfg) -> Ok(vec![Match{path: ..., line: 3}])</code></pre>
+
+      <a id="workflow"></a>
+      <h4>8.4 &nbsp;The Workflow</h4>
+      <t-b>
+        <ol class="tight">
+          <li>Write Constitution.md &mdash; values and constraints, no code yet.</li>
+          <li>Write Structure.md &mdash; package layout and dependency rules.</li>
+          <li>Write Spec.md &mdash; signatures and contracts for each public item.</li>
+          <li>Start a CLI session or API call; load all three files as context.</li>
+          <li>Ask the AI to implement one file at a time, citing the spec for each function.</li>
+          <li>Run tests after each file; feed failures back into the session.</li>
+          <li>After all files pass, ask the AI to verify the implementation against
+            Constitution.md and report any violations.</li>
+        </ol>
+      </t-b>
+
+      <a id="epilogue"></a>
+      <h4>8.5 &nbsp;Epilogue &mdash; Connecting to the SWDev Track</h4>
+      <t-b>
+        Spec-driven development is the Code Track&rsquo;s answer to the SWDev track&rsquo;s
+        design chapter: Constitution maps to architectural constraints, Structure maps to
+        package design, and Spec maps to specification.  The difference is the AI is now
+        the implementer.  For a deeper treatment of the design concepts behind these
+        documents, see the
+        <a target="_blank" href="../SWDev/SWDevStory_Design.html">SWDev Story: Software Design</a>
+        chapter.
+      </t-b>
+
+      <a id="refs"></a>
+      <h4>8.6 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="CodeBites_SpecDev.html">CodeBites: Spec-Driven Development</a></td>
+          <td class="lightItem">Track page with full workflow examples and template files.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="../SWDev/SWDevStory_Design.html">SWDev Story: Software Design</a></td>
+          <td class="lightItem">The design chapter that underpins spec-driven development.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="https://docs.anthropic.com/">Anthropic Docs</a></td>
+          <td class="lightItem">Full API reference, model guides, and prompt engineering tips.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#specdev">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#constitution">Constitution.md</a></menu-elem>
+        <menu-elem class="secElem"><a href="#structure">Structure.md</a></menu-elem>
+        <menu-elem class="secElem"><a href="#spec-md">Spec.md</a></menu-elem>
+        <menu-elem class="secElem"><a href="#workflow">workflow</a></menu-elem>
+        <menu-elem class="secElem"><a href="#epilogue">epilogue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 8, 10);
+  </script>
+</body>
+</html>

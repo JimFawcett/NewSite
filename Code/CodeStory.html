@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  CodeStory.html - Code Story
+-->
+<head>
+  <title>Code Story</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CodeStory.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/04/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Code Story</h2>
+        <h4 class="indent" id="subtitle">arena, AI tools, agents, spec-driven development</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <!-- ============================================================ -->
+      <!-- PROLOGUE                                                      -->
+      <!-- ============================================================ -->
+      <a id="prologue"></a>
+      <h3>0.0 &nbsp;Prologue</h3>
+      <t-b>
+        <span class="notice">Code Track</span> is a place to experiment &mdash; with language
+        features, AI tools, multi-language project comparisons, and code-generation utilities.
+        This story is a narrative guide through those experiments, ordered from the most
+        hands-on (building a scratch arena with real measurement tools) through progressively
+        more capable AI workflows: chat bots &rarr; CLI agents &rarr; API calls &rarr; tool-using
+        agents &rarr; agentic pipelines &rarr; reusable skill libraries &rarr; spec-driven
+        development.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Why study AI-assisted code development?</summary>
+          <t-b class="indent">
+            <ol class="tight">
+              <li>
+                AI tools shift the bottleneck from writing code to reviewing and guiding it.
+                Understanding that shift makes you a more effective user of the tools.
+              </li>
+              <li>
+                Knowing how LLMs work &mdash; message roles, context windows, tool use,
+                prompt caching &mdash; lets you use them reliably instead of hoping they
+                produce what you want.
+              </li>
+              <li>
+                Agents with tool use can read your files, run your tests, and iterate
+                without manual steps between each action.
+              </li>
+              <li>
+                Spec-driven development inverts the usual workflow: you write what the
+                code must do before the code exists, and the spec becomes the AI&rsquo;s
+                contract.
+              </li>
+              <li>
+                Comparing the same project in Rust, C++, C#, and Python builds intuition
+                about what language features actually cost in code size, complexity, and
+                runtime performance.
+              </li>
+            </ol>
+          </t-b>
+        </details>
+      </indent-blocks>
+      <t-b>
+        The story uses two recurring example projects &mdash; TextFinder (search a directory
+        tree for regex matches) and PageValidator (check HTML structural correctness) &mdash;
+        alongside the AI/ folder demos to keep discussion grounded in real, runnable code.
+      </t-b>
+
+      <!-- ------------------------------------------------------------ -->
+      <a id="start"></a>
+      <h4>0.1 &nbsp;Getting Started</h4>
+      <t-b>
+        Install these tools in order &mdash; each chapter builds on what came before.
+      </t-b>
+      <t-b class="indent">
+        <ol class="tight">
+          <li>
+            <strong>VS Code</strong> with language extensions:<br />
+            <t-b>
+              rust-analyzer (Rust), clangd (C++), C# Dev Kit (C#), Pylance (Python),
+              Error Lens and GitLens (all languages).
+            </t-b>
+          </li>
+          <li>
+            <strong>At least one language toolchain:</strong><br />
+            <t-b>
+              <a target="_blank" href="https://www.rust-lang.org/tools/install">Rust</a>,
+              a C++ compiler (MSVC, GCC, or Clang),
+              <a target="_blank" href="https://dotnet.microsoft.com/download">.NET SDK</a> for C#,
+              or <a target="_blank" href="https://www.python.org/downloads/">Python 3</a>.
+            </t-b>
+          </li>
+          <li>
+            <strong>Git</strong> and a
+            <a target="_blank" href="https://github.com/">GitHub</a> account.
+          </li>
+          <li>
+            <strong>An Anthropic API key</strong> (required for chapters 4&ndash;8):<br />
+            <t-b>
+              Create one at
+              <a target="_blank" href="https://console.anthropic.com/">console.anthropic.com</a>
+              and set it as the environment variable <code>ANTHROPIC_API_KEY</code>.
+            </t-b>
+          </li>
+          <li>
+            <strong>Python package: anthropic</strong><br />
+            <t-b><code>pip install anthropic</code></t-b>
+          </li>
+        </ol>
+      </t-b>
+
+      <!-- ------------------------------------------------------------ -->
+      <a id="content"></a>
+      <h4>0.2 &nbsp;Story Content</h4>
+      <t-b>
+        The story is ordered so each chapter provides vocabulary and tools used in the next.
+        Start at the beginning or jump to any chapter &mdash; each is written to be
+        readable on its own.
+      </t-b>
+      <t-b class="indent">
+        <ol id="chaplist" start="0">
+          <li>
+            <h4><a href="#prologue">Prologue</a></h4>
+            Motivation, getting started, chapter index, and references.
+          </li>
+          <li>
+            <h4><a href="#arena">Experimenting with Code</a></h4>
+            Building a scratch arena with build chains, metrics tools, performance
+            timers, and visualizers.
+          </li>
+          <li>
+            <h4><a href="#chatbots">Chat Bots</a></h4>
+            Using Claude, ChatGPT, and Gemini through the browser to analyze,
+            generate, and document code.
+          </li>
+          <li>
+            <h4><a href="#cli">Code AI CLI</a></h4>
+            Claude Code and Gemini CLI as terminal-based coding partners &mdash;
+            reading files, making changes, multi-step tasks, hooks.
+          </li>
+          <li>
+            <h4><a href="#llmapi">LLM API</a></h4>
+            Calling Claude directly from Python: the messages API, structured output,
+            streaming, and prompt caching.
+          </li>
+          <li>
+            <h4><a href="#agents">Agent AI</a></h4>
+            Tool use, the agentic loop, a working file-reading agent, error handling,
+            and safety constraints.
+          </li>
+          <li>
+            <h4><a href="#agentic">Agentic AI</a></h4>
+            Multi-step autonomous workflows: analyze &rarr; plan &rarr; generate &rarr; test,
+            chaining agent calls, human-in-the-loop checkpoints.
+          </li>
+          <li>
+            <h4><a href="#skills">Skills AI</a></h4>
+            Extending agents with a reusable tool library: anatomy of a skill,
+            a code_metrics example, composing multiple tools in one session.
+          </li>
+          <li>
+            <h4><a href="#specdev">Spec-Driven Development</a></h4>
+            Using Constitution.md, Structure.md, and Spec.md to drive AI implementation;
+            the full workflow from spec to code to validation.
+          </li>
+        </ol>
+      </t-b>
+
+      <!-- ------------------------------------------------------------ -->
+      <a id="refs-prologue"></a>
+      <h4>0.3 &nbsp;References</h4>
+      <table>
+        <tr>
+          <th class="darkItem">Resource</th>
+          <th class="darkItem">Description</th>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/">Anthropic Docs</a>
+          </td>
+          <td class="lightItem">
+            Full API reference, model guides, and prompt engineering tips.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://claude.ai/code">Claude Code</a>
+          </td>
+          <td class="lightItem">
+            Anthropic&rsquo;s CLI tool &mdash; install, keyboard reference, and docs.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="CodeBites_Intro.html">CodeBites Introduction</a>
+          </td>
+          <td class="lightItem">
+            Track page that maps the full CodeBites page sequence.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="CodeBites_AI_Links.html">AI Links</a>
+          </td>
+          <td class="lightItem">
+            Curated links to AI tools, documentation, and research.
+          </td>
+        </tr>
+      </table>
+
+      <!-- ============================================================ -->
+      <!-- CHAPTER 1                                                     -->
+      <!-- ============================================================ -->
+      <a id="arena"></a>
+      <h3>1. &nbsp;Experimenting with Code</h3>
+      <t-b>
+        Before using AI to help write code you need a place to run and measure code quickly.
+        This chapter sets up a <em>scratch arena</em> &mdash; a lightweight, disposable
+        workspace where experiments are cheap, failure is expected, and anything worth keeping
+        gets promoted to a real project.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Why isolate experiments?</summary>
+          <t-b class="indent">
+            <ol class="tight">
+              <li>
+                Real projects carry pressure: tests must pass, CI must be green, code
+                review is watching.  A scratch arena has none of that friction.
+              </li>
+              <li>
+                Separating &ldquo;trying something&rdquo; from &ldquo;building something&rdquo;
+                keeps both cleaner &mdash; the real project stays stable while experiments
+                fail fast.
+              </li>
+              <li>
+                A version-controlled scratch space lets you revisit a dead end without losing
+                it, and compare two approaches side by side.
+              </li>
+              <li>
+                Measuring code from the start &mdash; lines, complexity, timing &mdash; builds
+                the habit of treating metrics as feedback, not bureaucracy.
+              </li>
+            </ol>
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <a id="arena-layout"></a>
+      <h4>1.1 &nbsp;Arena Layout</h4>
+      <t-b>
+        A flat directory at the root of your workspace gives each language its own folder.
+        The <code>metrics/</code> and <code>notes/</code> folders accumulate output and
+        observations across sessions.
+      </t-b>
+<pre><code class="language-plaintext">sandbox/
+  rust/        &larr; cargo workspace, or cargo new per experiment
+  cpp/         &larr; single-file programs; no CMake needed for scratch
+  csharp/      &larr; dotnet new console -o scratch; reuse between runs
+  python/      &larr; flat scripts; one .venv at this level
+  metrics/     &larr; tokei and code_metrics output, saved per session
+  notes/       &larr; scratchpad.md, one entry per session</code></pre>
+      <t-b>
+        Quick project init per language:
+      </t-b>
+<pre><code class="language-bash">## Rust
+cargo new scratch && cd scratch
+cargo run
+
+## C++  (no project file needed for single-file experiments)
+g++ -std=c++23 -Wall -o out main.cpp && ./out
+
+## C#
+dotnet new console -o scratch && cd scratch
+dotnet run
+
+## Python  (Windows; use forward slash on macOS/Linux)
+python -m venv .venv
+.venv\Scripts\activate
+python script.py
+python -i script.py     # run then drop into REPL with all names live</code></pre>
+
+      <a id="metrics"></a>
+      <h4>1.2 &nbsp;Code Metrics</h4>
+      <t-b>
+        Metrics tools answer &ldquo;how big?&rdquo; and &ldquo;how complex?&rdquo; before
+        and after a change.  Run them at the start of a session to establish a baseline, and
+        after each significant change to see what moved.
+      </t-b>
+      <t-b>
+        <strong>code_metrics.py</strong> (in track) &mdash;
+        Reports line counts, function counts, and blank/comment ratios per file.
+        Good for tracking growth of a scratch project over sessions.
+      </t-b>
+      <t-b>
+        <strong>tokei</strong> &mdash;
+        Cross-language line counter; breaks down by language and file type.
+        Run at the sandbox root to see the whole arena at a glance.<br />
+        <code>cargo install tokei</code>
+      </t-b>
+      <t-b>
+        <strong>scc</strong> (Sloc Cloc and Code) &mdash;
+        Like tokei but adds estimated complexity and cost columns.
+        Useful when comparing equivalent programs across languages.<br />
+        <code>cargo install scc</code>
+      </t-b>
+      <t-b>
+        <strong>radon</strong> (Python) &mdash;
+        Cyclomatic complexity and maintainability index per function.<br />
+        <code>pip install radon</code> &nbsp;&mdash;&nbsp; run: <code>radon cc -s script.py</code>
+      </t-b>
+      <t-b>
+        <strong>cargo clippy</strong> (Rust) &mdash;
+        Catches non-obvious mistakes and style issues that the compiler misses.
+        Treat warnings as a quality signal, not a failure condition.
+      </t-b>
+      <t-b>
+        <strong>cppcheck</strong> (C++) &mdash;
+        Static analysis for undefined behavior, memory issues, and style.<br />
+        <code>cppcheck --enable=all main.cpp</code>
+      </t-b>
+
+      <a id="perf"></a>
+      <h4>1.3 &nbsp;Performance and Timing</h4>
+      <t-b>
+        <strong>hyperfine</strong> &mdash;
+        Cross-language wall-clock benchmarker.  Runs a command N times, warms the cache,
+        and reports mean &plusmn; stddev with outlier detection.  Use it to compare the
+        same algorithm across languages directly.
+      </t-b>
+<pre><code class="language-bash">cargo install hyperfine
+hyperfine './out input.txt' 'python script.py input.txt'</code></pre>
+      <t-b>
+        <strong>tf_timer.py / pa_timer.py</strong> (in track) &mdash;
+        Purpose-built timing wrappers for TextFinder and PageValidator.
+        Model these for any experiment that needs repeated-run averaging.
+      </t-b>
+      <t-b>
+        <strong>Python cProfile</strong> (built-in) &mdash;
+        Function-level profiler; no install needed.
+        Pairs with snakeviz (see section 1.4) for visual output.<br />
+        <code>python -m cProfile -s cumtime script.py</code>
+      </t-b>
+      <t-b>
+        <strong>cargo flamegraph</strong> (Rust) &mdash;
+        Generates a flame graph SVG showing where CPU time actually goes.
+        Requires perf (Linux) or DTrace (macOS); works in WSL on Windows.<br />
+        <code>cargo install flamegraph</code>
+      </t-b>
+      <t-b>
+        <strong>BenchmarkDotNet</strong> (C#) &mdash;
+        Add as a NuGet package; annotate methods with <code>[Benchmark]</code>.
+        Produces statistically rigorous tables with warmup and GC stats.
+      </t-b>
+
+      <a id="viz"></a>
+      <h4>1.4 &nbsp;Visualizers</h4>
+      <t-b>
+        <strong>CodeWebifier</strong> (in track) &mdash;
+        Converts source files to syntax-highlighted HTML for display in the site.
+        Run it on any experiment worth keeping to publish it.
+      </t-b>
+      <t-b>
+        <strong>snakeviz</strong> (Python) &mdash;
+        Browser-based flame graph for cProfile output.
+      </t-b>
+<pre><code class="language-bash">pip install snakeviz
+python -m cProfile -o out.prof script.py
+snakeviz out.prof           # opens browser with interactive flame graph</code></pre>
+      <t-b>
+        <strong>graphviz / dot</strong> &mdash;
+        Renders dependency graphs, state machines, and call graphs as SVG.
+        Most build tools can emit <code>.dot</code> format (cargo metadata, doxygen).<br />
+        <code>winget install graphviz</code>
+      </t-b>
+      <t-b>
+        <strong>cargo doc --open</strong> (Rust) &mdash;
+        Not just for publishing &mdash; generated doc pages are the fastest way to browse
+        the public API of any crate you add to an experiment.
+      </t-b>
+      <t-b>
+        <strong>VS Code extensions worth installing for the arena:</strong>
+        <ul class="tight">
+          <li><strong>Error Lens</strong> &mdash; inline error messages next to the offending line</li>
+          <li><strong>GitLens</strong> &mdash; last-edit blame inline; useful for tracking what changed in scratch</li>
+          <li><strong>CodeMetrics</strong> (kisstkondoros) &mdash; per-function complexity score in the editor gutter</li>
+          <li><strong>Rust Analyzer</strong> &mdash; essential for Rust; includes inlay type hints</li>
+          <li><strong>clangd</strong> &mdash; C++ language server with inline diagnostics and completions</li>
+        </ul>
+      </t-b>
+
+      <a id="session-flow"></a>
+      <h4>1.5 &nbsp;A Typical Session Flow</h4>
+      <t-b>
+        A short ritual at the start and end of each session keeps the arena useful:
+        <ol class="tight">
+          <li>Create or reset the scratch project for today&rsquo;s language.</li>
+          <li>Write the simplest version that compiles and runs (15&ndash;20 lines max).</li>
+          <li>Run metrics: <code>tokei</code> and <code>code_metrics.py</code> for a
+            baseline snapshot.</li>
+          <li>Iterate: change one thing, re-run, compare metrics and timing.</li>
+          <li>If the result is worth keeping, run CodeWebifier and move it to a named
+            folder; otherwise delete and move on.</li>
+          <li>Add one line to <code>notes/scratchpad.md</code>: what you tried, what
+            you learned.</li>
+        </ol>
+      </t-b>
+
+      <h4>1.6 &nbsp;References</h4>
+      <table>
+        <tr>
+          <th class="darkItem">Resource</th>
+          <th class="darkItem">Description</th>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://github.com/sharkdp/hyperfine">hyperfine</a>
+          </td>
+          <td class="lightItem">Cross-platform benchmarking tool for command-line programs.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://github.com/XAMPPRocky/tokei">tokei</a>
+          </td>
+          <td class="lightItem">Fast, accurate code line counter with language breakdown.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://github.com/boyter/scc">scc</a>
+          </td>
+          <td class="lightItem">Line counter with complexity and estimated cost columns.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://radon.readthedocs.io/">radon</a>
+          </td>
+          <td class="lightItem">Python complexity metrics: cyclomatic complexity, maintainability index.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://github.com/flamegraph-rs/flamegraph">cargo flamegraph</a>
+          </td>
+          <td class="lightItem">Flame graph profiler for Rust programs.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://benchmarkdotnet.org/">BenchmarkDotNet</a>
+          </td>
+          <td class="lightItem">Rigorous microbenchmark framework for .NET.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://jiffyclub.github.io/snakeviz/">snakeviz</a>
+          </td>
+          <td class="lightItem">Browser-based viewer for Python cProfile output.</td>
+        </tr>
+      </table>
+
+      <!-- ============================================================ -->
+      <!-- CHAPTER 2                                                     -->
+      <!-- ============================================================ -->
+      <a id="chatbots"></a>
+      <h3>2. &nbsp;Chat Bots</h3>
+      <t-b>
+        A chat bot session is the simplest form of AI-assisted development: open a browser,
+        describe a problem in plain language, and get a response.  No API key, no install,
+        no code required.  This chapter covers what chat bots are good for, how to prompt
+        them effectively for code tasks, and when to move to a more capable tool.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Why start with chat bots?</summary>
+          <t-b class="indent">
+            <ol class="tight">
+              <li>Zero setup &mdash; the fastest path from a question to an answer.</li>
+              <li>Good for understanding an unfamiliar API, pattern, or error message
+                before writing any code.</li>
+              <li>Prompting for a chat bot and prompting for the API use the same vocabulary
+                &mdash; roles, context, constraints &mdash; so skills transfer directly.</li>
+              <li>The limitations of a chat session (no file access, fixed context window,
+                no tool use) make the step up to a CLI agent feel motivated rather than
+                arbitrary.</li>
+            </ol>
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <h4>2.1 &nbsp;Prompting for Code Analysis</h4>
+      <t-b>
+        Give the bot the code, then ask a specific question.  Vague prompts get vague answers.
+        Effective patterns:
+        <ul class="tight">
+          <li>&ldquo;What does this function do? Focus on the return value.&rdquo;</li>
+          <li>&ldquo;What would happen if I passed an empty slice to this function?&rdquo;</li>
+          <li>&ldquo;Explain the ownership rules that apply to this block.&rdquo;</li>
+          <li>&ldquo;What is the time complexity of this algorithm and why?&rdquo;</li>
+        </ul>
+      </t-b>
+
+      <h4>2.2 &nbsp;Prompting for Code Generation</h4>
+      <t-b>
+        State the function signature, the inputs, the expected output, and any constraints.
+        The more precise the spec in the prompt, the less revision the output needs.
+        <ul class="tight">
+          <li>Always specify the language and version (e.g., &ldquo;Python 3.12&rdquo;, &ldquo;C++23&rdquo;, &ldquo;Rust 2021 edition&rdquo;).</li>
+          <li>Include one concrete example: input &rarr; expected output.</li>
+          <li>State what the code must NOT do (allocate, panic, use unsafe, etc.).</li>
+        </ul>
+      </t-b>
+
+      <h4>2.3 &nbsp;Prompting for Documentation</h4>
+      <t-b>
+        Chat bots produce good first-draft documentation when given the code and the audience.
+        <ul class="tight">
+          <li>&ldquo;Write a one-paragraph description of this module for a README.&rdquo;</li>
+          <li>&ldquo;Write a doc comment for each public function in this file.&rdquo;</li>
+          <li>&ldquo;Summarize this diff in three sentences for a commit message.&rdquo;</li>
+        </ul>
+      </t-b>
+
+      <h4>2.4 &nbsp;Limitations and When to Move On</h4>
+      <t-b>
+        Know when to switch tools:
+        <ul class="tight">
+          <li>Context window fills up &mdash; the bot forgets earlier parts of a long conversation.</li>
+          <li>No file access &mdash; you must paste code manually; large codebases are impractical.</li>
+          <li>No tool use &mdash; it can suggest a command but cannot run it or read the output.</li>
+          <li>Hallucination risk &mdash; always run generated code before trusting it.</li>
+        </ul>
+        When you hit these limits, move to a CLI agent (Chapter 3) or the API (Chapter 4).
+      </t-b>
+
+      <h4>2.5 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="https://claude.ai">Claude</a></td>
+          <td class="lightItem">Anthropic&rsquo;s chat interface. Best for long-context code tasks.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="https://chatgpt.com">ChatGPT</a></td>
+          <td class="lightItem">OpenAI&rsquo;s chat interface. Large model family with code interpreter.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="https://gemini.google.com">Gemini</a></td>
+          <td class="lightItem">Google&rsquo;s chat interface. Strong at multi-modal and search-grounded tasks.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="CodeBites_ChatBotAI.html">CodeBites: Chat Bots</a></td>
+          <td class="lightItem">Track page with example sessions and prompt templates.</td>
+        </tr>
+      </table>
+
+      <!-- ============================================================ -->
+      <!-- CHAPTER 3                                                     -->
+      <!-- ============================================================ -->
+      <a id="cli"></a>
+      <h3>3. &nbsp;Code AI CLI</h3>
+      <t-b>
+        A Code AI CLI runs in your terminal alongside your code.  It can read your files,
+        write changes, run commands, and navigate your repository &mdash; all without leaving
+        the shell.  This chapter covers Claude Code and Gemini CLI as terminal-based
+        coding partners.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Why the CLI over the browser?</summary>
+          <t-b class="indent">
+            <ol class="tight">
+              <li>The CLI has direct access to your filesystem &mdash; no pasting required.</li>
+              <li>It can run shell commands and read their output, closing the loop between
+                code and behavior.</li>
+              <li>Multi-step tasks (read file, analyze, edit, run tests) happen in a single
+                session without context loss.</li>
+              <li>Hooks let you automate recurring actions: run linters before each edit,
+                show a summary when the session ends.</li>
+            </ol>
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <h4>3.1 &nbsp;Starting a Session</h4>
+      <t-b>
+        Run <code>claude</code> in the root of your project.  On the first run in a new
+        repository, use <code>/init</code> to generate a <code>CLAUDE.md</code> file
+        describing the project structure.  Subsequent sessions load that file automatically,
+        giving the model context without you re-explaining it each time.
+      </t-b>
+
+      <h4>3.2 &nbsp;Making Changes</h4>
+      <t-b>
+        Describe what you want in plain language.  The CLI reads relevant files, proposes
+        a diff, and waits for your approval.  You see every change before it lands.
+        Use <code>/diff</code> to review pending edits at any point in the session.
+      </t-b>
+
+      <h4>3.3 &nbsp;Multi-Step Tasks</h4>
+      <t-b>
+        Compound tasks work well because the CLI maintains context across steps.
+        Example session sequence:
+        <ol class="tight">
+          <li>Read <code>src/main.rs</code> and summarize the data flow.</li>
+          <li>Identify the three functions with the highest cyclomatic complexity.</li>
+          <li>Refactor the most complex function into two smaller ones.</li>
+          <li>Run <code>cargo test</code> and fix any failures.</li>
+        </ol>
+        Each step uses output from the previous one.  The context window is the limit &mdash;
+        for very large refactors, split into smaller tasks.
+      </t-b>
+
+      <h4>3.4 &nbsp;Hooks and Automation</h4>
+      <t-b>
+        Claude Code hooks run shell commands automatically on events such as tool calls,
+        session start, and session end.  Configure them in
+        <code>.claude/settings.json</code> under the <code>hooks</code> key.  Useful hooks:
+        <ul class="tight">
+          <li>Run <code>cargo clippy</code> after every file edit</li>
+          <li>Display a summary of changed files when the session closes</li>
+          <li>Block writes outside an allowed directory whitelist</li>
+        </ul>
+      </t-b>
+
+      <h4>3.5 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="https://claude.ai/code">Claude Code</a></td>
+          <td class="lightItem">Anthropic&rsquo;s CLI tool &mdash; install, docs, and keyboard reference.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a></td>
+          <td class="lightItem">Google&rsquo;s terminal AI tool, open source.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="CodeBites_CodeAI.html">CodeBites: Code AI</a></td>
+          <td class="lightItem">Track page with recorded CLI sessions and technique notes.</td>
+        </tr>
+      </table>
+
+      <!-- ============================================================ -->
+      <!-- CHAPTER 4                                                     -->
+      <!-- ============================================================ -->
+      <a id="llmapi"></a>
+      <h3>4. &nbsp;LLM API</h3>
+      <t-b>
+        Calling Claude directly from code gives you full programmatic control: you choose
+        the model, the system prompt, the context, the output format, and whether to stream.
+        This chapter covers the Anthropic Python SDK from a minimal completion through
+        structured output, streaming, and prompt caching.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Why write code that calls the API?</summary>
+          <t-b class="indent">
+            <ol class="tight">
+              <li>You can embed AI calls inside larger programs: scripts, batch processors,
+                analysis pipelines.</li>
+              <li>You control the system prompt precisely &mdash; the AI&rsquo;s persona,
+                constraints, and output format are not left to the chat interface defaults.</li>
+              <li>Structured output (JSON) lets you parse and act on AI responses
+                programmatically.</li>
+              <li>Prompt caching reduces cost and latency when the same large context is
+                reused across many calls.</li>
+            </ol>
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <h4>4.1 &nbsp;A Minimal Completion</h4>
+<pre><code class="language-python">import anthropic
+
+client = anthropic.Anthropic()   # reads ANTHROPIC_API_KEY from environment
+
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    messages=[{
+        "role": "user",
+        "content": "Explain Rust ownership in three sentences."
+    }]
+)
+print(response.content[0].text)</code></pre>
+
+      <h4>4.2 &nbsp;Structured Output</h4>
+      <t-b>
+        Put the JSON schema in the system prompt; the model returns JSON you can
+        parse directly.  Validate with <code>pydantic</code> for robustness.
+      </t-b>
+<pre><code class="language-python">response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=512,
+    system='Respond only with valid JSON matching {"summary": str, "complexity": int}.',
+    messages=[{"role": "user", "content": code_text}]
+)
+import json
+result = json.loads(response.content[0].text)</code></pre>
+
+      <h4>4.3 &nbsp;Streaming</h4>
+<pre><code class="language-python">with client.messages.stream(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": prompt}]
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)</code></pre>
+
+      <h4>4.4 &nbsp;Prompt Caching</h4>
+      <t-b>
+        Mark large, reused context blocks with <code>cache_control</code> to avoid
+        re-processing them on every call.  Cached tokens cost roughly 10&times; less and
+        return faster.  Useful when every call in a session loads the same large file.
+      </t-b>
+<pre><code class="language-python">messages=[{
+    "role": "user",
+    "content": [
+        {
+            "type": "text",
+            "text": large_context,
+            "cache_control": {"type": "ephemeral"}
+        },
+        {"type": "text", "text": "Summarize the above."}
+    ]
+}]</code></pre>
+
+      <h4>4.5 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/api/getting-started">Anthropic API Docs</a>
+          </td>
+          <td class="lightItem">Messages API reference, models, rate limits, and SDK guides.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="CodeBites_LLM_API.html">CodeBites: LLM API</a>
+          </td>
+          <td class="lightItem">Track page with extended API examples and patterns.</td>
+        </tr>
+      </table>
+
+      <!-- ============================================================ -->
+      <!-- CHAPTER 5                                                     -->
+      <!-- ============================================================ -->
+      <a id="agents"></a>
+      <h3>5. &nbsp;Agent AI</h3>
+      <t-b>
+        An agent is a program that calls an LLM in a loop, giving the model access to
+        <em>tools</em> (functions it can invoke), and continuing until the model decides
+        it has finished.  This chapter covers the tool-use pattern, the agentic loop,
+        a working file-reading agent, and safety constraints.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Why agents instead of single calls?</summary>
+          <t-b class="indent">
+            <ol class="tight">
+              <li>A single call cannot react to its own output.  An agent can read a file,
+                see what&rsquo;s in it, and decide what to read next.</li>
+              <li>Tool use turns the model into an orchestrator: it plans, delegates to
+                tools, and synthesizes results &mdash; all without your intervention.</li>
+              <li>Agents can retry failed steps, ask clarifying questions, and handle
+                unexpected inputs gracefully.</li>
+            </ol>
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <h4>5.1 &nbsp;Defining a Tool</h4>
+<pre><code class="language-python">tools = [{
+    "name": "read_file",
+    "description": "Read a source file and return its contents as a string.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "Relative path to the file"}
+        },
+        "required": ["path"]
+    }
+}]</code></pre>
+
+      <h4>5.2 &nbsp;The Tool Loop</h4>
+<pre><code class="language-python">import anthropic, pathlib
+
+client = anthropic.Anthropic()
+messages = [{"role": "user", "content": "Summarize the file main.py."}]
+
+while True:
+    resp = client.messages.create(
+        model="claude-sonnet-4-6", max_tokens=2048,
+        tools=tools, messages=messages
+    )
+    if resp.stop_reason == "end_turn":
+        print(resp.content[0].text)
+        break
+    for block in resp.content:
+        if block.type == "tool_use":
+            text = pathlib.Path(block.input["path"]).read_text()
+            messages += [
+                {"role": "assistant", "content": resp.content},
+                {"role": "user", "content": [{
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": text
+                }]}
+            ]</code></pre>
+
+      <h4>5.3 &nbsp;Safety Constraints</h4>
+      <t-b>
+        An unconstrained agent can do more than intended.  Useful guards:
+        <ul class="tight">
+          <li>Cap iterations: <code>for _ in range(MAX_STEPS)</code> &mdash; raise an error if exceeded</li>
+          <li>Whitelist allowed paths: reject tool calls outside the sandbox directory</li>
+          <li>Separate read tools from write tools and require explicit user confirmation
+            before any write tool runs</li>
+          <li>Log every tool call and its result to a file for post-session review</li>
+        </ul>
+      </t-b>
+
+      <h4>5.4 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/build-with-claude/tool-use">Tool Use Docs</a>
+          </td>
+          <td class="lightItem">Anthropic&rsquo;s guide to defining and using tools with the Claude API.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="CodeBites_AgentAI.html">CodeBites: Agent AI</a></td>
+          <td class="lightItem">Track page with agent demos and design notes.</td>
+        </tr>
+      </table>
+
+      <!-- ============================================================ -->
+      <!-- CHAPTER 6                                                     -->
+      <!-- ============================================================ -->
+      <a id="agentic"></a>
+      <h3>6. &nbsp;Agentic AI</h3>
+      <t-b>
+        An agentic workflow chains multiple agent calls together, with the output of one
+        becoming the input of the next.  Each call can have a different focus: analyze,
+        plan, generate, test.  This chapter covers how to structure multi-step workflows,
+        how to pass state between calls, and where to add human-in-the-loop checkpoints.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">When does autonomy help?</summary>
+          <t-b class="indent">
+            <ol class="tight">
+              <li>When the task has multiple clearly-ordered steps and each step&rsquo;s
+                output is the next step&rsquo;s input.</li>
+              <li>When you want repeatability &mdash; the same workflow produces the same
+                kind of output regardless of who runs it.</li>
+              <li>When the individual steps are too small to justify a full CLI session
+                but too many to do manually each time.</li>
+            </ol>
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <h4>6.1 &nbsp;Analyze &rarr; Plan &rarr; Generate &rarr; Test</h4>
+      <t-b>
+        A four-call workflow for producing a new module:
+        <ol class="tight">
+          <li><strong>Analyze</strong> &mdash; Read existing code; produce a JSON summary
+            of types, functions, and dependencies.</li>
+          <li><strong>Plan</strong> &mdash; Feed the summary to a second call; ask for a
+            numbered implementation plan as JSON.</li>
+          <li><strong>Generate</strong> &mdash; Feed the plan to a third call; ask for
+            source code, one file at a time.</li>
+          <li><strong>Test</strong> &mdash; Run the generated code, capture stdout/stderr,
+            feed errors back into a fourth call for a fix.</li>
+        </ol>
+      </t-b>
+
+      <h4>6.2 &nbsp;Passing State Between Calls</h4>
+      <t-b>
+        Use plain Python data structures to carry results forward.  A <code>dict</code>
+        or <code>dataclass</code> per step is enough for most workflows.  For long-running
+        pipelines, serialize to a JSON file so a failed step can be retried without
+        re-running the earlier ones.
+      </t-b>
+
+      <h4>6.3 &nbsp;Human-in-the-Loop Checkpoints</h4>
+      <t-b>
+        Pause after high-risk steps for user confirmation.  A simple
+        <code>input("Continue? [y/N] ")</code> is enough for a personal script.
+        For production workflows, write the plan to a file and require an explicit
+        approval file before the generate step runs.
+      </t-b>
+
+      <h4>6.4 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="CodeBites_AgenticAI.html">CodeBites: Agentic AI</a></td>
+          <td class="lightItem">Track page with multi-step workflow examples.</td>
+        </tr>
+      </table>
+
+      <!-- ============================================================ -->
+      <!-- CHAPTER 7                                                     -->
+      <!-- ============================================================ -->
+      <a id="skills"></a>
+      <h3>7. &nbsp;Skills AI</h3>
+      <t-b>
+        A <em>skill</em> is a reusable, named tool definition.  Building a skill library
+        means you write a tool once and use it across many agents and sessions.
+        This chapter covers the anatomy of a skill, a <code>code_metrics</code> example,
+        and composing multiple skills in a single agent call.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Why build a skill library?</summary>
+          <t-b class="indent">
+            <ol class="tight">
+              <li>Copy-pasting tool definitions into every script creates maintenance debt.
+                A shared library means a fix reaches every agent at once.</li>
+              <li>Named, well-described skills are self-documenting &mdash; the model reads
+                the description and knows what the tool does without explanation in the prompt.</li>
+              <li>A library of composable skills lets you assemble new agents quickly from
+                existing parts.</li>
+            </ol>
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <h4>7.1 &nbsp;Anatomy of a Skill</h4>
+<pre><code class="language-python">def skill_code_metrics(path: str) -> dict:
+    """Count lines, functions, and blank lines in a Python source file.
+    Returns {"lines": int, "functions": int, "blanks": int}.
+    """
+    import ast, pathlib
+    src = pathlib.Path(path).read_text()
+    tree = ast.parse(src)
+    functions = sum(1 for n in ast.walk(tree) if isinstance(n, ast.FunctionDef))
+    lines = src.count("\n")
+    blanks = sum(1 for ln in src.splitlines() if not ln.strip())
+    return {"lines": lines, "functions": functions, "blanks": blanks}
+
+SKILL_CODE_METRICS = {
+    "name": "code_metrics",
+    "description": skill_code_metrics.__doc__,
+    "input_schema": {
+        "type": "object",
+        "properties": {"path": {"type": "string"}},
+        "required": ["path"]
+    }
+}</code></pre>
+
+      <h4>7.2 &nbsp;Composing Skills</h4>
+      <t-b>
+        Pass a list of skill definitions to a single agent call.  The model chooses which
+        tools to invoke and in what order.  Keep each skill focused on one action &mdash;
+        composition happens at the agent level, not inside a skill.
+      </t-b>
+<pre><code class="language-python">all_skills = [SKILL_READ_FILE, SKILL_CODE_METRICS, SKILL_LIST_DIR]
+
+resp = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=2048,
+    tools=all_skills,
+    messages=[{
+        "role": "user",
+        "content": "Report metrics for every .py file in src/."
+    }]
+)</code></pre>
+
+      <h4>7.3 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="CodeBites_SkillsAI.html">CodeBites: Skills AI</a></td>
+          <td class="lightItem">Track page with skill library design and examples.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/build-with-claude/tool-use">Anthropic Tool Use Docs</a>
+          </td>
+          <td class="lightItem">Reference for tool definition schema and multi-tool sessions.</td>
+        </tr>
+      </table>
+
+      <!-- ============================================================ -->
+      <!-- CHAPTER 8                                                     -->
+      <!-- ============================================================ -->
+      <a id="specdev"></a>
+      <h3>8. &nbsp;Spec-Driven Development</h3>
+      <t-b>
+        Spec-driven development reverses the usual order: you write what the software must do
+        before you write any code, then hand those documents to an AI to drive implementation.
+        This chapter covers three spec files &mdash; Constitution.md, Structure.md, and Spec.md
+        &mdash; and the workflow that uses them.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Why specs before prompts?</summary>
+          <t-b class="indent">
+            <ol class="tight">
+              <li>A prompt without a spec is ambiguous.  A spec makes the constraints
+                explicit and auditable before the AI writes a line of code.</li>
+              <li>The spec becomes the acceptance criterion: generated code that violates
+                the spec is wrong by definition, regardless of whether it compiles.</li>
+              <li>Separating &ldquo;what must be true&rdquo; (Constitution) from
+                &ldquo;how it is organized&rdquo; (Structure) from &ldquo;what each piece
+                does&rdquo; (Spec) keeps each document small and focused.</li>
+              <li>Specs are reusable &mdash; the same Constitution can govern implementations
+                in multiple languages.</li>
+            </ol>
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <h4>8.1 &nbsp;Constitution.md</h4>
+      <t-b>
+        States values and hard constraints that apply to all generated code.  Written in
+        plain imperative sentences; one page maximum.  Examples:
+        <ul class="tight">
+          <li>Never use <code>unwrap()</code> in library code.</li>
+          <li>All public functions must have a doc comment.</li>
+          <li>No external dependencies beyond the standard library.</li>
+          <li>Functions must not exceed 30 lines.</li>
+        </ul>
+      </t-b>
+
+      <h4>8.2 &nbsp;Structure.md</h4>
+      <t-b>
+        Defines the package layout, file names, module boundaries, and dependency rules.
+        The AI reads this before generating any file so it knows where each piece belongs.
+      </t-b>
+<pre><code class="language-markdown">## Package Layout
+src/
+  lib.rs       -- public API re-exports only
+  config.rs    -- configuration types; no I/O
+  scanner.rs   -- directory traversal; depends on config only
+  matcher.rs   -- regex matching; depends on config only
+  reporter.rs  -- output formatting; depends on scanner and matcher
+  main.rs      -- entry point; depends on all others
+
+## Rules
+- scanner.rs must not import from matcher.rs
+- reporter.rs must not perform I/O beyond writing to a provided Writer</code></pre>
+
+      <h4>8.3 &nbsp;Spec.md</h4>
+      <t-b>
+        Documents each public function or type: signature, preconditions, postconditions,
+        and one example.  Written before implementation; updated when requirements change.
+      </t-b>
+<pre><code class="language-markdown">## fn scan(root: &Path, config: &Config) -> Result&lt;Vec&lt;Match&gt;&gt;
+- root must exist and be a directory; returns Err otherwise
+- traverses root recursively, following symlinks if config.follow_symlinks
+- returns all Match records where config.pattern matches file content
+- excludes files whose extension is not in config.extensions
+- example: scan(Path::new("src"), &cfg) -> Ok(vec![Match{path: ..., line: 3}])</code></pre>
+
+      <h4>8.4 &nbsp;The Workflow</h4>
+      <t-b>
+        <ol class="tight">
+          <li>Write Constitution.md &mdash; values and constraints, no code yet.</li>
+          <li>Write Structure.md &mdash; package layout and dependency rules.</li>
+          <li>Write Spec.md &mdash; signatures and contracts for each public item.</li>
+          <li>Start a CLI session or API call; load all three files as context.</li>
+          <li>Ask the AI to implement one file at a time, citing the spec for each function.</li>
+          <li>Run tests after each file; feed failures back into the session.</li>
+          <li>After all files pass, ask the AI to verify the implementation against
+            Constitution.md and report any violations.</li>
+        </ol>
+      </t-b>
+
+      <h4>8.5 &nbsp;Epilogue &mdash; Connecting to the SWDev Track</h4>
+      <t-b>
+        Spec-driven development is the Code Track&rsquo;s answer to the SWDev track&rsquo;s
+        design chapter: Constitution maps to architectural constraints, Structure maps to
+        package design, and Spec maps to specification.  The difference is the AI is now
+        the implementer.  For a deeper treatment of the design concepts behind these
+        documents, see the
+        <a target="_blank" href="../SWDev/SWDevStory_Design.html">SWDev Story: Software Design</a>
+        chapter.
+      </t-b>
+
+      <a id="refs"></a>
+      <h4>8.6 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="CodeBites_SpecDev.html">CodeBites: Spec-Driven Development</a></td>
+          <td class="lightItem">Track page with full workflow examples and template files.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="../SWDev/SWDevStory_Design.html">SWDev Story: Software Design</a></td>
+          <td class="lightItem">The design chapter that underpins spec-driven development.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a target="_blank" href="https://docs.anthropic.com/">Anthropic Docs</a></td>
+          <td class="lightItem">Full API reference, model guides, and prompt engineering tips.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#start">start</a></menu-elem>
+        <menu-elem class="secElem"><a href="#content">content</a></menu-elem>
+        <menu-elem class="secElem"><a href="#arena">1. arena</a></menu-elem>
+        <menu-elem class="secElem"><a href="#chatbots">2. chat bots</a></menu-elem>
+        <menu-elem class="secElem"><a href="#cli">3. CLI</a></menu-elem>
+        <menu-elem class="secElem"><a href="#llmapi">4. LLM API</a></menu-elem>
+        <menu-elem class="secElem"><a href="#agents">5. agents</a></menu-elem>
+        <menu-elem class="secElem"><a href="#agentic">6. agentic</a></menu-elem>
+        <menu-elem class="secElem"><a href="#skills">7. skills</a></menu-elem>
+        <menu-elem class="secElem"><a href="#specdev">8. spec-driven</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="../js/SitePagesForTools.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 0, 10);
+  </script>
+</body>
+</html>

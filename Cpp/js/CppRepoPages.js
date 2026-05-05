@@ -34,6 +34,8 @@ function buildPages() {
       <a href='RepoCpp_WinSockets.html'>WinSockets</a>\
       <a href='RepoCpp_XmlDocument.html'>XmlDocument</a>\
       <a href='RepoCpp_DirGraph.html'>DirGraph</a>\
+      <a href='RepoCpp_CppTextFinder.html'>Cpp TextFinder</a>\
+      <a href='RepoCpp_CppPageValidator.html'>Cpp PageValidator</a>\
       <a href='RepoCpp_CppParser.html'>Cpp Parser</a>\
       <a href='RepoCpp_CodeAnalyzer.html'>Cpp CodeAnalyzer</a>\
       <a href='RepoCpp_CommWithFileXfer.html'>CommWithFileXfer</a>\

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  RepoRust_RsTextFinder.html
+-->
+<head>
+  <title>RsTextFinder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <!-- <link rel="stylesheet" href="../css/help.css" /> -->
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeRust.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreReposRust.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    RepoRust_RsTextFinder.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/04/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle">
+        <h2 id="title">RsTextFinder</h2>
+        <h4 id="subtitle" class="indent">
+          recursive, regex-based file-content search tool<br />
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--light); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/RsTextFinder" style="margin-left:1.25em; color:var(--light);">RsTextFinder Repo</a>
+      </div>
+    </header>
+
+    <h3 id="concept">Concept:</h3>
+    <indent-blocks>
+      <t-b>
+        A recursive, regex-based file-content search tool written in Rust. Given a
+        root directory, a set of file extensions, and a regular expression, it walks
+        the directory tree and prints every file whose content contains a match.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="crates">Crates:</h3>
+    <indent-blocks>
+      <t-b>The project is composed of four independent crates linked by relative paths.</t-b>
+      <t-b>
+        <table>
+          <tr><th>Crate</th><th>Kind</th><th>Role</th></tr>
+          <tr>
+            <td><c-s>RustCmdLine</c-s></td>
+            <td>library</td>
+            <td>Parses <c-s>/Key [Value]</c-s> or <c-s>-Key [Value]</c-s> command-line arguments</td>
+          </tr>
+          <tr>
+            <td><c-s>RustDirNav</c-s></td>
+            <td>library</td>
+            <td>Generic, event-driven depth-first directory walker</td>
+          </tr>
+          <tr>
+            <td><c-s>RustTextFinder</c-s></td>
+            <td>binary (<c-s>text_finder</c-s>)</td>
+            <td>Application - wires the libraries and drives the search</td>
+          </tr>
+          <tr>
+            <td><c-s>RustTfVerify</c-s></td>
+            <td>binary (<c-s>tf_verify</c-s>)</td>
+            <td>Integration verifier - runs <c-s>text_finder</c-s> as a subprocess and checks its output against requirement assertions</td>
+          </tr>
+        </table>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="quickstart">Quick Start:</h3>
+    <indent-blocks>
+      <t-b>
+        <pre>
+# 1. Build the search tool
+cd RustTextFinder
+cargo build
+
+# 2. Search the parent directory for Rust files containing "struct"
+cargo run -- /P ".." /p "rs" /r "struct"
+
+# bash / Unix users - the - prefix works equally well
+cargo run -- -P ".." -p "rs" -r "struct"</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="options">Command-Line Options:</h3>
+    <indent-blocks>
+      <t-b>
+        Options accept either a <c-s>/</c-s> prefix (Windows / PowerShell) or a <c-s>-</c-s> prefix
+        (bash / Unix); both are equivalent.
+      </t-b>
+      <t-b>
+        <table>
+          <tr><th>Option</th><th>Argument</th><th>Default</th><th>Meaning</th></tr>
+          <tr>
+            <td><c-s>/P</c-s></td>
+            <td>path</td>
+            <td><c-s>.</c-s></td>
+            <td>Root directory for the search</td>
+          </tr>
+          <tr>
+            <td><c-s>/p</c-s></td>
+            <td>extensions</td>
+            <td><em>(all files)</em></td>
+            <td>Comma-separated extensions, e.g. <c-s>rs,txt</c-s></td>
+          </tr>
+          <tr>
+            <td><c-s>/r</c-s></td>
+            <td>regex</td>
+            <td><c-s>.</c-s> <em>(any)</em></td>
+            <td>Regular expression matched against file content</td>
+          </tr>
+          <tr>
+            <td><c-s>/s</c-s></td>
+            <td><c-s>true</c-s>/<c-s>false</c-s></td>
+            <td><c-s>true</c-s></td>
+            <td>Recurse into subdirectories</td>
+          </tr>
+          <tr>
+            <td><c-s>/H</c-s></td>
+            <td><c-s>true</c-s>/<c-s>false</c-s></td>
+            <td><c-s>true</c-s></td>
+            <td>Hide directories that contain no matching files</td>
+          </tr>
+          <tr>
+            <td><c-s>/v</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Print all resolved options before searching</td>
+          </tr>
+          <tr>
+            <td><c-s>/h</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Print help and exit</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>
+        <strong>Examples:</strong>
+        <pre>
+# Find all Rust files containing "impl" under the current directory
+cargo run -- /P "." /p "rs" /r "impl"
+
+# Search text and markdown files for a TODO comment, show all directories
+cargo run -- /P "." /p "txt,md" /r "TODO" /H false
+
+# Verbose output - shows resolved path, patterns, and regex before searching
+cargo run -- /P ".." /p "rs" /r "fn main" /v</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="output">Output:</h3>
+    <indent-blocks>
+      <t-b>Matching files are grouped under their containing directory:</t-b>
+      <t-b>
+        <pre>
+  TextFinder ver 1.2.0
+ =======================
+  searching path: "../"
+  patterns: ["rs"]
+  matching files with regex: "struct"
+
+  ../RustTextFinder/src
+      "text_finder.rs"
+
+  ../RustDirNav/src
+      "dir_nav_lib.rs"
+
+  processed 42 files in 18 dirs
+
+  That's all Folks!</pre>
+      </t-b>
+      <t-b>
+        Directories that contain no matching files are hidden by default (<c-s>/H true</c-s>).
+        Set <c-s>/H false</c-s> to print every directory as it is entered.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="design">Design:</h3>
+    <indent-blocks>
+      <h4><c-s>RustCmdLine</c-s> - <c-s>CmdLineParse</c-s></h4>
+      <t-b>
+        Parses raw <c-s>args()</c-s> tokens into a <c-s>HashMap&lt;char, String&gt;</c-s> of options and a
+        <c-s>Vec&lt;String&gt;</c-s> of file-extension patterns. A token starting with <c-s>/</c-s> or <c-s>-</c-s>
+        is treated as a key; the next token (if it does not itself start with <c-s>/</c-s> or
+        <c-s>-</c-s>) becomes its value, otherwise the value is set to <c-s>"true"</c-s>.
+      </t-b>
+      <h4><c-s>RustDirNav</c-s> - <c-s>DirNav&lt;App: DirEvent&gt;</c-s></h4>
+      <t-b>
+        Generic depth-first walker. Callers implement the <c-s>DirEvent</c-s> trait:
+        <pre>
+pub trait DirEvent {
+    fn do_dir(&amp;mut self, d: &amp;str);
+    fn do_file(&amp;mut self, f: &amp;str);
+}</pre>
+        <c-s>DirNav</c-s> calls <c-s>do_dir</c-s> when entering a directory and <c-s>do_file</c-s> for each
+        file whose extension matches the registered patterns. Build-output and
+        VCS directories (<c-s>target</c-s>, <c-s>bin</c-s>, <c-s>obj</c-s>, <c-s>.git</c-s>, etc.) are skipped
+        automatically.
+      </t-b>
+      <h4><c-s>RustTextFinder</c-s> - <c-s>TextFinder</c-s> + <c-s>TfAppl</c-s></h4>
+      <t-b>
+        <c-s>TextFinder</c-s> holds a regex string and exposes <c-s>find(&amp;self, file_path) -&gt; bool</c-s>.
+        It reads file content as UTF-8 text, falling back to lossy byte decoding for
+        binary files, then tests the content against the regex. File bytes are read
+        via <c-s>read_file::read</c-s>, which reuses a thread-local staging buffer to avoid
+        repeated heap allocations across sequential reads.
+      </t-b>
+      <t-b>
+        <c-s>TfAppl</c-s> implements <c-s>DirEvent</c-s> using <c-s>TextFinder</c-s> and handles the hide/show
+        directory logic. <c-s>main</c-s> wires <c-s>DirNav&lt;TfAppl&gt;</c-s> together from the parsed
+        command-line options.
+      </t-b>
+      <h4><c-s>read_file</c-s> - buffer reuse optimization</h4>
+      <t-b>
+        <c-s>std::fs::read</c-s> allocates a fresh <c-s>Vec&lt;u8&gt;</c-s> on every call. When searching
+        thousands of files sequentially that means thousands of heap allocations and
+        deallocations - one per file - even though only one buffer is needed at a
+        time.
+      </t-b>
+      <t-b>
+        <c-s>read_file::read</c-s> replaces that pattern with a thread-local staging buffer.
+        On the first call the buffer is allocated once. On every subsequent call:
+        <ul>
+          <li>
+            If the file fits within the buffer's existing capacity the bytes are read
+            directly into the same allocation - no heap operation at all for the
+            staging step.
+          </li>
+          <li>
+            If the file is larger than anything seen before, the buffer is grown to
+            <c-s>max(current_capacity &times; 2, file_size)</c-s> - the doubling strategy amortizes
+            growth so the total number of reallocations stays logarithmic in the size
+            of the largest file encountered.
+          </li>
+        </ul>
+        One <c-s>clone()</c-s> is still required at the end to produce the owned <c-s>Vec&lt;u8&gt;</c-s>
+        that callers expect (matching the <c-s>std::fs::read</c-s> signature), but that is a
+        single allocation sized exactly to the file - the same cost <c-s>std::fs::read</c-s>
+        pays. The net saving is all the intermediate reallocations that
+        <c-s>read_to_end</c-s> would otherwise perform as the internal buffer grows to
+        accommodate an unexpectedly large file, and the full per-file alloc/free
+        cycle is eliminated for every file that fits within the established
+        high-water-mark capacity.
+      </t-b>
+      <h4><c-s>RustTfVerify</c-s> - integration verifier</h4>
+      <t-b>
+        Spawns the compiled <c-s>text_finder</c-s> binary with controlled arguments and
+        verifies its stdout against each requirement in <c-s>RustTextFinder/Req_TextFinder.md</c-s>.
+        Results are reported as <c-s>PASS</c-s>, <c-s>FAIL</c-s>, or <c-s>SKIP</c-s>.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="build">Building All Crates:</h3>
+    <indent-blocks>
+      <t-b>Each crate is built independently:</t-b>
+      <t-b>
+        <pre>
+cd RustCmdLine   &amp;&amp; cargo build
+cd ../RustDirNav &amp;&amp; cargo build
+cd ../RustTextFinder &amp;&amp; cargo build
+cd ../RustTfVerify   &amp;&amp; cargo build</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="test">Testing:</h3>
+    <indent-blocks>
+      <t-b>
+        <pre>
+# RustCmdLine unit tests
+cd RustCmdLine
+cargo test -- --show-output
+
+# RustDirNav unit tests (must run single-threaded)
+cd RustDirNav
+cargo test -- --test-threads=1 --show-output
+
+# RustTextFinder unit tests
+cd RustTextFinder
+cargo test -- --show-output
+
+# Integration verification (requires text_finder binary to be built first)
+cd RustTextFinder &amp;&amp; cargo build
+cd ../RustTfVerify &amp;&amp; cargo run</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="deps">External Dependencies:</h3>
+    <indent-blocks>
+      <t-b>
+        <table>
+          <tr><th>Package</th><th>Version</th><th>Used by</th><th>Purpose</th></tr>
+          <tr>
+            <td><c-s>regex</c-s></td>
+            <td>1.7.0</td>
+            <td><c-s>RustTextFinder</c-s></td>
+            <td>Compile and match regular expressions</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>All other functionality uses the Rust standard library only.</t-b>
+    </indent-blocks>
+
+    <spacer-15 class="clear"></spacer-15>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#crates">crates</a>
+        <a href="#quickstart">quick start</a>
+        <a href="#options">options</a>
+        <a href="#output">output</a>
+        <a href="#design">design</a>
+        <a href="#build">build</a>
+        <a href="#test">testing</a>
+        <a href="#deps">dependencies</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/RustRepoPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 13, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  RepoCSharp_CsPageValidator.html
+-->
+<head>
+  <title>CsPageValidator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <!-- <link rel="stylesheet" href="../css/help.css" /> -->
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCSharp.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreReposCSharp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    RepoCSharp_CsPageValidator.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/04/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle">
+        <h2 id="title">CsPageValidator</h2>
+        <h4 id="subtitle" class="indent">
+          validates HTML files for structural correctness<br />
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--light); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/CsPageValidator" style="margin-left:1.25em; color:var(--light);">CsPageValidator Repo</a>
+      </div>
+    </header>
+
+    <h3 id="concept">Concept:</h3>
+    <indent-blocks>
+      <t-b>
+        CsPageValidator checks HTML files for structural correctness. Given one or more
+        files or directories, it scans every <c-s>.html</c-s> / <c-s>.htm</c-s> file and reports
+        violations of eight structural rules with precise line and column locations.
+        It is a C# (.NET) port of
+        <a href="https://github.com/JimFawcett/CppPageValidator">CppPageValidator</a>.
+      </t-b>
+      <t-b>
+        The tool is designed for batch use: validate a single page during development,
+        or sweep an entire static-site tree before publishing. Exit status
+        <c-s>0</c-s> means all files pass; exit status <c-s>1</c-s> means at least one violation
+        was found.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="packages">Packages:</h3>
+    <indent-blocks>
+      <t-b>
+        The project is a .NET solution composed of four library packages in a strict
+        linear dependency chain, plus three companion test projects.
+      </t-b>
+      <t-b>
+        <table>
+          <tr><th>Package</th><th>Kind</th><th>Role</th></tr>
+          <tr>
+            <td><c-s>Tokenizer</c-s></td>
+            <td>library</td>
+            <td>Raw lexical scanner; produces a <c-s>Token</c-s> stream with line/column tracking</td>
+          </tr>
+          <tr>
+            <td><c-s>Lexer</c-s></td>
+            <td>library</td>
+            <td>Groups tokens into structured <c-s>Lexeme</c-s> values; normalizes tag names to lowercase</td>
+          </tr>
+          <tr>
+            <td><c-s>Validator</c-s></td>
+            <td>library</td>
+            <td>Drives the Lexer, applies the eight structural rules, and returns a <c-s>Report</c-s> containing all errors</td>
+          </tr>
+          <tr>
+            <td><c-s>EntryPoint</c-s></td>
+            <td>executable (<c-s>page_validator</c-s>)</td>
+            <td>CLI orchestration - parses arguments, walks directories, calls Validator, prints the report</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>
+        The dependency chain is strictly linear:
+        <c-s>Tokenizer</c-s> &larr; <c-s>Lexer</c-s> &larr; <c-s>Validator</c-s> &larr; <c-s>EntryPoint</c-s>.
+        No NuGet packages are used; only the .NET Base Class Library.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="quickstart">Quick Start:</h3>
+    <indent-blocks>
+      <t-b>
+        <pre>
+# 1. Build (from the CsPageValidator/ solution root)
+dotnet build
+
+# 2. Validate a single file
+dotnet run --project EntryPoint -- index.html
+
+# 3. Validate a directory tree, quiet mode (errors only)
+dotnet run --project EntryPoint -- -r -q ./site
+
+# 4. Validate with pass/fail summary
+dotnet run --project EntryPoint -- -r -s ./site
+
+# 5. Or run the built executable directly
+EntryPoint/bin/Debug/net10.0/page_validator -r -s ./site</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="options">Command-Line Options:</h3>
+    <indent-blocks>
+      <t-b>
+        <table>
+          <tr><th>Option</th><th>Argument</th><th>Default</th><th>Meaning</th></tr>
+          <tr>
+            <td><c-s>&lt;path&gt;...</c-s></td>
+            <td>file or directory</td>
+            <td><em>(required)</em></td>
+            <td>One or more HTML files or directories to validate</td>
+          </tr>
+          <tr>
+            <td><c-s>-r, --recursive</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Descend into subdirectories</td>
+          </tr>
+          <tr>
+            <td><c-s>-q, --quiet</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Print only files with errors; suppress PASS lines</td>
+          </tr>
+          <tr>
+            <td><c-s>-s, --summary</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Print pass/fail count after all files are processed</td>
+          </tr>
+          <tr>
+            <td><c-s>-h, --help</c-s></td>
+            <td><em>(flag)</em></td>
+            <td>off</td>
+            <td>Print help and exit</td>
+          </tr>
+        </table>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="output">Output:</h3>
+    <indent-blocks>
+      <t-b>Each file is reported as <c-s>PASS</c-s> or <c-s>FAIL</c-s>. Failing files list every
+      violation with rule name, line, and column:</t-b>
+      <t-b>
+        <pre>
+PASS  site/index.html
+FAIL  site/about.html
+      [tag-nesting] 14:3 - &lt;/div&gt; does not match open &lt;p&gt;
+      [duplicate-id] 22:10 - duplicate id 'header'
+PASS  site/contact.html
+
+2 passed, 1 failed</pre>
+      </t-b>
+      <t-b>
+        With <c-s>-q</c-s> (quiet), PASS lines are suppressed. With <c-s>-s</c-s> (summary), the
+        count line is appended. Both flags may be combined.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="rules">Rules Checked:</h3>
+    <indent-blocks>
+      <t-b>
+        <table>
+          <tr><th>Rule</th><th>What is checked</th></tr>
+          <tr>
+            <td><c-s>doctype</c-s></td>
+            <td>Document begins with <c-s>&lt;!DOCTYPE html&gt;</c-s></td>
+          </tr>
+          <tr>
+            <td><c-s>root-element</c-s></td>
+            <td>Exactly one <c-s>&lt;html&gt;</c-s> element at the top level</td>
+          </tr>
+          <tr>
+            <td><c-s>head-required</c-s></td>
+            <td><c-s>&lt;head&gt;</c-s> is present and contains a <c-s>&lt;title&gt;</c-s></td>
+          </tr>
+          <tr>
+            <td><c-s>body-required</c-s></td>
+            <td><c-s>&lt;body&gt;</c-s> element is present</td>
+          </tr>
+          <tr>
+            <td><c-s>tag-nesting</c-s></td>
+            <td>Every open tag has a matching close tag in the correct order</td>
+          </tr>
+          <tr>
+            <td><c-s>void-elements</c-s></td>
+            <td>Void elements (<c-s>br</c-s>, <c-s>img</c-s>, <c-s>input</c-s>, <c-s>hr</c-s>, <c-s>meta</c-s>, <c-s>link</c-s>, etc.) have no close tag</td>
+          </tr>
+          <tr>
+            <td><c-s>attr-quotes</c-s></td>
+            <td>All attribute values are quoted</td>
+          </tr>
+          <tr>
+            <td><c-s>duplicate-id</c-s></td>
+            <td>No two elements share the same <c-s>id</c-s> attribute value</td>
+          </tr>
+        </table>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="design">Design:</h3>
+    <indent-blocks>
+      <h4><c-s>Tokenizer</c-s></h4>
+      <t-b>
+        Scans raw HTML source character by character and emits a flat stream of
+        <c-s>Token</c-s> values. <c-s>Token</c-s> is an abstract record with derived types:
+        <pre>
+TagOpen, TagClose, AttrName, AttrValue, AttrUnquoted,
+SelfClose, TagEnd, Text, Comment, Doctype, Eof</pre>
+        Every token carries a <c-s>(Line, Col)</c-s> position for precise error reporting.
+        The tokenizer holds no HTML grammar knowledge - it only recognises
+        <c-s>&lt;</c-s>, <c-s>&gt;</c-s>, <c-s>=</c-s>, <c-s>"</c-s>, <c-s>'</c-s>, and <c-s>!</c-s> as delimiters.
+        Malformed input is never rejected at this stage.
+      </t-b>
+      <h4><c-s>Lexer</c-s></h4>
+      <t-b>
+        Consumes the <c-s>Token</c-s> stream and groups tokens into structured
+        <c-s>Lexeme</c-s> values. <c-s>Lexeme</c-s> is an abstract record with derived types:
+        <pre>
+OpenTag, SelfClosingTag, CloseTag, TextNode, CommentNode, DoctypeDecl</pre>
+        <c-s>OpenTag</c-s> and <c-s>SelfClosingTag</c-s> carry an <c-s>IReadOnlyList&lt;Attr&gt;</c-s> with
+        key, value, and quoting status used later by the <c-s>attr-quotes</c-s> rule.
+        All tag names are normalized to lowercase; whitespace-only text nodes
+        are discarded.
+      </t-b>
+      <h4><c-s>Validator</c-s></h4>
+      <t-b>
+        Drives the <c-s>Lexer</c-s> and applies all eight rules in a single pass. It
+        maintains an element stack (<c-s>List&lt;(string Name, (int Line, int Col) Pos)&gt;</c-s>)
+        for nesting checks, a <c-s>HashSet&lt;string&gt;</c-s> for duplicate-ID detection,
+        and boolean flags for the document-level requirements (doctype, html, head,
+        title, body). All violations are collected into a list of
+        <c-s>ValidationError</c-s> records before the <c-s>Report</c-s> is returned -
+        the validator never short-circuits on the first failure.
+      </t-b>
+      <t-b>
+        <c-s>Validator.Validate(string src, string file)</c-s> is the single public
+        entry point. <c-s>Report.IsValid</c-s> returns <c-s>true</c-s> when the error list is empty.
+      </t-b>
+      <h4><c-s>EntryPoint</c-s> - CLI orchestration</h4>
+      <t-b>
+        Parses command-line flags manually (no external dependency), collects
+        <c-s>.html</c-s> / <c-s>.htm</c-s> files from the supplied paths, and skips build and VCS
+        directories (<c-s>bin</c-s>, <c-s>obj</c-s>, <c-s>.git</c-s>, <c-s>.vs</c-s>, etc.). For each file
+        it calls <c-s>Validator.Validate</c-s>, prints the per-file report, and tracks the
+        overall pass/fail count. Exits with status <c-s>1</c-s> if any file fails or cannot
+        be read.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="build">Build:</h3>
+    <indent-blocks>
+      <t-b>Requires the .NET 10 SDK (<c-s>dotnet --version</c-s> should show 10.x).</t-b>
+      <t-b>
+        <pre>
+# Build all projects (from the CsPageValidator/ solution root)
+dotnet build
+
+# Build Release configuration
+dotnet build -c Release
+
+# Run all unit tests
+dotnet test
+
+# Run with verbose test output
+dotnet test --logger "console;verbosity=detailed"</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="test">Testing:</h3>
+    <indent-blocks>
+      <t-b>Each library has a companion xUnit test project:</t-b>
+      <t-b>
+        <table>
+          <tr><th>Test Project</th><th>Coverage</th></tr>
+          <tr>
+            <td><c-s>Tokenizer.Tests</c-s></td>
+            <td>tags, attributes, doctypes, comments, position tracking</td>
+          </tr>
+          <tr>
+            <td><c-s>Lexer.Tests</c-s></td>
+            <td>tag grouping, attribute collection, case normalization</td>
+          </tr>
+          <tr>
+            <td><c-s>Validator.Tests</c-s></td>
+            <td>valid documents, missing elements, nesting errors, void elements, duplicate IDs, unquoted attributes</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>
+        <pre>
+# Run all tests from the solution root
+dotnet test
+
+# Run tests for a single project
+dotnet test Validator.Tests</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="deps">External Dependencies:</h3>
+    <indent-blocks>
+      <t-b>None. All four components use only the .NET Base Class Library
+      (<c-s>System.IO</c-s>, <c-s>System.Text.RegularExpressions</c-s>, and core collections).
+      No NuGet packages are required.</t-b>
+    </indent-blocks>
+
+    <spacer-15 class="clear"></spacer-15>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#concept">concept</a>
+        <a href="#packages">packages</a>
+        <a href="#quickstart">quick start</a>
+        <a href="#options">options</a>
+        <a href="#output">output</a>
+        <a href="#rules">rules</a>
+        <a href="#design">design</a>
+        <a href="#build">build</a>
+        <a href="#test">testing</a>
+        <a href="#deps">dependencies</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CSharpRepoPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 7, 10);
+  </script>
+</body>
+</html>
