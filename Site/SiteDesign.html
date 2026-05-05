@@ -50,7 +50,7 @@
   <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
     SiteDesign.html<br />
     copyright &copy; James Fawcett<br />
-    Revised: 12/28/2024
+    Revised: 05/05/2026
   </div>
 
   <content-block>
@@ -75,90 +75,151 @@
     </div>
     <div>
       <hr class="spread" />
-      <note-block>
-        This page is awaiting contents.
-        <ul class="tight">
-          <li>
-            Site Design: structure and styling
-          </li>
-          <li>
-            querystring processing
-          </li>
-          <li>
-            windows messaging
-          </li>
-          <li>
-            LocalStorage for session management in Explorers
-          </li>
-          <li>
-            W3C components like photosizer
-          </li>
-          <li>
-            iframe transitions
-          </li>
-        </ul>
-      </note-block>
+      <t-b id="view">
+        <h3>1.0 &nbsp; View &mdash; PageHost.html</h3>
+        <div class="indent">
+          <t-b>
+            The outermost shell of the site is <strong>../PageHost.html</strong>.  It
+            provides the single browser tab the user interacts with throughout a session.
+            PageHost owns a full-viewport iframe whose <code>src</code> is set to a
+            track Explorer when the user selects a track, or when the site first loads.
+            PageHost also renders a URL bar at the top of the viewport that always shows
+            the address of the content page currently visible inside the nested iframe
+            chain, and a status indicator that lights while a new page is loading.
+          </t-b>
+          <t-b>
+            Because every piece of content ultimately lives inside that iframe, the
+            browser's address bar never changes during normal navigation.  PageHost
+            receives page-URL messages posted up from content pages and writes them into
+            its own URL bar so users can copy or share a direct link at any time.
+          </t-b>
+        </div>
+      </t-b>
       <sp-small></sp-small>
-      <t-b id="todos">
-        <details class="indent expandable-notes" open>
-          <summary style="border:none;"><h3 style="display:inline-block; margin:0.0rem 0.5rem;">Site To-Dos</h3></summary>
-          <hr />
-          <ol>
+
+      <t-b id="explorers">
+        <h3>2.0 &nbsp; Track Explorers and Iframes</h3>
+        <div class="indent">
+          <t-b>
+            Each track is managed by a dedicated Explorer page
+            (e.g. <strong>Explore.html</strong>, <strong>ExploreCode.html</strong>,
+            <strong>ExploreRust.html</strong>, &hellip;).  An Explorer is a two-panel
+            layout built with the <code>&lt;x-two-panel&gt;</code> web component:
+          </t-b>
+          <ul>
             <li>
-              Add placeholder pages for bites and stories.
-              <inset>
-                Content page with infrastructure but almost no content,
-                used to build new pages<br />by copying content from old
-                site.
-              </inset>
+              <strong>Left panel</strong> &mdash; a scrollable navigation tree of links
+              that are specific to the track.  Clicking a link sets the right-panel
+              iframe&rsquo;s <code>src</code> to the target content page.
             </li>
             <li>
-              Port existing pages from old site by duplicating prototype page and 
-              filling<br>
-              with content from old site.
+              <strong>Right panel</strong> &mdash; a single iframe that fills the entire
+              panel.  Every content page for the track is loaded here.  The iframe is the
+              only thing in the right panel; no chrome surrounds it.
+            </li>
+          </ul>
+          <t-b>
+            PageHost embeds the Explorer in its own iframe, so the full stack is:
+            PageHost &rarr; Explorer iframe &rarr; content iframe.  Messages travel up
+            and down this chain via <code>postMessage</code>.
+          </t-b>
+        </div>
+      </t-b>
+      <sp-small></sp-small>
+
+      <t-b id="tracks">
+        <h3>3.0 &nbsp; Content Partitioned into Tracks</h3>
+        <div class="indent">
+          <t-b>
+            All content pages are grouped into tracks: <strong>Site</strong>,
+            <strong>Rust</strong>, <strong>C++</strong>, <strong>C#</strong>,
+            <strong>Python</strong>, <strong>WebDev</strong>, <strong>SWDev</strong>,
+            <strong>Basics</strong>, and <strong>Code</strong>.  Each track has its own
+            Explorer, its own CSS theme file, and its own colour palette so that users
+            always have a visual cue about which track they are browsing.
+          </t-b>
+          <t-b>
+            If a content page is opened directly (not through its Explorer), its load
+            script detects that it is the top-level window and redirects to
+            <code>ExploreCode.html?src=&lt;page-url&gt;</code> so the full two-panel
+            view is always presented.
+          </t-b>
+        </div>
+      </t-b>
+      <sp-small></sp-small>
+
+      <t-b id="menus">
+        <h3>4.0 &nbsp; Menus &mdash; Site-level and Page-level</h3>
+        <div class="indent">
+          <t-b>
+            The site uses two distinct layers of menu:
+          </t-b>
+          <ul>
+            <li>
+              <strong>Site-level menus (top of view)</strong> &mdash; defined inside
+              each Explorer and rendered in the Explorer&rsquo;s own header area at
+              the top of the visible viewport.  These menus provide track navigation,
+              theme controls, and other cross-page operations.
             </li>
             <li>
-              Simplify page content by deleting non-essentials 
+              <strong>Page-level menus (bottom of view)</strong> &mdash; rendered
+              inside each content page at the page&rsquo;s bottom.  Typical entries
+              are a <em>Sections</em> list for in-page navigation, a
+              <em>Pages</em> list for navigating within the track, and a
+              <em>Keys</em> list for keyboard shortcuts.
+            </li>
+          </ul>
+          <t-b>
+            Visibility of site-level drop-down menus is toggled by Page Controls buttons in the
+            Explorer&rsquo;s left panel and in the bottom page menu bar.  When a user clicks a menu button the
+            Explorer posts a <code>postMessage</code> into the content iframe; the
+            content page listens for the message and shows or hides the corresponding
+            menu drop-down.  This keeps the button controls visually in the Explorer left panel and page bottom menu while the
+            menus they control appear just below the top menu bar.
+          </t-b>
+        </div>
+      </t-b>
+      <sp-small></sp-small>
+
+      <t-b id="messaging">
+        <h3>5.0 &nbsp; Window Messaging</h3>
+        <div class="indent">
+          <t-b>
+            Because content lives inside nested iframes, all cross-frame communication
+            uses <code>window.postMessage</code> with <code>{ key, value }</code>
+            objects.  The main message flows are:
+          </t-b>
+          <ul>
+            <li>
+              <strong>Page URL &rarr; PageHost</strong> &mdash; when a content page
+              finishes loading it posts its full URL to <code>window.top</code>.
+              PageHost receives the message and writes the URL into its URL bar.
             </li>
             <li>
-              Add references pages that initially hold links to add, 
-              but in no special order.
-              <inset>
-                Eventually will also hold details of syntax etc.
-              </inset>
-            </li>
-          </ol>
-          <hr>
-          <ol>
-            <li>
-              Maintain page session using cookie storage, e.g., keep page sections<br>
-              list state open/closed across pages.
-              <div style="height:0.75rem;"></div>
-              <span style="text-decoration: line-through;">
-                Explorer uses cookie storage to save state of sections list and posts that<br>
-                to iframe when source changes.
-              </span>
-              <div style="height:0.75rem;"></div>
-              Changed concept: each page tracks and changes sections status when it<br>
-              loads or when user uses Sections button to post toggle to the page.<br>
-              Much simpler to let page handle that state.
-              <div style="height:0.75rem;"></div>
-              This is now done for sections list.  Need to implement for page list and<br>
-              compare panel.  Same technique.
-              <div style="height:0.75rem;"></div>
-              The esc key should close all open menus. When pages closes sections, that should<br>
-              set the cookie to false.  It does not do that now.
+              <strong>File name &rarr; Explorer</strong> &mdash; each content page also
+              posts its short file name to <code>window.parent</code> (the Explorer).
+              The Explorer uses this to highlight the matching link in its left-panel
+              navigation tree and to update its own session state.
             </li>
             <li>
-              Open control panel window that has larger controls and communicates<br>
-              to current page using windows messages.
-              <div>
-                <a target="_blank" href="Tests/PopUp.html">Pop Up Demo</a>
-              </div>
-              This is basically a remote control for page navigation.
+              <strong>Menu-toggle commands &rarr; content page</strong> &mdash; Explorer
+              site-level menu buttons post toggle messages down into the content iframe.
+              The content page responds by showing or hiding the requested page-level
+              menu panel (Sections, Pages, Keys).
             </li>
-          </ol>
-        </details>
+            <li>
+              <strong>Navigation commands &rarr; Explorer</strong> &mdash; content pages
+              can post next/prev/up/down navigation requests to the Explorer, which
+              responds by updating the right-panel iframe <code>src</code>.
+            </li>
+          </ul>
+          <t-b>
+            Message handlers are centralised in
+            <code>js/contentMessages.js</code> (content-side),
+            <code>js/PageHost.js</code> (PageHost-side), and
+            <code>js/ExplorerMsg.js</code> (Explorer-side).
+          </t-b>
+        </div>
       </t-b>
     </div>
     <div style="height:8em;"></div>
@@ -170,7 +231,11 @@
       <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
       <div class="menuBody">
         <a href="#top">top</a>
-        <a href="#todos">todos</a>
+        <a href="#view">1.0 View</a>
+        <a href="#explorers">2.0 Explorers</a>
+        <a href="#tracks">3.0 Tracks</a>
+        <a href="#menus">4.0 Menus</a>
+        <a href="#messaging">5.0 Messaging</a>
         <a href="#bottom">bottom</a>
       </div>
     </div>
