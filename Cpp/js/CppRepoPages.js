@@ -14,7 +14,6 @@ function buildPages() {
       <a href='RepoCpp_FileUtils.html'>FileUtils</a>\
       <a href='RepoCpp_Testing.html'>Testing</a>\
       <a href='RepoCpp_Logger.html'>Logger</a>\
-      <a href='RepoCpp_TextFinder.html'>TextFinder</a>\
       <a href='RepoCpp_Duplicates.html'>Duplicates</a>\
       <a href='RepoCpp_FileDates.html'>FileDates</a>\
       <a href='RepoCpp_FileSizes.html'>FileSizes</a>\
@@ -34,8 +33,8 @@ function buildPages() {
       <a href='RepoCpp_WinSockets.html'>WinSockets</a>\
       <a href='RepoCpp_XmlDocument.html'>XmlDocument</a>\
       <a href='RepoCpp_DirGraph.html'>DirGraph</a>\
-      <a href='RepoCpp_CppTextFinder.html'>Cpp TextFinder</a>\
-      <a href='RepoCpp_CppPageValidator.html'>Cpp PageValidator</a>\
+      <a href='RepoCpp_CppTextFinder.html'>CppTextFinder</a>\
+      <a href='RepoCpp_CppPageValidator.html'>CppPageValidator</a>\
       <a href='RepoCpp_CppParser.html'>Cpp Parser</a>\
       <a href='RepoCpp_CodeAnalyzer.html'>Cpp CodeAnalyzer</a>\
       <a href='RepoCpp_CommWithFileXfer.html'>CommWithFileXfer</a>\
