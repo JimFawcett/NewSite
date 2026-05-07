@@ -45,15 +45,26 @@ function handleIframeTransition() {
 //   toggleElement('lpanel');
 // }
 /*----------------------------------------------------
-  doUrl() must be called from inline onclick event
+  doUrl() must be called from inline onclick event.
+  The URL shown in the content iframe is the iframe's
+  own location.href, so we copy that same URL to the
+  clipboard (not the Explorer page's URL).
 */
-function doUrl(text) {
+function doUrl() {
   postMsg(makeMsg('url'));
-  copyUrlToClipboard(text);
+  const iframe = document.getElementById('pgframe');
+  let urlToCopy;
+  try {
+    urlToCopy = iframe.contentWindow.location.href;
+  } catch (e) {
+    urlToCopy = iframe.src;
+  }
+  copyUrlToClipboard(urlToCopy);
 }
-function copyUrlToClipboard() {
-  navigator.clipboard.writeText(window.location.href)
-    .then(() => console.log('URL copied to clipboard:', window.location.href))
+function copyUrlToClipboard(url) {
+  const text = url || window.location.href;
+  navigator.clipboard.writeText(text)
+    .then(() => console.log('URL copied to clipboard:', text))
     .catch(err => console.error('Copy failed:', err));
 }
 /*---------------------------------------------------------
