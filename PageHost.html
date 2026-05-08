@@ -10,6 +10,7 @@
   <!-- <link rel="stylesheet" href="css/gridExplorer.css" /> -->
   <script src="js/ContentMenus.js"></script>
   <script src="js/Explorer.js"></script>
+  <script src="Tests/BookMarks/js/BookMarks.js" defer></script>
   <style>
     :root {
       --lpanelw: calc(100vw - 15rem);
@@ -170,7 +171,116 @@
       }
     }
     function togglerf() {}  // recent files
-    function togglebm() {}  // bookmarks
+
+    let bookmarkList = null;
+    function ensureBookmarkList() {
+      if (bookmarkList || !window.BookmarkList) return bookmarkList;
+      bookmarkList = new BookmarkList('#bookmarksList');
+      return bookmarkList;
+    }
+    function togglebm() {
+      const panel = document.getElementById('bookmarksPanel');
+      if (!panel) return;
+      if (panel.classList.contains('hidden')) {
+        ensureBookmarkList();
+        panel.classList.remove('hidden');
+      } else {
+        panel.classList.add('hidden');
+      }
+    }
+    function removeAllBookmarks() {
+      ensureBookmarkList();
+      if (!bookmarkList) return;
+      bookmarkList.clear();
+    }
+    function pageNameFromUrl(urlString) {
+      if (!urlString) return '';
+      try {
+        const u = new URL(urlString, window.location.href);
+        let seg = u.pathname.split('/').filter(Boolean).pop() || '';
+        if (!seg) return u.hostname || urlString;
+        try { seg = decodeURIComponent(seg); } catch {}
+        return seg.replace(/\.[a-z0-9]+$/i, '') || u.hostname || urlString;
+      } catch {
+        return urlString;
+      }
+    }
+    function relPathTo(fromUrl, toUrl) {
+      try {
+        const fromU = new URL(fromUrl);
+        const toU = new URL(toUrl);
+        if (fromU.protocol !== toU.protocol || fromU.host !== toU.host) {
+          return toU.href;
+        }
+        const fromSeg = fromU.pathname.split('/');
+        const toSeg = toU.pathname.split('/');
+        fromSeg.pop(); // drop the explorer filename — we only want its directory
+        let i = 0;
+        while (i < fromSeg.length && i + 1 < toSeg.length && fromSeg[i] === toSeg[i]) {
+          i++;
+        }
+        const ups = fromSeg.length - i;
+        const tail = toSeg.slice(i).join('/');
+        return '../'.repeat(ups) + tail + (toU.search || '') + (toU.hash || '');
+      } catch {
+        return toUrl;
+      }
+    }
+    function getExplorerUrl() {
+      const frm = document.getElementById('pgframe');
+      if (!frm) return '';
+      try {
+        const loc = frm.contentWindow && frm.contentWindow.location
+          ? frm.contentWindow.location.href
+          : '';
+        if (loc && loc !== 'about:blank') return loc;
+      } catch {}
+      return frm.getAttribute('src') || frm.src || '';
+    }
+    function bookmarkCurrentPage() {
+      ensureBookmarkList();
+      if (!bookmarkList) return;
+      const input = document.getElementById('urlinput');
+      const contentUrl = (input && input.value) || '';
+      const explorerUrl = getExplorerUrl();
+      if (!explorerUrl) return;
+      const explorerBase = explorerUrl.split('?')[0].split('#')[0];
+      let srcParam = '';
+      if (contentUrl) {
+        try {
+          const contentAbs = new URL(contentUrl, window.location.href).href;
+          srcParam = relPathTo(explorerBase, contentAbs);
+        } catch {
+          srcParam = contentUrl;
+        }
+      }
+      const bookmarkUrl = srcParam ? `${explorerBase}?src=${srcParam}` : explorerBase;
+      const displayName =
+        pageNameFromUrl(contentUrl) || pageNameFromUrl(explorerBase);
+      try { bookmarkList.add(bookmarkUrl, displayName); }
+      catch (err) { console.warn('bookmark add failed:', err); }
+    }
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest('#bookmarksList a.bm-link');
+      if (!a) return;
+      e.preventDefault();
+      const href = a.getAttribute('href');
+      if (!href) return;
+      const frm = document.getElementById('pgframe');
+      if (frm) frm.src = href;
+      const input = document.getElementById('urlinput');
+      if (input) {
+        let displayUrl = href;
+        try {
+          const u = new URL(href, window.location.href);
+          const src = u.searchParams.get('src');
+          if (src) displayUrl = src;
+        } catch {}
+        input.value = displayUrl;
+      }
+      const panel = document.getElementById('bookmarksPanel');
+      if (panel) panel.classList.add('hidden');
+    });
   </script>
   <style>
     #github .truncate-left{
@@ -192,6 +302,54 @@
       direction: ltr;
       text-align: left;
     }
+
+    #github #bookmarksPanel {
+      position: absolute;
+      top: var(--headerht);
+      right: 0.5rem;
+      width: 30rem;
+      max-height: calc(100vh - var(--headerht) - 1rem);
+      overflow: auto;
+      background: var(--light);
+      border: 2px solid var(--dark);
+      border-radius: 6px;
+      padding: 0.5rem;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    #github #bookmarksPanel.hidden { display: none; }
+    #github .bm-panel-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.5rem;
+      border-bottom: 1px solid var(--dark);
+    }
+    #github .bm-panel-header strong {
+      margin-right: auto;
+      font-size: 1.0rem;
+    }
+    #github .bm-action-btn {
+      border: 2px solid var(--dark);
+      border-radius: 4px;
+      background: var(--light);
+      font-size: 0.85rem;
+      padding: 0.1rem 0.5rem;
+      cursor: pointer;
+    }
+    #github #bookmarksPanel .bm-actions { display: none; }
+    #github #bookmarksPanel .bm-item {
+      padding: 0;
+      line-height: 1.1;
+    }
+    #github #bookmarksPanel .bm-link { color: var(--dark); }
+    #github #bookmarksPanel .bm-remove {
+      padding: 0 0.35rem;
+      font-size: 0.75rem;
+      line-height: 1.1;
+    }
+    #github #bookmarks { color: var(--dark); }
   </style>
 </head>
 <body id="github" onload="load()">
@@ -199,10 +357,19 @@
     <strong style="white-space: nowrap; font-size:1.0rem;">Page Host</strong>
     <div id="statusLight"></div>
     <button id="fullscreen" class="clickable topButton" onclick="togglefs()">Full Screen</button>
-    <button id="bookmarks" class="clickable topButton undef statusLight" onclick="togglebm()">bookmarks</button>
+    <button id="bookmarks" class="clickable topButton statusLight" onclick="togglebm()">bookmarks</button>
     <input type="url" id="urlinput" class="truncate-left" placeholder="url goes here" style="width: 40rem; margin-left:1rem; margin-right:2rem; border-radius: 4px; padding:0.1rem 0.25rem;" />
   </header>
   <iframe id="pgframe" src="Site/Explore.html" name = "pgframe"></iframe>
+  <div id="bookmarksPanel" class="hidden">
+    <div class="bm-panel-header">
+      <strong>Bookmarks</strong>
+      <button type="button" class="bm-action-btn" onclick="removeAllBookmarks()">Remove all</button>
+      <button type="button" class="bm-action-btn" onclick="bookmarkCurrentPage()">Add current page</button>
+      <button type="button" class="bm-action-btn" onclick="togglebm()">close</button>
+    </div>
+    <div id="bookmarksList"></div>
+  </div>
   <script>
     /* this call has to be here, not in onload processing */
     handleIframeTransition();

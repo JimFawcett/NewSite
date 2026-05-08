@@ -51,8 +51,10 @@
 
     /* ---------- Public API ---------- */
 
-    add(url) {
-      const { id, href, name } = this.#makeEntry(url);
+    add(url, displayName) {
+      const entry = this.#makeEntry(url);
+      if (displayName) entry.name = String(displayName);
+      const { id, href, name } = entry;
       const existingKey = this.#findKeyById(id);
       const key = existingKey || this.#uniqueKeyFor(id);
 
