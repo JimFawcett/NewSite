@@ -50,7 +50,7 @@
   <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
     RepoRust_RustByteRecord.html<br />
     copyright &copy; James Fawcett<br />
-    Revised: 11/13/2025
+    Revised: 05/07/2026
   </div>
 
   <content-block>
@@ -69,30 +69,340 @@
       </div>
 
     </header>
-    <!-- <div class="note" style="border:2px dashed red;">
-      Default settings are not working correctly.  Will fix as time permits.
-    </div> -->
-        <h3 id="contents">Contents:</h3>
-        <indent-blocks>
-          <t-b>
-            Code for functions that enable serializing primitive values to byte arrays and back:
-          </t-b>
-          <t-b>
-            At this time, the code is simply a work in progress, testing ideas and implementations.
-          </t-b>
-        </indent-blocks>
-        <spacer-15></spacer-15>
-        <h3 id="build">Build:</h3>
-        <indent-blocks>
-          This Rust code was built with Cargo from Visual Studio Code terminal and tested on Windows 10.
-        </indent-blocks>
-        <h3>Status:</h3>
-        <t-b>
-          This repository has just started, and will eventually be populated with more code and examples.
-        </t-b>
 
-        <spacer-25></spacer-25>
-        <div style="height:15rem;"></div>
+    <h3 id="concept">Concept:</h3>
+    <indent-blocks>
+      <t-b>
+        Utilities for serializing primitive values to byte arrays and deserializing them
+        back, written in Rust. The crate provides a small, dependency-free toolkit for
+        laying primitives and strings into byte buffers and reading them back out -
+        useful for fixed-format records, message framing, and inter-process communication
+        where a fixed-layout byte representation is needed.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="components">Components:</h3>
+    <indent-blocks>
+      <t-b>
+        The crate exposes three independent abstractions that share the same
+        serialization helpers.
+      </t-b>
+      <t-b>
+        <table>
+          <tr><th>Component</th><th>Kind</th><th>Backing storage</th><th>Role</th></tr>
+          <tr>
+            <td><c-s>ByteRecord</c-s></td>
+            <td>type alias</td>
+            <td>stack array <c-s>[u8; 32]</c-s></td>
+            <td>Fixed-size record manipulated through free functions</td>
+          </tr>
+          <tr>
+            <td><c-s>ByteArray</c-s></td>
+            <td>struct</td>
+            <td><c-s>Box&lt;[u8; 32]&gt;</c-s></td>
+            <td>Same fixed size, boxed on the heap, with methods</td>
+          </tr>
+          <tr>
+            <td><c-s>Message</c-s></td>
+            <td>struct</td>
+            <td><c-s>Vec&lt;u8&gt;</c-s></td>
+            <td>Variable-size message with a type tag and content-size header</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>
+        All three share a common set of primitive-conversion helpers (<c-s>usize</c-s>, <c-s>i32</c-s>,
+        <c-s>&amp;str</c-s>) so the same encoding rules apply regardless of which container
+        holds the bytes.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="constants">Constants:</h3>
+    <indent-blocks>
+      <t-b>
+        <table>
+          <tr><th>Constant</th><th>Value</th><th>Meaning</th></tr>
+          <tr>
+            <td><c-s>BYTE_RECORD_SIZE</c-s></td>
+            <td><c-s>32</c-s></td>
+            <td>Fixed length of <c-s>ByteRecord</c-s> and <c-s>ByteArray</c-s></td>
+          </tr>
+          <tr>
+            <td><c-s>TYPE_SIZE</c-s></td>
+            <td><c-s>1</c-s></td>
+            <td><c-s>Message</c-s> header byte that carries the <c-s>MsgType</c-s> tag</td>
+          </tr>
+          <tr>
+            <td><c-s>CONTENT_SIZE</c-s></td>
+            <td><c-s>8</c-s></td>
+            <td><c-s>Message</c-s> header field that stores the content length as a big-endian <c-s>usize</c-s></td>
+          </tr>
+          <tr>
+            <td><c-s>MSG_SIZE</c-s></td>
+            <td><c-s>4096</c-s></td>
+            <td>Suggested maximum total <c-s>Message</c-s> size</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>
+        A <c-s>Message</c-s> payload therefore starts at offset <c-s>TYPE_SIZE + CONTENT_SIZE = 9</c-s>,
+        leaving up to <c-s>MSG_SIZE - 9 = 4087</c-s> bytes of content when the suggested cap
+        is honored.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="quickstart">Quick Start:</h3>
+    <indent-blocks>
+      <t-b>
+        <pre>
+# Build the library
+cargo build
+
+# Run the bundled example
+cargo run --example test1
+
+# Run the unit tests
+cargo test</pre>
+      </t-b>
+      <t-b>
+        Use it from another crate by adding a path dependency in <c-s>Cargo.toml</c-s>:
+        <pre>
+[dependencies]
+rust_byte_record = { path = "../RustByteRecord" }</pre>
+      </t-b>
+      <t-b>
+        <pre>
+use rust_byte_record::*;
+
+fn main() {
+    let mut br: ByteRecord = [0; BYTE_RECORD_SIZE];
+    set_field(&amp;mut br, 2, &amp;usize_to_bytes(255));
+    show_record(&amp;br, 8);
+}</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="functions">Free Functions:</h3>
+    <indent-blocks>
+      <t-b>
+        Endianness is <strong>big-endian</strong> for every numeric conversion, so byte buffers can
+        be moved between processes and architectures without reinterpretation.
+      </t-b>
+      <t-b>
+        <table>
+          <tr><th>Function</th><th>Signature</th><th>Purpose</th></tr>
+          <tr>
+            <td><c-s>usize_to_bytes</c-s></td>
+            <td><c-s>fn(usize) -&gt; [u8; 8]</c-s></td>
+            <td><c-s>usize</c-s> to 8-byte big-endian array</td>
+          </tr>
+          <tr>
+            <td><c-s>usize_from_bytes</c-s></td>
+            <td><c-s>fn(&amp;[u8]) -&gt; usize</c-s></td>
+            <td>8-byte slice back to <c-s>usize</c-s></td>
+          </tr>
+          <tr>
+            <td><c-s>i32_to_bytes</c-s></td>
+            <td><c-s>fn(i32) -&gt; [u8; 4]</c-s></td>
+            <td><c-s>i32</c-s> to 4-byte big-endian array</td>
+          </tr>
+          <tr>
+            <td><c-s>i32_from_bytes</c-s></td>
+            <td><c-s>fn(&amp;[u8]) -&gt; i32</c-s></td>
+            <td>4-byte slice back to <c-s>i32</c-s></td>
+          </tr>
+          <tr>
+            <td><c-s>str_to_bytes</c-s></td>
+            <td><c-s>fn(&amp;str) -&gt; &amp;[u8]</c-s></td>
+            <td>Borrow the UTF-8 bytes of a <c-s>&amp;str</c-s></td>
+          </tr>
+          <tr>
+            <td><c-s>str_from_bytes</c-s></td>
+            <td><c-s>fn(&amp;[u8]) -&gt; Result&lt;&amp;str, Utf8Error&gt;</c-s></td>
+            <td>Decode a slice as UTF-8</td>
+          </tr>
+          <tr>
+            <td><c-s>clear</c-s></td>
+            <td><c-s>fn(&amp;mut ByteRecord)</c-s></td>
+            <td>Zero every byte of a <c-s>ByteRecord</c-s></td>
+          </tr>
+          <tr>
+            <td><c-s>set_field</c-s></td>
+            <td><c-s>fn(&amp;mut ByteRecord, offset: usize, buff: &amp;[u8])</c-s></td>
+            <td>Copy <c-s>buff</c-s> into the record at <c-s>offset</c-s>, bounds-checked</td>
+          </tr>
+          <tr>
+            <td><c-s>show_record</c-s></td>
+            <td><c-s>fn(&amp;ByteRecord, fold: usize)</c-s></td>
+            <td>Print a folded, decimal dump of the record</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>
+        <c-s>usize_from_bytes</c-s> and <c-s>i32_from_bytes</c-s> expect slices of exactly the
+        matching length (8 and 4 bytes respectively) - they panic via <c-s>unwrap()</c-s>
+        on a length mismatch.
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="byterecord"><c-s>ByteRecord</c-s>:</h3>
+    <indent-blocks>
+      <t-b>
+        <pre>
+pub const BYTE_RECORD_SIZE: usize = 32;
+pub type ByteRecord = [u8; BYTE_RECORD_SIZE];</pre>
+      </t-b>
+      <t-b>
+        A type alias for a 32-byte stack array. Manipulated through the free functions
+        above, so no allocation occurs.
+      </t-b>
+      <t-b>
+        <pre>
+let mut br: ByteRecord = [0; BYTE_RECORD_SIZE];
+let buff: [u8; 4] = [1, 2, 3, 4];
+set_field(&amp;mut br, 3, &amp;buff);
+show_record(&amp;br, 8);</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="bytearray"><c-s>ByteArray</c-s>:</h3>
+    <indent-blocks>
+      <t-b>
+        A heap-resident counterpart to <c-s>ByteRecord</c-s> - a <c-s>Box&lt;[u8; 32]&gt;</c-s> wrapped
+        in a struct that exposes equivalent operations as methods.
+      </t-b>
+      <t-b>
+        <table>
+          <tr><th>Method</th><th>Purpose</th></tr>
+          <tr><td><c-s>new()</c-s></td><td>Allocate a zeroed boxed array</td></tr>
+          <tr><td><c-s>len()</c-s> / <c-s>is_empty()</c-s></td><td>Length helpers</td></tr>
+          <tr><td><c-s>array()</c-s></td><td>Borrow the underlying <c-s>&amp;[u8; 32]</c-s></td></tr>
+          <tr><td><c-s>clear()</c-s></td><td>Zero every byte</td></tr>
+          <tr><td><c-s>set_field(offset, buff)</c-s></td><td>Copy <c-s>buff</c-s> into the array, bounds-checked</td></tr>
+          <tr><td><c-s>get_field(offset, size)</c-s></td><td>Borrow a sub-slice</td></tr>
+          <tr><td><c-s>set_str(offset, s)</c-s></td><td>Write the UTF-8 bytes of <c-s>s</c-s></td></tr>
+          <tr><td><c-s>get_str(offset, size)</c-s></td><td>Decode a sub-slice as UTF-8</td></tr>
+          <tr><td><c-s>show_record(fold)</c-s></td><td>Folded decimal dump</td></tr>
+        </table>
+      </t-b>
+      <t-b>
+        <pre>
+let mut ba = ByteArray::new();
+ba.set_str(4, "a literal string");
+let s = ba.get_str(4, "a literal string".len()).unwrap();</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="message"><c-s>Message</c-s>:</h3>
+    <indent-blocks>
+      <t-b>
+        A variable-length, framed buffer suitable for byte-oriented messaging. The
+        backing storage is a <c-s>Vec&lt;u8&gt;</c-s> whose layout is:
+        <pre>
++--------+----------------------+--------------------------+
+| type   | content size         | content                  |
+| 1 byte | 8 bytes (BE usize)   | content_size bytes       |
++--------+----------------------+--------------------------+</pre>
+        The first byte is an <c-s>MsgType</c-s> tag, the next eight bytes encode the content
+        length as a big-endian <c-s>usize</c-s>, and the remainder is the payload.
+      </t-b>
+      <h4><c-s>MsgType</c-s></h4>
+      <t-b>
+        <pre>
+pub enum MsgType {
+    DEFAULT = 0,
+    TEXT    = 1,
+    REPLY   = 2,
+    END     = 4,
+    QUIT    = 8,
+}</pre>
+        The discriminants are powers of two so callers may treat them as bit flags
+        when that is useful.
+      </t-b>
+      <h4>Primary interface</h4>
+      <t-b>
+        <table>
+          <tr><th>Method</th><th>Purpose</th></tr>
+          <tr><td><c-s>new(sz)</c-s></td><td>Allocate a message buffer of <c-s>sz</c-s> bytes, zero-initialized</td></tr>
+          <tr><td><c-s>init()</c-s></td><td>Re-zero an existing message in place, preserving its length</td></tr>
+          <tr><td><c-s>len()</c-s> / <c-s>is_empty()</c-s></td><td>Length helpers</td></tr>
+          <tr><td><c-s>set_type(t)</c-s> / <c-s>get_type()</c-s></td><td>Read or write the type tag</td></tr>
+          <tr><td><c-s>set_content_bytes(buff)</c-s></td><td>Write the payload bytes and update the content-size header</td></tr>
+          <tr><td><c-s>get_content_bytes()</c-s></td><td>Borrow the current payload as <c-s>&amp;[u8]</c-s></td></tr>
+          <tr><td><c-s>set_content_str(s)</c-s></td><td>Write a <c-s>&amp;str</c-s> payload (UTF-8) and update the size header</td></tr>
+          <tr><td><c-s>get_content_str()</c-s></td><td>Decode the payload as UTF-8</td></tr>
+          <tr><td><c-s>show_message(fold)</c-s></td><td>Folded decimal dump of the entire buffer</td></tr>
+        </table>
+      </t-b>
+      <h4>Secondary interface</h4>
+      <t-b>
+        Lower-level access for callers who want to build their own framing on top
+        of the buffer.
+        <table>
+          <tr><th>Method</th><th>Purpose</th></tr>
+          <tr><td><c-s>set_field(offset, buff)</c-s> / <c-s>get_field(offset, size)</c-s></td><td>Raw byte read/write</td></tr>
+          <tr><td><c-s>set_content_size(sz)</c-s> / <c-s>get_content_size()</c-s></td><td>Read or write just the size header</td></tr>
+          <tr><td><c-s>set_str(offset, s)</c-s> / <c-s>get_str(offset, size)</c-s></td><td>Raw UTF-8 read/write</td></tr>
+          <tr><td><c-s>array()</c-s></td><td>Borrow the entire backing buffer as <c-s>&amp;[u8]</c-s></td></tr>
+        </table>
+      </t-b>
+      <t-b>
+        <pre>
+let mut msg = Message::new(32);
+msg.set_type(MsgType::TEXT);
+msg.set_content_str("a literal string");
+let s = msg.get_content_str().unwrap();</pre>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="examples">Examples:</h3>
+    <indent-blocks>
+      <t-b>
+        A worked example that exercises every type lives in
+        <c-s>examples/test1.rs</c-s>:
+        <pre>
+cargo run --example test1</pre>
+      </t-b>
+      <t-b>
+        It walks through:
+        <ul>
+          <li>Round-tripping <c-s>usize</c-s>, <c-s>i32</c-s>, and <c-s>&amp;str</c-s> through their byte representations</li>
+          <li>Filling a <c-s>ByteRecord</c-s> with a buffer at an offset</li>
+          <li>Storing and retrieving structured data inside a <c-s>ByteArray</c-s></li>
+          <li>Building a <c-s>Message</c-s>, setting its type, and reading its payload back</li>
+        </ul>
+      </t-b>
+    </indent-blocks>
+
+    <h3 id="build">Build and Test:</h3>
+    <indent-blocks>
+      <t-b>
+        <pre>
+# Build
+cargo build
+
+# Run the bundled example
+cargo run --example test1
+
+# Unit tests
+cargo test</pre>
+      </t-b>
+      <t-b>This crate uses only the Rust standard library - no external dependencies.</t-b>
+    </indent-blocks>
+
+    <h3 id="status">Status:</h3>
+    <indent-blocks>
+      <t-b>
+        Active work in progress. The primary types and conversion helpers are stable
+        and exercised by the example. Future work may add typed accessors for
+        additional primitive widths (<c-s>u8</c-s>, <c-s>u16</c-s>, <c-s>u64</c-s>, <c-s>f32</c-s>, <c-s>f64</c-s>),
+        iterator adaptors over <c-s>Message</c-s> payloads, and richer error reporting in
+        place of the current <c-s>unwrap()</c-s> paths in the fixed-width conversion
+        helpers.
+      </t-b>
+    </indent-blocks>
+
+    <spacer-15 class="clear"></spacer-15>
   </content-block>
   <div id="bottomMenu">
     <div id="keys" class="hidden"></div>
@@ -100,6 +410,17 @@
       <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
       <div class="menuBody">
         <a href="#top">top</a>
+        <a href="#concept">concept</a>
+        <a href="#components">components</a>
+        <a href="#constants">constants</a>
+        <a href="#quickstart">quick start</a>
+        <a href="#functions">functions</a>
+        <a href="#byterecord">ByteRecord</a>
+        <a href="#bytearray">ByteArray</a>
+        <a href="#message">Message</a>
+        <a href="#examples">examples</a>
+        <a href="#build">build</a>
+        <a href="#status">status</a>
         <a href="#bottom">bottom</a>
       </div>
     </div>
@@ -113,7 +434,7 @@
   <script>createSiteNavMenu('goto')</script>
   <script src="../js/link-nav.js" defer></script>
   <script>
-    setCookie('#pages', 13, 10);
+    setCookie('#pages', 14, 10);
   </script>
 </body>
 </html>

@@ -11,7 +11,6 @@ function buildPages() {
     "<div class='darkItem listheader' onclick='togglePages()'>Rust Repo Pages</div>\
     <div class='menuBody'>\
       <a href='RepoRust_RustLogger.html'>Logger</a>\
-      <a href='RepoRust_RustTextFinder.html'>Text Finder</a>\
       <a href='RepoRust_RustBlockingQueue.html'>Blocking Queue</a>\
       <a href='RepoRust_RustThreadPool.html'>Thread Pool</a>\
       <a href='RepoRust_RustCmdLine.html'>Cmd Line</a>\
