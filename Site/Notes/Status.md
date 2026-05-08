@@ -1,6 +1,6 @@
 # Project Status
 
-_Last updated: 2026-05-08_
+_Last updated: 2026-05-08 15:19_
 
 ## Site Overview
 
@@ -11,14 +11,14 @@ Static educational web platform documenting multiple programming languages and s
 | Track   | Explorer              | Home page         | Status |
 |---------|-----------------------|-------------------|--------|
 | Site    | `Site/Explore.html`         | `Site/SiteHome.html`     | active — site landing/overview |
+| Rust    | `Rust/ExploreRust.html`     | `Rust/RustHome.html`     | active — repos and stories |
+| Cpp     | `Cpp/ExploreCpp.html`       | `Cpp/CppHome.html`       | active — Bites, Story chapters, repo demos |
+| CSharp  | `CSharp/ExploreCSharp.html` | `CSharp/CSharpHome.html` | active — Bites, Story chapters, WCF/WPF demos |
+| Python  | `Python/ExplorePython.html` | `Python/PythonHome.html` | active — Bites, Story chapters, repo prototype |
+| WebDev  | `WebDev/ExploreWebDev.html` | `WebDev/WebDevHome.html` | active |
+| SWDev   | `SWDev/ExploreSWDev.html`   | `SWDev/SWDevHome.html`   | active — `SWDevStory` added recently |
 | Basics  | `Basics/ExploreBasics.html` | `Basics/BasicsHome.html` | active — story + repos pages populated |
 | Code    | `Code/ExploreCode.html`     | `Code/CodeHome.html`     | active — large AI-focused content set, repo summaries, CodeStory chapters |
-| Cpp     | `Cpp/...`                   | `Cpp/CppHome.html`       | active — Bites, Story chapters, repo demos |
-| CSharp  | `CSharp/...`                | `CSharp/CSharpHome.html` | active — Bites, Story chapters, WCF/WPF demos |
-| Python  | `Python/...`                | `Python/PythonHome.html` | active — Bites, Story chapters, repo prototype |
-| Rust    | `Rust/ExploreRust.html`     | `Rust/RustHome.html`     | active — repos and stories |
-| WebDev  | `WebDev/...`                |                          | active |
-| SWDev   | `SWDev/...`                 |                          | active — `SWDevStory` added recently |
 
 ## Tooling
 
@@ -32,6 +32,7 @@ Static educational web platform documenting multiple programming languages and s
 
 | Date / Time       | Activity |
 |-------------------|----------|
+| 2026-05-08 15:19  | Added bookmarks; moved Notes from NewSite to NewSite/Site |
 | 2026-05-08 09:33  | PageHost link fix in Page Controls > GoTo |
 | 2026-05-08 09:10  | Windows messaging update |
 | 2026-05-08 08:48  | Removed status links from explorers; clarifying text in SiteMap |
@@ -57,5 +58,5 @@ Static educational web platform documenting multiple programming languages and s
 
 ## Open / Watch Items
 
-- Working tree currently shows uncommitted changes under `Code/C#/Hello/obj/Debug/net10.0/` (build artifacts — likely gitignore candidates rather than intentional changes).
-- No tracked TODO/issue list inside the repo; future status updates should capture in-flight content work and any outstanding link/index fixes here.
+- Working tree currently shows uncommitted changes under `Code/C#/Hello/obj/Debug/net10.0/` (build artifacts - likely gitignore candidates rather than intentional changes).
+- ~~No tracked TODO/issue list inside the repo; future status updates should capture in-flight content work and any outstanding link/index fixes here.~~
