@@ -526,7 +526,7 @@ function bigger(img) {
         <div>For this <strong>Explorer:</strong></div>
         <div class="indent">
           <a style="cursor: pointer; text-decoration:underline;" onclick="postParentMsg(makeMsg('back', null))">Back</a>, 
-          <a style="cursor: pointer; text-decoration:underline;" onclick="postParentMsg(makeMsg('forward', null">Forward</a>, 
+          <a style="cursor: pointer; text-decoration:underline;" onclick="postParentMsg(makeMsg('forward', null))">Forward</a>,
           <a style="cursor: pointer; text-decoration:underline;" onclick="postParentMsg(makeMsg('reload', null))">Reload</a>
         </div>
 
