@@ -367,7 +367,7 @@ window.onmessage = function (e) {
       /* do nothing */
       break;
     case 'loaded':
-      window.parent.postMessage('loaded', '*');
+      window.parent.postMessage(makeMsg('loaded'), '*');
       console.log('Explorer posted message to PageHost');
       break;
     default:
