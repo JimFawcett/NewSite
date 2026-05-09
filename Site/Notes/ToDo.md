@@ -9,6 +9,12 @@
 
 ---
 
+- **2026-05-08 13:16** — Voice-driven dev journal (extends voice note-taker above)
+    - on stop, classify transcript into a track and append a stamped entry to `Notes/<Track>Changes.md` or `Notes/ToDo.md`
+    - Whisper (local) + small Python classifier; no cloud round-trip required
+
+---
+
 - **2026-05-08 11:17** — Experiment with styles cleanup using container
     - would installing changes into non-container environment cause difficulties?
     - VM Workstation Pro might be a better alternative.
@@ -41,11 +47,8 @@
 ---
 
 - **2026-05-08 13:16** — Cross-language code comparator
-    - given a topic, render scroll-locked side-by-side samples from Rust / C++ / C# / Python repos
+    - render scroll-locked side-by-side samples from Rust / C++ / C# / Python / Code repos
     - reuse `CodeWebifier` for the HTML output
-
----
-
-- **2026-05-08 13:16** — Voice-driven dev journal (extends voice note-taker above)
-    - on stop, classify transcript into a track and append a stamped entry to `Notes/<Track>Changes.md` or `Notes/ToDo.md`
-    - Whisper (local) + small Python classifier; no cloud round-trip required
+    - provides vertical offset slider for right panel
+    - provides code picker based on bookmarks - very similar layout and functioning
+    - implement as W3C Web Component?
