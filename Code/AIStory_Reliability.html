@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  AIStory_Reliability.html - AI Story Chapter 11
+-->
+<head>
+  <title>AI Story: Reliability</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    AIStory_Reliability.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/10/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">AI Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Story: Reliability</h2>
+        <h4 class="indent" id="subtitle">rate limits, retry logic, token budgets, output validation, cost monitoring</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="reliability"></a>
+      <h3>11. &nbsp;Reliability</h3>
+      <t-b>
+        A working prototype that calls the API once is not a reliable application.
+        Production AI systems must handle transient failures, respect rate limits,
+        stay within token budgets, validate unpredictable model output, and keep
+        costs observable.  This chapter covers the operational layer that makes
+        an AI application trustworthy enough to ship.
+      </t-b>
+
+      <a id="errors"></a>
+      <h4>11.1 &nbsp;Error Types</h4>
+      <t-b>
+        Anthropic&rsquo;s Python SDK raises typed exceptions:
+        <ul class="tight">
+          <li><code>anthropic.RateLimitError</code> (429) &mdash; too many requests per minute or too many tokens per minute.</li>
+          <li><code>anthropic.APIStatusError</code> (5xx) &mdash; server-side transient error; safe to retry.</li>
+          <li><code>anthropic.APIConnectionError</code> &mdash; network failure; retry with backoff.</li>
+          <li><code>anthropic.BadRequestError</code> (400) &mdash; invalid request (malformed messages, invalid model ID); do not retry without fixing the request.</li>
+          <li><code>anthropic.AuthenticationError</code> (401) &mdash; invalid or missing API key; do not retry.</li>
+        </ul>
+      </t-b>
+
+      <a id="retry"></a>
+      <h4>11.2 &nbsp;Retry with Exponential Backoff</h4>
+      <t-b>
+        The SDK has built-in retry logic, but for agentic loops you often need more
+        control.  A simple backoff wrapper:
+      </t-b>
+      <pre><code class="language-python">import time, anthropic
+
+def call_with_retry(client, max_retries=5, **kwargs):
+    delay = 1.0
+    for attempt in range(max_retries):
+        try:
+            return client.messages.create(**kwargs)
+        except anthropic.RateLimitError:
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(delay)
+            delay *= 2
+        except anthropic.APIStatusError as e:
+            if e.status_code >= 500 and attempt &lt; max_retries - 1:
+                time.sleep(delay)
+                delay *= 2
+            else:
+                raise
+</code></pre>
+
+      <a id="budget"></a>
+      <h4>11.3 &nbsp;Token Budget Management</h4>
+      <t-b>
+        Track cumulative token usage across an agent session to avoid surprise costs
+        and to detect runaway loops early:
+      </t-b>
+      <pre><code class="language-python">class TokenBudget:
+    def __init__(self, max_tokens):
+        self.max_tokens = max_tokens
+        self.used = 0
+
+    def record(self, usage):
+        self.used += usage.input_tokens + usage.output_tokens
+
+    def check(self):
+        if self.used &gt;= self.max_tokens:
+            raise RuntimeError(
+                f"Token budget exhausted: {self.used}/{self.max_tokens}"
+            )
+
+budget = TokenBudget(max_tokens=200_000)
+
+response = client.messages.create(...)
+budget.record(response.usage)
+budget.check()   # raises if over budget
+</code></pre>
+
+      <a id="validation"></a>
+      <h4>11.4 &nbsp;Output Validation</h4>
+      <t-b>
+        Never pass model output directly to security-sensitive code paths.  The model
+        can produce plausible-looking but wrong, incomplete, or malicious content.
+        <ul class="tight">
+          <li>Parse structured output with Pydantic (Chapter 6) and reject invalid shapes.</li>
+          <li>Check <code>stop_reason == "end_turn"</code> before trusting a response
+              as complete.</li>
+          <li>For generated code: run it in a subprocess with a timeout and resource
+              limits; do not <code>exec()</code> it directly.</li>
+          <li>For file path arguments from model output: validate against an allowlist
+              of directories before passing to filesystem APIs.</li>
+        </ul>
+      </t-b>
+
+      <a id="cost"></a>
+      <h4>11.5 &nbsp;Cost Monitoring</h4>
+      <t-b>
+        Build token accounting into your logging from day one:
+      </t-b>
+      <pre><code class="language-python">import logging
+
+logger = logging.getLogger("ai_app")
+
+def log_usage(model, usage, task_name=""):
+    logger.info(
+        "api_call model=%s task=%s "
+        "in=%d out=%d cache_write=%d cache_read=%d",
+        model, task_name,
+        usage.input_tokens,
+        usage.output_tokens,
+        getattr(usage, "cache_creation_input_tokens", 0),
+        getattr(usage, "cache_read_input_tokens", 0)
+    )
+</code></pre>
+      <t-b>
+        Aggregate logs in a dashboard or spreadsheet.  Unexpected spikes in input
+        tokens usually mean a conversation history is growing unchecked.  Unexpected
+        spikes in output tokens usually mean <code>max_tokens</code> is too low and
+        the model is being cut off, causing retry loops.
+      </t-b>
+
+      <a id="refs"></a>
+      <h4>11.6 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/api/errors">API Errors Reference</a>
+          </td>
+          <td class="lightItem">Complete list of error codes and recommended handling strategies.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/api/rate-limits">Rate Limits</a>
+          </td>
+          <td class="lightItem">Current rate limit tiers by model and usage tier.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://console.anthropic.com/settings/usage">Usage Dashboard</a>
+          </td>
+          <td class="lightItem">Anthropic Console page for monitoring token and cost usage.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a href="AIStory_Prologue.html">Back to Prologue</a></td>
+          <td class="lightItem">Return to the chapter index.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#reliability">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#errors">error types</a></menu-elem>
+        <menu-elem class="secElem"><a href="#retry">retry logic</a></menu-elem>
+        <menu-elem class="secElem"><a href="#budget">token budget</a></menu-elem>
+        <menu-elem class="secElem"><a href="#validation">output validation</a></menu-elem>
+        <menu-elem class="secElem"><a href="#cost">cost monitoring</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/AIStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 11, 10);
+  </script>
+</body>
+</html>

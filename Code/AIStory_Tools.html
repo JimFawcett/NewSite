@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  AIStory_Tools.html - AI Story Chapter 9
+-->
+<head>
+  <title>AI Story: Tool Use</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    AIStory_Tools.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/10/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">AI Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Story: Tool Use</h2>
+        <h4 class="indent" id="subtitle">tool definitions, the request/tool-use/tool-result loop, error handling</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="tooluse"></a>
+      <h3>9. &nbsp;Tool Use</h3>
+      <t-b>
+        Tool use (also called function calling) lets a model request that your code
+        execute a function and return the result.  The model does not call the function
+        directly &mdash; it produces a structured <code>tool_use</code> content block
+        describing the call, your code executes it, and you send the result back in a
+        <code>tool_result</code> block.  This is what gives AI agents the ability to
+        read files, run searches, call APIs, and take actions in the world.
+      </t-b>
+
+      <a id="definition"></a>
+      <h4>9.1 &nbsp;Tool Definitions</h4>
+      <t-b>
+        Each tool is described by a name, a description (shown to the model), and a
+        JSON Schema for the input parameters.  The quality of the description directly
+        affects whether the model calls the tool correctly.
+      </t-b>
+      <pre><code class="language-python">tools = [
+    {
+        "name": "read_file",
+        "description": "Read the contents of a file at the given path. "
+                       "Returns the file text or an error message.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Absolute or relative path to the file."
+                }
+            },
+            "required": ["path"]
+        }
+    }
+]
+</code></pre>
+
+      <a id="loop"></a>
+      <h4>9.2 &nbsp;The Tool-Use Loop</h4>
+      <t-b>
+        A single tool-use exchange takes three API turns:
+        <ol class="tight">
+          <li>Send the user message with <code>tools</code> defined.
+              Model responds with a <code>tool_use</code> block.</li>
+          <li>Execute the function.  Append the assistant&rsquo;s response
+              and a user turn containing the <code>tool_result</code>.</li>
+          <li>Model generates a final text response using the result.</li>
+        </ol>
+      </t-b>
+      <pre><code class="language-python">import anthropic, json, pathlib
+
+client = anthropic.Anthropic()
+
+def read_file(path):
+    try:
+        return pathlib.Path(path).read_text(encoding="utf-8")
+    except OSError as e:
+        return f"Error: {e}"
+
+messages = [{"role": "user", "content": "Show me the first 5 lines of README.md"}]
+
+while True:
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        tools=tools,
+        messages=messages
+    )
+
+    # append assistant turn
+    messages.append({"role": "assistant", "content": response.content})
+
+    if response.stop_reason != "tool_use":
+        # model finished; print final text
+        for block in response.content:
+            if block.type == "text":
+                print(block.text)
+        break
+
+    # execute each tool the model requested
+    tool_results = []
+    for block in response.content:
+        if block.type == "tool_use":
+            if block.name == "read_file":
+                result = read_file(block.input["path"])
+            else:
+                result = f"Unknown tool: {block.name}"
+            tool_results.append({
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": result
+            })
+
+    messages.append({"role": "user", "content": tool_results})
+</code></pre>
+
+      <a id="errors"></a>
+      <h4>9.3 &nbsp;Reporting Tool Errors</h4>
+      <t-b>
+        If a tool fails, set <code>is_error: true</code> in the tool result.  The model
+        will see the error and can decide to retry with different arguments or tell the
+        user the operation failed.
+      </t-b>
+      <pre><code class="language-python">tool_results.append({
+    "type": "tool_result",
+    "tool_use_id": block.id,
+    "content": "File not found: README.md",
+    "is_error": True
+})
+</code></pre>
+
+      <a id="multi"></a>
+      <h4>9.4 &nbsp;Multiple Tools</h4>
+      <t-b>
+        Include multiple tool definitions in the <code>tools</code> list.  The model
+        may call them in sequence across multiple loop iterations, or request several
+        in a single response (parallel tool use).  Each call must receive a matching
+        <code>tool_result</code> in the next user turn before the loop continues.
+      </t-b>
+
+      <a id="refs"></a>
+      <h4>9.5 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/build-with-claude/tool-use/overview">Tool Use Overview</a>
+          </td>
+          <td class="lightItem">Anthropic&rsquo;s full tool use guide including parallel tool calls.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="CodeBites_AgentAI.html">CodeBites: Agent AI</a>
+          </td>
+          <td class="lightItem">Working Python agent examples using the tool-use loop.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a href="AIStory_Agents.html">Next: Agents</a></td>
+          <td class="lightItem">Building agents with tool use: loops, state, safety constraints.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#tooluse">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#definition">tool definitions</a></menu-elem>
+        <menu-elem class="secElem"><a href="#loop">tool-use loop</a></menu-elem>
+        <menu-elem class="secElem"><a href="#errors">error reporting</a></menu-elem>
+        <menu-elem class="secElem"><a href="#multi">multiple tools</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/AIStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 9, 10);
+  </script>
+</body>
+</html>

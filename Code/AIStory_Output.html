@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  AIStory_Output.html - AI Story Chapter 6
+-->
+<head>
+  <title>AI Story: Structured Output</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    AIStory_Output.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/10/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">AI Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Story: Structured Output</h2>
+        <h4 class="indent" id="subtitle">JSON schemas, prompt patterns, validation, when to use</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="output"></a>
+      <h3>6. &nbsp;Structured Output</h3>
+      <t-b>
+        An LLM&rsquo;s natural output is free-form text.  Most application code needs
+        something it can parse &mdash; a JSON object, a list of items, a typed record.
+        Structured output is the practice of constraining the model&rsquo;s output to a
+        predictable format you can rely on programmatically.
+      </t-b>
+
+      <a id="why"></a>
+      <h4>6.1 &nbsp;Why Free-Form Text Is Fragile</h4>
+      <t-b>
+        If you ask &ldquo;list the bugs in this code&rdquo; and parse the response with a
+        regex, you are coupling your code to whatever prose style the model happened to
+        produce.  The style can change between runs, between model versions, and when the
+        conversation history changes.  Structured output removes the parsing ambiguity.
+      </t-b>
+
+      <a id="schema"></a>
+      <h4>6.2 &nbsp;Schema in the System Prompt</h4>
+      <t-b>
+        The most portable approach is to describe the required JSON schema in the system
+        prompt and ask the model to respond only with valid JSON.
+      </t-b>
+      <pre><code class="language-python">system = """
+Respond only with a JSON object matching this schema:
+{
+  "bugs": [
+    {
+      "line": integer,
+      "severity": "low" | "medium" | "high",
+      "description": string
+    }
+  ]
+}
+Do not include any text outside the JSON object.
+"""
+
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    system=system,
+    messages=[{"role": "user", "content": f"Review this code:\n\n{code}"}]
+)
+
+import json
+data = json.loads(response.content[0].text)
+for bug in data["bugs"]:
+    print(f"Line {bug['line']} [{bug['severity']}]: {bug['description']}")
+</code></pre>
+
+      <a id="prefill"></a>
+      <h4>6.3 &nbsp;Assistant Prefill</h4>
+      <t-b>
+        You can begin the assistant turn yourself to force a specific output start.
+        Prefilling with <code>{</code> makes it very unlikely the model will produce
+        preamble text before the JSON object.
+      </t-b>
+      <pre><code class="language-python">response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    system=system,
+    messages=[
+        {"role": "user",      "content": f"Review this code:\n\n{code}"},
+        {"role": "assistant", "content": "{"}   # prefill forces JSON start
+    ]
+)
+# The response text begins after the prefilled "{", so prepend it:
+text = "{" + response.content[0].text
+data = json.loads(text)
+</code></pre>
+
+      <a id="validation"></a>
+      <h4>6.4 &nbsp;Validation</h4>
+      <t-b>
+        Always validate parsed output before using it.  The model occasionally produces
+        valid JSON that does not match the schema (wrong field name, missing required key,
+        wrong value type).
+      </t-b>
+      <pre><code class="language-python">from pydantic import BaseModel, ValidationError
+from typing import List, Literal
+
+class Bug(BaseModel):
+    line: int
+    severity: Literal["low", "medium", "high"]
+    description: str
+
+class BugReport(BaseModel):
+    bugs: List[Bug]
+
+try:
+    report = BugReport.model_validate_json(response.content[0].text)
+except ValidationError as e:
+    print("Model output did not match schema:", e)
+</code></pre>
+
+      <a id="tradeoffs"></a>
+      <h4>6.5 &nbsp;Trade-offs</h4>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <strong>Token overhead.</strong> &nbsp; Describing a schema in the prompt adds
+            tokens.  For high-volume tasks use a compact schema description.
+          </li>
+          <li>
+            <strong>Output token budget.</strong> &nbsp; JSON is more verbose than prose
+            for the same information.  Set <code>max_tokens</code> to accommodate the
+            structured format.
+          </li>
+          <li>
+            <strong>When not to use.</strong> &nbsp; If the output is consumed by a human
+            (documentation, summaries, explanations), structured output adds complexity
+            with no benefit.  Use free-form text for human-facing outputs.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="refs"></a>
+      <h4>6.6 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/build-with-claude/tool-use/overview">Tool Use (structured output alternative)</a>
+          </td>
+          <td class="lightItem">Tool definitions provide an alternative path to typed output via input schemas.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.pydantic.dev/">Pydantic</a>
+          </td>
+          <td class="lightItem">Python data validation library used to validate model output.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a href="AIStory_Streaming.html">Next: Streaming</a></td>
+          <td class="lightItem">How to receive responses token by token as they are generated.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#output">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#why">why free-form is fragile</a></menu-elem>
+        <menu-elem class="secElem"><a href="#schema">schema in prompt</a></menu-elem>
+        <menu-elem class="secElem"><a href="#prefill">assistant prefill</a></menu-elem>
+        <menu-elem class="secElem"><a href="#validation">validation</a></menu-elem>
+        <menu-elem class="secElem"><a href="#tradeoffs">trade-offs</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/AIStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 6, 10);
+  </script>
+</body>
+</html>

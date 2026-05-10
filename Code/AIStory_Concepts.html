@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  AIStory_Concepts.html - AI Story Chapter 1
+-->
+<head>
+  <title>AI Story: AI Concepts</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    AIStory_Concepts.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/10/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">AI Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Story: AI Concepts</h2>
+        <h4 class="indent" id="subtitle">taxonomy, training, inference, what LLMs actually do</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="concepts"></a>
+      <h3>1. &nbsp;AI Concepts</h3>
+      <t-b>
+        Before writing any API code it helps to have the vocabulary straight.
+        Terms like &ldquo;machine learning&rdquo;, &ldquo;large language model&rdquo;, and
+        &ldquo;generative AI&rdquo; are used loosely in the industry.  This chapter pins down
+        what each term means in the context of the tools covered in this story.
+      </t-b>
+
+      <a id="taxonomy"></a>
+      <h4>1.1 &nbsp;Taxonomy</h4>
+      <t-b>
+        The terms nest inside each other:
+      </t-b>
+      <t-b class="indent">
+        <ul class="tight">
+          <li>
+            <strong>Artificial Intelligence (AI)</strong> &mdash; systems that perform tasks
+            normally associated with human cognition: perception, reasoning, language, decision-making.
+          </li>
+          <li>
+            <strong>Machine Learning (ML)</strong> &mdash; a subset of AI where the system
+            learns from data rather than being explicitly programmed.  The programmer designs
+            the training loop; the parameters are learned.
+          </li>
+          <li>
+            <strong>Deep Learning</strong> &mdash; ML using neural networks with many layers.
+            Layers progressively extract higher-level features from raw input.
+          </li>
+          <li>
+            <strong>Large Language Model (LLM)</strong> &mdash; a deep learning model trained
+            on text at massive scale.  The &ldquo;large&rdquo; refers to parameter count
+            (billions to trillions) and training data (trillions of tokens).
+          </li>
+          <li>
+            <strong>Generative AI</strong> &mdash; AI that produces new content (text, images,
+            code, audio) rather than classifying or predicting from fixed categories.
+            LLMs are the dominant form for text and code.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="training"></a>
+      <h4>1.2 &nbsp;Training vs. Inference</h4>
+      <t-b>
+        The two operational phases of a neural network are distinct and it matters which one
+        you are thinking about when debugging or designing.
+      </t-b>
+      <t-b class="indent">
+        <ul class="tight">
+          <li>
+            <strong>Training</strong> &mdash; the model sees billions of examples and
+            adjusts billions of parameters to minimise prediction error.  This is done once
+            (or periodically) by the model provider.  It is compute-intensive, takes weeks
+            or months, and is not something an API user controls.
+          </li>
+          <li>
+            <strong>Inference</strong> &mdash; the trained model processes a new input and
+            produces an output.  This is what happens every time you call the API.  Each API
+            call is one inference pass (or a sequence of them for multi-turn conversations).
+          </li>
+          <li>
+            <strong>Fine-tuning</strong> &mdash; additional training on a smaller, task-specific
+            dataset after the base model is trained.  Some providers expose this as an API
+            feature; others (Anthropic, as of 2026) do not.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        As an API user, you are always in the inference phase.  You cannot change the model&rsquo;s
+        parameters &mdash; only the input (the prompt) you give it.
+      </t-b>
+
+      <a id="transformers"></a>
+      <h4>1.3 &nbsp;How LLMs Work (the short version)</h4>
+      <t-b>
+        All major LLMs are built on the <em>transformer</em> architecture (introduced by Google
+        in 2017).  The key operation is <em>attention</em>: every token in the input can attend
+        to (draw information from) every other token in the context window.  This is what makes
+        LLMs sensitive to word order, long-range dependencies, and prompt structure in ways
+        that earlier sequence models were not.
+      </t-b>
+      <t-b>
+        At inference time the model takes all the tokens in the prompt, runs them through
+        many attention layers, and outputs a probability distribution over the vocabulary
+        for the next token.  It samples from that distribution, appends the token to the
+        sequence, and repeats until a stop condition is reached.  The entire output is
+        generated one token at a time, left to right.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">What &ldquo;understanding&rdquo; means (and doesn&rsquo;t mean)</summary>
+          <t-b class="indent">
+            LLMs do not have beliefs, goals, or world-models in the way humans do.  They have
+            very good statistical models of text.  When an LLM produces a correct explanation
+            of a concept, it is because text about that concept in its training data correlates
+            with that explanation &mdash; not because it reasoned from first principles.
+            This matters for reliability: LLMs are confident and fluent even when wrong.
+            Validating outputs is always the programmer&rsquo;s responsibility.
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <a id="knowledge"></a>
+      <h4>1.4 &nbsp;Knowledge Cutoff and Grounding</h4>
+      <t-b>
+        An LLM&rsquo;s knowledge is frozen at its training cutoff date.  It does not browse the
+        web or read your files unless given tools to do so (Chapter 9).  For tasks that require
+        current information or private data, you must supply that information in the prompt
+        or via tool results.
+      </t-b>
+      <t-b>
+        Supplying facts in the prompt is called <em>grounding</em> or
+        <em>retrieval-augmented generation (RAG)</em>.  The model can reason over whatever
+        text you place in its context window &mdash; it just cannot retrieve that text itself.
+      </t-b>
+
+      <a id="refs"></a>
+      <h4>1.5 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a>
+          </td>
+          <td class="lightItem">The 2017 paper introducing the transformer architecture.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/intro-to-claude">Intro to Claude</a>
+          </td>
+          <td class="lightItem">Anthropic&rsquo;s introduction to the Claude model family.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a href="AIStory_Tokens.html">Next: Tokens &amp; Context</a></td>
+          <td class="lightItem">How the input is broken into tokens and what the context window means.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#concepts">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#taxonomy">taxonomy</a></menu-elem>
+        <menu-elem class="secElem"><a href="#training">training vs inference</a></menu-elem>
+        <menu-elem class="secElem"><a href="#transformers">how LLMs work</a></menu-elem>
+        <menu-elem class="secElem"><a href="#knowledge">knowledge cutoff</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/AIStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 1, 10);
+  </script>
+</body>
+</html>

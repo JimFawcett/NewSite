@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  AIStory_Tokens.html - AI Story Chapter 2
+-->
+<head>
+  <title>AI Story: Tokens &amp; Context</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    AIStory_Tokens.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/10/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">AI Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Story: Tokens &amp; Context</h2>
+        <h4 class="indent" id="subtitle">tokenization, context windows, cost, and prompt design implications</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="tokens"></a>
+      <h3>2. &nbsp;Tokens &amp; Context</h3>
+      <t-b>
+        The fundamental unit of communication with an LLM is not a word or a character
+        &mdash; it is a <em>token</em>.  Understanding tokens lets you reason about cost,
+        predict context limits, and write prompts that stay within bounds.
+      </t-b>
+
+      <a id="tokenization"></a>
+      <h4>2.1 &nbsp;What Is a Token?</h4>
+      <t-b>
+        A token is a chunk of text as defined by a tokenizer &mdash; a vocabulary of
+        roughly 100,000 sub-word pieces trained alongside the model.  Common English words
+        are usually one token.  Rare words, long compound words, and non-English text are
+        split into multiple tokens.  Whitespace and punctuation each contribute tokens too.
+      </t-b>
+      <t-b>
+        Rough rules of thumb (English text):
+        <ul class="tight">
+          <li>1 token &asymp; 4 characters</li>
+          <li>100 tokens &asymp; 75 words</li>
+          <li>1,000 tokens &asymp; 750 words &asymp; a 1&ndash;2 page document</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Code tends to tokenize less efficiently than prose because identifiers,
+        operators, and indentation all consume tokens.  A 200-line Python file might be
+        400&ndash;800 tokens depending on identifier length and comment density.
+      </t-b>
+
+      <a id="window"></a>
+      <h4>2.2 &nbsp;The Context Window</h4>
+      <t-b>
+        The context window is the maximum number of tokens the model can attend to in a
+        single inference call.  It includes both the input (prompt, conversation history,
+        tool results) and the output (the completion).  Exceeding the window causes the
+        API to return an error.
+      </t-b>
+      <t-b>
+        Context window sizes (approximate, as of mid-2026):
+      </t-b>
+      <t-b class="indent">
+        <ul class="tight">
+          <li>Claude 3.5 Haiku &mdash; 200K tokens input, 8K output</li>
+          <li>Claude Sonnet 4.x &mdash; 200K tokens input, 64K output</li>
+          <li>Claude Opus 4.x &mdash; 200K tokens input, 32K output</li>
+          <li>GPT-4o &mdash; 128K tokens input/output combined</li>
+          <li>Gemini 1.5 Pro &mdash; 1M tokens input</li>
+        </ul>
+      </t-b>
+      <t-b>
+        A 200K token window can hold roughly 150,000 words &mdash; about 500 pages of
+        prose, or a medium-sized codebase.  Still, it is finite.  Long conversations
+        accumulate history; multi-document RAG pipelines can fill the window quickly.
+      </t-b>
+
+      <a id="cost"></a>
+      <h4>2.3 &nbsp;Token Pricing</h4>
+      <t-b>
+        API calls are billed per token, with input and output priced separately.
+        Output tokens typically cost 3&ndash;5&times; more than input tokens because
+        generating each token requires a full forward pass through the model, while
+        reading input tokens is cheaper with KV-cache reuse.
+      </t-b>
+      <t-b>
+        The usage object in every API response reports exact token counts:
+      </t-b>
+      <pre><code class="language-python">response = client.messages.create(...)
+print(response.usage.input_tokens)
+print(response.usage.output_tokens)
+print(response.usage.cache_read_input_tokens)   # if caching enabled
+</code></pre>
+      <t-b>
+        Log these in development.  Unexpected token counts are often the first sign of
+        a runaway conversation loop or an unexpectedly large context block.
+      </t-b>
+
+      <a id="design"></a>
+      <h4>2.4 &nbsp;Prompt Design Implications</h4>
+      <t-b>
+        Token awareness shapes how you write prompts:
+        <ul class="tight">
+          <li>
+            <strong>Be specific, not verbose.</strong> &nbsp; A focused 50-token instruction
+            beats a padded 200-token one.  The model does not reward length.
+          </li>
+          <li>
+            <strong>Trim conversation history.</strong> &nbsp; In multi-turn loops, old turns
+            still consume tokens.  Summarise or drop turns that are no longer relevant.
+          </li>
+          <li>
+            <strong>Place important content early.</strong> &nbsp; Attention is distributed
+            across the window, but the first and last few hundred tokens tend to receive
+            more weight (the &ldquo;primacy/recency&rdquo; effect).  Put system instructions
+            and key constraints first.
+          </li>
+          <li>
+            <strong>Reserve headroom for output.</strong> &nbsp; If <code>max_tokens</code>
+            is set to 8K, the model stops generating at 8K even if the answer is incomplete.
+            Set it high enough for the expected response, not the maximum possible.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="refs"></a>
+      <h4>2.5 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/about-claude/models">Claude Models</a>
+          </td>
+          <td class="lightItem">Current context window and token limits for all Claude models.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/build-with-claude/token-counting">Token Counting</a>
+          </td>
+          <td class="lightItem">Anthropic&rsquo;s API for counting tokens before sending a request.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a href="AIStory_Prompts.html">Next: Prompting</a></td>
+          <td class="lightItem">How to structure messages, roles, and system prompts effectively.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#tokens">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#tokenization">what is a token</a></menu-elem>
+        <menu-elem class="secElem"><a href="#window">context window</a></menu-elem>
+        <menu-elem class="secElem"><a href="#cost">token pricing</a></menu-elem>
+        <menu-elem class="secElem"><a href="#design">prompt design</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/AIStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>

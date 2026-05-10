@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  AIStory_Prompts.html - AI Story Chapter 3
+-->
+<head>
+  <title>AI Story: Prompting</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    AIStory_Prompts.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/10/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">AI Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Story: Prompting</h2>
+        <h4 class="indent" id="subtitle">roles, system prompts, prompt patterns, failure modes</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="prompting"></a>
+      <h3>3. &nbsp;Prompting</h3>
+      <t-b>
+        A prompt is everything you send to the model before it generates a response.
+        The model cannot ask clarifying questions or remember previous API calls &mdash;
+        all of its context comes from the messages you provide.  Well-structured prompts
+        produce consistent, predictable outputs; poorly structured ones produce fluent
+        but wrong ones.
+      </t-b>
+
+      <a id="roles"></a>
+      <h4>3.1 &nbsp;Message Roles</h4>
+      <t-b>
+        Every message in the Anthropic Messages API has a <code>role</code>:
+        <ul class="tight">
+          <li>
+            <strong>system</strong> &mdash; a top-level instruction block that sets the
+            model&rsquo;s behaviour, persona, and constraints for the entire conversation.
+            Sent as a separate parameter, not inside the messages array.
+          </li>
+          <li>
+            <strong>user</strong> &mdash; input from the human turn.  Tool results
+            are also delivered in user turns (wrapped in a
+            <code>tool_result</code> content block).
+          </li>
+          <li>
+            <strong>assistant</strong> &mdash; the model&rsquo;s response.  In multi-turn
+            conversations you append the model&rsquo;s previous responses to the messages
+            array so the model can see what it already said.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        Roles must alternate: user &rarr; assistant &rarr; user &rarr; &hellip;
+        Sending two consecutive user turns or omitting the role causes a validation error.
+      </t-b>
+
+      <a id="system"></a>
+      <h4>3.2 &nbsp;System Prompts</h4>
+      <t-b>
+        The system prompt is the highest-trust instruction in the request.  Use it to:
+        <ul class="tight">
+          <li>Define the model&rsquo;s role: <em>&ldquo;You are a code reviewer who responds
+            only with structured JSON.&rdquo;</em></li>
+          <li>State constraints: <em>&ldquo;Never suggest code that allocates on the heap.&rdquo;</em></li>
+          <li>Supply standing context: <em>&ldquo;The project uses Rust 2021 edition and targets
+            no_std environments.&rdquo;</em></li>
+          <li>Set output format: <em>&ldquo;Respond with a markdown code block followed by
+            a numbered list of review comments.&rdquo;</em></li>
+        </ul>
+      </t-b>
+      <t-b>
+        System prompts are good candidates for prompt caching (Chapter 8) because they
+        are static across many requests in a session.
+      </t-b>
+
+      <a id="patterns"></a>
+      <h4>3.3 &nbsp;Prompt Patterns</h4>
+      <t-b>
+        <strong>Zero-shot</strong> &mdash; ask directly without examples.  Works well for
+        tasks the model has seen many times in training: summarisation, translation,
+        simple code generation.
+      </t-b>
+      <pre><code class="language-python">{"role": "user", "content": "Translate this Python function to Rust:\n\ndef add(a, b):\n    return a + b"}
+</code></pre>
+      <t-b>
+        <strong>Few-shot</strong> &mdash; supply 2&ndash;5 input/output pairs before the
+        real query.  Teaches the model the exact format, tone, or reasoning style you need.
+      </t-b>
+      <pre><code class="language-python">{"role": "user",  "content": "Classify: 'The build failed on CI.' -> "},
+{"role": "assistant", "content": "bug"},
+{"role": "user",  "content": "Classify: 'Added dark mode toggle.' -> "},
+{"role": "assistant", "content": "feature"},
+{"role": "user",  "content": "Classify: 'Renamed variable x to count.' -> "},
+</code></pre>
+      <t-b>
+        <strong>Chain-of-thought (CoT)</strong> &mdash; ask the model to reason step by step
+        before giving a final answer.  Add <em>&ldquo;Think step by step.&rdquo;</em> or
+        <em>&ldquo;Show your reasoning before the answer.&rdquo;</em>  CoT reliably
+        improves accuracy on arithmetic, logic, and multi-step code tasks.
+      </t-b>
+
+      <a id="failures"></a>
+      <h4>3.4 &nbsp;Common Failure Modes</h4>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <strong>Vague task description.</strong> &nbsp; &ldquo;Improve this code&rdquo; is
+            under-specified.  The model will improve it in whatever dimension it finds most
+            salient, which may not be what you want.  Say &ldquo;reduce allocations while
+            preserving the function signature.&rdquo;
+          </li>
+          <li>
+            <strong>Missing constraints.</strong> &nbsp; If you don&rsquo;t say what the code
+            must NOT do, the model is free to do it.
+          </li>
+          <li>
+            <strong>Over-long context burying the task.</strong> &nbsp; When the actual
+            question appears after thousands of tokens of background, quality degrades.
+            State the task first, then supply supporting material.
+          </li>
+          <li>
+            <strong>Conflicting instructions.</strong> &nbsp; If the system prompt says
+            &ldquo;be concise&rdquo; and the user message says &ldquo;give a detailed
+            explanation&rdquo;, the model has to guess which wins.  Make instructions
+            consistent or explicit about precedence.
+          </li>
+          <li>
+            <strong>Assuming the model remembers.</strong> &nbsp; Each API call is stateless.
+            The model has no memory of previous calls unless you include that history in
+            the messages array.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="refs"></a>
+      <h4>3.5 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview">Prompt Engineering Overview</a>
+          </td>
+          <td class="lightItem">Anthropic&rsquo;s guide to effective prompting for Claude.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/chain-of-thought">Chain-of-Thought Prompting</a>
+          </td>
+          <td class="lightItem">How to elicit step-by-step reasoning from Claude.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a href="AIStory_Models.html">Next: Models</a></td>
+          <td class="lightItem">Model families, capability trade-offs, and selection criteria.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prompting">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#roles">message roles</a></menu-elem>
+        <menu-elem class="secElem"><a href="#system">system prompts</a></menu-elem>
+        <menu-elem class="secElem"><a href="#patterns">prompt patterns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#failures">failure modes</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/AIStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+</body>
+</html>

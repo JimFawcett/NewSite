@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  AIStory_Streaming.html - AI Story Chapter 7
+-->
+<head>
+  <title>AI Story: Streaming</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    AIStory_Streaming.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/10/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">AI Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Story: Streaming</h2>
+        <h4 class="indent" id="subtitle">server-sent events, delta accumulation, error handling</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="streaming"></a>
+      <h3>7. &nbsp;Streaming</h3>
+      <t-b>
+        Without streaming, your code blocks until the model finishes generating the entire
+        response, then receives it all at once.  For a 2,000-token response at typical
+        inference speeds that is a 10&ndash;30 second wait with no feedback.  Streaming
+        delivers tokens as they are generated, which is essential for interactive
+        applications and makes long responses feel responsive.
+      </t-b>
+
+      <a id="sse"></a>
+      <h4>7.1 &nbsp;How It Works</h4>
+      <t-b>
+        The API uses server-sent events (SSE): a persistent HTTP connection over which
+        the server pushes a sequence of event objects.  Each event carries a
+        <code>delta</code> containing a small chunk of text (typically 1&ndash;5 tokens).
+        The stream ends with a final event that carries usage statistics and the
+        <code>stop_reason</code>.
+      </t-b>
+
+      <a id="basic"></a>
+      <h4>7.2 &nbsp;Basic Streaming</h4>
+      <t-b>
+        The Python SDK exposes streaming via a context manager.  Use
+        <code>client.messages.stream()</code> instead of
+        <code>client.messages.create()</code>:
+      </t-b>
+      <pre><code class="language-python">import anthropic
+
+client = anthropic.Anthropic()
+
+with client.messages.stream(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Explain the Rust borrow checker."}]
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)
+    print()  # newline after stream ends
+
+final = stream.get_final_message()
+print(f"\nTokens: {final.usage.input_tokens} in, {final.usage.output_tokens} out")
+</code></pre>
+      <t-b>
+        <code>stream.text_stream</code> yields each text delta.  The
+        <code>get_final_message()</code> call after the context manager exits returns
+        the complete accumulated response with usage data.
+      </t-b>
+
+      <a id="events"></a>
+      <h4>7.3 &nbsp;Raw Event Access</h4>
+      <t-b>
+        If you need the raw event objects (to detect tool use blocks, content block
+        boundaries, or input token counts mid-stream), iterate over
+        <code>stream</code> directly:
+      </t-b>
+      <pre><code class="language-python">with client.messages.stream(...) as stream:
+    for event in stream:
+        if event.type == "content_block_delta":
+            print(event.delta.text, end="", flush=True)
+        elif event.type == "message_delta":
+            print(f"\nStop reason: {event.delta.stop_reason}")
+</code></pre>
+
+      <a id="errors"></a>
+      <h4>7.4 &nbsp;Error Handling</h4>
+      <t-b>
+        Network interruptions mid-stream leave the response incomplete.  A robust
+        streaming loop catches exceptions and decides whether to retry or fail:
+      </t-b>
+      <pre><code class="language-python">import anthropic
+
+client = anthropic.Anthropic()
+accumulated = []
+
+try:
+    with client.messages.stream(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}]
+    ) as stream:
+        for text in stream.text_stream:
+            accumulated.append(text)
+            print(text, end="", flush=True)
+except anthropic.APIConnectionError:
+    print("\n[stream interrupted]")
+    # partial result is in accumulated
+</code></pre>
+
+      <a id="when"></a>
+      <h4>7.5 &nbsp;When to Use Streaming</h4>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <strong>Use streaming</strong> when a human is watching the output: chat
+            interfaces, terminal agents, progress indicators.
+          </li>
+          <li>
+            <strong>Skip streaming</strong> for batch processing where the full response
+            is needed before the next step can start (structured output parsing, tool
+            dispatch, evaluation pipelines).  Non-streaming is simpler code for those cases.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="refs"></a>
+      <h4>7.6 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/api/messages-streaming">Streaming Reference</a>
+          </td>
+          <td class="lightItem">Complete event schema for the streaming Messages API.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a href="AIStory_Caching.html">Next: Prompt Caching</a></td>
+          <td class="lightItem">How to cache large context blocks to reduce cost and latency.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#streaming">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#sse">how it works</a></menu-elem>
+        <menu-elem class="secElem"><a href="#basic">basic streaming</a></menu-elem>
+        <menu-elem class="secElem"><a href="#events">raw events</a></menu-elem>
+        <menu-elem class="secElem"><a href="#errors">error handling</a></menu-elem>
+        <menu-elem class="secElem"><a href="#when">when to use</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/AIStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 7, 10);
+  </script>
+</body>
+</html>

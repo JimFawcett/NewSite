@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  AIStory_Caching.html - AI Story Chapter 8
+-->
+<head>
+  <title>AI Story: Prompt Caching</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    AIStory_Caching.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/10/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">AI Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Story: Prompt Caching</h2>
+        <h4 class="indent" id="subtitle">cache_control, what gets cached, cost patterns, hit rate</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="caching"></a>
+      <h3>8. &nbsp;Prompt Caching</h3>
+      <t-b>
+        Prompt caching lets Anthropic&rsquo;s infrastructure reuse the KV-cache
+        (key-value pairs computed during the attention pass) for the prefix of a prompt
+        that stays the same across repeated requests.  Cache hits are charged at roughly
+        10% of the normal input token price, reducing cost significantly for workloads
+        with large, stable context.
+      </t-b>
+
+      <a id="how"></a>
+      <h4>8.1 &nbsp;How It Works</h4>
+      <t-b>
+        You mark a content block with <code>cache_control: {"type": "ephemeral"}</code>
+        to tell the API &ldquo;cache everything up to and including this block.&rdquo;
+        On subsequent requests with the same prefix, the model skips recomputing the
+        attention for that prefix and reads the stored KV cache instead.
+      </t-b>
+      <t-b>
+        The cache has a 5-minute TTL.  If you send the same prefix again within 5 minutes
+        you get a cache hit; after 5 minutes the cache expires and the next request is
+        a full-cost cache write.
+      </t-b>
+
+      <a id="usage"></a>
+      <h4>8.2 &nbsp;Basic Usage</h4>
+      <t-b>
+        Cache the system prompt when it is large and reused across many requests:
+      </t-b>
+      <pre><code class="language-python">import anthropic
+
+client = anthropic.Anthropic()
+
+LARGE_SYSTEM = "..." * 1000   # imagine 10,000+ tokens of standing instructions
+
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    system=[
+        {
+            "type": "text",
+            "text": LARGE_SYSTEM,
+            "cache_control": {"type": "ephemeral"}
+        }
+    ],
+    messages=[{"role": "user", "content": "Summarise section 3."}]
+)
+
+u = response.usage
+print(f"cache write: {u.cache_creation_input_tokens}")
+print(f"cache read:  {u.cache_read_input_tokens}")
+print(f"uncached:    {u.input_tokens}")
+</code></pre>
+      <t-b>
+        On the first call <code>cache_creation_input_tokens</code> is non-zero (cache miss,
+        written at 1.25&times; normal cost).  On subsequent calls within 5 minutes,
+        <code>cache_read_input_tokens</code> is non-zero instead (cache hit, charged at
+        0.1&times; normal cost).
+      </t-b>
+
+      <a id="multiblock"></a>
+      <h4>8.3 &nbsp;Caching Multiple Blocks</h4>
+      <t-b>
+        You can place cache breakpoints at the end of each major stable section.
+        Anthropic supports up to 4 cache breakpoints per request.  Mark each one at the
+        last content block you want included in that cache segment:
+      </t-b>
+      <pre><code class="language-python">messages = [
+    {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": large_document,
+             "cache_control": {"type": "ephemeral"}},   # cache the document
+            {"type": "text", "text": "Answer this question: " + question}
+        ]
+    }
+]
+</code></pre>
+
+      <a id="patterns"></a>
+      <h4>8.4 &nbsp;When Caching Helps</h4>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <strong>Large system prompts.</strong> &nbsp; A 10,000-token standing instruction
+            block cached across 100 API calls reduces that component&rsquo;s cost by 90%.
+          </li>
+          <li>
+            <strong>Document analysis.</strong> &nbsp; Load a large document once with a
+            cache breakpoint, then ask many questions in the same session.
+          </li>
+          <li>
+            <strong>Agent loops.</strong> &nbsp; The tool definitions and conversation
+            history up to a stable point can be cached; only the latest tool result needs
+            full processing.
+          </li>
+          <li>
+            <strong>Not helpful for one-shot requests.</strong> &nbsp; If each request has
+            a different prefix, there are no cache hits and you pay the write premium
+            (1.25&times;) for nothing.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="refs"></a>
+      <h4>8.5 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching">Prompt Caching Guide</a>
+          </td>
+          <td class="lightItem">Full documentation including supported models and pricing details.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a href="AIStory_Tools.html">Next: Tool Use</a></td>
+          <td class="lightItem">Tool definitions, the tool-use loop, and multi-tool patterns.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#caching">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#how">how it works</a></menu-elem>
+        <menu-elem class="secElem"><a href="#usage">basic usage</a></menu-elem>
+        <menu-elem class="secElem"><a href="#multiblock">multiple blocks</a></menu-elem>
+        <menu-elem class="secElem"><a href="#patterns">when caching helps</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/AIStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 8, 10);
+  </script>
+</body>
+</html>

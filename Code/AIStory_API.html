@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  AIStory_API.html - AI Story Chapter 5
+-->
+<head>
+  <title>AI Story: Messages API</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    AIStory_API.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/10/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">AI Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Story: Messages API</h2>
+        <h4 class="indent" id="subtitle">request structure, parameters, response, multi-turn conversations</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="api"></a>
+      <h3>5. &nbsp;Messages API</h3>
+      <t-b>
+        The Messages API is the primary way to call an LLM from code.
+        Every interaction &mdash; single-turn completions, multi-turn conversations,
+        tool-using agents &mdash; goes through the same endpoint.  Knowing the exact
+        shape of the request and response makes debugging straightforward.
+      </t-b>
+
+      <a id="minimal"></a>
+      <h4>5.1 &nbsp;Minimal Request</h4>
+      <t-b>
+        The four required fields are <code>model</code>, <code>max_tokens</code>,
+        <code>messages</code>, and at least one message with <code>role</code> and
+        <code>content</code>.
+      </t-b>
+      <pre><code class="language-python">import anthropic
+
+client = anthropic.Anthropic()   # reads ANTHROPIC_API_KEY from env
+
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    messages=[
+        {"role": "user", "content": "What is a transformer architecture?"}
+    ]
+)
+print(response.content[0].text)
+</code></pre>
+
+      <a id="params"></a>
+      <h4>5.2 &nbsp;Request Parameters</h4>
+      <t-b>
+        <ul class="tight">
+          <li><code>model</code> &mdash; exact model ID string (pin to a version in production).</li>
+          <li><code>max_tokens</code> &mdash; maximum output tokens.  The model may produce
+            fewer; it will never produce more.</li>
+          <li><code>messages</code> &mdash; list of <code>{role, content}</code> objects,
+            alternating user/assistant.</li>
+          <li><code>system</code> &mdash; system prompt string (optional).  Sent separately
+            from <code>messages</code>.</li>
+          <li><code>temperature</code> &mdash; 0.0&ndash;1.0.  Lower values produce more
+            deterministic output; higher values more varied.  Default is 1.0.</li>
+          <li><code>top_p</code> &mdash; nucleus sampling threshold.  Rarely needed;
+            adjust <code>temperature</code> instead.</li>
+          <li><code>stop_sequences</code> &mdash; list of strings that cause the model to
+            stop generating when encountered.</li>
+          <li><code>tools</code> &mdash; tool definitions for function calling (Chapter 9).</li>
+        </ul>
+      </t-b>
+
+      <a id="response"></a>
+      <h4>5.3 &nbsp;Response Structure</h4>
+      <t-b>
+        The response object has these key fields:
+      </t-b>
+      <pre><code class="language-python">response.id              # unique message ID
+response.model           # model that generated the response
+response.stop_reason     # "end_turn" | "max_tokens" | "stop_sequence" | "tool_use"
+response.content         # list of content blocks
+response.usage.input_tokens
+response.usage.output_tokens
+
+# Extract text from the first content block:
+text = response.content[0].text
+</code></pre>
+      <t-b>
+        Always check <code>stop_reason</code>.  If it is <code>"max_tokens"</code> the
+        response was truncated &mdash; the answer is incomplete.  Raise
+        <code>max_tokens</code> or break the task into smaller calls.
+      </t-b>
+
+      <a id="multiturn"></a>
+      <h4>5.4 &nbsp;Multi-Turn Conversations</h4>
+      <t-b>
+        There is no session state on the server.  You build a conversation by appending
+        previous turns to the <code>messages</code> list on each call.
+      </t-b>
+      <pre><code class="language-python">messages = []
+
+def chat(user_text):
+    messages.append({"role": "user", "content": user_text})
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        messages=messages
+    )
+    assistant_text = response.content[0].text
+    messages.append({"role": "assistant", "content": assistant_text})
+    return assistant_text
+
+print(chat("What is a monad?"))
+print(chat("Give me a concrete example in Python."))
+</code></pre>
+      <t-b>
+        The messages list grows with every turn.  Long conversations eventually
+        approach the context limit.  Production applications summarise or truncate
+        old turns to stay within budget.
+      </t-b>
+
+      <a id="refs"></a>
+      <h4>5.5 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/api/messages">Messages API Reference</a>
+          </td>
+          <td class="lightItem">Complete request and response schema.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://github.com/anthropics/anthropic-sdk-python">anthropic-sdk-python</a>
+          </td>
+          <td class="lightItem">Python SDK source code and examples.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a href="AIStory_Output.html">Next: Structured Output</a></td>
+          <td class="lightItem">Getting reliable JSON and typed data from the model.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#api">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#minimal">minimal request</a></menu-elem>
+        <menu-elem class="secElem"><a href="#params">parameters</a></menu-elem>
+        <menu-elem class="secElem"><a href="#response">response</a></menu-elem>
+        <menu-elem class="secElem"><a href="#multiturn">multi-turn</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/AIStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  AIStory_Agents.html - AI Story Chapter 10
+-->
+<head>
+  <title>AI Story: Agents</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    AIStory_Agents.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/10/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">AI Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Story: Agents</h2>
+        <h4 class="indent" id="subtitle">agent architecture, agentic loop, state, safety, human-in-the-loop</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="agents"></a>
+      <h3>10. &nbsp;Agents</h3>
+      <t-b>
+        An agent is an LLM-powered system that takes actions in the world across multiple
+        steps, observes the results, and decides what to do next.  It is distinguished from
+        a chatbot by two things: it has <em>tools</em> (Chapter 9) that give it real-world
+        reach, and it runs in a <em>loop</em> rather than answering a single prompt.
+      </t-b>
+
+      <a id="loop"></a>
+      <h4>10.1 &nbsp;The Agentic Loop</h4>
+      <t-b>
+        The fundamental pattern:
+      </t-b>
+      <t-b class="indent">
+        <ol class="tight">
+          <li><strong>Receive task.</strong> &nbsp; User provides a goal in natural language.</li>
+          <li><strong>Plan.</strong> &nbsp; Model decides what action to take next, often calling a tool.</li>
+          <li><strong>Act.</strong> &nbsp; Your code executes the requested tool and returns the result.</li>
+          <li><strong>Observe.</strong> &nbsp; Model receives the result and updates its understanding.</li>
+          <li><strong>Repeat</strong> steps 2&ndash;4 until the task is complete or a stop condition fires.</li>
+          <li><strong>Report.</strong> &nbsp; Model summarises what it did and what the outcome was.</li>
+        </ol>
+      </t-b>
+      <pre><code class="language-python">MAX_STEPS = 20
+
+def run_agent(task, tools, tool_dispatch):
+    messages = [{"role": "user", "content": task}]
+
+    for step in range(MAX_STEPS):
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=4096,
+            tools=tools,
+            messages=messages
+        )
+        messages.append({"role": "assistant", "content": response.content})
+
+        if response.stop_reason != "tool_use":
+            return response.content[0].text   # done
+
+        results = []
+        for block in response.content:
+            if block.type == "tool_use":
+                result = tool_dispatch(block.name, block.input)
+                results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": result
+                })
+        messages.append({"role": "user", "content": results})
+
+    return "Agent reached step limit without completing the task."
+</code></pre>
+
+      <a id="state"></a>
+      <h4>10.2 &nbsp;State and Memory</h4>
+      <t-b>
+        The agent&rsquo;s &ldquo;memory&rdquo; is the <code>messages</code> list.
+        Every tool result, every model response, and every user instruction is appended
+        to it.  The model attends to all of it on every step.
+      </t-b>
+      <t-b>
+        For long-running tasks the messages list can grow past the context limit.
+        Common strategies:
+        <ul class="tight">
+          <li><strong>Summarise and trim.</strong> &nbsp; After N steps, ask the model
+            to summarise progress; replace the accumulated history with the summary.</li>
+          <li><strong>External state.</strong> &nbsp; Write intermediate results to files
+            or a database; retrieve only what is currently relevant.</li>
+          <li><strong>Sub-agents.</strong> &nbsp; Delegate sub-tasks to fresh agent calls
+            with clean context; pass only the result back to the orchestrator.</li>
+        </ul>
+      </t-b>
+
+      <a id="safety"></a>
+      <h4>10.3 &nbsp;Safety Constraints</h4>
+      <t-b>
+        An agent that can write files, run commands, or call external APIs can cause
+        real damage if it makes the wrong decision.  Practical safeguards:
+        <ul class="tight">
+          <li>
+            <strong>Step limit.</strong> &nbsp; Always impose a maximum number of loop
+            iterations and fail loudly when it is reached.  An agent stuck in a loop
+            is a runaway cost and may cause data corruption.
+          </li>
+          <li>
+            <strong>Confirm before destructive actions.</strong> &nbsp; Tools that delete,
+            overwrite, or send data should require an explicit human confirmation step
+            rather than executing silently.
+          </li>
+          <li>
+            <strong>Sandbox the environment.</strong> &nbsp; Run agents against a test
+            copy of data before giving access to production resources.
+          </li>
+          <li>
+            <strong>Least-privilege tools.</strong> &nbsp; Give the agent only the tools
+            it needs for the current task.  A code-review agent does not need a
+            &ldquo;delete file&rdquo; tool.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="hitl"></a>
+      <h4>10.4 &nbsp;Human-in-the-Loop</h4>
+      <t-b>
+        For high-stakes tasks, insert a human approval step before executing certain tools.
+        The agent pauses, shows its intended action, and waits for confirmation:
+      </t-b>
+      <pre><code class="language-python">def tool_dispatch(name, inputs):
+    if name in REQUIRES_CONFIRMATION:
+        print(f"\nAgent wants to call '{name}' with:\n{inputs}")
+        answer = input("Approve? [y/N] ").strip().lower()
+        if answer != "y":
+            return "Action cancelled by user."
+    return TOOL_REGISTRY[name](**inputs)
+</code></pre>
+
+      <a id="refs"></a>
+      <h4>10.5 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/build-with-claude/agents">Agents Guide</a>
+          </td>
+          <td class="lightItem">Anthropic&rsquo;s agent design patterns and best practices.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="CodeBites_AgenticAI.html">CodeBites: Agentic AI</a>
+          </td>
+          <td class="lightItem">Multi-step agentic workflows and chaining patterns.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a href="AIStory_Reliability.html">Next: Reliability</a></td>
+          <td class="lightItem">Rate limits, retry logic, cost monitoring for production agents.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#agents">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#loop">agentic loop</a></menu-elem>
+        <menu-elem class="secElem"><a href="#state">state &amp; memory</a></menu-elem>
+        <menu-elem class="secElem"><a href="#safety">safety constraints</a></menu-elem>
+        <menu-elem class="secElem"><a href="#hitl">human-in-the-loop</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/AIStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 10, 10);
+  </script>
+</body>
+</html>
