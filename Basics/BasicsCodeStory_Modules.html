@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsCodeStory_Modules.html
+-->
+<head>
+  <title>Basics Code Story - Modules and Namespaces</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsCodeStory_Modules.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #9 &ndash; Modules &amp; Namespaces</h2>
+        <h4 class="indent" id="subtitle">module declaration, visibility, imports, packages and crates</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>9.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Modules and namespaces partition a program&rsquo;s names into groups, preventing
+          collisions between libraries and providing a logical structure that mirrors the
+          domain. The module system also controls <strong>visibility</strong>: which items are
+          accessible outside their defining unit and which are implementation details.
+        </t-b>
+      </indent-blocks>
+
+      <a id="moddecl"></a>
+      <h3>9.1&nbsp; Module Declaration</h3>
+      <indent-blocks>
+        <t-b>
+          Each language provides a way to declare a named scope that groups related items.
+        </t-b>
+        <defn-code>// Rust: mod keyword; module tree mirrors file system
+mod geometry {
+    pub struct Point { pub x: f64, pub y: f64 }
+    pub fn distance(a: &amp;Point, b: &amp;Point) -&gt; f64 { /* ... */ }
+}
+// In separate file: src/geometry.rs (or src/geometry/mod.rs)
+mod geometry;  // loads src/geometry.rs
+
+// C++: namespace (no file-system correspondence)
+namespace geometry {
+    struct Point { double x, y; };
+    double distance(const Point&amp; a, const Point&amp; b);
+}
+
+// C#: namespace (typically matches folder structure by convention)
+namespace Geometry {
+    public class Point { public double X, Y; }
+}
+
+// Python: module = file; package = directory with __init__.py
+# geometry.py  -&gt;  import geometry; geometry.distance(...)</defn-code>
+        <t-b>
+          Rust&rsquo;s module system is unique in that the module hierarchy must be explicitly
+          declared; the compiler does not automatically discover files. This prevents accidental
+          inclusion of test utilities or platform-specific code.
+        </t-b>
+      </indent-blocks>
+
+      <a id="visibility"></a>
+      <h3>9.2&nbsp; Visibility and Access Modifiers</h3>
+      <indent-blocks>
+        <t-b>
+          Visibility controls which modules can name an item. Default visibility differs per language:
+          <table>
+            <tr>
+              <th class="darkItem">Language</th>
+              <th class="darkItem">Default</th>
+              <th class="darkItem">Public</th>
+              <th class="darkItem">Restricted</th>
+            </tr>
+            <tr>
+              <td class="defn">Rust</td>
+              <td class="defn">private to module</td>
+              <td class="defn"><code>pub</code></td>
+              <td class="defn"><code>pub(crate)</code>, <code>pub(super)</code>, <code>pub(in path)</code></td>
+            </tr>
+            <tr>
+              <td class="defn">C++</td>
+              <td class="defn">struct: public; class: private</td>
+              <td class="defn"><code>public:</code></td>
+              <td class="defn"><code>protected:</code>, <code>private:</code></td>
+            </tr>
+            <tr>
+              <td class="defn">C#</td>
+              <td class="defn">private (members); internal (types)</td>
+              <td class="defn"><code>public</code></td>
+              <td class="defn"><code>internal</code>, <code>protected</code>, <code>private protected</code></td>
+            </tr>
+            <tr>
+              <td class="defn">Python</td>
+              <td class="defn">public (convention only)</td>
+              <td class="defn">&mdash;</td>
+              <td class="defn"><code>_name</code> (private by convention), <code>__name</code> (name-mangled)</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          Rust&rsquo;s <code>pub(crate)</code> restricts visibility to the current crate, enabling
+          a public API surface for downstream consumers while keeping implementation details
+          internal.
+        </t-b>
+      </indent-blocks>
+
+      <a id="imports"></a>
+      <h3>9.3&nbsp; Imports and Use Declarations</h3>
+      <indent-blocks>
+        <t-b>
+          Importing a name brings it into the current scope, avoiding fully-qualified paths.
+        </t-b>
+        <defn-code>// Rust: use paths; glob import available but discouraged
+use std::collections::HashMap;
+use std::io::{self, Read, Write};
+
+// C++: using declarations and directives
+using std::vector;           // single name
+using namespace std;         // entire namespace (discouraged in headers)
+#include &lt;vector&gt;            // textual inclusion; not a module import
+
+// C++20: named modules (replaces #include for new code)
+import std;
+
+// C#
+using System.Collections.Generic;
+using Dict = System.Collections.Generic.Dictionary&lt;string,int&gt;;
+
+// Python
+import os
+from pathlib import Path
+import numpy as np          # alias for long names</defn-code>
+        <t-b>
+          C++ header inclusion via <code>#include</code> is textual substitution, not a true
+          module system. C++20 modules provide proper isolation but adoption is still gradual.
+        </t-b>
+      </indent-blocks>
+
+      <a id="packages"></a>
+      <h3>9.4&nbsp; Packages and Crates</h3>
+      <indent-blocks>
+        <t-b>
+          Beyond files and modules, languages provide a unit of distribution and versioning:
+          <table>
+            <tr>
+              <th class="darkItem">Language</th>
+              <th class="darkItem">Unit</th>
+              <th class="darkItem">Registry</th>
+              <th class="darkItem">Manifest</th>
+            </tr>
+            <tr>
+              <td class="defn">Rust</td>
+              <td class="defn">crate (library or binary)</td>
+              <td class="defn">crates.io</td>
+              <td class="defn">Cargo.toml</td>
+            </tr>
+            <tr>
+              <td class="defn">C++</td>
+              <td class="defn">library (no standard)</td>
+              <td class="defn">vcpkg, Conan</td>
+              <td class="defn">CMakeLists.txt / conanfile</td>
+            </tr>
+            <tr>
+              <td class="defn">C#</td>
+              <td class="defn">assembly / NuGet package</td>
+              <td class="defn">nuget.org</td>
+              <td class="defn">.csproj</td>
+            </tr>
+            <tr>
+              <td class="defn">Python</td>
+              <td class="defn">package (directory or wheel)</td>
+              <td class="defn">PyPI</td>
+              <td class="defn">pyproject.toml</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          Rust&rsquo;s Cargo integrates dependency resolution, building, testing, and publishing
+          in a single tool, making crate management straightforward. The lock file
+          (<code>Cargo.lock</code>) pins exact dependency versions for reproducible builds.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue9"></a>
+      <h3>9.5&nbsp; Epilogue</h3>
+      <t-b>
+        A well-designed module system keeps large codebases navigable by enforcing clear
+        boundaries between components. Visibility rules make the public API explicit, protecting
+        internal invariants. The next chapter covers concurrency &mdash; coordinating multiple
+        threads of execution within one program.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>9.6&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://doc.rust-lang.org/book/ch07-00-managing-growing-projects-with-packages-crates-and-modules.html">Rust Module System &mdash; The Book</a><br />
+        <a target="_blank" href="https://en.cppreference.com/w/cpp/language/namespace">C++ Namespaces &mdash; cppreference</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/namespace">C# Namespaces &mdash; Microsoft</a><br />
+        <a target="_blank" href="https://docs.python.org/3/reference/import.html">Python Import System</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#moddecl">declaration</a></menu-elem>
+        <menu-elem class="secElem"><a href="#visibility">visibility</a></menu-elem>
+        <menu-elem class="secElem"><a href="#imports">imports</a></menu-elem>
+        <menu-elem class="secElem"><a href="#packages">packages</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 9, 10);
+  </script>
+</body>
+</html>

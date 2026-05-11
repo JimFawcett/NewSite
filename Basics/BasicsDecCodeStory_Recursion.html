@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsDecCodeStory_Recursion.html
+-->
+<head>
+  <title>Basics Dec Code Story - Recursion</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsDecCodeStory_Recursion.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Dec Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #5 &ndash; Recursion</h2>
+        <h4 class="indent" id="subtitle">structural recursion, mutual recursion, corecursion, tail call optimization</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>5.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          In purely functional languages, there are no mutable loop variables, so iteration is
+          expressed as recursion. Far from being a limitation, recursion makes the structure of
+          the computation mirror the structure of the data. A function that processes a list
+          naturally splits into the head case and the tail case; a function that processes a
+          tree splits into the leaf case and the branch case.
+        </t-b>
+      </indent-blocks>
+
+      <a id="structural"></a>
+      <h3>5.1&nbsp; Structural Recursion</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Structural recursion</strong> is recursion that follows the shape of the data
+          type. Each recursive call is made on a structurally smaller piece of the input. This
+          guarantees termination: the input shrinks at each step until a base case is reached.
+        </t-b>
+        <defn-code>-- Haskell: structural recursion over a list
+length' :: [a] -&gt; Int
+length' []     = 0              -- base case: empty list
+length' (_:xs) = 1 + length' xs  -- step: recurse on the tail
+
+sum' :: Num a =&gt; [a] -&gt; a
+sum' []     = 0
+sum' (x:xs) = x + sum' xs
+
+-- Structural recursion over a binary tree
+data Tree a = Leaf | Node (Tree a) a (Tree a)
+
+depth :: Tree a -&gt; Int
+depth Leaf         = 0
+depth (Node l _ r) = 1 + max (depth l) (depth r)</defn-code>
+        <t-b>
+          Structural recursion is the definitional style for processing ADTs. Proof assistants
+          and dependently typed languages require structural recursion to guarantee that programs
+          terminate.
+        </t-b>
+      </indent-blocks>
+
+      <a id="mutual"></a>
+      <h3>5.2&nbsp; Mutual Recursion</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Mutual recursion</strong> occurs when two or more functions call each other.
+          It is the natural expression of mutually defined concepts &mdash; for example, checking
+          whether a number is even or odd by delegation.
+        </t-b>
+        <defn-code>-- Haskell: mutually recursive functions (both in scope simultaneously)
+isEven :: Int -&gt; Bool
+isEven 0 = True
+isEven n = isOdd (n - 1)
+
+isOdd :: Int -&gt; Bool
+isOdd 0 = False
+isOdd n = isEven (n - 1)
+
+-- F#: mutual recursion requires 'and' keyword
+let rec isEven n =
+  if n = 0 then true else isOdd (n - 1)
+and isOdd n =
+  if n = 0 then false else isEven (n - 1)
+
+-- Rust: forward declarations not needed; all items in a module are mutually visible
+fn is_even(n: u32) -&gt; bool { if n == 0 { true  } else { is_odd(n - 1) } }
+fn is_odd (n: u32) -&gt; bool { if n == 0 { false } else { is_even(n - 1) } }</defn-code>
+      </indent-blocks>
+
+      <a id="corecursion"></a>
+      <h3>5.3&nbsp; Corecursion and Infinite Structures</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Corecursion</strong> is the dual of recursion. While recursion decomposes a
+          finite structure to a base case, corecursion generates a potentially infinite structure
+          one step at a time. In lazy languages, infinite structures are safe because only the
+          demanded portion is evaluated.
+        </t-b>
+        <defn-code>-- Haskell: infinite list of natural numbers (lazy; only what's demanded is computed)
+nats :: [Int]
+nats = [0..]           -- or equivalently: 0 : map (+1) nats
+
+-- Infinite Fibonacci sequence
+fibs :: [Integer]
+fibs = 0 : 1 : zipWith (+) fibs (tail fibs)
+
+take 10 fibs   -- [0,1,1,2,3,5,8,13,21,34]
+
+-- Infinite stream of primes via the Sieve of Eratosthenes
+primes :: [Int]
+primes = sieve [2..]
+  where sieve (p:xs) = p : sieve [x | x &lt;- xs, x `mod` p /= 0]</defn-code>
+        <t-b>
+          In strict languages (Rust, Python), infinite sequences must be represented explicitly
+          as iterators or generators. Haskell&rsquo;s lazy evaluation makes corecursion the
+          natural idiom for streams.
+        </t-b>
+        <defn-code>-- Rust: infinite iterator via unfold
+use std::iter;
+let nats = iter::successors(Some(0u64), |&amp;n| Some(n + 1));
+let first_10: Vec&lt;_&gt; = nats.take(10).collect();
+
+-- Python: generator function
+def nats():
+    n = 0
+    while True:
+        yield n
+        n += 1</defn-code>
+      </indent-blocks>
+
+      <a id="tco"></a>
+      <h3>5.4&nbsp; Tail Call Optimization</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>tail call</strong> is a function call that is the very last action of the
+          calling function; its result is returned directly without further computation.
+          <strong>Tail call optimization (TCO)</strong> converts such calls into jumps, reusing
+          the current stack frame and enabling bounded-stack recursion over arbitrarily large inputs.
+        </t-b>
+        <defn-code>-- Haskell: GHC performs TCO automatically
+-- Tail-recursive accumulator pattern
+factTail :: Integer -&gt; Integer -&gt; Integer
+factTail 0 acc = acc
+factTail n acc = factTail (n - 1) (n * acc)
+
+factorial :: Integer -&gt; Integer
+factorial n = factTail n 1
+
+-- F#: tail-recursive; F# guarantees TCO for self-tail-calls
+let rec factTail n acc =
+  if n = 0 then acc else factTail (n - 1) (n * acc)
+
+-- Rust: TCO not guaranteed; use explicit loop for stack safety
+fn factorial(n: u64) -&gt; u64 {
+    let mut acc = 1;
+    let mut i = n;
+    while i &gt; 0 { acc *= i; i -= 1; }
+    acc
+}</defn-code>
+        <t-b>
+          Haskell and F# guarantee TCO for direct tail calls. Scheme (R7RS) mandates it.
+          Python explicitly disallows TCO as a design decision (Guido van Rossum: stack traces
+          must be readable). Rust does not guarantee it. For deep recursion in languages without
+          TCO, convert to an explicit accumulator loop or use a trampoline.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue5"></a>
+      <h3>5.5&nbsp; Epilogue</h3>
+      <t-b>
+        Recursion in declarative languages is not a workaround for lacking loops &mdash; it is
+        the appropriate tool for processing recursive data structures. Structural recursion
+        mirrors the data; corecursion generates it; TCO makes deep recursion safe. The next
+        chapter covers combinators, the library of reusable higher-order functions that handle
+        the most common recursion patterns so you rarely need to write them explicitly.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>5.6&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Structural_induction">Structural Induction &mdash; Wikipedia</a><br />
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Corecursion">Corecursion &mdash; Wikipedia</a><br />
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Tail_call">Tail Call &mdash; Wikipedia</a><br />
+        <a target="_blank" href="https://doc.rust-lang.org/std/iter/fn.successors.html">Rust iter::successors</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#structural">structural</a></menu-elem>
+        <menu-elem class="secElem"><a href="#mutual">mutual</a></menu-elem>
+        <menu-elem class="secElem"><a href="#corecursion">corecursion</a></menu-elem>
+        <menu-elem class="secElem"><a href="#tco">tail call</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsDecCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+</body>
+</html>

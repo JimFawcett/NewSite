@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsDecCodeStory_Patterns.html
+-->
+<head>
+  <title>Basics Dec Code Story - Pattern Matching and Destructuring</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsDecCodeStory_Patterns.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Dec Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #3 &ndash; Pattern Matching &amp; Destructuring</h2>
+        <h4 class="indent" id="subtitle">exhaustive matching, nested patterns, guards, record destructuring</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>3.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Pattern matching is the primary way to consume algebraic data types. It combines
+          case analysis (which variant?) with destructuring (what are the fields?) into a
+          single syntactic form. When the compiler enforces exhaustiveness, every possible
+          value must be handled, turning missing cases into compile errors rather than runtime
+          surprises.
+        </t-b>
+      </indent-blocks>
+
+      <a id="exhaustive"></a>
+      <h3>3.1&nbsp; Exhaustive Structural Matching</h3>
+      <indent-blocks>
+        <t-b>
+          An <strong>exhaustive match</strong> covers every variant of a sum type. Adding a
+          new variant to the type causes all non-exhaustive matches to fail to compile,
+          prompting the programmer to handle the new case everywhere it matters.
+        </t-b>
+        <defn-code>-- Haskell: case expression must cover all constructors
+area :: Shape -&gt; Double
+area shape = case shape of
+  Circle  c r     -&gt; pi * r * r
+  Rect    _ w h   -&gt; w * h
+  Triangle a b c  -&gt; triangleArea a b c
+-- omitting Triangle would be a compile warning (GHC -Wall: error)
+
+-- Rust: match must be exhaustive (always enforced, not just with -Wall)
+fn area(s: &amp;Shape) -&gt; f64 {
+    match s {
+        Shape::Circle  { radius, .. }       =&gt; std::f64::consts::PI * radius * radius,
+        Shape::Rect    { width, height, .. } =&gt; width * height,
+        Shape::Triangle(a, b, c)            =&gt; triangle_area(a, b, c),
+    }
+}</defn-code>
+        <t-b>
+          The wildcard <code>_</code> or a catch-all variable arm can cover remaining variants,
+          but doing so opts out of exhaustiveness for those cases &mdash; useful for large enums
+          where only a few variants are interesting.
+        </t-b>
+      </indent-blocks>
+
+      <a id="nested"></a>
+      <h3>3.2&nbsp; Nested Patterns</h3>
+      <indent-blocks>
+        <t-b>
+          Patterns compose: a pattern can match a constructor whose fields are themselves
+          matched by sub-patterns, all in a single expression without intermediate bindings.
+        </t-b>
+        <defn-code>-- Haskell: nested pattern matches on list structure
+describeList :: [a] -&gt; String
+describeList xs = case xs of
+  []        -&gt; "empty"
+  [_]       -&gt; "singleton"
+  [_, _]    -&gt; "pair"
+  (_:_:_:_) -&gt; "three or more"
+
+-- Matching nested ADT: a Result containing an Option
+-- Rust
+match result {
+    Ok(Some(value)) =&gt; process(value),
+    Ok(None)        =&gt; handle_empty(),
+    Err(e)          =&gt; handle_error(e),
+}
+
+-- F#: nested discriminated union pattern
+match response with
+| Ok (Some value) -&gt; process value
+| Ok None         -&gt; handleEmpty ()
+| Error e         -&gt; handleError e</defn-code>
+        <t-b>
+          Nested patterns eliminate chains of nested if/else or multiple levels of
+          <code>unwrap</code>/<code>match</code>. The entire case analysis is expressed as a
+          single, readable decision tree.
+        </t-b>
+      </indent-blocks>
+
+      <a id="guards"></a>
+      <h3>3.3&nbsp; Pattern Guards</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>guard</strong> adds a boolean condition to a pattern arm. The arm matches
+          only when both the structural pattern and the guard condition are satisfied.
+        </t-b>
+        <defn-code>-- Haskell: guard syntax with |
+classify :: Int -&gt; String
+classify n
+  | n &lt; 0    = "negative"
+  | n == 0   = "zero"
+  | n &lt; 10   = "small positive"
+  | otherwise = "large positive"
+
+-- Haskell: guard on a case arm
+describeTemp :: Double -&gt; String
+describeTemp t = case t of
+  t | t &lt; 0    -&gt; "freezing"
+    | t &lt; 20   -&gt; "cold"
+    | t &lt; 30   -&gt; "comfortable"
+    | otherwise -&gt; "hot"
+
+-- Rust: guard with if
+match score {
+    s if s &gt;= 90 =&gt; "A",
+    s if s &gt;= 80 =&gt; "B",
+    s if s &gt;= 70 =&gt; "C",
+    _            =&gt; "F",
+}</defn-code>
+        <t-b>
+          Guards do not affect exhaustiveness checking: the compiler still requires that the
+          patterns themselves (ignoring guards) cover all cases. If all guards on a variant
+          could fail, the compiler may warn about a non-exhaustive match.
+        </t-b>
+      </indent-blocks>
+
+      <a id="record"></a>
+      <h3>3.4&nbsp; Record Destructuring</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Record destructuring</strong> binds field names directly from a record or
+          struct without manually extracting each field. It is a pattern that matches a product
+          type by name rather than by position.
+        </t-b>
+        <defn-code>-- Haskell: record pattern
+greet :: Person -&gt; String
+greet Person { name = n, age = a } = n ++ " is " ++ show a
+
+-- F#: record destructuring in a let binding
+let { Name = name; Age = age } = person
+printfn "%s is %d" name age
+
+-- Rust: struct destructuring in match and let
+let Point { x, y } = point;   // binds x and y
+
+match event {
+    MouseClick { x, y, button } if button == Left =&gt; handle_click(x, y),
+    KeyPress   { key, modifiers }                  =&gt; handle_key(key, modifiers),
+    _                                              =&gt; (),
+}
+
+-- Python: (limited) tuple unpacking
+x, y = point          # positional only
+name, *rest = items   # head/tail split</defn-code>
+        <t-b>
+          Destructuring in function parameters is particularly ergonomic in Haskell and F#,
+          where a function&rsquo;s signature can simultaneously name and destructure its argument
+          in the same declaration.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue3"></a>
+      <h3>3.5&nbsp; Epilogue</h3>
+      <t-b>
+        Pattern matching transforms the consumption of structured data from a sequence of
+        field-access and type-check operations into a single declarative case analysis. It
+        is the syntactic counterpart to algebraic data types: ADTs describe the structure;
+        patterns exploit it. The next chapter examines how functions themselves become
+        first-class values in declarative languages.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>3.6&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://www.haskell.org/tutorial/patterns.html">Haskell Tutorial &mdash; Pattern Matching</a><br />
+        <a target="_blank" href="https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/pattern-matching">F# Pattern Matching &mdash; Microsoft</a><br />
+        <a target="_blank" href="https://doc.rust-lang.org/book/ch18-00-patterns.html">Rust Patterns &mdash; The Book</a><br />
+        <a target="_blank" href="https://peps.python.org/pep-0634/">PEP 634 &mdash; Python Structural Pattern Matching</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#exhaustive">exhaustive</a></menu-elem>
+        <menu-elem class="secElem"><a href="#nested">nested</a></menu-elem>
+        <menu-elem class="secElem"><a href="#guards">guards</a></menu-elem>
+        <menu-elem class="secElem"><a href="#record">record</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsDecCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+</body>
+</html>

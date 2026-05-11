@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsCodeStory_Lambdas.html
+-->
+<head>
+  <title>Basics Code Story - Lambdas and Closures</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsCodeStory_Lambdas.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #6 &ndash; Lambdas &amp; Closures</h2>
+        <h4 class="indent" id="subtitle">anonymous functions, environment capture, closure types, function pointers</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>6.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>lambda</strong> (anonymous function) is a function defined inline without a
+          name. A <strong>closure</strong> is a lambda that captures variables from its enclosing
+          scope. Closures enable passing behavior as data, deferring computation, and building
+          iterators and callbacks without polluting the namespace with single-use named functions.
+        </t-b>
+      </indent-blocks>
+
+      <a id="anonymous"></a>
+      <h3>6.1&nbsp; Anonymous Functions</h3>
+      <indent-blocks>
+        <t-b>
+          Each language has a distinct syntax for inline function literals:
+        </t-b>
+        <defn-code>// Rust   |params| body  or  |params| { block }
+let double = |x: i32| x * 2;
+let add    = |a, b| { a + b };   // types inferred from usage
+
+// C++   [capture](params) -&gt; ret { body }
+auto double = [](int x) { return x * 2; };
+auto add    = [](int a, int b) -&gt; int { return a + b; };
+
+// C#   (params) =&gt; expr   or   (params) =&gt; { block }
+Func&lt;int,int&gt;     double = x =&gt; x * 2;
+Func&lt;int,int,int&gt; add    = (a, b) =&gt; a + b;
+
+// Python   lambda params: expr   (expression-only body)
+double = lambda x: x * 2
+add    = lambda a, b: a + b</defn-code>
+        <t-b>
+          Python lambdas are restricted to a single expression; multi-statement logic requires a
+          named function. The other three languages allow full block bodies in their lambda forms.
+        </t-b>
+      </indent-blocks>
+
+      <a id="capture"></a>
+      <h3>6.2&nbsp; Capturing Environment</h3>
+      <indent-blocks>
+        <t-b>
+          A closure captures variables from the enclosing scope. The capture mode determines
+          whether the closure borrows, copies, or moves the captured value.
+        </t-b>
+        <defn-code>// Rust: capture mode inferred; move forces ownership transfer
+let threshold = 10;
+let above = |x| x &gt; threshold;         // borrows threshold
+
+let msg = String::from("hello");
+let print_msg = move || println!("{msg}"); // moves msg into closure
+
+// C++: capture list controls the mode
+int threshold = 10;
+auto above = [threshold](int x) { return x &gt; threshold; };   // copy
+auto above = [&amp;threshold](int x) { return x &gt; threshold; };  // reference
+auto above = [=](int x) { return x &gt; threshold; };            // all by copy
+auto above = [&amp;](int x) { return x &gt; threshold; };            // all by ref
+
+// C# and Python: always capture by reference (the variable binding, not the value)
+int threshold = 10;
+Func&lt;int,bool&gt; above = x =&gt; x &gt; threshold;  // C#: captures the variable
+threshold = 20;  // above now uses 20</defn-code>
+        <t-b>
+          Rust&rsquo;s borrow checker enforces that captured references do not outlive the closure.
+          C++ offers no such guarantee &mdash; a closure capturing a reference to a local variable
+          and escaping the local&rsquo;s scope is undefined behavior.
+        </t-b>
+      </indent-blocks>
+
+      <a id="closuretypes"></a>
+      <h3>6.3&nbsp; Closure Types</h3>
+      <indent-blocks>
+        <t-b>
+          Rust models closure capabilities as three traits:
+          <table>
+            <tr>
+              <th class="darkItem">Trait</th>
+              <th class="darkItem">Meaning</th>
+              <th class="darkItem">Can be called</th>
+            </tr>
+            <tr>
+              <td class="defn"><code>Fn</code></td>
+              <td class="defn">borrows captures immutably</td>
+              <td class="defn">any number of times</td>
+            </tr>
+            <tr>
+              <td class="defn"><code>FnMut</code></td>
+              <td class="defn">borrows captures mutably</td>
+              <td class="defn">any number of times (requires mut)</td>
+            </tr>
+            <tr>
+              <td class="defn"><code>FnOnce</code></td>
+              <td class="defn">consumes captured values</td>
+              <td class="defn">exactly once</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          Every closure implements at least <code>FnOnce</code>. If it does not consume its
+          captures it also implements <code>FnMut</code>; if it does not mutate them it also
+          implements <code>Fn</code>. Function parameters accepting closures use these as bounds:
+          <code>fn apply(f: impl Fn(i32) -&gt; i32)</code>.
+        </t-b>
+        <t-b>
+          In C++, lambdas are anonymous struct types with an <code>operator()</code>. They are
+          not standardly polymorphic across different lambda types; <code>std::function&lt;T&gt;</code>
+          provides a type-erased wrapper at the cost of a heap allocation and virtual dispatch.
+          In C#, delegates and <code>Func&lt;&gt;</code>/<code>Action&lt;&gt;</code> serve the
+          same role. Python functions are first-class objects and are inherently polymorphic.
+        </t-b>
+      </indent-blocks>
+
+      <a id="fnptrs"></a>
+      <h3>6.4&nbsp; Function Pointers vs Closures</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>function pointer</strong> holds the address of a named function (no captured
+          state). It is a single pointer-size value and incurs no heap allocation.
+          A <strong>closure</strong> may carry captured state alongside the code pointer.
+        </t-b>
+        <defn-code>// Rust
+fn square(x: i32) -&gt; i32 { x * x }
+let f: fn(i32) -&gt; i32 = square;     // function pointer, no capture
+let g = |x: i32| x * x;             // closure (zero-capture, also fn-pointer compatible)
+
+// C++
+int (*f)(int) = square;             // C-style function pointer
+auto g = [](int x) { return x*x; }; // non-capturing lambda (convertible to fn ptr)
+
+// C#
+Func&lt;int,int&gt; f = x =&gt; x * x;     // delegate; always heap-allocated</defn-code>
+        <t-b>
+          In Rust, a non-capturing closure is zero-sized and can be coerced to a function pointer.
+          A capturing closure has non-zero size and cannot. Using <code>impl Fn</code> (static
+          dispatch, monomorphized) avoids heap allocation; using <code>Box&lt;dyn Fn&gt;</code>
+          (dynamic dispatch) allows heterogeneous collections of closures.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue6"></a>
+      <h3>6.5&nbsp; Epilogue</h3>
+      <t-b>
+        Closures connect functions to the state they need without global variables or
+        extra parameters. Understanding capture modes prevents dangling-reference bugs in C++
+        and unexpected mutation in C# and Python. The next chapter addresses how programs
+        signal and recover from failures.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>6.6&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://doc.rust-lang.org/book/ch13-01-closures.html">Rust Closures &mdash; The Book</a><br />
+        <a target="_blank" href="https://en.cppreference.com/w/cpp/language/lambda">C++ Lambda Expressions &mdash; cppreference</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/lambda-expressions">C# Lambda Expressions &mdash; Microsoft</a><br />
+        <a target="_blank" href="https://docs.python.org/3/reference/expressions.html#lambda">Python Lambda Expressions</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#anonymous">anonymous fns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#capture">capture</a></menu-elem>
+        <menu-elem class="secElem"><a href="#closuretypes">closure types</a></menu-elem>
+        <menu-elem class="secElem"><a href="#fnptrs">fn pointers</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 6, 10);
+  </script>
+</body>
+</html>

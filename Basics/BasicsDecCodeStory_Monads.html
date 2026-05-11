@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsDecCodeStory_Monads.html
+-->
+<head>
+  <title>Basics Dec Code Story - Monads and Effects</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsDecCodeStory_Monads.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Dec Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #8 &ndash; Monads &amp; Effects</h2>
+        <h4 class="indent" id="subtitle">Option/Maybe, Result/Either, list monad, IO/state monads, effect systems</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>8.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>monad</strong> is a design pattern for sequencing computations that carry
+          context &mdash; the possibility of absence, failure, multiple results, or side effects.
+          Monads provide two operations: <code>return</code> (or <code>pure</code>) which wraps
+          a plain value in the context, and <code>bind</code> (<code>&gt;&gt;=</code>) which
+          chains computations, threading the context automatically.
+        </t-b>
+        <t-b>
+          You do not need to understand category theory to use monads productively. Every Rust
+          developer who uses <code>?</code> on a <code>Result</code>, or chains
+          <code>and_then</code> on an <code>Option</code>, is already using monadic composition.
+        </t-b>
+      </indent-blocks>
+
+      <a id="option"></a>
+      <h3>8.1&nbsp; Option / Maybe</h3>
+      <indent-blocks>
+        <t-b>
+          The <strong>Option</strong> (Rust) or <strong>Maybe</strong> (Haskell) monad represents
+          a computation that may produce no result. Chaining with <code>and_then</code> or
+          <code>&gt;&gt;=</code> short-circuits to <code>None</code>/<code>Nothing</code> at
+          the first missing value, eliminating null checks.
+        </t-b>
+        <defn-code>-- Haskell: Maybe chains with >>= (bind)
+lookupUser   :: Id  -&gt; Maybe User
+lookupEmail  :: User -&gt; Maybe Email
+sendEmail    :: Email -&gt; Maybe Receipt
+
+pipeline :: Id -&gt; Maybe Receipt
+pipeline uid = lookupUser uid &gt;&gt;= lookupEmail &gt;&gt;= sendEmail
+
+-- do-notation desugars to the same bind chain
+pipeline uid = do
+  user    &lt;- lookupUser uid
+  email   &lt;- lookupEmail user
+  sendEmail email
+
+-- Rust: and_then is monadic bind for Option
+let receipt = lookup_user(uid)
+    .and_then(lookup_email)
+    .and_then(send_email);</defn-code>
+      </indent-blocks>
+
+      <a id="result"></a>
+      <h3>8.2&nbsp; Result / Either</h3>
+      <indent-blocks>
+        <t-b>
+          The <strong>Result</strong> (Rust, F#) or <strong>Either</strong> (Haskell) monad
+          carries either a success value or an error value. Chaining propagates the error
+          automatically, eliminating nested error checks.
+        </t-b>
+        <defn-code>-- Haskell: Either String is a monad; Left is failure, Right is success
+parseAge  :: String -&gt; Either String Int
+validateAge :: Int  -&gt; Either String Int
+
+process :: String -&gt; Either String Int
+process s = do
+  age      &lt;- parseAge s
+  validated &lt;- validateAge age
+  return (validated * 2)
+
+-- Rust: ? operator is syntactic sugar for monadic bind on Result
+fn process(s: &amp;str) -&gt; Result&lt;i32, String&gt; {
+    let age       = parse_age(s)?;
+    let validated = validate_age(age)?;
+    Ok(validated * 2)
+}
+
+-- F#: result computation expression
+let process s = result {
+    let! age       = parseAge s
+    let! validated = validateAge age
+    return validated * 2
+}</defn-code>
+      </indent-blocks>
+
+      <a id="listmonad"></a>
+      <h3>8.3&nbsp; List / Sequence Monad</h3>
+      <indent-blocks>
+        <t-b>
+          The <strong>list monad</strong> models nondeterministic computation: a function
+          returning a list represents a computation with multiple possible results. Binding
+          applies the next step to every result, producing all combinations.
+        </t-b>
+        <defn-code>-- Haskell: list monad produces all Pythagorean triples up to n
+pythTriples n = do
+  c &lt;- [1..n]
+  b &lt;- [1..c]
+  a &lt;- [1..b]
+  if a^2 + b^2 == c^2 then return (a,b,c) else []
+
+-- Equivalent list comprehension (syntactic sugar for the list monad)
+pythTriples n = [ (a,b,c) | c &lt;- [1..n], b &lt;- [1..c], a &lt;- [1..b]
+                           , a^2 + b^2 == c^2 ]
+
+-- Python list comprehension (same semantics)
+pythagorean = [(a,b,c) for c in range(1,n+1)
+                        for b in range(1,c+1)
+                        for a in range(1,b+1)
+                        if a**2 + b**2 == c**2]</defn-code>
+      </indent-blocks>
+
+      <a id="io"></a>
+      <h3>8.4&nbsp; IO and State Monads</h3>
+      <indent-blocks>
+        <t-b>
+          In Haskell, <strong>IO</strong> is the monad for sequencing side effects. A value of
+          type <code>IO a</code> is an action that, when executed, may perform I/O and then
+          produce an <code>a</code>. The type system prevents IO actions from being called in
+          pure code, maintaining referential transparency everywhere else.
+        </t-b>
+        <defn-code>-- Haskell: IO actions are values; do-notation sequences them
+main :: IO ()
+main = do
+  putStrLn "Enter your name:"
+  name &lt;- getLine
+  putStrLn ("Hello, " ++ name ++ "!")
+
+-- The State monad threads a state value through a computation purely
+import Control.Monad.State
+
+increment :: State Int ()
+increment = modify (+1)
+
+runThrice :: State Int Int
+runThrice = do
+  increment; increment; increment
+  get
+
+execState runThrice 0   -- 3</defn-code>
+        <t-b>
+          The State monad makes explicit the state that flows through a computation, preventing
+          the implicit shared-state bugs of imperative programming while remaining purely
+          functional.
+        </t-b>
+      </indent-blocks>
+
+      <a id="effects"></a>
+      <h3>8.5&nbsp; Effect Systems and Handlers</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Algebraic effects</strong> are a composable alternative to monads for
+          modeling side effects. An effect declaration names the operations an effect provides;
+          a handler provides an interpretation. Unlike monads, effects compose naturally without
+          monad transformer stacks.
+        </t-b>
+        <defn-code>-- Koka language: algebraic effects
+effect state&lt;s&gt; {
+  fun get() : s
+  fun set(x : s) : ()
+}
+
+fun counter() : state&lt;int&gt; int {
+  set(get() + 1)
+  get()
+}
+
+-- handler provides the interpretation
+handle counter() {
+  return(x) -&gt; (x, s)
+  get()     -&gt; resume(s, s)
+  set(x)    -&gt; resume((), x)
+} (0)    // initial state</defn-code>
+        <t-b>
+          Effect systems are available in Koka, Eff, and Unison, and are being researched for
+          inclusion in OCaml (OCaml 5). They represent the current frontier of structuring
+          effectful computation in a principled, composable way.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue8"></a>
+      <h3>8.6&nbsp; Epilogue</h3>
+      <t-b>
+        Monads unify a diverse set of patterns &mdash; optional values, error propagation,
+        nondeterminism, state, and I/O &mdash; under a single interface. The practical payoff
+        is that the same <code>&gt;&gt;=</code> or <code>do</code>-notation works identically
+        across all of them. The next chapter examines type classes, the abstraction that makes
+        this uniformity possible.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>8.7&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://wiki.haskell.org/Monad">Monad &mdash; Haskell Wiki</a><br />
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Monad_(functional_programming)">Monad &mdash; Wikipedia</a><br />
+        <a target="_blank" href="https://koka-lang.github.io/koka/doc/index.html">Koka &mdash; Algebraic Effects</a><br />
+        <a target="_blank" href="https://doc.rust-lang.org/std/result/index.html">Rust Result &mdash; std</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#option">Option/Maybe</a></menu-elem>
+        <menu-elem class="secElem"><a href="#result">Result/Either</a></menu-elem>
+        <menu-elem class="secElem"><a href="#listmonad">list monad</a></menu-elem>
+        <menu-elem class="secElem"><a href="#io">IO/State</a></menu-elem>
+        <menu-elem class="secElem"><a href="#effects">effect systems</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsDecCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 8, 10);
+  </script>
+</body>
+</html>

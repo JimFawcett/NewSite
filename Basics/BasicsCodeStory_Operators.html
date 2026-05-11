@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsCodeStory_Operators.html
+-->
+<head>
+  <title>Basics Code Story - Operators</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsCodeStory_Operators.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #3 &ndash; Operators</h2>
+        <h4 class="indent" id="subtitle">arithmetic, comparison, logical, bitwise, assignment, overloading</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>3.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Operators are the primitive computations a language provides on its built-in types.
+          Most imperative languages share the same operator symbols, but differ in overflow
+          semantics, precedence subtleties, and how far operator overloading is permitted.
+        </t-b>
+      </indent-blocks>
+
+      <a id="arithmetic"></a>
+      <h3>3.1&nbsp; Arithmetic Operators</h3>
+      <indent-blocks>
+        <t-b>
+          The standard arithmetic operators are <code>+</code>, <code>-</code>, <code>*</code>,
+          <code>/</code>, and <code>%</code> (remainder). Integer division truncates toward zero
+          in all four languages.
+        </t-b>
+        <t-b>
+          <strong>Overflow behavior</strong> differs significantly:
+          <table>
+            <tr>
+              <th class="darkItem">Language</th>
+              <th class="darkItem">Debug build</th>
+              <th class="darkItem">Release / production</th>
+            </tr>
+            <tr>
+              <td class="defn">Rust</td>
+              <td class="defn">panic on overflow</td>
+              <td class="defn">wrapping (two&rsquo;s complement)</td>
+            </tr>
+            <tr>
+              <td class="defn">C++ (signed)</td>
+              <td class="defn">undefined behavior</td>
+              <td class="defn">undefined behavior</td>
+            </tr>
+            <tr>
+              <td class="defn">C++ (unsigned)</td>
+              <td class="defn">modular wrap</td>
+              <td class="defn">modular wrap</td>
+            </tr>
+            <tr>
+              <td class="defn">C#</td>
+              <td class="defn">silent wrap (checked context: exception)</td>
+              <td class="defn">silent wrap</td>
+            </tr>
+            <tr>
+              <td class="defn">Python</td>
+              <td class="defn">arbitrary precision; no overflow</td>
+              <td class="defn">arbitrary precision; no overflow</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          Rust provides explicit wrapping, saturating, and checked arithmetic methods
+          (<code>wrapping_add</code>, <code>saturating_add</code>, <code>checked_add</code>)
+          when the default panic is not desired.
+        </t-b>
+      </indent-blocks>
+
+      <a id="comparison"></a>
+      <h3>3.2&nbsp; Comparison Operators</h3>
+      <indent-blocks>
+        <t-b>
+          Comparison operators produce a boolean: <code>==</code>, <code>!=</code>,
+          <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>.
+        </t-b>
+        <t-b>
+          <strong>Total vs partial ordering:</strong> integers have a total order (every pair
+          is comparable). Floating-point types do not &mdash; <code>NaN != NaN</code> and
+          comparisons involving <code>NaN</code> always return false. Rust encodes this in the
+          type system: <code>f64</code> implements <code>PartialOrd</code> but not <code>Ord</code>,
+          preventing floats from being used as sort keys without explicit handling.
+        </t-b>
+        <t-b>
+          <strong>Equality vs identity:</strong> C# and Python distinguish value equality
+          (<code>==</code>) from reference identity (<code>object.ReferenceEquals</code> /
+          <code>is</code>). Rust and C++ have only value equality for scalar types; reference
+          equality requires explicit pointer comparison.
+        </t-b>
+      </indent-blocks>
+
+      <a id="logical"></a>
+      <h3>3.3&nbsp; Logical Operators</h3>
+      <indent-blocks>
+        <t-b>
+          <code>&amp;&amp;</code> (and), <code>||</code> (or), <code>!</code> (not) operate on
+          boolean values in all four languages.
+        </t-b>
+        <t-b>
+          <strong>Short-circuit evaluation:</strong> <code>&amp;&amp;</code> does not evaluate
+          its right operand if the left is <code>false</code>; <code>||</code> does not evaluate
+          its right operand if the left is <code>true</code>. This is guaranteed by the language
+          standard in all four languages and is commonly used to guard unsafe operations:
+        </t-b>
+        <defn-code>// short-circuit prevents index-out-of-bounds
+if !v.is_empty() &amp;&amp; v[0] &gt; threshold { /* ... */ }
+
+// Python
+if lst and lst[0] &gt; threshold:
+    pass</defn-code>
+        <t-b>
+          Python also provides the words <code>and</code>, <code>or</code>, <code>not</code>
+          as operator alternatives. Unlike other languages, Python&rsquo;s <code>or</code> and
+          <code>and</code> return one of their operands, not a strict boolean.
+        </t-b>
+      </indent-blocks>
+
+      <a id="bitwise"></a>
+      <h3>3.4&nbsp; Bitwise Operators</h3>
+      <indent-blocks>
+        <t-b>
+          Bitwise operators work on the binary representation of integer values:
+          <table>
+            <tr>
+              <th class="darkItem">Operator</th>
+              <th class="darkItem">Meaning</th>
+              <th class="darkItem">Example</th>
+            </tr>
+            <tr>
+              <td class="defn"><code>&amp;</code></td>
+              <td class="defn">AND</td>
+              <td class="defn"><code>0b1100 &amp; 0b1010 == 0b1000</code></td>
+            </tr>
+            <tr>
+              <td class="defn"><code>|</code></td>
+              <td class="defn">OR</td>
+              <td class="defn"><code>0b1100 | 0b1010 == 0b1110</code></td>
+            </tr>
+            <tr>
+              <td class="defn"><code>^</code></td>
+              <td class="defn">XOR</td>
+              <td class="defn"><code>0b1100 ^ 0b1010 == 0b0110</code></td>
+            </tr>
+            <tr>
+              <td class="defn"><code>!</code> / <code>~</code></td>
+              <td class="defn">NOT (bitwise complement)</td>
+              <td class="defn"><code>!0u8 == 255</code></td>
+            </tr>
+            <tr>
+              <td class="defn"><code>&lt;&lt;</code></td>
+              <td class="defn">left shift</td>
+              <td class="defn"><code>1 &lt;&lt; 3 == 8</code></td>
+            </tr>
+            <tr>
+              <td class="defn"><code>&gt;&gt;</code></td>
+              <td class="defn">right shift</td>
+              <td class="defn"><code>16 &gt;&gt; 2 == 4</code></td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          Rust uses <code>!</code> for bitwise NOT on integers (same token as logical NOT).
+          C++ and C# use <code>~</code>. Shifting by more bits than the type width is undefined
+          behavior in C++ for signed types; Rust panics in debug and wraps in release.
+        </t-b>
+      </indent-blocks>
+
+      <a id="assignment"></a>
+      <h3>3.5&nbsp; Assignment Operators</h3>
+      <indent-blocks>
+        <t-b>
+          <code>=</code> binds a value to a mutable variable. Compound assignment operators
+          combine an operation with assignment: <code>+=</code>, <code>-=</code>,
+          <code>*=</code>, <code>/=</code>, <code>%=</code>, <code>&amp;=</code>,
+          <code>|=</code>, <code>^=</code>, <code>&lt;&lt;=</code>, <code>&gt;&gt;=</code>.
+        </t-b>
+        <t-b>
+          In Rust, assignment moves or copies the value depending on whether the type implements
+          <code>Copy</code>. In C++, assignment invokes the copy or move assignment operator.
+          In C# and Python, assignment copies a reference for reference types; Python integers
+          and strings are immutable so rebinding is effectively copying.
+        </t-b>
+        <t-b>
+          Rust does not make assignment an expression (it returns <code>()</code>), preventing
+          the classic C bug of writing <code>=</code> where <code>==</code> was intended inside
+          a condition.
+        </t-b>
+      </indent-blocks>
+
+      <a id="overloading"></a>
+      <h3>3.6&nbsp; Operator Overloading</h3>
+      <indent-blocks>
+        <t-b>
+          Operator overloading lets user-defined types participate in operator expressions.
+          Each language exposes it differently:
+        </t-b>
+        <defn-code>// Rust  (implement a trait from std::ops)
+use std::ops::Add;
+impl Add for Vec2 {
+    type Output = Vec2;
+    fn add(self, other: Vec2) -&gt; Vec2 { /* ... */ }
+}
+
+// C++  (define a member or free function)
+Vec2 operator+(const Vec2&amp; a, const Vec2&amp; b) { /* ... */ }
+
+// C#  (static method with operator keyword)
+public static Vec2 operator+(Vec2 a, Vec2 b) { /* ... */ }
+
+// Python  (dunder method)
+def __add__(self, other): return Vec2(self.x + other.x, self.y + other.y)</defn-code>
+        <t-b>
+          Rust and C++ allow overloading most operators. C# allows arithmetic, comparison, and
+          conversion operators but not assignment. Python overloads through dunder (double-underscore)
+          methods. None of the four allow overloading <code>&amp;&amp;</code> and <code>||</code>
+          in a way that preserves short-circuit semantics.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue3"></a>
+      <h3>3.7&nbsp; Epilogue</h3>
+      <t-b>
+        Operators express the arithmetic and logical intent of a computation concisely.
+        Knowing where languages diverge &mdash; overflow, NaN ordering, short-circuit guarantees
+        &mdash; prevents subtle portability bugs. The next chapter shows how operators combine
+        with control flow to direct program execution.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>3.8&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://doc.rust-lang.org/reference/expressions/operator-expr.html">Rust Operator Expressions &mdash; Reference</a><br />
+        <a target="_blank" href="https://en.cppreference.com/w/cpp/language/operator_precedence">C++ Operator Precedence &mdash; cppreference</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/">C# Operators &mdash; Microsoft</a><br />
+        <a target="_blank" href="https://docs.python.org/3/reference/expressions.html#operator-precedence">Python Operator Precedence</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#arithmetic">arithmetic</a></menu-elem>
+        <menu-elem class="secElem"><a href="#comparison">comparison</a></menu-elem>
+        <menu-elem class="secElem"><a href="#logical">logical</a></menu-elem>
+        <menu-elem class="secElem"><a href="#bitwise">bitwise</a></menu-elem>
+        <menu-elem class="secElem"><a href="#assignment">assignment</a></menu-elem>
+        <menu-elem class="secElem"><a href="#overloading">overloading</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+</body>
+</html>

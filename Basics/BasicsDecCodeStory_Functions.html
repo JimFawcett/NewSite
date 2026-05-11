@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsDecCodeStory_Functions.html
+-->
+<head>
+  <title>Basics Dec Code Story - Functions as Values</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsDecCodeStory_Functions.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Dec Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #4 &ndash; Functions as Values</h2>
+        <h4 class="indent" id="subtitle">pure functions, first-class functions, composition, currying and partial application</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>4.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          In declarative languages, functions are values like any other: they can be stored in
+          variables, passed as arguments, returned from other functions, and placed in data
+          structures. This property, called <strong>first-class functions</strong>, enables a
+          style of programming where behavior is composed from small, named, reusable pieces
+          rather than hard-coded into control-flow structures.
+        </t-b>
+      </indent-blocks>
+
+      <a id="pure"></a>
+      <h3>4.1&nbsp; Pure Functions</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>pure function</strong> depends only on its arguments and returns the same
+          result for the same inputs with no observable side effects. It is the building block
+          of declarative composition.
+        </t-b>
+        <defn-code>-- Haskell: all functions are pure unless they return IO
+double :: Int -&gt; Int
+double x = x * 2
+
+clamp :: Ord a =&gt; a -&gt; a -&gt; a -&gt; a
+clamp lo hi x = max lo (min hi x)
+
+-- Rust: pure functions (no mut, no I/O, no unsafe)
+fn double(x: i32) -&gt; i32 { x * 2 }
+fn clamp(lo: f64, hi: f64, x: f64) -&gt; f64 { lo.max(hi.min(x)) }</defn-code>
+        <t-b>
+          Pure functions are trivially testable (no setup or teardown), safely memoizable, and
+          trivially parallelizable (no shared state to synchronize).
+        </t-b>
+      </indent-blocks>
+
+      <a id="firstclass"></a>
+      <h3>4.2&nbsp; First-Class and Higher-Order Functions</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>First-class functions</strong> can appear anywhere a value can appear.
+          <strong>Higher-order functions</strong> take functions as arguments or return them as results.
+        </t-b>
+        <defn-code>-- Haskell: applyTwice takes a function and a value
+applyTwice :: (a -&gt; a) -&gt; a -&gt; a
+applyTwice f x = f (f x)
+
+applyTwice double 3  -- 12
+applyTwice (+3)  10  -- 16
+
+-- F#: function stored in a list
+let transforms = [ (*2); (+10); negate ]
+transforms |&gt; List.map (fun f -&gt; f 5)  // [10; 15; -5]
+
+-- Rust: function pointers and closures as arguments
+fn apply_twice(f: impl Fn(i32) -&gt; i32, x: i32) -&gt; i32 { f(f(x)) }
+apply_twice(|x| x * 2, 3)  // 12</defn-code>
+      </indent-blocks>
+
+      <a id="composition"></a>
+      <h3>4.3&nbsp; Function Composition</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Composition</strong> builds a new function from two existing ones by piping
+          the output of the first into the input of the second. It is the declarative substitute
+          for a sequence of variable assignments.
+        </t-b>
+        <defn-code>-- Haskell: (.) is the composition operator
+--   (f . g) x = f (g x)
+normalize :: String -&gt; String
+normalize = trim . toLower . removeAccents
+
+-- Applied: normalize "  Caf&eacute;  " = "cafe"
+
+-- F#: (|&gt;) pipes left-to-right; (&gt;&gt;) composes left-to-right
+let normalize = removeAccents &gt;&gt; toLower &gt;&gt; trim
+"  Caf&eacute;  " |&gt; normalize  // "cafe"
+
+-- Rust: iterator chaining is functional composition
+let result: Vec&lt;String&gt; = words
+    .iter()
+    .map(|w| w.to_lowercase())
+    .filter(|w| !w.is_empty())
+    .collect();
+
+-- Python: functools.reduce for composition
+from functools import reduce
+normalize = reduce(lambda f, g: lambda x: g(f(x)),
+                   [remove_accents, str.lower, str.strip])</defn-code>
+        <t-b>
+          Composition makes the pipeline explicit and linear: each stage&rsquo;s name describes
+          exactly what it does to the data. There are no intermediate variable names obscuring
+          the transformation sequence.
+        </t-b>
+      </indent-blocks>
+
+      <a id="currying"></a>
+      <h3>4.4&nbsp; Currying and Partial Application</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Currying</strong> transforms a multi-argument function into a chain of
+          single-argument functions. Applying a curried function to fewer arguments than it
+          requires returns a new function that expects the rest &mdash; this is
+          <strong>partial application</strong>.
+        </t-b>
+        <defn-code>-- Haskell: all functions are curried by default
+add :: Int -&gt; Int -&gt; Int
+add x y = x + y
+
+add5 :: Int -&gt; Int
+add5 = add 5        -- partial application; add5 y = add 5 y
+
+map (add 10) [1,2,3]   -- [11,12,13]
+
+-- F#: curried by default
+let add x y = x + y
+let add5 = add 5
+[1;2;3] |&gt; List.map add5   // [6;7;8]
+
+-- Rust: partial application via closures (no built-in currying)
+let add = |x: i32| move |y: i32| x + y;
+let add5 = add(5);
+vec![1,2,3].iter().map(|&amp;y| add5(y)).collect::&lt;Vec&lt;_&gt;&gt;()
+
+-- Python: functools.partial
+from functools import partial
+add5 = partial(lambda x, y: x + y, 5)
+list(map(add5, [1, 2, 3]))  # [6, 7, 8]</defn-code>
+        <t-b>
+          Currying and partial application eliminate the need for many lambda wrappers.
+          Instead of <code>map (fun x -&gt; add 5 x)</code>, you write <code>map (add 5)</code>.
+          This is the foundation of <strong>point-free style</strong>, covered in Chapter 6.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue4"></a>
+      <h3>4.5&nbsp; Epilogue</h3>
+      <t-b>
+        Treating functions as values transforms a program from a collection of procedures
+        into an algebra of transformations. Composition replaces sequencing; partial application
+        replaces boilerplate wrappers; pure functions replace stateful methods. The next chapter
+        shows how recursion replaces loops as the mechanism for repetition.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>4.6&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Currying">Currying &mdash; Wikipedia</a><br />
+        <a target="_blank" href="https://www.haskell.org/tutorial/functions.html">Haskell Functions &mdash; Tutorial</a><br />
+        <a target="_blank" href="https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/functions/">F# Functions &mdash; Microsoft</a><br />
+        <a target="_blank" href="https://docs.python.org/3/library/functools.html#functools.partial">Python functools.partial</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#pure">pure functions</a></menu-elem>
+        <menu-elem class="secElem"><a href="#firstclass">first-class</a></menu-elem>
+        <menu-elem class="secElem"><a href="#composition">composition</a></menu-elem>
+        <menu-elem class="secElem"><a href="#currying">currying</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsDecCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+</body>
+</html>

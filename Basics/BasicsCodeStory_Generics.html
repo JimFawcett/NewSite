@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsCodeStory_Generics.html
+-->
+<head>
+  <title>Basics Code Story - Generics and Polymorphism</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsCodeStory_Generics.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #11 &ndash; Generics &amp; Polymorphism</h2>
+        <h4 class="indent" id="subtitle">generic types/functions, traits, bounds, dispatch, variance</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>11.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Generics</strong> allow one implementation to work correctly for many types
+          without duplication. <strong>Polymorphism</strong> is the broader ability to write
+          code that operates uniformly over values of different types. The two mechanisms differ
+          in <em>when</em> the type is resolved: at compile time (monomorphization, templates)
+          or at runtime (dynamic dispatch, virtual functions).
+        </t-b>
+      </indent-blocks>
+
+      <a id="generictypes"></a>
+      <h3>11.1&nbsp; Generic Types and Functions</h3>
+      <indent-blocks>
+        <t-b>
+          Generic parameters are placeholders for types supplied by the caller.
+        </t-b>
+        <defn-code>// Rust: angle-bracket type parameter
+fn largest&lt;T: PartialOrd&gt;(list: &amp;[T]) -&gt; &amp;T {
+    let mut l = &amp;list[0];
+    for item in list { if item &gt; l { l = item; } }
+    l
+}
+
+struct Stack&lt;T&gt; { items: Vec&lt;T&gt; }
+
+// C++: template
+template&lt;typename T&gt;
+T largest(const std::vector&lt;T&gt;&amp; v) { /* ... */ }
+
+template&lt;typename T&gt;
+class Stack { std::vector&lt;T&gt; items; };
+
+// C#: generic type parameter (similar syntax to Java)
+T Largest&lt;T&gt;(T[] list) where T : IComparable&lt;T&gt; { /* ... */ }
+class Stack&lt;T&gt; { List&lt;T&gt; items = new(); }
+
+// Python: typing module (checked by mypy, not runtime)
+from typing import TypeVar, Sequence
+T = TypeVar('T')
+def largest(lst: Sequence[T]) -&gt; T: ...</defn-code>
+      </indent-blocks>
+
+      <a id="traits"></a>
+      <h3>11.2&nbsp; Traits and Interfaces</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>trait</strong> (Rust) or <strong>interface</strong> (C#, Java) declares a
+          set of methods a type must provide. This is the primary mechanism for
+          <em>ad-hoc polymorphism</em>: defining behavior that multiple unrelated types share.
+        </t-b>
+        <defn-code>// Rust: trait definition and implementation
+trait Summary {
+    fn summarize(&amp;self) -&gt; String;
+}
+impl Summary for Article {
+    fn summarize(&amp;self) -&gt; String { format!("{}: {}", self.title, self.author) }
+}
+
+// C#: interface
+interface ISummary {
+    string Summarize();
+}
+class Article : ISummary {
+    public string Summarize() =&gt; $"{Title}: {Author}";
+}
+
+// C++: abstract base class with pure virtual function
+class ISummary {
+public:
+    virtual std::string summarize() const = 0;
+    virtual ~ISummary() = default;
+};</defn-code>
+        <t-b>
+          Rust traits support <strong>default method implementations</strong>, allowing a trait
+          to provide a fallback that concrete types may override. C# interfaces (C# 8+) also
+          support default implementations. C++ abstract classes can provide partial implementations.
+        </t-b>
+      </indent-blocks>
+
+      <a id="bounds"></a>
+      <h3>11.3&nbsp; Trait Bounds</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Trait bounds</strong> constrain which types may be substituted for a type
+          parameter. They state &ldquo;this generic code works for any type that implements
+          these capabilities.&rdquo;
+        </t-b>
+        <defn-code>// Rust: inline bound syntax
+fn print&lt;T: Display + Debug&gt;(val: T) { println!("{val:?}"); }
+
+// Rust: where clause (preferred for complex bounds)
+fn compare&lt;T&gt;(a: T, b: T) -&gt; bool
+where T: PartialOrd + Clone
+{ a &gt; b }
+
+// C++: concepts (C++20; earlier: SFINAE / enable_if)
+template&lt;typename T&gt;
+requires std::totally_ordered&lt;T&gt;
+bool compare(T a, T b) { return a &gt; b; }
+
+// C#: generic constraints
+T Max&lt;T&gt;(T a, T b) where T : IComparable&lt;T&gt;
+    =&gt; a.CompareTo(b) &gt; 0 ? a : b;</defn-code>
+        <t-b>
+          Bounds are checked at the call site: the compiler rejects instantiations for types
+          that do not satisfy the bounds, producing clear error messages. C++ concepts (C++20)
+          improve on SFINAE by producing readable diagnostics instead of cryptic substitution
+          failures.
+        </t-b>
+      </indent-blocks>
+
+      <a id="dispatch"></a>
+      <h3>11.4&nbsp; Dynamic vs Static Dispatch</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Static dispatch</strong> (monomorphization): the compiler generates a
+          separate copy of the function for each concrete type. No runtime overhead; larger
+          binary; type must be known at compile time.
+        </t-b>
+        <t-b>
+          <strong>Dynamic dispatch</strong>: a vtable (virtual function table) pointer is
+          stored with the object. The correct implementation is selected at runtime. Enables
+          heterogeneous collections; adds one indirection per call.
+        </t-b>
+        <defn-code>// Rust: static dispatch (impl Trait / generic)
+fn draw(shape: &amp;impl Shape) { shape.draw(); }  // monomorphized
+
+// Rust: dynamic dispatch (dyn Trait)
+fn draw(shape: &amp;dyn Shape) { shape.draw(); }   // vtable lookup
+let shapes: Vec&lt;Box&lt;dyn Shape&gt;&gt; = vec![Box::new(Circle), Box::new(Rect)];
+
+// C++: virtual functions = dynamic dispatch
+class Shape { virtual void draw() const = 0; };
+void render(const Shape* s) { s-&gt;draw(); }  // vtable call
+
+// C#: interface reference = dynamic dispatch
+void Draw(IShape s) { s.Draw(); }</defn-code>
+        <t-b>
+          Rust makes the choice explicit: <code>impl Trait</code> is static; <code>dyn Trait</code>
+          is dynamic. C++ virtual functions are always dynamic; non-virtual calls are always static.
+          C# interface calls are dynamic unless the compiler can devirtualize.
+        </t-b>
+      </indent-blocks>
+
+      <a id="variance"></a>
+      <h3>11.5&nbsp; Variance</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Variance</strong> describes how subtyping of a generic type relates to
+          subtyping of its type argument.
+          <ul class="tight">
+            <li>
+              <strong>Covariant</strong> in <code>T</code>: if <code>Dog &lt;: Animal</code>
+              then <code>Container&lt;Dog&gt; &lt;: Container&lt;Animal&gt;</code>.
+              Safe for read-only producers.
+            </li>
+            <li>
+              <strong>Contravariant</strong> in <code>T</code>: if <code>Dog &lt;: Animal</code>
+              then <code>Consumer&lt;Animal&gt; &lt;: Consumer&lt;Dog&gt;</code>.
+              Safe for write-only consumers.
+            </li>
+            <li>
+              <strong>Invariant</strong> in <code>T</code>: no subtyping relationship is
+              induced. Required for mutable containers.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          C# generic types are invariant by default; <code>out T</code> marks a type parameter
+          covariant and <code>in T</code> marks it contravariant (for interfaces and delegates
+          only). Java arrays are (unsafely) covariant. Rust infers variance from how the type
+          parameter is used, applying the correct variance automatically.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue11"></a>
+      <h3>11.6&nbsp; Epilogue</h3>
+      <t-b>
+        Generics eliminate copy-paste code while preserving type safety. Choosing between
+        static and dynamic dispatch is a performance and API-design decision: static dispatch
+        is faster but commits to concrete types at compile time; dynamic dispatch enables
+        runtime flexibility at the cost of a vtable indirection. The final chapter examines
+        metaprogramming: code that writes or inspects code.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>11.7&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://doc.rust-lang.org/book/ch10-00-generics.html">Rust Generics &mdash; The Book</a><br />
+        <a target="_blank" href="https://en.cppreference.com/w/cpp/language/templates">C++ Templates &mdash; cppreference</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/types/generics">C# Generics &mdash; Microsoft</a><br />
+        <a target="_blank" href="https://mypy.readthedocs.io/en/stable/generics.html">Python Generics &mdash; mypy</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#generictypes">generic types</a></menu-elem>
+        <menu-elem class="secElem"><a href="#traits">traits/interfaces</a></menu-elem>
+        <menu-elem class="secElem"><a href="#bounds">bounds</a></menu-elem>
+        <menu-elem class="secElem"><a href="#dispatch">dispatch</a></menu-elem>
+        <menu-elem class="secElem"><a href="#variance">variance</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 11, 10);
+  </script>
+</body>
+</html>

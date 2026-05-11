@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsDecCodeStory_Expressions.html
+-->
+<head>
+  <title>Basics Dec Code Story - Expressions and Values</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsDecCodeStory_Expressions.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Dec Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #1 &ndash; Expressions &amp; Values</h2>
+        <h4 class="indent" id="subtitle">pure expressions, immutable values, value semantics, referential transparency</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>1.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          The declarative style begins with a shift in perspective: instead of describing a
+          sequence of state-changing steps, a program describes relationships between values.
+          Expressions produce values; they do not modify existing ones. This chapter covers
+          the four foundational properties that make declarative code compositional and
+          predictable.
+        </t-b>
+      </indent-blocks>
+
+      <a id="pure"></a>
+      <h3>1.1&nbsp; Pure Expressions</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>pure expression</strong> computes a value with no observable side effects.
+          It does not modify variables, perform I/O, or depend on mutable global state. Given
+          the same inputs it always produces the same output.
+        </t-b>
+        <defn-code>-- Haskell: all expressions are pure by default
+area r = pi * r * r          -- pure; no side effects possible
+
+-- Rust: expressions are pure when they don't use mut, I/O, or unsafe
+let area = std::f64::consts::PI * r * r;
+
+-- Impure (imperative): reads external mutable state
+let area = PI * r * r;  // but PI might be a mutable static in C</defn-code>
+        <t-b>
+          Haskell enforces purity at the type level: a function that performs I/O must return
+          a value wrapped in the <code>IO</code> type. Side-effecting code is structurally
+          separated from pure code, making the boundary visible in every type signature.
+        </t-b>
+      </indent-blocks>
+
+      <a id="immutable"></a>
+      <h3>1.2&nbsp; Immutable Values</h3>
+      <indent-blocks>
+        <t-b>
+          In declarative languages, <strong>binding</strong> a name to a value is not assignment
+          in the imperative sense &mdash; the binding cannot be updated. A new value requires a
+          new binding.
+        </t-b>
+        <defn-code>-- Haskell: no mutable variables; all bindings are permanent
+let x = 5
+let y = x + 1    -- y is 6; x is still 5, unchanged
+
+-- F#: let bindings are immutable by default
+let x = 5
+let y = x + 1
+// x &lt;- 6  -- compile error; x is not mutable
+
+-- Rust: let bindings are immutable by default
+let x = 5;
+let y = x + 1;
+// x = 6;     -- compile error without mut
+
+-- Python (convention): immutable-by-practice via tuples and frozen types
+x = 5
+y = x + 1
+# x = 6  -- legal but violates the declarative discipline</defn-code>
+        <t-b>
+          Immutability eliminates a large class of bugs: race conditions on shared state,
+          aliasing surprises, and unintended mutation through references all become impossible
+          when values cannot change.
+        </t-b>
+      </indent-blocks>
+
+      <a id="valuesem"></a>
+      <h3>1.3&nbsp; Value Semantics</h3>
+      <indent-blocks>
+        <t-b>
+          Under <strong>value semantics</strong>, equality is determined by content, not by
+          identity (memory address). Copying a value produces an independent duplicate; the
+          copy shares no state with the original.
+        </t-b>
+        <defn-code>-- Haskell: structural equality via Eq type class
+let p1 = (3, 4)
+let p2 = (3, 4)
+p1 == p2   -- True; compared by content, not address
+
+-- F#: structural equality is the default for records and tuples
+let p1 = { X = 3; Y = 4 }
+let p2 = { X = 3; Y = 4 }
+p1 = p2    // true
+
+-- Contrast with reference semantics (Java/C# class):
+// new Point(3,4) == new Point(3,4)  -- false (different objects)</defn-code>
+        <t-b>
+          Value semantics makes programs easier to reason about locally: a function that
+          receives a value cannot affect the caller&rsquo;s copy. This is why purely functional
+          languages default to value semantics for all data types.
+        </t-b>
+      </indent-blocks>
+
+      <a id="refltrans"></a>
+      <h3>1.4&nbsp; Referential Transparency</h3>
+      <indent-blocks>
+        <t-b>
+          An expression is <strong>referentially transparent</strong> if it can be replaced
+          anywhere in a program by its value without changing the program&rsquo;s meaning.
+          This property is the formal definition of &ldquo;no side effects.&rdquo;
+        </t-b>
+        <defn-code>-- Haskell: referentially transparent
+square x = x * x
+
+-- These are equivalent; we can substitute freely:
+square 5 + square 5    -- 50
+let s = square 5 in s + s  -- 50; identical meaning
+
+-- Not referentially transparent (imperative):
+// int counter = 0;
+// int next() { return ++counter; }
+// next() + next()  -- result depends on call order (1+2 = 3)
+// let n = next(); n + n  -- different result (1+1 = 2)</defn-code>
+        <t-b>
+          Referential transparency enables <strong>equational reasoning</strong>: you can
+          prove program properties by substituting equals for equals, just as in algebra.
+          It also enables memoization and common-subexpression elimination as safe automatic
+          optimizations.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue1"></a>
+      <h3>1.5&nbsp; Epilogue</h3>
+      <t-b>
+        Pure expressions, immutable values, value semantics, and referential transparency
+        form the bedrock of declarative programming. Together they make programs compositional:
+        any expression can be understood in isolation, assembled with others, and reasoned
+        about algebraically. The next chapter shows how types structure and constrain the
+        universe of values a declarative program manipulates.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>1.6&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://www.haskell.org/tutorial/functions.html">Haskell Tutorial &mdash; Functions</a><br />
+        <a target="_blank" href="https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/values/">F# Values &mdash; Microsoft</a><br />
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Referential_transparency">Referential Transparency &mdash; Wikipedia</a><br />
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Value_semantics">Value Semantics &mdash; Wikipedia</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#pure">pure expressions</a></menu-elem>
+        <menu-elem class="secElem"><a href="#immutable">immutable values</a></menu-elem>
+        <menu-elem class="secElem"><a href="#valuesem">value semantics</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refltrans">referential transparency</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsDecCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 1, 10);
+  </script>
+</body>
+</html>

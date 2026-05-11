@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsDecCodeStory_Types.html
+-->
+<head>
+  <title>Basics Dec Code Story - Types and Type Inference</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsDecCodeStory_Types.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Dec Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #2 &ndash; Types &amp; Type Inference</h2>
+        <h4 class="indent" id="subtitle">algebraic data types, type inference, phantom types, dependent and refinement types</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>2.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          In declarative languages the type system is not just a bug-finder &mdash; it is an
+          expressive tool for encoding domain invariants. Algebraic data types let you define
+          exactly the set of valid values. Type inference removes annotation noise while
+          preserving full static safety. Phantom types and refinement types push correctness
+          guarantees deeper into the type layer.
+        </t-b>
+      </indent-blocks>
+
+      <a id="adt"></a>
+      <h3>2.1&nbsp; Algebraic Data Types</h3>
+      <indent-blocks>
+        <t-b>
+          An <strong>algebraic data type (ADT)</strong> is built from two operations:
+          <ul class="tight">
+            <li>
+              <strong>Product types</strong> (records, tuples) &mdash; a value contains
+              <em>both</em> a field of type A <em>and</em> a field of type B.
+              The set of values is the Cartesian product A &times; B.
+            </li>
+            <li>
+              <strong>Sum types</strong> (tagged unions, enums) &mdash; a value is
+              <em>either</em> a variant of type A <em>or</em> a variant of type B.
+              The set of values is the disjoint union A + B.
+            </li>
+          </ul>
+        </t-b>
+        <defn-code>-- Haskell: product type (record)
+data Point = Point { x :: Double, y :: Double }
+
+-- Haskell: sum type (tagged union)
+data Shape
+  = Circle  { center :: Point, radius :: Double }
+  | Rect    { topLeft :: Point, width :: Double, height :: Double }
+  | Triangle Point Point Point
+
+-- F#: discriminated union (same concept)
+type Shape =
+  | Circle   of center: Point * radius: float
+  | Rect     of topLeft: Point * width: float * height: float
+
+-- Rust: enum (sum type with data per variant)
+enum Shape {
+    Circle  { center: Point, radius: f64 },
+    Rect    { top_left: Point, width: f64, height: f64 },
+}</defn-code>
+        <t-b>
+          ADTs make invalid states unrepresentable. A <code>Shape</code> is always one of the
+          known variants &mdash; there is no way to construct a half-initialized shape or one
+          that is simultaneously a circle and a rectangle.
+        </t-b>
+      </indent-blocks>
+
+      <a id="inference"></a>
+      <h3>2.2&nbsp; Type Inference</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Hindley-Milner (HM) inference</strong> deduces the most general type of every
+          expression from its usage, without requiring annotations. The algorithm is complete:
+          if a type exists, HM finds it. If the expression is ambiguous or ill-typed, it reports
+          an error.
+        </t-b>
+        <defn-code>-- Haskell: no annotations needed; inferred types shown in comments
+add x y = x + y            -- inferred: Num a =&gt; a -&gt; a -&gt; a
+double  = map (*2)         -- inferred: Num a =&gt; [a] -&gt; [a]
+first   = head             -- inferred: [a] -&gt; a
+
+-- F#: full HM inference
+let add x y = x + y        // int -&gt; int -&gt; int (defaults to int)
+let double  = List.map ((*) 2)
+
+-- Rust: local inference (not full HM; annotations required at fn boundaries)
+let v: Vec&lt;_&gt; = (0..10).filter(|x| x % 2 == 0).collect();
+//              ^ element type inferred from context</defn-code>
+        <t-b>
+          HM inference supports <strong>let-polymorphism</strong>: a let-bound function is
+          generalized to work at any type that satisfies the constraints found during inference.
+          This is how Haskell achieves full parametric polymorphism without a single type
+          annotation in typical code.
+        </t-b>
+      </indent-blocks>
+
+      <a id="phantom"></a>
+      <h3>2.3&nbsp; Phantom Types</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>phantom type</strong> is a type parameter that appears in a type definition
+          but not in any of its runtime fields. It carries no data; it exists only to let the
+          compiler distinguish values that would otherwise have the same representation.
+        </t-b>
+        <defn-code>-- Haskell: phantom type for unit safety
+newtype Quantity unit = Quantity Double
+
+type Meters  = Quantity "meters"
+type Seconds = Quantity "seconds"
+
+addLengths :: Quantity u -&gt; Quantity u -&gt; Quantity u
+addLengths (Quantity a) (Quantity b) = Quantity (a + b)
+
+-- These compile:
+addLengths (Quantity 3.0 :: Meters) (Quantity 4.0 :: Meters)
+
+-- This does NOT compile (unit mismatch caught at compile time):
+-- addLengths (Quantity 3.0 :: Meters) (Quantity 2.0 :: Seconds)
+
+-- Rust: zero-cost phantom type via PhantomData
+use std::marker::PhantomData;
+struct Quantity&lt;Unit&gt; { value: f64, _unit: PhantomData&lt;Unit&gt; }
+struct Meters; struct Seconds;</defn-code>
+        <t-b>
+          Phantom types are zero-cost: the compiler erases the phantom parameter entirely at
+          runtime. The safety guarantee is purely compile-time.
+        </t-b>
+      </indent-blocks>
+
+      <a id="dependent"></a>
+      <h3>2.4&nbsp; Dependent and Refinement Types</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Dependent types</strong> are types parameterized by values, not just other
+          types. They allow the type of a function&rsquo;s output to depend on the value of
+          its input &mdash; for example, a vector whose type records its length.
+        </t-b>
+        <defn-code>-- Idris (dependently typed language): length-indexed vector
+data Vect : Nat -&gt; Type -&gt; Type where
+  Nil  : Vect 0 a
+  (::) : a -&gt; Vect n a -&gt; Vect (n+1) a
+
+-- zip can only be called on vectors of equal length (enforced by type)
+zip : Vect n a -&gt; Vect n b -&gt; Vect n (a, b)</defn-code>
+        <t-b>
+          <strong>Refinement types</strong> attach a predicate to an existing type. A value of
+          type <code>{ x : Int | x &gt; 0 }</code> is an integer known at compile time to be
+          positive. Tools like Liquid Haskell, F*<sup>*</sup>, and Dafny check these predicates
+          statically using SMT solvers, eliminating entire classes of runtime invariant violations.
+        </t-b>
+        <defn-code>-- Liquid Haskell: refinement type annotation
+{-@ head :: {v:[a] | len v &gt; 0} -&gt; a @-}
+head (x:_) = x
+-- Liquid Haskell proves statically that head is never called on an empty list</defn-code>
+        <t-b>
+          Dependent and refinement types represent the frontier of type-driven development.
+          They are not yet mainstream but are increasingly influential in security-critical and
+          formally verified software.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue2"></a>
+      <h3>2.5&nbsp; Epilogue</h3>
+      <t-b>
+        Algebraic data types, inference, phantom types, and refinement types push correctness
+        from runtime checks into compile-time proofs. The richer the type language, the more
+        the compiler can verify on your behalf. The next chapter shows how pattern matching
+        unlocks the full power of ADTs at the use site.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>2.6&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Algebraic_data_type">Algebraic Data Types &mdash; Wikipedia</a><br />
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Hindley%E2%80%93Milner_type_system">Hindley-Milner Type System &mdash; Wikipedia</a><br />
+        <a target="_blank" href="https://ucsd-progsys.github.io/liquidhaskell/">Liquid Haskell</a><br />
+        <a target="_blank" href="https://www.idris-lang.org/">Idris &mdash; Dependently Typed Language</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#adt">algebraic types</a></menu-elem>
+        <menu-elem class="secElem"><a href="#inference">inference</a></menu-elem>
+        <menu-elem class="secElem"><a href="#phantom">phantom types</a></menu-elem>
+        <menu-elem class="secElem"><a href="#dependent">dependent types</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsDecCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>

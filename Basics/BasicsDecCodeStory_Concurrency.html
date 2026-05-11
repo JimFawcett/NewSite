@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsDecCodeStory_Concurrency.html
+-->
+<head>
+  <title>Basics Dec Code Story - Declarative Concurrency</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsDecCodeStory_Concurrency.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Dec Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #11 &ndash; Declarative Concurrency</h2>
+        <h4 class="indent" id="subtitle">software transactional memory, actor model, functional reactive programming, dataflow</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>11.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Imperative concurrency requires the programmer to manually coordinate access to shared
+          mutable state using locks, mutexes, and condition variables &mdash; a recipe for
+          deadlocks, race conditions, and subtle ordering bugs. Declarative approaches attack
+          the root cause: either eliminate shared mutable state entirely (actors, FRP) or make
+          concurrent state changes composable and atomic (STM). The result is concurrent code
+          that is easier to reason about and test.
+        </t-b>
+      </indent-blocks>
+
+      <a id="stm"></a>
+      <h3>11.1&nbsp; Software Transactional Memory</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Software transactional memory (STM)</strong> borrows the database concept of
+          transactions for in-memory state. A transaction reads and writes shared variables
+          (<code>TVar</code>s in Haskell); if no conflict is detected at commit time, the changes
+          are applied atomically. If a conflict occurs, the transaction retries automatically.
+        </t-b>
+        <defn-code>-- Haskell: STM with Control.Concurrent.STM
+import Control.Concurrent.STM
+
+type Account = TVar Int
+
+transfer :: Account -&gt; Account -&gt; Int -&gt; STM ()
+transfer from to amount = do
+  fromBal &lt;- readTVar from
+  if fromBal &lt; amount
+    then retry            -- block until balance changes, then retry
+    else do
+      modifyTVar from (subtract amount)
+      modifyTVar to   (+ amount)
+
+-- atomically runs the STM action as a single atomic transaction
+main :: IO ()
+main = do
+  alice &lt;- newTVarIO 100
+  bob   &lt;- newTVarIO  50
+  atomically (transfer alice bob 30)
+  -- alice = 70, bob = 80; no locks required</defn-code>
+        <t-b>
+          STM composes: two <code>STM</code> actions joined with <code>&gt;&gt;</code> or
+          do-notation form a single larger atomic action. This composability is impossible with
+          locks &mdash; combining two lock-based operations safely requires knowing and acquiring
+          both locks in the right order.
+        </t-b>
+      </indent-blocks>
+
+      <a id="actors"></a>
+      <h3>11.2&nbsp; Actor Model</h3>
+      <indent-blocks>
+        <t-b>
+          In the <strong>actor model</strong>, the unit of concurrency is an actor: an isolated
+          entity with its own private state that communicates only by sending and receiving
+          immutable messages. Because no state is shared, races and locks do not arise. Actors
+          may run on different threads, processes, or machines.
+        </t-b>
+        <defn-code>-- Erlang / Elixir: processes are actors; spawn + send + receive
+defmodule Counter do
+  def start(n), do: spawn(fn -&gt; loop(n) end)
+
+  defp loop(n) do
+    receive do
+      {:increment, caller} -&gt;
+        send(caller, {:ok, n + 1})
+        loop(n + 1)
+      {:get, caller} -&gt;
+        send(caller, {:value, n})
+        loop(n)
+    end
+  end
+end
+
+pid = Counter.start(0)
+send(pid, {:increment, self()})
+receive do {:ok, v} -&gt; IO.puts(v) end  # 1
+
+-- Rust: channel-based message passing (actor-like)
+use std::sync::mpsc;
+let (tx, rx) = mpsc::channel();
+std::thread::spawn(move || {
+    tx.send(42).unwrap();
+});
+let value = rx.recv().unwrap();  // 42</defn-code>
+        <t-b>
+          Erlang/OTP and Elixir build fault-tolerant systems from millions of lightweight actors.
+          Rust&rsquo;s ownership model enforces actor-like isolation at compile time: a value
+          moved into a thread cannot be accessed from the sender, eliminating data races
+          without a runtime.
+        </t-b>
+      </indent-blocks>
+
+      <a id="frp"></a>
+      <h3>11.3&nbsp; Functional Reactive Programming</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Functional reactive programming (FRP)</strong> models time-varying values
+          and event streams as first-class values. Instead of callbacks that mutate state, FRP
+          expresses how outputs depend on inputs declaratively: the runtime propagates changes
+          automatically when inputs update.
+        </t-b>
+        <defn-code>-- Haskell (reflex-frp): Behavior and Event are the two FRP primitives
+-- Behavior t a  — a value of type a that changes continuously over time t
+-- Event t a     — a discrete occurrence of type a at a point in time
+
+-- Example concept (simplified pseudocode):
+-- mousePos  :: Behavior t (Int, Int)   -- current mouse position
+-- clicks    :: Event t ()              -- fires on each click
+-- clickPos  :: Event t (Int, Int)
+-- clickPos  =  current mousePos &lt;@ clicks   -- sample mousePos at each click
+
+-- JavaScript (RxJS): Observable streams (FRP-inspired)
+import { fromEvent, merge } from 'rxjs';
+import { map, scan, startWith } from 'rxjs/operators';
+
+const clicks$ = fromEvent(document, 'click');
+const count$  = clicks$.pipe(
+  scan(n =&gt; n + 1, 0),
+  startWith(0)
+);
+count$.subscribe(n =&gt; console.log('clicks:', n));
+
+-- Elm: pure FRP architecture (Model-Update-View)
+-- update : Msg -&gt; Model -&gt; Model   (pure function, no side effects)
+-- view   : Model -&gt; Html Msg       (pure function, renders current state)</defn-code>
+        <t-b>
+          FRP eliminates callback hell and mutable event-handler state. The Elm architecture
+          (Model-Update-View) is a widely adopted, FRP-inspired pattern for building UIs with
+          pure functions.
+        </t-b>
+      </indent-blocks>
+
+      <a id="dataflow"></a>
+      <h3>11.4&nbsp; Dataflow and Streaming</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Dataflow programming</strong> expresses a computation as a directed graph of
+          nodes connected by data channels. Nodes fire when their inputs are available; the
+          scheduler drives execution. This is the model behind many stream-processing systems
+          (Apache Kafka Streams, Flink, Spark Streaming).
+        </t-b>
+        <defn-code>-- Python (asyncio): async generators as lazy dataflow pipelines
+import asyncio
+
+async def source(items):
+    for item in items:
+        await asyncio.sleep(0)   # yield control
+        yield item
+
+async def transform(stream):
+    async for item in stream:
+        yield item * 2
+
+async def sink(stream):
+    async for item in stream:
+        print(item)
+
+asyncio.run(sink(transform(source([1, 2, 3]))))
+# prints: 2, 4, 6
+
+-- Haskell (pipes / conduit): composable streaming with backpressure
+-- Producer -&gt; Pipe -&gt; Consumer
+-- Each stage runs only as fast as the downstream consumer demands
+
+-- Apache Flink (Java/Scala): distributed dataflow
+-- DataStream&lt;String&gt; stream = env.addSource(kafkaSource);
+-- stream.filter(s -&gt; s.startsWith("ERR"))
+--       .keyBy(s -&gt; s.split(":")[0])
+--       .window(TumblingEventTimeWindows.of(Time.minutes(1)))
+--       .sum("count")
+--       .addSink(dbSink);</defn-code>
+        <t-b>
+          Dataflow and streaming systems express concurrency as data movement through a graph
+          rather than as threads sharing state. Backpressure &mdash; the ability of a slow
+          consumer to signal a fast producer to slow down &mdash; is a key property that
+          prevents unbounded buffering.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue11"></a>
+      <h3>11.5&nbsp; Epilogue</h3>
+      <t-b>
+        Declarative concurrency replaces the lock-and-mutate model with safer, more composable
+        abstractions: STM for shared state, actors for isolated state, FRP for time-varying
+        values, and dataflow for pipeline parallelism. Each approach eliminates a different
+        class of concurrency bug by construction. The final chapter examines how declarative
+        languages express queries and logical rules over structured data.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>11.6&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://hackage.haskell.org/package/stm/docs/Control-Concurrent-STM.html">Haskell STM &mdash; Hackage</a><br />
+        <a target="_blank" href="https://www.erlang.org/doc/reference_manual/processes.html">Erlang Processes &mdash; Official Docs</a><br />
+        <a target="_blank" href="https://guide.elm-lang.org/architecture/">Elm Architecture &mdash; Official Guide</a><br />
+        <a target="_blank" href="https://rxjs.dev/guide/overview">RxJS &mdash; Overview</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#stm">STM</a></menu-elem>
+        <menu-elem class="secElem"><a href="#actors">actors</a></menu-elem>
+        <menu-elem class="secElem"><a href="#frp">FRP</a></menu-elem>
+        <menu-elem class="secElem"><a href="#dataflow">dataflow</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsDecCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 11, 10);
+  </script>
+</body>
+</html>

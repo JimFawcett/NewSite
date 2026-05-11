@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsCodeStory_Concurrency.html
+-->
+<head>
+  <title>Basics Code Story - Concurrency</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsCodeStory_Concurrency.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #10 &ndash; Concurrency</h2>
+        <h4 class="indent" id="subtitle">threads, synchronization, channels, async/await, atomics</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>10.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Concurrency is the composition of independently executing computations. It lets a
+          program overlap I/O with CPU work, use multiple CPU cores, and remain responsive while
+          waiting for external events. The central challenge is correctness: ensuring that
+          concurrent access to shared state does not produce races, deadlocks, or inconsistent
+          results.
+        </t-b>
+      </indent-blocks>
+
+      <a id="threads"></a>
+      <h3>10.1&nbsp; Threads</h3>
+      <indent-blocks>
+        <t-b>
+          An OS <strong>thread</strong> is an independently scheduled execution unit within a
+          process. Threads share the process&rsquo;s address space, enabling low-latency
+          communication but requiring explicit synchronization.
+        </t-b>
+        <defn-code>// Rust: std::thread::spawn; join handle waits for completion
+use std::thread;
+let handle = thread::spawn(|| {
+    println!("from thread");
+});
+handle.join().unwrap();
+
+// C++ (C++11): std::thread
+#include &lt;thread&gt;
+std::thread t([]{ std::cout &lt;&lt; "from thread\n"; });
+t.join();
+
+// C#: System.Threading.Thread or Task
+var t = new Thread(() =&gt; Console.WriteLine("from thread"));
+t.Start();
+t.Join();
+
+// Python: threading.Thread (GIL limits true parallelism for CPU work)
+import threading
+t = threading.Thread(target=lambda: print("from thread"))
+t.start(); t.join()</defn-code>
+        <t-b>
+          Python&rsquo;s Global Interpreter Lock (GIL) prevents multiple threads from executing
+          Python bytecode simultaneously, making threads unsuitable for CPU-bound parallelism.
+          Use <code>multiprocessing</code> or extension modules (NumPy, etc.) that release the
+          GIL for CPU-bound work.
+        </t-b>
+      </indent-blocks>
+
+      <a id="sync"></a>
+      <h3>10.2&nbsp; Synchronization Primitives</h3>
+      <indent-blocks>
+        <t-b>
+          Shared mutable state requires synchronization to prevent data races. Common primitives:
+          <ul class="tight">
+            <li>
+              <strong>Mutex (mutual exclusion):</strong> only one thread holds the lock at a time.
+              All others block until the lock is released. Used to protect a critical section.
+            </li>
+            <li>
+              <strong>RwLock (read-write lock):</strong> allows multiple concurrent readers or
+              one exclusive writer. Better throughput than a mutex when reads dominate.
+            </li>
+            <li>
+              <strong>Semaphore:</strong> a counter that limits the number of concurrent
+              accessors. Used to cap resource consumption (thread pool slots, file handles).
+            </li>
+            <li>
+              <strong>Condition variable:</strong> lets a thread sleep until another thread
+              signals a state change. Requires a mutex for the predicate check.
+            </li>
+          </ul>
+        </t-b>
+        <defn-code>// Rust: Mutex wraps the data it protects (prevents access without lock)
+use std::sync::{Arc, Mutex};
+let counter = Arc::new(Mutex::new(0));
+let c = Arc::clone(&amp;counter);
+thread::spawn(move || {
+    let mut n = c.lock().unwrap();
+    *n += 1;
+}).join().unwrap();</defn-code>
+        <t-b>
+          Rust&rsquo;s borrow checker enforces that data protected by a mutex is only accessed
+          through the lock guard, preventing the common bug of accessing shared data without
+          holding the lock.
+        </t-b>
+      </indent-blocks>
+
+      <a id="channels"></a>
+      <h3>10.3&nbsp; Channels and Message Passing</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Message passing</strong> avoids shared state by sending copies (or ownership
+          transfers) of data between threads. A <strong>channel</strong> is the conduit.
+        </t-b>
+        <defn-code>// Rust: mpsc (multi-producer, single-consumer)
+use std::sync::mpsc;
+let (tx, rx) = mpsc::channel();
+thread::spawn(move || tx.send(42).unwrap());
+let val = rx.recv().unwrap();
+
+// C#: BlockingCollection or Channel&lt;T&gt; (System.Threading.Channels)
+var ch = System.Threading.Channels.Channel.CreateUnbounded&lt;int&gt;();
+await ch.Writer.WriteAsync(42);
+int val = await ch.Reader.ReadAsync();
+
+// Python: queue.Queue (thread-safe)
+import queue
+q = queue.Queue()
+threading.Thread(target=lambda: q.put(42)).start()
+val = q.get()</defn-code>
+        <t-b>
+          Go popularized the idiom &ldquo;do not communicate by sharing memory; share memory
+          by communicating.&rdquo; Rust enforces this via ownership: sending a value through a
+          channel transfers ownership to the receiver, preventing concurrent access to the
+          original.
+        </t-b>
+      </indent-blocks>
+
+      <a id="async"></a>
+      <h3>10.4&nbsp; Async / Await</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Async/await</strong> is a cooperative concurrency model. An async function
+          may suspend (yield) at <code>await</code> points without blocking an OS thread,
+          allowing other tasks to run. This is highly efficient for I/O-bound workloads.
+        </t-b>
+        <defn-code>// Rust: async fn + .await; requires an async runtime (Tokio, async-std)
+async fn fetch(url: &amp;str) -&gt; Result&lt;String, reqwest::Error&gt; {
+    reqwest::get(url).await?.text().await
+}
+
+// C#: async/await built into the runtime (Task-based)
+async Task&lt;string&gt; FetchAsync(string url) {
+    return await httpClient.GetStringAsync(url);
+}
+
+// Python: asyncio
+import asyncio, aiohttp
+async def fetch(url):
+    async with aiohttp.ClientSession() as s:
+        async with s.get(url) as r:
+            return await r.text()</defn-code>
+        <t-b>
+          Rust async functions compile to state machines that implement the <code>Future</code>
+          trait. They are zero-cost: no heap allocation per suspension point when using
+          <code>impl Future</code> return types. The executor (runtime) polls futures until
+          they complete.
+        </t-b>
+      </indent-blocks>
+
+      <a id="atomics"></a>
+      <h3>10.5&nbsp; Atomic Operations</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Atomic operations</strong> are hardware-guaranteed to be indivisible: no
+          other thread can observe a partial state. They enable lock-free data structures and
+          counters without mutex overhead.
+        </t-b>
+        <defn-code>// Rust: std::sync::atomic
+use std::sync::atomic::{AtomicU64, Ordering};
+static COUNTER: AtomicU64 = AtomicU64::new(0);
+COUNTER.fetch_add(1, Ordering::Relaxed);
+
+// C++: std::atomic&lt;T&gt; (C++11)
+#include &lt;atomic&gt;
+std::atomic&lt;uint64_t&gt; counter{0};
+counter.fetch_add(1, std::memory_order_relaxed);
+
+// C#: Interlocked class
+System.Threading.Interlocked.Increment(ref counter);</defn-code>
+        <t-b>
+          <strong>Memory ordering</strong> (Relaxed, Acquire, Release, SeqCst) controls
+          how atomic operations interact with the compiler and CPU reordering. <code>SeqCst</code>
+          is the safest and slowest; <code>Relaxed</code> is fastest but provides no ordering
+          guarantees beyond atomicity of the operation itself. Incorrect ordering leads to subtle
+          races that are hard to reproduce.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue10"></a>
+      <h3>10.6&nbsp; Epilogue</h3>
+      <t-b>
+        Concurrency multiplies complexity: shared state, scheduling non-determinism, and
+        memory ordering interact in ways that break intuition built from sequential code.
+        Language-enforced safety (Rust&rsquo;s <code>Send</code>/<code>Sync</code>) and
+        architectural discipline (message passing, immutable sharing) are the most reliable
+        paths to correct concurrent programs. The next chapter covers generics, which let
+        one implementation serve many types.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>10.7&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://doc.rust-lang.org/book/ch16-00-concurrency.html">Rust Fearless Concurrency &mdash; The Book</a><br />
+        <a target="_blank" href="https://en.cppreference.com/w/cpp/thread">C++ Thread Support &mdash; cppreference</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/standard/threading/managed-threading-best-practices">C# Threading Best Practices &mdash; Microsoft</a><br />
+        <a target="_blank" href="https://docs.python.org/3/library/asyncio.html">Python asyncio &mdash; Docs</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#threads">threads</a></menu-elem>
+        <menu-elem class="secElem"><a href="#sync">synchronization</a></menu-elem>
+        <menu-elem class="secElem"><a href="#channels">channels</a></menu-elem>
+        <menu-elem class="secElem"><a href="#async">async/await</a></menu-elem>
+        <menu-elem class="secElem"><a href="#atomics">atomics</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 10, 10);
+  </script>
+</body>
+</html>

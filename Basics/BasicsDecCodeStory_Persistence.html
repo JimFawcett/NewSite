@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsDecCodeStory_Persistence.html
+-->
+<head>
+  <title>Basics Dec Code Story - Immutability and Persistent Data Structures</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsDecCodeStory_Persistence.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Dec Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #10 &ndash; Immutability &amp; Persistent Data Structures</h2>
+        <h4 class="indent" id="subtitle">persistent lists/trees/maps, structural sharing, transient optimization, copy-on-write</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>10.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Declarative programming favors immutable data: once created, a value never changes.
+          But programs must represent change &mdash; adding an item to a set, updating a field
+          in a record. <strong>Persistent data structures</strong> solve this by returning a
+          new version of the structure on update while sharing as much of the old structure
+          as possible. The old version remains accessible and unchanged.
+        </t-b>
+      </indent-blocks>
+
+      <a id="persistent"></a>
+      <h3>10.1&nbsp; Persistent Lists, Trees, and Maps</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>persistent</strong> data structure guarantees that all previous versions
+          are preserved after an &ldquo;update.&rdquo; The update returns a new root pointing
+          to the modified path; all unmodified nodes are shared.
+        </t-b>
+        <defn-code>-- Haskell: singly-linked list is naturally persistent
+list1 = [3, 4, 5]
+list2 = 1 : 2 : list1    -- [1,2,3,4,5]
+-- list1 and list2 share the [3,4,5] tail; no copying
+
+-- Persistent balanced tree (Haskell Data.Map is an AVL tree)
+import qualified Data.Map.Strict as Map
+m1 = Map.fromList [("a", 1), ("b", 2)]
+m2 = Map.insert "c" 3 m1    -- new map; m1 unchanged
+-- m2 shares most of m1's internal tree structure
+
+-- Clojure: persistent vector (wide branching factor trie)
+(def v1 [1 2 3 4])
+(def v2 (conj v1 5))   ; v2 = [1 2 3 4 5]; v1 unchanged</defn-code>
+        <t-b>
+          Haskell&rsquo;s standard library uses persistent data structures throughout:
+          <code>Data.Map</code>, <code>Data.Set</code>, and <code>Data.Sequence</code> are
+          all persistent. Clojure builds all of its core collections on persistent tries.
+        </t-b>
+      </indent-blocks>
+
+      <a id="sharing"></a>
+      <h3>10.2&nbsp; Structural Sharing</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Structural sharing</strong> is the mechanism that makes persistence efficient.
+          An update allocates only the nodes along the modified path; all other nodes are
+          shared (referenced) by both the old and new versions.
+        </t-b>
+        <defn-code>-- Updating a balanced tree of depth d requires O(log n) new nodes;
+-- O(n) nodes from the original tree are shared
+
+-- Singly-linked list: prepend is O(1), sharing the entire original
+original = [3, 4, 5]       -- 3 nodes
+extended = 1 : 2 : original  -- 2 new nodes + shares the 3 original nodes
+
+-- Persistent vector (Clojure-style trie with branching factor 32):
+-- update of one element at index i requires ~log_32(n) new nodes
+-- a 1-million element vector requires only ~4 new nodes per update</defn-code>
+        <t-b>
+          Because values are immutable, sharing is safe: no thread can modify a shared node,
+          so two data structures referencing the same node always see the same data. This makes
+          persistent structures naturally thread-safe.
+        </t-b>
+      </indent-blocks>
+
+      <a id="transient"></a>
+      <h3>10.3&nbsp; Transient Optimization</h3>
+      <indent-blocks>
+        <t-b>
+          Building a persistent data structure by repeated single-element insertions requires
+          O(n log n) allocations. A <strong>transient</strong> mode allows in-place mutation
+          during construction, then converts to an immutable persistent structure when done.
+        </t-b>
+        <defn-code>-- Clojure: transient for bulk construction
+(defn build-map [pairs]
+  (persistent!
+    (reduce (fn [m [k v]] (assoc! m k v))
+            (transient {})
+            pairs)))
+
+-- Haskell: Data.Map.fromList uses an efficient bulk-build algorithm
+-- internally (not transient, but avoids O(n log n) individual inserts)
+m = Map.fromList [(k, v) | ...]
+
+-- Rust: HashMap::with_capacity pre-allocates to avoid rehashing
+let mut map = HashMap::with_capacity(1000);
+for (k, v) in pairs { map.insert(k, v); }
+let frozen = map;  // owned; no further mutation needed</defn-code>
+        <t-b>
+          Transient construction does not violate the persistence guarantee: the transient
+          version is not accessible outside the construction scope, so no code observes
+          the intermediate mutable state.
+        </t-b>
+      </indent-blocks>
+
+      <a id="cow"></a>
+      <h3>10.4&nbsp; Copy-on-Write</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Copy-on-write (CoW)</strong> is a simpler sharing strategy: multiple owners
+          share a single copy until any of them tries to mutate it; at that point, the mutating
+          owner receives a private copy.
+        </t-b>
+        <defn-code>-- Rust: Cow&lt;'a, B&gt; (Clone-on-write smart pointer)
+use std::borrow::Cow;
+
+fn process(input: &amp;str) -&gt; Cow&lt;str&gt; {
+    if input.contains("  ") {
+        // Only allocate a new String if we actually need to modify
+        Cow::Owned(input.replace("  ", " "))
+    } else {
+        // Zero-copy path: borrow the original
+        Cow::Borrowed(input)
+    }
+}
+
+-- Python: copy-on-write semantics for integers and strings (interning)
+a = "hello"
+b = a          # b and a reference the same object
+b = b + "!"    # new string created; a is unchanged</defn-code>
+        <t-b>
+          CoW is used in operating systems (fork copies page tables, not memory pages), in
+          Rust&rsquo;s <code>Cow</code> type for avoiding allocations on read-only paths, and
+          in string interning. It is simpler than full structural sharing but provides no
+          O(log n) update guarantee.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue10"></a>
+      <h3>10.5&nbsp; Epilogue</h3>
+      <t-b>
+        Persistent data structures reconcile immutability with efficiency. Structural sharing
+        bounds the cost of &ldquo;updates&rdquo; to the changed path; transient modes handle
+        bulk construction; CoW handles the read-mostly case. Together they make
+        immutable-by-default programming practical for production workloads. The next chapter
+        examines how declarative approaches tame concurrent computation.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>10.6&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Persistent_data_structure">Persistent Data Structure &mdash; Wikipedia</a><br />
+        <a target="_blank" href="https://hypirion.com/musings/understanding-persistent-vector-pt-1">Understanding Clojure&rsquo;s Persistent Vector &mdash; Hypirion</a><br />
+        <a target="_blank" href="https://hackage.haskell.org/package/containers/docs/Data-Map-Strict.html">Haskell Data.Map.Strict &mdash; Hackage</a><br />
+        <a target="_blank" href="https://doc.rust-lang.org/std/borrow/enum.Cow.html">Rust Cow &mdash; std</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#persistent">persistent structures</a></menu-elem>
+        <menu-elem class="secElem"><a href="#sharing">structural sharing</a></menu-elem>
+        <menu-elem class="secElem"><a href="#transient">transient</a></menu-elem>
+        <menu-elem class="secElem"><a href="#cow">copy-on-write</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsDecCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 10, 10);
+  </script>
+</body>
+</html>

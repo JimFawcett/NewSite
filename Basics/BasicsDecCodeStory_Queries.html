@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsDecCodeStory_Queries.html
+-->
+<head>
+  <title>Basics Dec Code Story - Queries and Rules</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsDecCodeStory_Queries.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Dec Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #12 &ndash; Queries &amp; Rules</h2>
+        <h4 class="indent" id="subtitle">relational queries, logic rules and unification, constraint satisfaction, pattern-based rewriting</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>12.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          SQL, Prolog, and Datalog are purely declarative: you describe <em>what</em> you want,
+          not <em>how</em> to find it. The runtime &mdash; a query planner, a resolution engine,
+          or a constraint solver &mdash; discovers the how. This is declarative programming at
+          its most extreme: the language has no loops, no assignments, and no control flow.
+          The same principles appear in functional languages as list comprehensions, pattern
+          guards, and term rewriting.
+        </t-b>
+      </indent-blocks>
+
+      <a id="relational"></a>
+      <h3>12.1&nbsp; Relational Queries</h3>
+      <indent-blocks>
+        <t-b>
+          SQL expresses queries in terms of relations (tables), projections (SELECT), selections
+          (WHERE), and joins. The query optimizer translates the declarative intent into an
+          efficient execution plan without exposing that plan to the user.
+        </t-b>
+        <defn-code>-- SQL: find employees earning above department average
+SELECT e.name, e.salary, e.dept
+FROM   employees e
+WHERE  e.salary &gt; (
+    SELECT AVG(salary)
+    FROM   employees
+    WHERE  dept = e.dept
+);
+
+-- Window function: running total per department (no GROUP BY needed)
+SELECT name, dept, salary,
+       SUM(salary) OVER (PARTITION BY dept ORDER BY salary) AS running_total
+FROM   employees;
+
+-- Haskell list comprehension (same relational model)
+-- Find pairs (a, b) where a + b == target
+pairs target xs = [ (a, b) | a &lt;- xs, b &lt;- xs, a + b == target, a &lt;= b ]
+
+-- Python list comprehension (equivalent)
+pairs = [(a, b) for a in xs for b in xs if a + b == target and a &lt;= b]</defn-code>
+        <t-b>
+          List comprehensions in Haskell and Python are direct transliterations of SQL
+          SELECT-FROM-WHERE: generators correspond to FROM, guards to WHERE, and the head
+          expression to SELECT. All three are declarative specifications over a relation.
+        </t-b>
+      </indent-blocks>
+
+      <a id="logic"></a>
+      <h3>12.2&nbsp; Logic Rules and Unification</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Logic programming</strong> (Prolog, Datalog) defines facts and rules; a query
+          asks what can be proved. The engine searches for variable bindings that satisfy the
+          query using <strong>unification</strong> &mdash; matching a query term against a rule
+          head by finding a consistent substitution.
+        </t-b>
+        <defn-code>% Prolog: facts and rules define a knowledge base
+parent(tom, bob).
+parent(bob, ann).
+parent(bob, pat).
+
+ancestor(X, Y) :- parent(X, Y).
+ancestor(X, Y) :- parent(X, Z), ancestor(Z, Y).
+
+% Query: who are ann's ancestors?
+?- ancestor(X, ann).
+% X = bob ; X = tom
+
+% Datalog (subset of Prolog — no function symbols, always terminates)
+% Used in database query engines (Souffle, Datomic)
+.decl edge(a: symbol, b: symbol)
+edge("a", "b"). edge("b", "c"). edge("c", "d").
+
+.decl reachable(a: symbol, b: symbol)
+reachable(X, Y) :- edge(X, Y).
+reachable(X, Y) :- edge(X, Z), reachable(Z, Y).
+
+.output reachable   -- a reaches b, c, d; b reaches c, d; etc.</defn-code>
+        <t-b>
+          Datalog is decidable and always terminates, unlike general Prolog, which makes it
+          safe for use as a query language inside databases and program analysis tools.
+          Datomic uses Datalog as its query language; Souffle uses it for static analysis.
+        </t-b>
+      </indent-blocks>
+
+      <a id="constraints"></a>
+      <h3>12.3&nbsp; Constraint Satisfaction</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Constraint programming</strong> defines a set of variables, their domains,
+          and constraints that must hold. The solver searches the combined space, pruning
+          branches that violate constraints. Problems like scheduling, map coloring, and
+          Sudoku are natural fits.
+        </t-b>
+        <defn-code>-- Python (python-constraint): map coloring
+from constraint import Problem, AllDifferentConstraint
+
+problem = Problem()
+regions = ["WA", "NT", "SA", "Q", "NSW", "V", "T"]
+colors  = ["red", "green", "blue"]
+problem.addVariables(regions, colors)
+
+# Adjacent regions must have different colors
+adjacencies = [
+    ("WA",  "NT"), ("WA",  "SA"),
+    ("NT",  "SA"), ("NT",  "Q"),
+    ("SA",  "Q"),  ("SA",  "NSW"), ("SA", "V"),
+    ("Q",   "NSW"),("NSW", "V"),
+]
+for (a, b) in adjacencies:
+    problem.addConstraint(lambda x, y: x != y, (a, b))
+
+solution = problem.getSolution()
+# e.g. {"WA": "red", "NT": "green", "SA": "blue", ...}
+
+-- Haskell (Logic monad): constraint-like search
+import Control.Monad (guard)
+
+pythagorean :: Int -&gt; [(Int,Int,Int)]
+pythagorean n = do
+  c &lt;- [1..n]; b &lt;- [1..c]; a &lt;- [1..b]
+  guard (a^2 + b^2 == c^2)
+  return (a, b, c)</defn-code>
+        <t-b>
+          The <code>guard</code> function in Haskell&rsquo;s list monad prunes the search space
+          exactly as a constraint does: if the predicate fails, the branch produces no results.
+          This is the same mechanism Prolog uses when a goal fails.
+        </t-b>
+      </indent-blocks>
+
+      <a id="rewriting"></a>
+      <h3>12.4&nbsp; Pattern-Based Rewriting</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Term rewriting</strong> defines a set of rules of the form
+          <em>pattern &rarr; replacement</em>. The engine repeatedly applies rules to an expression
+          until no rule matches (normal form). This is the computation model behind algebraic
+          simplification, compiler optimizations, and the lambda calculus itself.
+        </t-b>
+        <defn-code>-- Haskell: pattern matching is local term rewriting
+simplify :: Expr -&gt; Expr
+simplify (Add (Lit 0) e)         = simplify e         -- 0 + e = e
+simplify (Add e (Lit 0))         = simplify e         -- e + 0 = e
+simplify (Mul (Lit 1) e)         = simplify e         -- 1 * e = e
+simplify (Mul (Lit 0) _)         = Lit 0              -- 0 * e = 0
+simplify (Add e1 e2)             = Add (simplify e1) (simplify e2)
+simplify (Mul e1 e2)             = Mul (simplify e1) (simplify e2)
+simplify e                       = e
+
+-- Rascal / Stratego (dedicated term rewriting languages)
+-- rule simplify:
+--   Add(Lit(0), e) =&gt; e
+--   Mul(Lit(1), e) =&gt; e
+
+-- SQL query rewriting (done internally by the query optimizer)
+-- SELECT * FROM t WHERE 1=1   =>  SELECT * FROM t
+-- SELECT * FROM t WHERE a AND a  =>  SELECT * FROM t WHERE a</defn-code>
+        <t-b>
+          Haskell&rsquo;s pattern matching clauses are term-rewriting rules evaluated top-to-bottom.
+          Compiler backends use rewriting to simplify IR expressions; query planners use it to
+          eliminate redundant conditions and push predicates closer to the data source.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue12"></a>
+      <h3>12.5&nbsp; Epilogue</h3>
+      <t-b>
+        Queries, logic rules, constraints, and term rewriting represent the most purely
+        declarative end of the programming spectrum. In each case the programmer states
+        relationships rather than procedures, and an engine &mdash; optimizer, resolver,
+        solver, or rewriter &mdash; decides the execution strategy. Declarative programming
+        is not one technique but a continuum of approaches unified by the goal of expressing
+        <em>what</em> over <em>how</em>. This chapter closes the Dec Code Story.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>12.6&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Datalog">Datalog &mdash; Wikipedia</a><br />
+        <a target="_blank" href="https://souffle-lang.github.io/docs.html">Souffle Datalog &mdash; Docs</a><br />
+        <a target="_blank" href="https://www.postgresql.org/docs/current/sql-select.html">PostgreSQL SELECT &mdash; Docs</a><br />
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Term_rewriting">Term Rewriting &mdash; Wikipedia</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#relational">relational queries</a></menu-elem>
+        <menu-elem class="secElem"><a href="#logic">logic rules</a></menu-elem>
+        <menu-elem class="secElem"><a href="#constraints">constraints</a></menu-elem>
+        <menu-elem class="secElem"><a href="#rewriting">rewriting</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsDecCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 12, 10);
+  </script>
+</body>
+</html>

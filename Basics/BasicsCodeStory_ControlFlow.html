@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsCodeStory_ControlFlow.html
+-->
+<head>
+  <title>Basics Code Story - Control Flow</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsCodeStory_ControlFlow.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #4 &ndash; Control Flow</h2>
+        <h4 class="indent" id="subtitle">if/else, match/switch, loops, break/continue, pattern matching</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>4.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Control flow determines the order in which statements execute. Branching selects one
+          path from several alternatives; looping repeats a block until a condition changes;
+          early exit escapes from a loop or function before its natural end. Modern languages
+          enrich these primitives with pattern matching, making branching both more expressive
+          and safer.
+        </t-b>
+      </indent-blocks>
+
+      <a id="ifelse"></a>
+      <h3>4.1&nbsp; if / else</h3>
+      <indent-blocks>
+        <t-b>
+          The <code>if</code> statement is universal. In Rust and many functional-influenced
+          languages it is also an <strong>expression</strong> that returns a value, removing
+          the need for a ternary operator:
+        </t-b>
+        <defn-code>// Rust  (if is an expression)
+let label = if score &gt;= 90 { "A" } else { "B" };
+
+// C++  (statement only; ternary for inline)
+std::string label = (score &gt;= 90) ? "A" : "B";
+
+// C#  (statement; ternary available)
+string label = score &gt;= 90 ? "A" : "B";
+
+// Python  (inline conditional expression)
+label = "A" if score &gt;= 90 else "B"</defn-code>
+        <t-b>
+          All four languages support <code>else if</code> chains (Python spells it <code>elif</code>).
+          When there are many discrete cases, match/switch is cleaner.
+        </t-b>
+      </indent-blocks>
+
+      <a id="match"></a>
+      <h3>4.2&nbsp; match / switch</h3>
+      <indent-blocks>
+        <t-b>
+          A match or switch statement branches on the value of an expression. The key
+          differences across languages are <strong>exhaustiveness</strong> and
+          <strong>fall-through</strong>:
+        </t-b>
+        <defn-code>// Rust  (exhaustive, no fall-through, expression)
+let msg = match status {
+    200 =&gt; "OK",
+    404 =&gt; "Not Found",
+    500 =&gt; "Server Error",
+    _   =&gt; "Unknown",
+};
+
+// C++  (not exhaustive, fall-through unless break)
+switch (status) {
+    case 200: msg = "OK"; break;
+    case 404: msg = "Not Found"; break;
+    default:  msg = "Unknown";
+}
+
+// C#  (no implicit fall-through; goto case allowed)
+switch (status) {
+    case 200: msg = "OK"; break;
+    default:  msg = "Unknown"; break;
+}
+
+// Python  (match added in 3.10; structural pattern matching)
+match status:
+    case 200: msg = "OK"
+    case 404: msg = "Not Found"
+    case _:   msg = "Unknown"</defn-code>
+        <t-b>
+          Rust&rsquo;s compiler enforces exhaustiveness: every possible value must be covered or
+          a wildcard <code>_</code> must appear. This catches missing cases at compile time.
+        </t-b>
+      </indent-blocks>
+
+      <a id="loops"></a>
+      <h3>4.3&nbsp; Loops</h3>
+      <indent-blocks>
+        <t-b>
+          Every language provides at least <code>while</code> and <code>for</code> loops.
+        </t-b>
+        <defn-code>// Rust: loop (infinite), while, for-in (iterator-based)
+loop { if done { break; } }
+while !done { /* ... */ }
+for x in 0..10 { /* x = 0,1,...,9 */ }
+for item in &amp;collection { /* borrow each element */ }
+
+// C++: while, do-while, for, range-for
+while (!done) { /* ... */ }
+for (int i = 0; i &lt; 10; ++i) { /* ... */ }
+for (auto&amp; item : collection) { /* ... */ }
+
+// C#: while, do-while, for, foreach
+while (!done) { /* ... */ }
+for (int i = 0; i &lt; 10; i++) { /* ... */ }
+foreach (var item in collection) { /* ... */ }
+
+// Python: while, for-in (always iterator-based)
+while not done: pass
+for i in range(10): pass
+for item in collection: pass</defn-code>
+        <t-b>
+          Rust&rsquo;s <code>loop</code> keyword creates an explicit infinite loop; the compiler
+          knows it never falls through, enabling <code>break</code> with a value (see below).
+          Range-based and iterator-based for loops are idiomatic in all modern languages.
+        </t-b>
+      </indent-blocks>
+
+      <a id="breakcontinue"></a>
+      <h3>4.4&nbsp; break and continue</h3>
+      <indent-blocks>
+        <t-b>
+          <code>break</code> exits the innermost enclosing loop. <code>continue</code> skips
+          the remainder of the current iteration.
+        </t-b>
+        <t-b>
+          Rust adds two notable extensions:
+          <ul class="tight">
+            <li>
+              <strong>break with a value</strong>: <code>loop { break expr; }</code> returns
+              <code>expr</code> from the loop, making the loop an expression.
+            </li>
+            <li>
+              <strong>labeled break/continue</strong>: labels (<code>'outer: loop { ... break 'outer; }</code>)
+              allow targeting an outer loop rather than the innermost one. C# and Java support
+              labeled break; C++ and Python do not.
+            </li>
+          </ul>
+        </t-b>
+        <defn-code>// Rust: labeled break targeting outer loop
+'outer: for i in 0..5 {
+    for j in 0..5 {
+        if i + j == 6 { break 'outer; }
+    }
+}</defn-code>
+      </indent-blocks>
+
+      <a id="patterns"></a>
+      <h3>4.5&nbsp; Pattern Matching</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Pattern matching</strong> extends matching to the structure of a value, not just
+          its identity. It can destructure tuples, structs, and enums, bind sub-values to names,
+          and apply guards.
+        </t-b>
+        <defn-code>// Rust: destructuring in match
+match point {
+    (0, 0)       =&gt; println!("origin"),
+    (x, 0)       =&gt; println!("on x-axis at {x}"),
+    (0, y)       =&gt; println!("on y-axis at {y}"),
+    (x, y)       =&gt; println!("at ({x}, {y})"),
+}
+
+// Rust: matching on enum variants with data
+match msg {
+    Message::Quit              =&gt; quit(),
+    Message::Move { x, y }    =&gt; move_to(x, y),
+    Message::Write(text)       =&gt; print!("{text}"),
+}
+
+// Python 3.10+ structural pattern matching
+match command.split():
+    case ["go", direction]: move(direction)
+    case ["pick", item]:    pick_up(item)
+    case _:                 print("unknown")</defn-code>
+        <t-b>
+          Guards add a boolean condition to a pattern arm:
+          <code>Some(x) if x &gt; 0 =&gt; positive(x)</code>.
+          C#&rsquo;s <code>switch</code> expression (C# 8+) provides similar power through
+          <code>when</code> clauses.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue4"></a>
+      <h3>4.6&nbsp; Epilogue</h3>
+      <t-b>
+        Pattern matching turns match/switch from a simple integer branch into a structural
+        decomposition tool. Languages that enforce exhaustiveness shift a class of runtime
+        errors to compile time. The next chapter covers functions &mdash; the primary
+        unit of code reuse.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>4.7&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://doc.rust-lang.org/book/ch06-02-match.html">Rust match Control Flow &mdash; The Book</a><br />
+        <a target="_blank" href="https://en.cppreference.com/w/cpp/language/switch">C++ switch Statement &mdash; cppreference</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/selection-statements">C# Selection Statements &mdash; Microsoft</a><br />
+        <a target="_blank" href="https://peps.python.org/pep-0634/">PEP 634 &mdash; Structural Pattern Matching</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#ifelse">if/else</a></menu-elem>
+        <menu-elem class="secElem"><a href="#match">match/switch</a></menu-elem>
+        <menu-elem class="secElem"><a href="#loops">loops</a></menu-elem>
+        <menu-elem class="secElem"><a href="#breakcontinue">break/continue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#patterns">patterns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+</body>
+</html>

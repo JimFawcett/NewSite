@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsDecCodeStory_Combinators.html
+-->
+<head>
+  <title>Basics Dec Code Story - Higher-Order Functions and Combinators</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsDecCodeStory_Combinators.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Dec Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #6 &ndash; Higher-Order Functions &amp; Combinators</h2>
+        <h4 class="indent" id="subtitle">map/filter/fold, scan/zip/unfold, applicative operations, point-free style</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>6.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>combinator</strong> is a higher-order function with no free variables &mdash;
+          its behavior is determined entirely by the functions it receives as arguments.
+          Combinators are the standard vocabulary for processing collections: instead of writing
+          a loop that accumulates results, you compose <code>map</code>, <code>filter</code>,
+          and <code>fold</code> to express the same transformation declaratively.
+        </t-b>
+      </indent-blocks>
+
+      <a id="mapfilter"></a>
+      <h3>6.1&nbsp; map, filter, fold</h3>
+      <indent-blocks>
+        <t-b>
+          These three combinators cover the vast majority of collection-processing patterns.
+        </t-b>
+        <defn-code>-- Haskell
+map    (*2)      [1,2,3]           -- [2,4,6]        transform each element
+filter even      [1,2,3,4,5]       -- [2,4]           keep matching elements
+foldr  (+)   0   [1,2,3]           -- 6               combine to a single value
+foldl' (+)   0   [1,2,3]           -- 6               strict left fold (prefer for sums)
+
+-- F#
+List.map    ((*) 2)   [1;2;3]      // [2;4;6]
+List.filter (fun x -&gt; x % 2 = 0) [1;2;3;4;5]  // [2;4]
+List.fold   (+)       0 [1;2;3]    // 6
+
+-- Rust (lazy iterators; collect drives evaluation)
+(1..=5).map(|x| x * 2).collect::&lt;Vec&lt;_&gt;&gt;()
+(1..=5).filter(|x| x % 2 == 0).collect::&lt;Vec&lt;_&gt;&gt;()
+(1..=5).fold(0, |acc, x| acc + x)   // 15
+
+-- Python
+list(map(lambda x: x*2, [1,2,3]))
+list(filter(lambda x: x%2==0, [1,2,3,4,5]))
+from functools import reduce; reduce(lambda a,x: a+x, [1,2,3], 0)</defn-code>
+        <t-b>
+          <code>fold</code> (also called <code>reduce</code>) is the most general of the three:
+          both <code>map</code> and <code>filter</code> can be expressed as folds.
+        </t-b>
+      </indent-blocks>
+
+      <a id="scanzipunfold"></a>
+      <h3>6.2&nbsp; scan, zip, unfold</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>scan</strong> is like fold but keeps every intermediate accumulator value,
+          producing a list of running totals.
+          <strong>zip</strong> pairs elements from two lists by position.
+          <strong>unfold</strong> generates a list from a seed value.
+        </t-b>
+        <defn-code>-- Haskell
+scanl (+) 0 [1,2,3,4]     -- [0,1,3,6,10]  running sum (includes seed)
+zip [1,2,3] ['a','b','c'] -- [(1,'a'),(2,'b'),(3,'c')]
+zipWith (+) [1,2,3] [4,5,6]  -- [5,7,9]  zip then apply
+
+-- unfoldr generates a list from a seed (dual of foldr)
+import Data.List (unfoldr)
+unfoldr (\n -&gt; if n == 0 then Nothing else Just (n, n-1)) 5
+-- [5,4,3,2,1]
+
+-- Rust
+(0..=4).scan(0, |acc, x| { *acc += x; Some(*acc) }).collect::&lt;Vec&lt;_&gt;&gt;()
+// [0,1,3,6,10]
+(1..=3).zip('a'..='c').collect::&lt;Vec&lt;_&gt;&gt;()
+// [(1,'a'),(2,'b'),(3,'c')]
+
+-- Python
+import itertools
+list(itertools.accumulate([1,2,3,4]))   # [1,3,6,10]
+list(zip([1,2,3], ['a','b','c']))</defn-code>
+      </indent-blocks>
+
+      <a id="applicative"></a>
+      <h3>6.3&nbsp; Applicative and Monoidal Operations</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Applicative</strong> operations apply a function wrapped in a context to a
+          value wrapped in the same context. <strong>Monoidal</strong> operations combine
+          values of the same type associatively with an identity element.
+        </t-b>
+        <defn-code>-- Haskell: Applicative  (&lt;*&gt; applies a wrapped function to a wrapped value)
+Just (+3) &lt;*&gt; Just 5    -- Just 8
+Nothing   &lt;*&gt; Just 5    -- Nothing
+
+-- Apply a list of functions to a list of values (Cartesian product)
+[(+1),(+10)] &lt;*&gt; [1,2,3]   -- [2,3,4, 11,12,13]
+
+-- Haskell: Monoid (mempty is identity, mappend/&lt;&gt; combines)
+"hello" &lt;&gt; " " &lt;&gt; "world"  -- "hello world"
+[1,2] &lt;&gt; [3,4]             -- [1,2,3,4]
+Sum 3  &lt;&gt; Sum 4             -- Sum 7
+
+-- Rust: Iterator::chain (monoid on iterators)
+(1..=3).chain(4..=6).collect::&lt;Vec&lt;_&gt;&gt;()  // [1,2,3,4,5,6]
+
+-- liftA2: apply a binary function under a context
+liftA2 (+) (Just 3) (Just 4)  -- Just 7
+liftA2 (+) Nothing  (Just 4)  -- Nothing</defn-code>
+      </indent-blocks>
+
+      <a id="pointfree"></a>
+      <h3>6.4&nbsp; Point-Free Composition</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Point-free style</strong> defines functions without naming their arguments
+          (the &ldquo;points&rdquo;). Instead, the function is expressed entirely as a
+          composition of other functions. This style emphasizes the pipeline rather than
+          the data flowing through it.
+        </t-b>
+        <defn-code>-- Haskell: point-free vs pointed style
+-- Pointed (names the argument x):
+sumOfSquaresOfEvens xs = sum (map (^2) (filter even xs))
+
+-- Point-free (no argument named):
+sumOfSquaresOfEvens = sum . map (^2) . filter even
+
+-- Both are identical; the point-free form reads as a pipeline
+
+-- F#: point-free with (>>) composition operator
+let sumOfSquaresOfEvens =
+  List.filter (fun x -&gt; x % 2 = 0)
+  &gt;&gt; List.map (fun x -&gt; x * x)
+  &gt;&gt; List.sum
+
+-- Rust: iterator combinators are inherently point-free-ish
+let sum_sq_even = |v: &amp;[i32]| v.iter()
+    .filter(|&amp;&amp;x| x % 2 == 0)
+    .map(|&amp;x| x * x)
+    .sum::&lt;i32&gt;();</defn-code>
+        <t-b>
+          Point-free style is idiomatic in Haskell and common in F#. It becomes unreadable when
+          overused; the balance point is where naming the argument would add nothing beyond what
+          the composition already expresses.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue6"></a>
+      <h3>6.5&nbsp; Epilogue</h3>
+      <t-b>
+        Combinators provide a vocabulary for expressing data transformations without loops
+        or mutable accumulators. <code>map</code>, <code>filter</code>, and <code>fold</code>
+        handle 90% of collection-processing needs. The applicative and monoidal abstractions
+        generalize these patterns from lists to any context (Option, Result, parsers, futures).
+        The next chapter examines lazy evaluation, which makes infinite structures and
+        demand-driven computation possible.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>6.6&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://hackage.haskell.org/package/base/docs/Data-List.html">Haskell Data.List &mdash; Hackage</a><br />
+        <a target="_blank" href="https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/lists">F# Lists &mdash; Microsoft</a><br />
+        <a target="_blank" href="https://doc.rust-lang.org/std/iter/trait.Iterator.html">Rust Iterator Trait &mdash; std</a><br />
+        <a target="_blank" href="https://docs.python.org/3/library/itertools.html">Python itertools</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#mapfilter">map/filter/fold</a></menu-elem>
+        <menu-elem class="secElem"><a href="#scanzipunfold">scan/zip/unfold</a></menu-elem>
+        <menu-elem class="secElem"><a href="#applicative">applicative</a></menu-elem>
+        <menu-elem class="secElem"><a href="#pointfree">point-free</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsDecCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 6, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsCodeStory_Functions.html
+-->
+<head>
+  <title>Basics Code Story - Functions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsCodeStory_Functions.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #5 &ndash; Functions</h2>
+        <h4 class="indent" id="subtitle">declaration, parameters, overloading, recursion, higher-order functions</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>5.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          A function names a reusable block of computation. It takes inputs (parameters), performs
+          work, and optionally returns a result. Functions are the primary unit of abstraction in
+          imperative languages and the foundation on which all larger structures &mdash; methods,
+          closures, coroutines &mdash; are built.
+        </t-b>
+      </indent-blocks>
+
+      <a id="declaration"></a>
+      <h3>5.1&nbsp; Declaration</h3>
+      <indent-blocks>
+        <t-b>
+          Function syntax varies but the core elements are consistent: a name, a parameter list,
+          a return type, and a body.
+        </t-b>
+        <defn-code>// Rust
+fn add(a: i32, b: i32) -&gt; i32 {
+    a + b   // last expression is the return value (no semicolon)
+}
+
+// C++
+int add(int a, int b) {
+    return a + b;
+}
+
+// C#
+int Add(int a, int b) {
+    return a + b;
+}
+
+// Python
+def add(a: int, b: int) -&gt; int:
+    return a + b</defn-code>
+        <t-b>
+          In Rust, the body is a block expression. If the last statement has no semicolon it
+          is implicitly returned. An explicit <code>return</code> statement is used only for
+          early exit.
+        </t-b>
+      </indent-blocks>
+
+      <a id="parameters"></a>
+      <h3>5.2&nbsp; Parameters and Return Types</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Pass by value</strong> copies the argument. <strong>Pass by reference</strong>
+          lets the function observe or modify the caller&rsquo;s data without copying.
+        </t-b>
+        <defn-code>// Rust: &amp;T is shared reference, &amp;mut T is exclusive mutable reference
+fn read(s: &amp;String) { /* cannot modify s */ }
+fn modify(s: &amp;mut String) { s.push('!'); }
+
+// C++: const ref (read-only), ref (mutable), value (copy)
+void read(const std::string&amp; s) {}
+void modify(std::string&amp; s) { s += '!'; }
+
+// C#: ref and out parameters
+void Increment(ref int x) { x++; }</defn-code>
+        <t-b>
+          <strong>Default parameters</strong> let callers omit trailing arguments (C++, C#, Python).
+          Rust does not have default parameters; builder patterns or structs with defaults are
+          idiomatic alternatives.
+        </t-b>
+        <t-b>
+          <strong>Multiple return values</strong> are supported via tuples in all four languages.
+          Rust also uses <code>Result&lt;T, E&gt;</code> and <code>Option&lt;T&gt;</code> to encode
+          fallible and optional results in the type system.
+        </t-b>
+        <t-b>
+          <strong>Variadic functions</strong> accept a variable number of arguments. C++ uses
+          templates or C-style <code>...</code>; Python uses <code>*args</code> and
+          <code>**kwargs</code>; C# uses <code>params</code>. Rust has no built-in variadic
+          syntax except for macros.
+        </t-b>
+      </indent-blocks>
+
+      <a id="overloading"></a>
+      <h3>5.3&nbsp; Overloading</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Function overloading</strong> allows multiple functions with the same name
+          but different parameter types. The compiler selects the correct version at the call site.
+        </t-b>
+        <t-b>
+          C++ and C# support overloading directly. Python does not &mdash; a later definition
+          replaces an earlier one with the same name; <code>functools.singledispatch</code>
+          provides limited dispatch by type. Rust does not support overloading on free functions
+          but achieves similar results through trait methods with different receiver types or
+          generic type parameters.
+        </t-b>
+        <t-b>
+          Overloading resolution in C++ is complex: the compiler ranks candidates by conversion
+          cost and selects the best match, which can surprise when implicit conversions are
+          involved.
+        </t-b>
+      </indent-blocks>
+
+      <a id="recursion"></a>
+      <h3>5.4&nbsp; Recursion</h3>
+      <indent-blocks>
+        <t-b>
+          A recursive function calls itself, directly or through a chain of calls. Each call
+          pushes a new stack frame; deep recursion risks stack overflow. The base case halts
+          the recursion.
+        </t-b>
+        <defn-code>// Rust
+fn factorial(n: u64) -&gt; u64 {
+    if n == 0 { 1 } else { n * factorial(n - 1) }
+}
+
+// Tail-recursive form (optimizer may eliminate stack frame)
+fn fact_tail(n: u64, acc: u64) -&gt; u64 {
+    if n == 0 { acc } else { fact_tail(n - 1, n * acc) }
+}</defn-code>
+        <t-b>
+          <strong>Tail-call optimization (TCO)</strong> converts a tail-recursive call into a
+          loop, avoiding stack growth. C++ compilers often apply it as an optimization but do
+          not guarantee it. Rust does not guarantee TCO either. Python explicitly does not
+          implement TCO. C# has no TCO guarantee. When stack depth matters, convert recursion
+          to an explicit loop or use an iterative algorithm.
+        </t-b>
+        <t-b>
+          <strong>Mutual recursion</strong> occurs when two or more functions call each other.
+          In Rust, mutual recursion between free functions works as-is because all functions in
+          a module are visible to each other regardless of declaration order.
+        </t-b>
+      </indent-blocks>
+
+      <a id="higherorder"></a>
+      <h3>5.5&nbsp; Higher-Order Functions</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>higher-order function</strong> takes one or more functions as arguments or
+          returns a function as its result. They are the foundation of functional-style
+          composition.
+        </t-b>
+        <defn-code>// Rust: map, filter, fold on iterators
+let squares: Vec&lt;i32&gt; = (1..=5).map(|x| x * x).collect();
+let evens:   Vec&lt;i32&gt; = (1..=10).filter(|x| x % 2 == 0).collect();
+let sum:     i32       = (1..=5).fold(0, |acc, x| acc + x);
+
+// C++: std::transform, std::copy_if, std::accumulate
+std::transform(v.begin(), v.end(), out.begin(), [](int x){ return x*x; });
+
+// C#: LINQ
+var squares = Enumerable.Range(1,5).Select(x =&gt; x * x);
+var evens   = Enumerable.Range(1,10).Where(x =&gt; x % 2 == 0);
+
+// Python
+squares = list(map(lambda x: x*x, range(1, 6)))
+evens   = list(filter(lambda x: x % 2 == 0, range(1, 11)))
+total   = sum(range(1, 6))</defn-code>
+        <t-b>
+          Functions that accept or return other functions rely on closures for capturing context.
+          The next chapter covers closures in detail.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue5"></a>
+      <h3>5.6&nbsp; Epilogue</h3>
+      <t-b>
+        Functions decompose programs into named, testable units. Overloading, default parameters,
+        and higher-order forms add flexibility without sacrificing clarity. The next chapter
+        extends functions with captured state in the form of lambdas and closures.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>5.7&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://doc.rust-lang.org/book/ch03-03-how-functions-work.html">Rust Functions &mdash; The Book</a><br />
+        <a target="_blank" href="https://en.cppreference.com/w/cpp/language/functions">C++ Functions &mdash; cppreference</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/methods">C# Methods &mdash; Microsoft</a><br />
+        <a target="_blank" href="https://docs.python.org/3/reference/compound_stmts.html#function-definitions">Python Function Definitions</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#declaration">declaration</a></menu-elem>
+        <menu-elem class="secElem"><a href="#parameters">parameters</a></menu-elem>
+        <menu-elem class="secElem"><a href="#overloading">overloading</a></menu-elem>
+        <menu-elem class="secElem"><a href="#recursion">recursion</a></menu-elem>
+        <menu-elem class="secElem"><a href="#higherorder">higher-order</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+</body>
+</html>

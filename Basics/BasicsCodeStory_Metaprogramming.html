@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsCodeStory_Metaprogramming.html
+-->
+<head>
+  <title>Basics Code Story - Metaprogramming</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsCodeStory_Metaprogramming.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #12 &ndash; Metaprogramming</h2>
+        <h4 class="indent" id="subtitle">macros, reflection, code generation, attributes, compile-time computation</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>12.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Metaprogramming</strong> is code that operates on or generates other code.
+          It reduces boilerplate, enforces conventions, and enables domain-specific abstractions
+          that would otherwise require language extensions. The mechanisms range from simple
+          text substitution (C preprocessor) through structured syntax manipulation (Rust proc
+          macros) to full runtime introspection (Python, C# reflection).
+        </t-b>
+      </indent-blocks>
+
+      <a id="macros"></a>
+      <h3>12.1&nbsp; Macros</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>macro</strong> transforms syntax before or during compilation. It can generate
+          repetitive code, implement domain-specific syntax, or work around limitations of the
+          type system.
+        </t-b>
+        <defn-code>// Rust: declarative macro (pattern-based syntax transformation)
+macro_rules! vec_of_strings {
+    ($($x:expr),*) =&gt; { vec![$( $x.to_string() ),*] };
+}
+let v = vec_of_strings!["hello", "world"];
+
+// Rust: println! and format! are built-in declarative macros
+println!("{} + {} = {}", a, b, a + b);
+
+// C: preprocessor macro (textual substitution, no type safety)
+#define MAX(a, b) ((a) &gt; (b) ? (a) : (b))
+int m = MAX(x, y);   // expands inline; double-evaluation risk
+
+// C++: constexpr function preferred over macros for typed computation</defn-code>
+        <t-b>
+          Rust macros operate on the token tree, not raw text, so they cannot produce syntactically
+          invalid output. They are hygienic: names introduced inside a macro do not leak into
+          the caller&rsquo;s scope.
+        </t-b>
+      </indent-blocks>
+
+      <a id="reflection"></a>
+      <h3>12.2&nbsp; Reflection</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Reflection</strong> is the ability of a program to inspect and modify its own
+          structure at runtime: discovering types, fields, methods, and attributes without
+          knowing them at compile time.
+        </t-b>
+        <defn-code>// C#: System.Reflection
+Type t = typeof(Article);
+foreach (var prop in t.GetProperties())
+    Console.WriteLine(prop.Name);
+object obj = Activator.CreateInstance(t);
+
+// Python: inspect module + built-ins
+import inspect
+for name, val in inspect.getmembers(obj):
+    print(name, val)
+type(obj).__name__          # class name at runtime
+hasattr(obj, 'summarize')   # probe for attribute
+
+// Rust: NO runtime reflection
+// Types are erased after compilation; use proc macros or serde for serialization</defn-code>
+        <t-b>
+          Rust deliberately omits runtime reflection to preserve zero-cost abstractions and
+          allow dead-code elimination. The <code>std::any::Any</code> trait provides limited
+          runtime type identification, and the <code>serde</code> ecosystem uses proc macros
+          to generate serialization code at compile time.
+        </t-b>
+      </indent-blocks>
+
+      <a id="codegen"></a>
+      <h3>12.3&nbsp; Code Generation</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Code generation</strong> produces source code or intermediate representations
+          automatically from a higher-level description.
+        </t-b>
+        <t-b>
+          <strong>Rust procedural macros</strong> receive a token stream as input and return a
+          new token stream. They run at compile time as plugins loaded by the compiler. Common
+          uses: deriving trait implementations, generating boilerplate, embedding DSLs.
+        </t-b>
+        <defn-code>// Rust: proc macro (derive macro generates Debug impl)
+#[derive(Debug, Clone, PartialEq)]
+struct Point { x: f64, y: f64 }
+// compiler generates: impl Debug for Point { fn fmt(...) { ... } }
+
+// C# Source Generators (Roslyn API; .NET 5+)
+// Analyzer reads INamedTypeSymbol, emits additional C# source files at compile time
+
+// Python: code templates written to .py files, then imported
+import importlib.util
+spec = importlib.util.spec_from_file_location("gen", "generated.py")
+mod  = importlib.util.module_from_spec(spec)</defn-code>
+      </indent-blocks>
+
+      <a id="attributes"></a>
+      <h3>12.4&nbsp; Attributes and Decorators</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Attributes</strong> (Rust, C#) and <strong>decorators</strong> (Python) attach
+          metadata or behavior to declarations without modifying the declaration itself.
+        </t-b>
+        <defn-code>// Rust attributes
+#[test]                       // marks function as a test
+#[allow(dead_code)]           // suppresses a lint warning
+#[cfg(target_os = "linux")]   // conditional compilation
+#[derive(Serialize, Deserialize)] // proc macro: generates serde impl
+
+// C# attributes (bracket syntax; read via reflection)
+[Obsolete("Use NewMethod instead")]
+[HttpGet("/api/users/{id}")]
+public ActionResult GetUser(int id) { ... }
+
+// Python decorators (syntactic sugar for higher-order function application)
+@staticmethod
+@property
+@functools.lru_cache(maxsize=128)
+def expensive_computation(self): ...</defn-code>
+        <t-b>
+          Python decorators execute at class or function definition time and can replace the
+          decorated object with any callable. Rust attributes are processed at compile time
+          by the compiler or by proc macros. C# attributes are inert metadata objects readable
+          at runtime via reflection.
+        </t-b>
+      </indent-blocks>
+
+      <a id="consteval"></a>
+      <h3>12.5&nbsp; Compile-Time Computation</h3>
+      <indent-blocks>
+        <t-b>
+          Moving computation to compile time reduces runtime cost and enables
+          values computed from program constants to appear in type-level positions
+          (array sizes, template arguments).
+        </t-b>
+        <defn-code>// Rust: const fn evaluated at compile time
+const fn factorial(n: u64) -&gt; u64 {
+    if n == 0 { 1 } else { n * factorial(n - 1) }
+}
+const FACT_10: u64 = factorial(10); // computed at compile time
+
+// C++: constexpr function (C++11) and consteval (C++20, mandatory compile-time)
+constexpr int factorial(int n) { return n &lt;= 1 ? 1 : n * factorial(n-1); }
+constexpr int f10 = factorial(10);
+
+consteval int must_be_const(int n) { return n * 2; } // compile-time only
+
+// C#: const (literals only); static readonly for runtime-initialized fields
+const int MaxItems = 1024;   // must be a compile-time literal
+
+// Python: no compile-time evaluation; constants are runtime values</defn-code>
+        <t-b>
+          Rust&rsquo;s <code>const fn</code> features grow with each edition; as of Rust 1.65+
+          many standard-library functions are <code>const fn</code>. The goal is to enable more
+          complex compile-time algorithms without a separate DSL.
+        </t-b>
+        <t-b>
+          C++ template metaprogramming (TMP) pioneered compile-time computation with Turing-complete
+          template instantiation, but the technique is famously verbose and produces cryptic
+          errors. Concepts and <code>constexpr</code>/<code>consteval</code> provide cleaner
+          alternatives in modern C++.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue12"></a>
+      <h3>12.6&nbsp; Epilogue</h3>
+      <t-b>
+        Metaprogramming amplifies productivity when used judiciously. The risks are real:
+        macros that are hard to debug, reflection that breaks refactoring tools, and code
+        generators that produce unmaintainable output. The discipline is to use the most
+        constrained mechanism that solves the problem &mdash; a <code>const fn</code> before
+        a proc macro, a proc macro before runtime reflection. This completes the Code Story
+        survey of imperative language features.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>12.7&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://doc.rust-lang.org/book/ch19-06-macros.html">Rust Macros &mdash; The Book</a><br />
+        <a target="_blank" href="https://doc.rust-lang.org/reference/procedural-macros.html">Rust Procedural Macros &mdash; Reference</a><br />
+        <a target="_blank" href="https://en.cppreference.com/w/cpp/language/constexpr">C++ constexpr &mdash; cppreference</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview">C# Source Generators &mdash; Microsoft</a><br />
+        <a target="_blank" href="https://docs.python.org/3/glossary.html#term-decorator">Python Decorators &mdash; Glossary</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#macros">macros</a></menu-elem>
+        <menu-elem class="secElem"><a href="#reflection">reflection</a></menu-elem>
+        <menu-elem class="secElem"><a href="#codegen">code gen</a></menu-elem>
+        <menu-elem class="secElem"><a href="#attributes">attributes</a></menu-elem>
+        <menu-elem class="secElem"><a href="#consteval">compile-time</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 12, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsCodeStory_Variables.html
+-->
+<head>
+  <title>Basics Code Story - Variables and Binding</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsCodeStory_Variables.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #2 &ndash; Variables &amp; Binding</h2>
+        <h4 class="indent" id="subtitle">declaration, mutability, scope, shadowing, constants</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>2.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          A variable is a named binding from an identifier to a storage location. How languages
+          handle declaration syntax, mutability defaults, scope boundaries, and compile-time
+          constants shapes both program correctness and readability.
+        </t-b>
+      </indent-blocks>
+
+      <a id="declaration"></a>
+      <h3>2.1&nbsp; Variable Declaration</h3>
+      <indent-blocks>
+        <t-b>
+          Most modern languages support <strong>type inference</strong>: the compiler deduces the
+          type from the initializer, removing redundant annotations while retaining full static
+          typing.
+        </t-b>
+        <defn-code>// Rust  (let introduces a binding; type inferred)
+let x = 42;           // i32 inferred
+let y: f64 = 3.14;    // explicit annotation
+
+// C++   (auto deduces type from initializer)
+auto x = 42;          // int
+auto y = 3.14;        // double
+
+// C#    (var deduces type; requires an initializer)
+var x = 42;           // int
+var y = 3.14;         // double
+
+// Python  (no declaration keyword; assignment creates the binding)
+x = 42
+y = 3.14</defn-code>
+        <t-b>
+          Python bindings are not typed &mdash; the name can be rebound to a value of any type.
+          Rust, C++, and C# bindings are statically typed; the type is fixed at declaration.
+        </t-b>
+      </indent-blocks>
+
+      <a id="mutability"></a>
+      <h3>2.2&nbsp; Mutability</h3>
+      <indent-blocks>
+        <t-b>
+          Languages differ in their <strong>default mutability</strong>. Rust bindings are
+          immutable by default; C++, C#, and Python bindings are mutable by default.
+        </t-b>
+        <defn-code>// Rust  (immutable by default; opt-in mutation)
+let x = 5;
+// x = 6;       // compile error
+let mut y = 5;
+y = 6;          // ok
+
+// C++  (mutable by default; const opts out)
+int y = 5;
+y = 6;          // ok
+const int x = 5;
+// x = 6;       // compile error
+
+// C#
+int y = 5;
+y = 6;          // ok
+const int x = 5;  // compile-time constant, not a variable
+
+// Python  (no enforced immutability for scalars)
+x = 5
+x = 6           # rebinds the name; previous int object is unchanged</defn-code>
+        <t-b>
+          Immutability by default pushes mutation to be explicit, making data flow easier to
+          reason about. Rust&rsquo;s borrow checker enforces these rules at compile time.
+        </t-b>
+      </indent-blocks>
+
+      <a id="scope"></a>
+      <h3>2.3&nbsp; Scope and Lifetime</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Scope</strong> is the region of source text where a name is visible.
+          <strong>Lifetime</strong> is the duration for which the binding&rsquo;s storage is valid.
+          In languages with automatic storage, scope and lifetime coincide: the binding lives as
+          long as its enclosing block.
+        </t-b>
+        <defn-code>// Rust  (block scope; value dropped at closing brace)
+{
+    let s = String::from("hello");
+    // s is valid here
+}
+// s is dropped here; memory freed
+
+// C++  (same block-scope rule; destructor called at closing brace)
+{
+    std::string s = "hello";
+}  // destructor runs here
+
+// C# / Python: garbage-collected; lifetimes are not block-scoped</defn-code>
+        <t-b>
+          Rust goes further: it tracks lifetimes through references and rejects code that
+          would allow a reference to outlive the value it points to, eliminating use-after-free
+          at compile time.
+        </t-b>
+      </indent-blocks>
+
+      <a id="shadowing"></a>
+      <h3>2.4&nbsp; Shadowing</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Shadowing</strong> occurs when a new binding with the same name is introduced
+          in the same or an inner scope, hiding the previous binding. Unlike mutation, shadowing
+          can change the type of the name.
+        </t-b>
+        <defn-code>// Rust  (shadowing is explicit and intentional)
+let x = 5;
+let x = x + 1;     // shadows previous x; new binding of type i32
+let x = x.to_string();  // shadows again; now x is String
+
+// C++  (inner scope shadows outer)
+int x = 5;
+{
+    double x = 2.5;  // hides outer x within this block
+}
+// outer int x visible again
+
+// C# and Python behave similarly within nested scopes</defn-code>
+        <t-b>
+          Rust&rsquo;s same-scope shadowing is used to transform a value without a separate name,
+          keeping code compact after parsing or converting input.
+        </t-b>
+      </indent-blocks>
+
+      <a id="constants"></a>
+      <h3>2.5&nbsp; Constants and Statics</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Constants</strong> are evaluated at compile time and inlined wherever they appear.
+          <strong>Statics</strong> have a single address that persists for the duration of the
+          program (static storage duration).
+        </t-b>
+        <defn-code>// Rust
+const MAX_SIZE: usize = 1024;           // compile-time constant
+static GREETING: &amp;str = "hello";       // static storage, 'static lifetime
+static mut COUNTER: u32 = 0;           // mutable static (unsafe to access)
+
+// C++
+constexpr int MAX_SIZE = 1024;          // compile-time constant
+static const char* GREETING = "hello"; // static storage
+
+// C#
+const int MaxSize = 1024;              // compile-time constant
+static readonly string Greeting = "hello"; // runtime-initialized static
+
+// Python  (convention only; no enforced constants)
+MAX_SIZE = 1024   # uppercase names signal "don't mutate this"</defn-code>
+        <t-b>
+          Mutable statics in Rust require <code>unsafe</code> because concurrent access without
+          synchronization is undefined behavior. Prefer atomic types or mutexes for shared
+          mutable state.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue2"></a>
+      <h3>2.6&nbsp; Epilogue</h3>
+      <t-b>
+        Binding rules determine which operations are safe before execution begins. Immutability
+        by default and strong scoping eliminate a large class of bugs at zero runtime cost.
+        The next chapter examines the operators that act on bound values.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>2.7&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html">Rust Variables and Mutability &mdash; The Book</a><br />
+        <a target="_blank" href="https://en.cppreference.com/w/cpp/language/storage_duration">C++ Storage Duration &mdash; cppreference</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/const">C# const &mdash; Microsoft</a><br />
+        <a target="_blank" href="https://docs.python.org/3/reference/executionmodel.html">Python Execution Model &mdash; Binding of Names</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#declaration">declaration</a></menu-elem>
+        <menu-elem class="secElem"><a href="#mutability">mutability</a></menu-elem>
+        <menu-elem class="secElem"><a href="#scope">scope</a></menu-elem>
+        <menu-elem class="secElem"><a href="#shadowing">shadowing</a></menu-elem>
+        <menu-elem class="secElem"><a href="#constants">constants</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>

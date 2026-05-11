@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsDecCodeStory_TypeClasses.html
+-->
+<head>
+  <title>Basics Dec Code Story - Type Classes and Interfaces</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsDecCodeStory_TypeClasses.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Dec Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #9 &ndash; Type Classes &amp; Interfaces</h2>
+        <h4 class="indent" id="subtitle">ad-hoc polymorphism, instance derivation, higher-kinded types, Functor/Applicative/Monad</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>9.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>type class</strong> (Haskell) or <strong>trait</strong> (Rust) declares a
+          set of operations that multiple types can implement independently. This enables
+          <strong>ad-hoc polymorphism</strong>: writing generic code that works for any type
+          satisfying the required interface, with the specific implementation chosen
+          automatically by the compiler based on the type at the call site.
+        </t-b>
+      </indent-blocks>
+
+      <a id="adhoc"></a>
+      <h3>9.1&nbsp; Ad-Hoc Polymorphism</h3>
+      <indent-blocks>
+        <t-b>
+          Ad-hoc polymorphism allows the same function name to behave differently for different
+          types, with each type providing its own implementation.
+        </t-b>
+        <defn-code>-- Haskell: type class declaration and instances
+class Describable a where
+  describe :: a -&gt; String
+
+data Color = Red | Green | Blue
+
+instance Describable Color where
+  describe Red   = "red"
+  describe Green = "green"
+  describe Blue  = "blue"
+
+instance Describable Int where
+  describe n = "the number " ++ show n
+
+-- Generic function works for any Describable type
+printDescription :: Describable a =&gt; a -&gt; IO ()
+printDescription x = putStrLn (describe x)
+
+-- Rust: trait (same concept)
+trait Describable {
+    fn describe(&amp;self) -&gt; String;
+}
+fn print_description(x: &amp;impl Describable) {
+    println!("{}", x.describe());
+}</defn-code>
+        <t-b>
+          The key difference from object-oriented interfaces: type class instances are
+          resolved <em>globally</em> by the compiler (coherence), not dispatched through a
+          vtable at runtime, enabling zero-cost static dispatch.
+        </t-b>
+      </indent-blocks>
+
+      <a id="derivation"></a>
+      <h3>9.2&nbsp; Instance Derivation</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Deriving</strong> automatically generates type class instances for common
+          operations. The compiler inspects the structure of the type and produces the
+          implementation mechanically.
+        </t-b>
+        <defn-code>-- Haskell: deriving generates instances automatically
+data Point = Point { x :: Double, y :: Double }
+  deriving (Show, Eq, Ord, Read, Generic)
+-- Show: show (Point 1 2)  =&gt;  "Point {x = 1.0, y = 2.0}"
+-- Eq:   Point 1 2 == Point 1 2  =&gt;  True
+-- Ord:  comparison by field order
+
+-- Rust: derive macro generates trait impls
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+struct Point { x: f64, y: f64 }
+// Debug:    println!("{:?}", point)
+// Clone:    let p2 = point.clone()
+// PartialEq: point == other
+
+-- F#: structural equality and comparison are derived by default for records
+type Point = { X: float; Y: float }
+{ X=1.0; Y=2.0 } = { X=1.0; Y=2.0 }  // true</defn-code>
+      </indent-blocks>
+
+      <a id="hkt"></a>
+      <h3>9.3&nbsp; Higher-Kinded Types</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>higher-kinded type (HKT)</strong> is a type that takes another type as a
+          parameter. <code>Maybe</code> and <code>List</code> are not types &mdash; they are
+          <em>type constructors</em> of kind <code>* -&gt; *</code>. Type classes over HKTs
+          abstract over the container shape, not the contained type.
+        </t-b>
+        <defn-code>-- Haskell: Functor abstracts over any container f that supports fmap
+class Functor f where
+  fmap :: (a -&gt; b) -&gt; f a -&gt; f b
+
+-- The same fmap works for Maybe, [], Either e, IO, ...
+fmap (+1) (Just 5)          -- Just 6
+fmap (*2) [1,2,3]           -- [2,4,6]
+fmap toUpper "hello"        -- "HELLO"
+
+-- Rust: HKT not natively supported; approximated via GATs or associated types
+// The Iterator trait is effectively a HKT abstraction over sequence shape</defn-code>
+        <t-b>
+          HKTs are the reason Haskell can express <code>Functor</code>, <code>Applicative</code>,
+          and <code>Monad</code> as type classes that apply to <em>any</em> container or effect
+          shape. Without HKTs, each container needs its own specialized <code>map</code>.
+        </t-b>
+      </indent-blocks>
+
+      <a id="hierarchy"></a>
+      <h3>9.4&nbsp; Functor / Applicative / Monad Hierarchy</h3>
+      <indent-blocks>
+        <t-b>
+          The three core abstractions for effectful computation form a hierarchy:
+          each extends the previous with additional power.
+        </t-b>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">Class</th>
+              <th class="darkItem">Key operation</th>
+              <th class="darkItem">What it adds</th>
+            </tr>
+            <tr>
+              <td class="defn"><code>Functor</code></td>
+              <td class="defn"><code>fmap :: (a-&gt;b) -&gt; f a -&gt; f b</code></td>
+              <td class="defn">Map a pure function over a context</td>
+            </tr>
+            <tr>
+              <td class="defn"><code>Applicative</code></td>
+              <td class="defn"><code>(&lt;*&gt;) :: f (a-&gt;b) -&gt; f a -&gt; f b</code></td>
+              <td class="defn">Apply a wrapped function to a wrapped value</td>
+            </tr>
+            <tr>
+              <td class="defn"><code>Monad</code></td>
+              <td class="defn"><code>(&gt;&gt;=) :: m a -&gt; (a -&gt; m b) -&gt; m b</code></td>
+              <td class="defn">Sequence: result of first computation affects second</td>
+            </tr>
+          </table>
+        </t-b>
+        <defn-code>-- Functor: transform a value inside a context (no new context creation)
+fmap (*2) (Just 5)            -- Just 10
+fmap (*2) Nothing             -- Nothing
+
+-- Applicative: apply, combine multiple independent contexts
+pure (+) &lt;*&gt; Just 3 &lt;*&gt; Just 4  -- Just 7
+
+-- Monad: sequence where second step depends on result of first
+Just 5 &gt;&gt;= \x -&gt; if x &gt; 0 then Just (x*2) else Nothing  -- Just 10
+Nothing &gt;&gt;= \x -&gt; Just (x*2)                            -- Nothing</defn-code>
+        <t-b>
+          These three classes appear in Rust as the <code>Iterator</code>, <code>Option</code>,
+          and <code>Result</code> combinators (<code>map</code>, <code>zip</code>,
+          <code>and_then</code>). The Haskell type classes make the pattern explicit and
+          uniform across all types that satisfy the laws.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue9"></a>
+      <h3>9.5&nbsp; Epilogue</h3>
+      <t-b>
+        Type classes provide a principled vocabulary for abstraction: <code>Eq</code>,
+        <code>Ord</code>, <code>Show</code>, <code>Functor</code>, <code>Monad</code> are not
+        ad-hoc naming conventions but formal interfaces with mathematical laws that instances
+        must satisfy. Code written against these interfaces is correct for any conforming
+        type, now and in the future. The next chapter examines how immutability shapes the
+        data structures declarative programs rely on.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>9.6&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://www.haskell.org/tutorial/classes.html">Haskell Type Classes &mdash; Tutorial</a><br />
+        <a target="_blank" href="https://wiki.haskell.org/Typeclassopedia">Typeclassopedia &mdash; Haskell Wiki</a><br />
+        <a target="_blank" href="https://doc.rust-lang.org/book/ch10-02-traits.html">Rust Traits &mdash; The Book</a><br />
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Type_class">Type Class &mdash; Wikipedia</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#adhoc">ad-hoc polymorphism</a></menu-elem>
+        <menu-elem class="secElem"><a href="#derivation">derivation</a></menu-elem>
+        <menu-elem class="secElem"><a href="#hkt">higher-kinded types</a></menu-elem>
+        <menu-elem class="secElem"><a href="#hierarchy">Functor/Applicative/Monad</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsDecCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 9, 10);
+  </script>
+</body>
+</html>

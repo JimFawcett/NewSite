@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsDecCodeStory_Lazy.html
+-->
+<head>
+  <title>Basics Dec Code Story - Lazy Evaluation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsDecCodeStory_Lazy.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Dec Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #7 &ndash; Lazy Evaluation</h2>
+        <h4 class="indent" id="subtitle">call-by-need, thunks, infinite streams, lazy vs strict</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>7.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Lazy evaluation</strong> delays computing a value until it is actually needed.
+          This is not merely an optimization: it changes what programs can express. Infinite data
+          structures, short-circuit evaluation as a library function, and demand-driven I/O all
+          become natural when evaluation is driven by demand rather than by program order.
+        </t-b>
+      </indent-blocks>
+
+      <a id="callbyneed"></a>
+      <h3>7.1&nbsp; Call-by-Need Semantics</h3>
+      <indent-blocks>
+        <t-b>
+          Under <strong>call-by-need</strong>, an argument to a function is evaluated at most
+          once: the first time its value is demanded, and then the result is memoized (shared).
+          This contrasts with:
+          <ul class="tight">
+            <li><strong>Call-by-value</strong> (Rust, C, Python): arguments evaluated before the call.</li>
+            <li><strong>Call-by-name</strong>: argument expression re-evaluated each time it is used (no sharing).</li>
+          </ul>
+        </t-b>
+        <defn-code>-- Haskell is call-by-need by default
+-- This is safe: the second argument is never evaluated
+safeDiv :: Int -&gt; Int -&gt; Maybe Int
+safeDiv _ 0 = Nothing
+safeDiv x y = Just (x `div` y)
+
+-- Short-circuit AND as a regular function (call-by-need makes this possible)
+myAnd :: Bool -&gt; Bool -&gt; Bool
+myAnd False _ = False   -- second argument never demanded when first is False
+myAnd _     y = y</defn-code>
+        <t-b>
+          In a strict language, <code>myAnd False (error "boom")</code> would crash.
+          In Haskell it returns <code>False</code> because the second argument is never evaluated.
+        </t-b>
+      </indent-blocks>
+
+      <a id="thunks"></a>
+      <h3>7.2&nbsp; Thunks</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>thunk</strong> is a suspended computation: a closure that captures the
+          expression and evaluates it when forced. Haskell represents every unevaluated
+          expression as a heap-allocated thunk. When a thunk is forced, the result overwrites
+          the thunk (sharing).
+        </t-b>
+        <defn-code>-- Haskell: explicit forcing with seq and $!
+-- Without forcing: thunks accumulate (space leak)
+sumLazy :: [Int] -&gt; Int
+sumLazy = foldl (+) 0    -- builds a chain of thunks for large lists
+
+-- With forcing: strict accumulator via foldl'
+import Data.List (foldl')
+sumStrict :: [Int] -&gt; Int
+sumStrict = foldl' (+) 0  -- evaluates accumulator at each step
+
+-- Rust: explicit laziness via closures (thunk idiom)
+let thunk = || expensive_computation();  // not yet called
+let value = thunk();                     // forced here
+
+-- Python: generator expressions are lazy
+gen = (x * x for x in range(10**9))  -- no computation yet
+next(gen)                              -- forces first element only</defn-code>
+        <t-b>
+          Thunks are the mechanism behind Haskell&rsquo;s laziness. The primary hazard is
+          <strong>space leaks</strong>: a long chain of unevaluated thunks can consume large
+          amounts of heap memory before any value is demanded. <code>foldl'</code>, <code>seq</code>,
+          and <code>BangPatterns</code> are the standard tools for forcing evaluation where needed.
+        </t-b>
+      </indent-blocks>
+
+      <a id="streams"></a>
+      <h3>7.3&nbsp; Infinite Streams and Sequences</h3>
+      <indent-blocks>
+        <t-b>
+          Lazy evaluation makes <strong>infinite data structures</strong> safe. Only the portion
+          that is demanded is ever materialized in memory. This enables elegant expression of
+          sequences defined by recurrence relations, sieves, and other open-ended processes.
+        </t-b>
+        <defn-code>-- Haskell: classic infinite sequences
+ones   = 1 : ones                         -- [1,1,1,...]
+nats   = [0..]                            -- [0,1,2,...]
+fibs   = 0 : 1 : zipWith (+) fibs (tail fibs)
+
+-- Take only what you need
+take 5 fibs     -- [0,1,1,2,3]
+takeWhile (&lt;100) fibs  -- [0,1,1,2,3,5,8,13,21,34,55,89]
+
+-- Rust: lazy iterators (explicit, not transparent)
+use std::iter::successors;
+let fibs = successors(Some((0u64, 1u64)), |&amp;(a, b)| Some((b, a + b)))
+    .map(|(a, _)| a);
+let first_10: Vec&lt;_&gt; = fibs.take(10).collect();
+
+-- Python: generator for Fibonacci
+def fibonacci():
+    a, b = 0, 1
+    while True:
+        yield a
+        a, b = b, a + b
+
+import itertools
+list(itertools.islice(fibonacci(), 10))  # [0,1,1,2,3,5,8,13,21,34]</defn-code>
+      </indent-blocks>
+
+      <a id="lazyvstrict"></a>
+      <h3>7.4&nbsp; Lazy vs Strict Modes</h3>
+      <indent-blocks>
+        <t-b>
+          Laziness and strictness are trade-offs:
+          <table>
+            <tr>
+              <th class="darkItem">Property</th>
+              <th class="darkItem">Lazy (Haskell default)</th>
+              <th class="darkItem">Strict (Rust, Python, F# default)</th>
+            </tr>
+            <tr>
+              <td class="defn">Infinite structures</td>
+              <td class="defn">Natural</td>
+              <td class="defn">Require explicit iterators</td>
+            </tr>
+            <tr>
+              <td class="defn">Space usage</td>
+              <td class="defn">Unpredictable (thunk chains)</td>
+              <td class="defn">Predictable</td>
+            </tr>
+            <tr>
+              <td class="defn">Short-circuit as library</td>
+              <td class="defn">Yes</td>
+              <td class="defn">No (requires language support)</td>
+            </tr>
+            <tr>
+              <td class="defn">Debugging</td>
+              <td class="defn">Harder (evaluation order unclear)</td>
+              <td class="defn">Easier</td>
+            </tr>
+            <tr>
+              <td class="defn">Performance</td>
+              <td class="defn">Can avoid unneeded work</td>
+              <td class="defn">No thunk overhead</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          Most languages choose strict evaluation with opt-in laziness. Haskell chooses lazy
+          evaluation with opt-in strictness (<code>foldl'</code>, <code>seq</code>,
+          <code>!</code> fields, <code>WHNF</code> forcing). F# is strict but provides
+          <code>Seq</code> (lazy sequences) as a library type.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue7"></a>
+      <h3>7.5&nbsp; Epilogue</h3>
+      <t-b>
+        Lazy evaluation is a powerful tool when used with awareness of its costs. Infinite
+        streams, demand-driven I/O, and short-circuit abstraction are its most valuable
+        contributions. The explicit iterator and generator patterns in strict languages
+        provide most of the same expressiveness with more predictable resource consumption.
+        The next chapter covers monads &mdash; the abstraction that structures sequential
+        computation and effectful operations in functional languages.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>7.6&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Lazy_evaluation">Lazy Evaluation &mdash; Wikipedia</a><br />
+        <a target="_blank" href="https://wiki.haskell.org/Lazy_evaluation">Lazy Evaluation &mdash; Haskell Wiki</a><br />
+        <a target="_blank" href="https://wiki.haskell.org/Performance/Laziness">Performance and Laziness &mdash; Haskell Wiki</a><br />
+        <a target="_blank" href="https://docs.python.org/3/howto/functional.html#generators">Python Generators &mdash; Functional HOWTO</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#callbyneed">call-by-need</a></menu-elem>
+        <menu-elem class="secElem"><a href="#thunks">thunks</a></menu-elem>
+        <menu-elem class="secElem"><a href="#streams">streams</a></menu-elem>
+        <menu-elem class="secElem"><a href="#lazyvstrict">lazy vs strict</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsDecCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 7, 10);
+  </script>
+</body>
+</html>

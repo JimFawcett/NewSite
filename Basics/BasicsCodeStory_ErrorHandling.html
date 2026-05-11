@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsCodeStory_ErrorHandling.html
+-->
+<head>
+  <title>Basics Code Story - Error Handling</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsCodeStory_ErrorHandling.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #7 &ndash; Error Handling</h2>
+        <h4 class="indent" id="subtitle">exceptions, Result/Option, panic, error propagation</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>7.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Programs encounter two broad categories of failure: <strong>recoverable errors</strong>
+          (file not found, invalid input, network timeout) that callers should handle, and
+          <strong>unrecoverable errors</strong> (null dereference, assertion violation, stack
+          overflow) that indicate a programming bug. Languages differ substantially in how they
+          represent, propagate, and distinguish these two categories.
+        </t-b>
+      </indent-blocks>
+
+      <a id="exceptions"></a>
+      <h3>7.1&nbsp; Exceptions</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Exceptions</strong> interrupt normal control flow and unwind the call stack
+          until a matching handler is found. They separate error signaling from error handling
+          at the cost of making failure paths invisible in function signatures.
+        </t-b>
+        <defn-code>// C++: throw / try / catch (no checked exceptions)
+void open(const std::string&amp; path) {
+    if (!exists(path)) throw std::runtime_error("not found");
+}
+try { open("data.csv"); }
+catch (const std::exception&amp; e) { std::cerr &lt;&lt; e.what(); }
+
+// C#: similar to C++; finally runs regardless of exception
+try {
+    Open("data.csv");
+} catch (FileNotFoundException e) {
+    Console.WriteLine(e.Message);
+} finally {
+    Cleanup();
+}
+
+// Python: raise / try / except / finally / else
+try:
+    open("data.csv")
+except FileNotFoundError as e:
+    print(e)
+finally:
+    cleanup()</defn-code>
+        <t-b>
+          Java has <strong>checked exceptions</strong>: the compiler requires callers to declare
+          or handle exceptions from the method signature. C++, C#, and Python use unchecked
+          exceptions only. Checked exceptions improve discoverability but are controversial
+          because they add verbosity and are often swallowed.
+        </t-b>
+      </indent-blocks>
+
+      <a id="result"></a>
+      <h3>7.2&nbsp; Result and Option Types</h3>
+      <indent-blocks>
+        <t-b>
+          An alternative to exceptions is encoding failure in the return type. This makes error
+          paths explicit in the type signature and forces callers to acknowledge them.
+        </t-b>
+        <defn-code>// Rust: Result&lt;T, E&gt; for fallible operations
+fn read_file(path: &amp;str) -&gt; Result&lt;String, std::io::Error&gt; {
+    std::fs::read_to_string(path)
+}
+
+// Rust: Option&lt;T&gt; for values that may be absent
+fn first(v: &amp;[i32]) -&gt; Option&lt;i32&gt; {
+    if v.is_empty() { None } else { Some(v[0]) }
+}
+
+// Pattern-matching to handle each case
+match read_file("data.csv") {
+    Ok(contents) =&gt; process(contents),
+    Err(e)       =&gt; eprintln!("error: {e}"),
+}</defn-code>
+        <t-b>
+          C# 8+ introduced nullable reference types (<code>string?</code>) and
+          <code>System.Nullable&lt;T&gt;</code> for value types. F# and Haskell provide
+          <code>Option</code>/<code>Maybe</code>. Python uses <code>None</code> and optional
+          typing annotations but does not enforce them at runtime.
+        </t-b>
+      </indent-blocks>
+
+      <a id="panic"></a>
+      <h3>7.3&nbsp; Panic and Abort</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Panic</strong> (Rust) or assertion failure is appropriate for programming
+          errors &mdash; conditions that should never occur if the code is correct. It terminates
+          the current thread (by default, with stack unwinding) rather than propagating an error
+          value.
+        </t-b>
+        <defn-code>// Rust: panic! terminates the current thread
+panic!("unreachable state");
+
+// Assertion variants (all panic on failure in debug builds)
+assert!(condition);
+assert_eq!(left, right);
+debug_assert!(condition);  // compiled out in release mode
+
+// C++: assert from &lt;cassert&gt; (aborts on failure)
+assert(ptr != nullptr);
+
+// C#: Debug.Assert (active only in Debug builds)
+Debug.Assert(condition, "message");
+
+// Python: assert (can be disabled with -O flag)
+assert condition, "message"</defn-code>
+        <t-b>
+          Panic and abort are not for recoverable conditions. Using <code>unwrap()</code> or
+          <code>expect()</code> on a <code>Result</code> or <code>Option</code> in production
+          code is a deliberate choice to treat a failure as a bug.
+        </t-b>
+      </indent-blocks>
+
+      <a id="propagation"></a>
+      <h3>7.4&nbsp; Error Propagation</h3>
+      <indent-blocks>
+        <t-b>
+          When a function encounters an error it cannot handle, it should propagate it to the
+          caller. In exception-based languages this happens automatically on throw. In
+          value-based error handling, propagation requires explicit code &mdash; or a shorthand.
+        </t-b>
+        <defn-code>// Rust: ? operator propagates Err/None to the caller
+fn read_config(path: &amp;str) -&gt; Result&lt;Config, Box&lt;dyn std::error::Error&gt;&gt; {
+    let text = std::fs::read_to_string(path)?;  // returns Err if fails
+    let cfg  = serde_json::from_str(&amp;text)?;   // returns Err if fails
+    Ok(cfg)
+}
+
+// Without ?: equivalent verbose form
+let text = match std::fs::read_to_string(path) {
+    Ok(t)  =&gt; t,
+    Err(e) =&gt; return Err(e.into()),
+};</defn-code>
+        <t-b>
+          The <code>?</code> operator also applies <code>From::from</code> to convert the error
+          type, allowing functions with a single broad error type to receive errors from multiple
+          sources. The <code>thiserror</code> and <code>anyhow</code> crates simplify defining
+          and wrapping custom error types.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue7"></a>
+      <h3>7.5&nbsp; Epilogue</h3>
+      <t-b>
+        Exceptions make the happy path clean but hide failures; value-based error handling
+        makes failures explicit but requires discipline to propagate. Rust&rsquo;s <code>?</code>
+        operator combines explicitness with low syntactic overhead. The next chapter examines
+        how programs manage the memory that holds all these values.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>7.6&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://doc.rust-lang.org/book/ch09-00-error-handling.html">Rust Error Handling &mdash; The Book</a><br />
+        <a target="_blank" href="https://en.cppreference.com/w/cpp/language/exceptions">C++ Exceptions &mdash; cppreference</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/exceptions/">C# Exceptions &mdash; Microsoft</a><br />
+        <a target="_blank" href="https://docs.python.org/3/tutorial/errors.html">Python Errors and Exceptions</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#exceptions">exceptions</a></menu-elem>
+        <menu-elem class="secElem"><a href="#result">Result/Option</a></menu-elem>
+        <menu-elem class="secElem"><a href="#panic">panic</a></menu-elem>
+        <menu-elem class="secElem"><a href="#propagation">propagation</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 7, 10);
+  </script>
+</body>
+</html>

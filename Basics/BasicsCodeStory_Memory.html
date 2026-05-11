@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsCodeStory_Memory.html
+-->
+<head>
+  <title>Basics Code Story - Memory Management</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsCodeStory_Memory.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #8 &ndash; Memory Management</h2>
+        <h4 class="indent" id="subtitle">stack vs heap, ownership, GC, reference counting, manual</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>8.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Every value a program creates occupies memory. How that memory is allocated, tracked,
+          and freed is one of the most consequential design decisions in a language. The spectrum
+          runs from fully manual control (C) through ownership systems (Rust) and reference
+          counting (Swift, CPython) to tracing garbage collection (Java, C#, Go). Each approach
+          trades off throughput, latency, safety, and programmer effort.
+        </t-b>
+      </indent-blocks>
+
+      <a id="stackheap"></a>
+      <h3>8.1&nbsp; Stack vs Heap</h3>
+      <indent-blocks>
+        <t-b>
+          The <strong>stack</strong> stores local variables and function call frames. Allocation
+          is a single pointer decrement; deallocation happens automatically when the function
+          returns. Stack storage is fast but limited (typically 1&ndash;8 MB per thread) and
+          cannot outlive its frame.
+        </t-b>
+        <t-b>
+          The <strong>heap</strong> provides dynamically allocated memory with programmer- or
+          runtime-controlled lifetime. It is large (limited by virtual address space) but
+          allocation and deallocation are expensive relative to stack operations, and fragmentation
+          accumulates over time.
+        </t-b>
+        <defn-code>// Rust: local variables on stack; Box&lt;T&gt; forces heap allocation
+let x: i32 = 42;                    // stack
+let b: Box&lt;i32&gt; = Box::new(42);    // heap; freed when b is dropped
+
+// C++: new/delete for heap; local variables on stack
+int x = 42;
+int* p = new int(42);  // heap; must call delete p</defn-code>
+        <t-b>
+          Values that must outlive their creating scope, or whose size is unknown at compile
+          time, must live on the heap. Containers (<code>Vec</code>, <code>String</code>,
+          <code>std::vector</code>) allocate their elements on the heap while the container
+          header itself may be on the stack.
+        </t-b>
+      </indent-blocks>
+
+      <a id="ownership"></a>
+      <h3>8.2&nbsp; Ownership and Borrowing</h3>
+      <indent-blocks>
+        <t-b>
+          Rust&rsquo;s ownership system enforces memory safety at compile time with no garbage
+          collector. Three rules govern all values:
+          <ol class="tight">
+            <li>Every value has exactly one owner.</li>
+            <li>When the owner goes out of scope the value is dropped (memory freed).</li>
+            <li>Values may be moved (ownership transfer) or borrowed (temporary reference).</li>
+          </ol>
+        </t-b>
+        <defn-code>let s1 = String::from("hello");
+let s2 = s1;           // s1 is moved; s1 is no longer valid
+
+let s3 = String::from("world");
+let r = &amp;s3;           // shared borrow; s3 still owns the data
+println!("{r}");       // r valid here
+// s3 dropped at end of scope</defn-code>
+        <t-b>
+          <strong>Borrowing rules:</strong> at any point in time, a value may have either
+          any number of shared (immutable) references <em>or</em> exactly one exclusive
+          (mutable) reference, but not both. These rules, checked at compile time, eliminate
+          data races and use-after-free without runtime overhead.
+        </t-b>
+        <t-b>
+          C++ move semantics (C++11) transfer resource ownership between objects but rely on
+          programmer discipline; there is no compiler enforcement equivalent to Rust&rsquo;s
+          borrow checker.
+        </t-b>
+      </indent-blocks>
+
+      <a id="gc"></a>
+      <h3>8.3&nbsp; Garbage Collection</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>garbage collector</strong> automatically reclaims memory that is no longer
+          reachable. Programmers do not call <code>free</code> or <code>delete</code>; the
+          runtime periodically traces live objects and reclaims the rest.
+        </t-b>
+        <t-b>
+          <strong>Tracing GC</strong> (Java, C#, Go) uses a mark-and-sweep or copying algorithm.
+          Modern collectors are mostly concurrent (running alongside application threads) but
+          still impose pause overhead, memory overhead (live set &times; 2&ndash;5&times; for
+          efficient collection), and non-deterministic finalization.
+        </t-b>
+        <t-b>
+          <strong>When GC shines:</strong> large object graphs with complex sharing patterns,
+          rapid prototyping, applications where throughput matters more than latency.
+          <strong>When GC hurts:</strong> real-time systems with hard latency bounds, embedded
+          or resource-constrained devices, performance-sensitive inner loops.
+        </t-b>
+      </indent-blocks>
+
+      <a id="refcounting"></a>
+      <h3>8.4&nbsp; Reference Counting</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Reference counting</strong> tracks how many owners a heap allocation has.
+          When the count reaches zero the memory is freed immediately. This gives deterministic
+          destruction and avoids stop-the-world pauses, but cannot collect cycles.
+        </t-b>
+        <defn-code>// Rust: Rc&lt;T&gt; (single-thread), Arc&lt;T&gt; (thread-safe)
+use std::rc::Rc;
+let a = Rc::new(String::from("shared"));
+let b = Rc::clone(&amp;a);    // reference count becomes 2
+// both a and b freed when the last clone is dropped
+
+// Rust: Weak&lt;T&gt; breaks reference cycles
+use std::rc::Weak;
+let weak: Weak&lt;_&gt; = Rc::downgrade(&amp;a);
+
+// C++: std::shared_ptr / std::weak_ptr
+auto sp = std::make_shared&lt;int&gt;(42);
+auto sp2 = sp;              // ref count = 2
+std::weak_ptr&lt;int&gt; wp = sp; // does not increment count</defn-code>
+        <t-b>
+          CPython uses reference counting as its primary memory management strategy, supplemented
+          by a cycle collector for objects that form cycles. Swift also uses automatic reference
+          counting (ARC) compiled into the binary.
+        </t-b>
+      </indent-blocks>
+
+      <a id="manual"></a>
+      <h3>8.5&nbsp; Manual Memory Management</h3>
+      <indent-blocks>
+        <t-b>
+          C and pre-RAII C++ require explicit <code>malloc</code>/<code>free</code> or
+          <code>new</code>/<code>delete</code> calls. The programmer is responsible for freeing
+          every allocation exactly once. Failure modes are use-after-free, double-free, and
+          memory leaks.
+        </t-b>
+        <t-b>
+          <strong>RAII (Resource Acquisition Is Initialization)</strong> is the C++ idiom that
+          ties resource lifetime to object lifetime. A destructor releases the resource when
+          the object goes out of scope, making manual management manageable. Rust&rsquo;s
+          <code>Drop</code> trait is the direct equivalent; it is invoked automatically by the
+          ownership system.
+        </t-b>
+        <defn-code>// C: manual
+int* p = (int*)malloc(sizeof(int));
+*p = 42;
+free(p);            // must not forget; must not double-free
+
+// C++: RAII via unique_ptr eliminates manual delete
+auto p = std::make_unique&lt;int&gt;(42);
+// p freed automatically when it goes out of scope</defn-code>
+      </indent-blocks>
+
+      <a id="epilogue8"></a>
+      <h3>8.6&nbsp; Epilogue</h3>
+      <t-b>
+        Memory management strategy shapes a language&rsquo;s safety guarantees, performance
+        profile, and ergonomics. Rust&rsquo;s ownership model achieves manual-level performance
+        with GC-level safety. The next chapter covers how code is organized into modules and
+        packages.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>8.7&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html">Rust Ownership &mdash; The Book</a><br />
+        <a target="_blank" href="https://en.cppreference.com/w/cpp/memory">C++ Memory Management &mdash; cppreference</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/standard/garbage-collection/">.NET Garbage Collection &mdash; Microsoft</a><br />
+        <a target="_blank" href="https://devguide.python.org/internals/garbage-collector/">CPython Garbage Collector &mdash; Dev Guide</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#stackheap">stack/heap</a></menu-elem>
+        <menu-elem class="secElem"><a href="#ownership">ownership</a></menu-elem>
+        <menu-elem class="secElem"><a href="#gc">GC</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refcounting">ref counting</a></menu-elem>
+        <menu-elem class="secElem"><a href="#manual">manual</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsCodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 8, 10);
+  </script>
+</body>
+</html>
