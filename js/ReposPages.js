@@ -8,16 +8,16 @@ function buildPages() {
   const pgs = document.getElementById('pages');
   if(isDefined(pgs)) {
     pgs.innerHTML =
-    "<div class='darkItem listheader' style='text-align:center' onclick='togglePages()'>Repos Pages</div>\
+    "<div class='darkItem listheader' style='text-align:center' onclick='togglePages()'>Explore Repos Pages</div>\
     <div class='menuBody'>\
-      <a href='../Site/SiteRepos.html'>Site Repos</a>\
-      <a href='../Rust/RustRepos.html'>Rust Repos</a>\
-      <a href='../Cpp/CppRepos.html'>C++ Repos</a>\
-      <a href='../CSharp/CSharpRepos.html'>C# Repos</a>\
-      <a href='../Python/PythonRepos.html'>Python Repos</a>\
-      <a href='../WebDev/WebDevRepos.html'>WebDev Repos</a>\
-      <a href='../SWDev/SWDevRepos.html'>SWDev Repos</a>\
-      <a href='../Basics/BasicsRepos.html'>Basics Repos</a>\
+      <a target='_parent' href='../Rust/ExploreReposRust.html'>Rust</a>\
+      <a target='_parent' href='../Cpp/ExploreReposCpp.html'>C++</a>\
+      <a target='_parent' href='../CSharp/ExploreReposCSharp.html'>C#</a>\
+      <a target='_parent' href='../Python/ExploreReposPython.html'>Python</a>\
+      <a target='_parent' href='../WebDev/ExploreReposWebDev.html'>WebDev</a>\
+      <a target='_parent' href='../SWDev/ExploreReposSWDev.html'>SWDev</a>\
+      <a target='_parent' href='../Basics/ExploreReposBasics.html'>Basics</a>\
+      <a target='_parent' href='../Code/ExploreReposCode.html'>Code</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }

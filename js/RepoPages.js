@@ -12,10 +12,10 @@ function buildPages() {
       <div class='menuBody'>\
         <a href='../Rust/RustRepos.html'>Rust Repos</a>\
         <a href='../Cpp/CppRepos.html'>C++ Repos</a>\
-        <a class='undef' href='javascript:;'>C# Repos</a>\
-        <a class='undef' href='javascript:;'>Python Repos</a>\
-        <a class='undef' href='javascript:;'>WebDev Repos</a>\
-        <a class='undef' href='javascript:;'>Other Repos</a>\
+        <a href='../CSharp/CSharpRepos.html'>C# Repos</a>\
+        <a href='../Python/PythonRepos.html'>Python Repos</a>\
+        <a href='javascript:;'>WebDev Repos</a>\
+        <a href='javascript:;'>WebDev Repos</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
