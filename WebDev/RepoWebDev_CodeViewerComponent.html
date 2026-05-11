@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  RepoWebDev_Prototype.html
+-->
+<head>
+  <title>WebDev Prototype</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeWebDev.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <link rel="stylesheet" href="css/RepoWebDev_Styles.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreReposWebDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    RepoWebDev_CodeViewerComponent.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/10/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle">
+        <h2 id="title">WebDev Code Viewer Component</h2>
+        <h4 id="subtitle" class="indent">
+          code view with expandable width built as W3C Web Component
+        </h4>
+      </div>
+      <div class="repo-header-links">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett">Repositories</a>
+      </div>
+    </header>
+    <div class="spacer-1rem"></div>
+    <t-b>
+      <h3 id="overview">1.0 Overview</h3>
+      <t-b>
+        CodeViewerComponent is a zero-dependency vanilla JavaScript
+        <a target="_blank" rel="noopener" href="https://www.w3.org/TR/components-intro/">W3C Web Component</a>
+        that displays a titled, framed code block with click-to-resize interaction. It is implemented as a
+        Custom Element with Shadow DOM encapsulation so it works as a native HTML element in any modern
+        browser with no framework required.
+        <div class="spacer-075em"></div>
+        The component has two rendering modes: a <strong>plain mode</strong> that displays literal text
+        (suitable for any language or markup), and a <strong>Prism mode</strong> that delegates to
+        <a target="_blank" rel="noopener" href="https://prismjs.com/">Prism.js</a> for syntax highlighting.
+        Clicking the code block widens it; clicking the title bar narrows it.
+      </t-b>
+      <h3 id="demo">2.0 Demo</h3>
+      <t-b>
+        Open <code>CodeViewerComponent.html</code> in a browser to see the component floating beside
+        body text with interactive width control.
+        <div class="spacer-075em"></div>
+        <img src="pictures/CodeViewerComponent.png" width="400" alt="CodeViewerComponent demo" />
+      </t-b>
+      <h3 id="install">3.0 Installation</h3>
+      <t-b>
+        Copy <code>js/CodeViewer.js</code> into your project and load it with a script tag. Optionally
+        include <code>css/CodeViewer.css</code> for default host-page placement margins.
+        <div class="spacer-075em"></div>
+        <pre class="code-examples"><code>&lt;script src="path/to/CodeViewer.js" defer&gt;&lt;/script&gt;
+&lt;link rel="stylesheet" href="path/to/CodeViewer.css"&gt;  &lt;!-- optional --&gt;</code></pre>
+        <div class="spacer-075em"></div>
+        For Prism syntax highlighting, also load Prism before <code>CodeViewer.js</code>:
+        <div class="spacer-075em"></div>
+        <pre class="code-examples"><code>&lt;link rel="stylesheet" href="path/to/prism.css"&gt;
+&lt;script src="path/to/prism.js"&gt;&lt;/script&gt;
+&lt;script src="path/to/CodeViewer.js" defer&gt;&lt;/script&gt;</code></pre>
+      </t-b>
+      <h3 id="usage">4.0 Usage</h3>
+      <t-b>
+        <strong>Plain mode (default)</strong>
+        <div class="spacer-075em"></div>
+        Supply code as a <code>&lt;template slot="code"&gt;</code>. The template's inner HTML is
+        serialized as literal text - tags and all - so it is safe to embed any language including
+        HTML and CSS without escaping.
+        <div class="spacer-075em"></div>
+        <pre class="code-examples"><code>&lt;code-viewer width="30rem" bg-color="#1e1e1e" color="#d4d4d4" title-bg-color="#333"&gt;
+  Figure 1. Hello World
+  &lt;template slot="code"&gt;
+fn main() {
+    println!("Hello, world!");
+}
+  &lt;/template&gt;
+&lt;/code-viewer&gt;</code></pre>
+        <div class="spacer-075em"></div>
+        <strong>Prism mode</strong>
+        <div class="spacer-075em"></div>
+        Set <code>highlight="prism"</code> and <code>language="&lt;lang&gt;"</code>. Supply the code
+        in a <code>&lt;pre&gt;&lt;code&gt;</code> block inside <code>slot="code"</code>. Prism must be
+        loaded before the component script.
+        <div class="spacer-075em"></div>
+        <pre class="code-examples"><code>&lt;code-viewer highlight="prism" language="rust" width="40rem" title-bg-color="#ccc"&gt;
+  Figure 2. Ownership example
+  &lt;pre slot="code"&gt;&lt;code class="language-rust"&gt;
+fn main() {
+    let s = String::from("hello");
+    let t = s;          // s moves into t
+    println!("{}", t);
+}
+  &lt;/code&gt;&lt;/pre&gt;
+&lt;/code-viewer&gt;</code></pre>
+        <div class="spacer-075em"></div>
+        Both modes support the <code>trim</code> and <code>normalize-indent</code> attributes (see API).
+      </t-b>
+      <h3 id="api">5.0 API</h3>
+      <t-b>
+        All attributes are fully reactive - changing them after the element is in the DOM updates
+        the display immediately.
+        <div class="spacer-075em"></div>
+        <strong>Visuals</strong>
+        <table>
+          <tr><th>Attribute</th><th>Default</th><th>Description</th></tr>
+          <tr><td><code>bg-color</code></td><td><code>white</code></td><td>Background color of the component frame.</td></tr>
+          <tr><td><code>title-bg-color</code></td><td><code>transparent</code></td><td>Background color of the title bar.</td></tr>
+          <tr><td><code>background-color</code></td><td><code>#333</code></td><td>Background color of the code area.</td></tr>
+          <tr><td><code>color</code></td><td><code>#eee</code></td><td>Text color of the code area (plain mode).</td></tr>
+        </table>
+        <strong>Code Area Sizing</strong>
+        <table>
+          <tr><th>Attribute</th><th>Default</th><th>Description</th></tr>
+          <tr><td><code>width</code></td><td>auto</td><td>Initial width of the code area. Accepts any CSS length: <code>px</code>, <code>rem</code>, <code>ch</code>, <code>%</code>.</td></tr>
+          <tr><td><code>height</code></td><td>auto</td><td>Height of the code area. Useful for fixed-height scrollable blocks.</td></tr>
+          <tr><td><code>overflow-x</code></td><td><code>auto</code></td><td>Horizontal overflow of the code area (<code>auto</code>, <code>scroll</code>, <code>hidden</code>).</td></tr>
+          <tr><td><code>code-padding</code></td><td><code>0.75rem 1rem</code></td><td>Padding inside the code area.</td></tr>
+        </table>
+        <strong>Typography</strong>
+        <table>
+          <tr><th>Attribute</th><th>Default</th><th>Description</th></tr>
+          <tr><td><code>font-family</code></td><td>inherited</td><td>Font family applied to the code area.</td></tr>
+          <tr><td><code>font-size</code></td><td>inherited</td><td>Font size applied to the code area.</td></tr>
+        </table>
+        <strong>Prism Highlighting</strong>
+        <table>
+          <tr><th>Attribute</th><th>Default</th><th>Description</th></tr>
+          <tr><td><code>highlight</code></td><td>-</td><td>Set to <code>"prism"</code> to enable Prism syntax highlighting.</td></tr>
+          <tr><td><code>language</code></td><td>-</td><td>Language identifier passed to Prism (e.g. <code>"rust"</code>, <code>"python"</code>, <code>"javascript"</code>).</td></tr>
+        </table>
+        <strong>Content Transforms</strong>
+        <div class="spacer-075em"></div>
+        Boolean attributes (presence enables the transform, absence disables it).
+        <table>
+          <tr><th>Attribute</th><th>Description</th></tr>
+          <tr><td><code>trim</code></td><td>Strips leading and trailing blank lines from the code text.</td></tr>
+          <tr><td><code>normalize-indent</code></td><td>Removes the common leading whitespace from every line, eliminating indentation introduced by embedding code inside deeply nested HTML.</td></tr>
+        </table>
+        <strong>Slots</strong>
+        <table>
+          <tr><th>Slot</th><th>Description</th></tr>
+          <tr><td><em>(default)</em></td><td>Text content placed directly in <code>&lt;code-viewer&gt;</code> becomes the title bar caption.</td></tr>
+          <tr><td><code>code</code></td><td>The code to display. In plain mode, use <code>&lt;template slot="code"&gt;</code>. In Prism mode, use <code>&lt;pre slot="code"&gt;&lt;code&gt;</code>.</td></tr>
+        </table>
+        <strong>CSS Custom Properties</strong>
+        <div class="spacer-075em"></div>
+        The component reads two CSS custom properties from the host page for theme integration:
+        <table>
+          <tr><th>Property</th><th>Used for</th><th>Fallback</th></tr>
+          <tr><td><code>--light</code></td><td>Outer wrapper background</td><td><code>white</code></td></tr>
+          <tr><td><code>--dark</code></td><td>Border color and title text</td><td><code>#333</code></td></tr>
+        </table>
+        <pre class="code-examples"><code>:root {
+  --light: #f5f0e8;
+  --dark:  #2c2c2c;
+}</code></pre>
+        <div class="spacer-075em"></div>
+        <strong>Shadow DOM Parts</strong>
+        <div class="spacer-075em"></div>
+        Two named parts are exposed for external styling:
+        <pre class="code-examples"><code>code-viewer::part(component) {
+  border-radius: 6px;
+}
+
+code-viewer::part(title) {
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+}</code></pre>
+        <div class="spacer-075em"></div>
+        <strong>Interaction</strong>
+        <table>
+          <tr><th>Action</th><th>Effect</th></tr>
+          <tr><td>Click the code block</td><td>Widens the code area by 40 px.</td></tr>
+          <tr><td>Click the title bar</td><td>Narrows the code area by 40 px.</td></tr>
+        </table>
+        Width is stepped relative to the natural rendered width on first click. The minimum enforced
+        width is 240 px. Repeated clicks accumulate, allowing the block to be sized to any width.
+      </t-b>
+      <h3 id="browser-support">6.0 Browser Support</h3>
+      <t-b>
+        <code>CodeViewerComponent</code> uses three W3C Web Component specifications:
+        <table>
+          <tr><th>Specification</th><th>Purpose</th></tr>
+          <tr>
+            <td><a target="_blank" rel="noopener" href="https://www.w3.org/TR/custom-elements/">Custom Elements v1</a></td>
+            <td>Defines <code>&lt;code-viewer&gt;</code> as a native HTML element</td>
+          </tr>
+          <tr>
+            <td><a target="_blank" rel="noopener" href="https://www.w3.org/TR/shadow-dom/">Shadow DOM v1</a></td>
+            <td>Encapsulates internal styles and structure</td>
+          </tr>
+          <tr>
+            <td><a target="_blank" rel="noopener" href="https://html.spec.whatwg.org/multipage/scripting.html#the-slot-element">HTML Slots</a></td>
+            <td>Exposes the title (default) and <code>code</code> insertion points</td>
+          </tr>
+        </table>
+        Supported in all modern browsers (Chrome, Edge, Firefox, Safari).
+      </t-b>
+      <h3 id="file-structure">7.0 File Structure</h3>
+      <t-b>
+        <pre class="code-examples"><code>CodeViewerComponent/
+├── CodeViewerComponent.html   demo page
+├── js/
+│   └── CodeViewer.js          component source (~455 lines)
+└── css/
+    └── CodeViewer.css         optional host-page placement styles</code></pre>
+      </t-b>
+    </t-b>
+    <div class="spacer-15rem"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#overview">overview</a>
+        <a href="#demo">demo</a>
+        <a href="#install">install</a>
+        <a href="#usage">usage</a>
+        <a href="#api">api</a>
+        <a href="#browser-support">browser support</a>
+        <a href="#file-structure">file structure</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/WebDevRepoPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+</body>
+</html>
