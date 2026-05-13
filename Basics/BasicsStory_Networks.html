@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsStory_Networks.html
+-->
+<head>
+  <title>Basics Story Networks</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsStory_Networks.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Basics Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #3 &ndash; Networks</h2>
+        <h4 class="indent" id="subtitle">network structure, protocols, routing, DNS</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>3.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          Every program that communicates beyond its own process relies on a network. A network
+          is a set of nodes interconnected by links that carry data as discrete packets.
+          Understanding how packets are structured, addressed, routed, and named is prerequisite
+          knowledge for writing networked software correctly - whether the task is opening a TCP
+          connection, diagnosing a timeout, or configuring a cloud deployment.
+        </t-b>
+      </indent-blocks>
+
+      <a id="structure"></a>
+      <h3>3.1&nbsp; Network Structure</h3>
+      <indent-blocks>
+        <t-b>
+          Networks are classified by scale. A <strong>LAN (Local Area Network)</strong> spans a
+          single building or campus; devices share one broadcast domain and communicate at
+          Ethernet speeds. A <strong>WAN (Wide Area Network)</strong> spans cities or continents
+          and connects multiple LANs through routers. The internet is a WAN of WANs.
+        </t-b>
+        <t-b>
+          The <strong>OSI model</strong> divides networking into seven layers. In practice, the
+          TCP/IP model collapses these into four:
+          <table>
+            <tr>
+              <th class="darkItem">TCP/IP Layer</th>
+              <th class="darkItem">OSI Equivalent</th>
+              <th class="darkItem">Responsibilities</th>
+              <th class="darkItem">Example Protocols</th>
+            </tr>
+            <tr>
+              <td class="lightItem">Application</td>
+              <td class="lightItem">5&ndash;7 (Session, Presentation, Application)</td>
+              <td class="lightItem">User-facing data formats and semantics</td>
+              <td class="lightItem">HTTP, DNS, TLS, SMTP, SSH</td>
+            </tr>
+            <tr>
+              <td class="lightItem">Transport</td>
+              <td class="lightItem">4 (Transport)</td>
+              <td class="lightItem">End-to-end delivery, ports, flow control</td>
+              <td class="lightItem">TCP, UDP</td>
+            </tr>
+            <tr>
+              <td class="lightItem">Internet</td>
+              <td class="lightItem">3 (Network)</td>
+              <td class="lightItem">Logical addressing and routing across networks</td>
+              <td class="lightItem">IP (IPv4, IPv6), ICMP</td>
+            </tr>
+            <tr>
+              <td class="lightItem">Link</td>
+              <td class="lightItem">1&ndash;2 (Physical, Data Link)</td>
+              <td class="lightItem">Physical transmission and local delivery</td>
+              <td class="lightItem">Ethernet, Wi-Fi, ARP</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          Each layer adds a <strong>header</strong> (and sometimes a trailer) carrying metadata
+          for that layer. Encapsulation stacks headers as data moves down the sending stack;
+          de-encapsulation strips them as data moves up the receiving stack. An HTTP request
+          is wrapped in a TLS record, inside a TCP segment, inside an IP datagram, inside an
+          Ethernet frame.
+        </t-b>
+      </indent-blocks>
+
+      <a id="protocols"></a>
+      <h3>3.2&nbsp; Protocols</h3>
+      <indent-blocks>
+        <t-b>
+          A <strong>protocol</strong> is a formal agreement on message formats and exchange
+          sequences. The foundational protocols are:
+        </t-b>
+        <t-b>
+          <strong>IP (Internet Protocol)</strong> provides best-effort, connectionless delivery
+          of packets called <em>datagrams</em>. Each datagram carries a source address, a
+          destination address, a TTL (time-to-live counter that prevents infinite forwarding
+          loops), and a payload. IPv4 addresses are 32-bit (written as four decimal octets,
+          e.g., 192.168.1.1); IPv6 addresses are 128-bit (written as eight hexadecimal groups,
+          e.g., 2001:db8::1).
+        </t-b>
+        <t-b>
+          <strong>TCP (Transmission Control Protocol)</strong> adds reliability on top of IP:
+          ordered delivery, retransmission of lost segments, flow control (receiver advertised
+          window), and congestion control. It is connection-oriented; a three-way handshake
+          establishes state before data flows:
+        </t-b>
+        <defn-code>Client                   Server
+  -- SYN ---------------&gt;
+  &lt;----------- SYN-ACK --
+  -- ACK ---------------&gt;
+  [connection established; data flows in both directions]
+  -- FIN ---------------&gt;   [client initiates close]
+  &lt;----------- FIN-ACK --
+  [connection closed]</defn-code>
+        <t-b>
+          <strong>UDP (User Datagram Protocol)</strong> sends datagrams without handshaking,
+          ordering guarantees, or retransmission. Lower overhead makes it appropriate for
+          latency-sensitive applications (real-time games, video streaming, DNS queries) where
+          occasional loss is acceptable or handled at the application layer.
+        </t-b>
+        <t-b>
+          <strong>HTTP/HTTPS</strong> is the application-layer protocol of the web. HTTP/1.1
+          uses persistent TCP connections with pipelined requests. HTTP/2 multiplexes multiple
+          streams over one TCP connection to eliminate head-of-line blocking. HTTP/3 runs over
+          QUIC (a reliable, multiplexed protocol built on UDP), removing TCP&rsquo;s per-stream
+          blocking entirely. HTTPS wraps HTTP in TLS to provide confidentiality, integrity, and
+          server authentication.
+        </t-b>
+        <t-b>
+          <strong>TLS (Transport Layer Security)</strong> negotiates a cipher suite and session
+          keys through a handshake, then protects all subsequent data with a symmetric cipher
+          (typically AES-GCM). The server&rsquo;s X.509 certificate binds its public key to
+          a domain name; a chain of trust from a certificate authority validates it.
+        </t-b>
+      </indent-blocks>
+
+      <a id="routing"></a>
+      <h3>3.3&nbsp; Routing</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Routing</strong> is the process of forwarding packets from source to destination
+          across multiple networks. Each router maintains a <strong>routing table</strong> - a
+          list of destination prefixes mapped to next-hop addresses and outgoing interfaces.
+          When a packet arrives, the router performs a <em>longest-prefix match</em> on the
+          destination IP address and forwards the packet to the winning next hop.
+        </t-b>
+        <t-b>
+          A <strong>default gateway</strong> is the route of last resort: any packet whose
+          destination does not match a more specific prefix is sent to the default gateway.
+          On a LAN, the default gateway is the local router&rsquo;s interface address; that
+          router holds routes to the rest of the internet.
+        </t-b>
+        <t-b>
+          Routing protocols fall into two families:
+          <ul class="tight">
+            <li>
+              <strong>Interior Gateway Protocols (IGPs)</strong> operate within a single
+              organization&rsquo;s network (<em>autonomous system</em>). OSPF (link-state)
+              floods link-state advertisements to all routers; each builds a complete topology
+              map and computes shortest paths with Dijkstra&rsquo;s algorithm. EIGRP is a
+              Cisco-proprietary distance-vector protocol used in enterprise networks.
+            </li>
+            <li>
+              <strong>BGP (Border Gateway Protocol)</strong> is the routing protocol of the
+              internet. It exchanges reachability information between autonomous systems.
+              BGP selects paths based on policy attributes (AS path length, local preference,
+              MED) rather than pure link cost, making it policy-driven rather than metric-driven.
+              Misconfigured BGP route advertisements cause most major internet outages.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>NAT (Network Address Translation)</strong> allows many devices on a private
+          address space (RFC 1918: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) to share one
+          public IP address. The NAT device rewrites source addresses on outbound packets and
+          maintains a port-mapping table to reverse the translation on inbound replies.
+        </t-b>
+      </indent-blocks>
+
+      <a id="dns"></a>
+      <h3>3.4&nbsp; DNS</h3>
+      <indent-blocks>
+        <t-b>
+          The <strong>Domain Name System</strong> translates human-readable names
+          (<code>example.com</code>) to IP addresses. It is a distributed, hierarchical
+          database organized as a tree of <em>zones</em>, each delegated to an
+          <strong>authoritative name server</strong>.
+        </t-b>
+        <t-b>
+          The resolution sequence for a name not yet in cache:
+          <ol class="tight">
+            <li>
+              The client sends a query to a <strong>recursive resolver</strong> (typically
+              provided by the ISP or a public service such as 8.8.8.8 or 1.1.1.1).
+            </li>
+            <li>
+              The resolver queries a <strong>root name server</strong> for the Top-Level Domain
+              server responsible for <code>.com</code>.
+            </li>
+            <li>
+              The TLD server delegates to the <strong>authoritative name server</strong> for
+              <code>example.com</code>.
+            </li>
+            <li>
+              The authoritative server returns the A record (IPv4) or AAAA record (IPv6).
+            </li>
+            <li>
+              The resolver caches the result for the record&rsquo;s TTL and returns the address
+              to the client.
+            </li>
+          </ol>
+        </t-b>
+        <t-b>
+          Common DNS record types:
+          <table>
+            <tr>
+              <th class="darkItem">Record</th>
+              <th class="darkItem">Purpose</th>
+            </tr>
+            <tr>
+              <td class="lightItem">A</td>
+              <td class="lightItem">Maps a hostname to an IPv4 address.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">AAAA</td>
+              <td class="lightItem">Maps a hostname to an IPv6 address.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">CNAME</td>
+              <td class="lightItem">Alias: maps one name to another canonical name; the resolver follows the chain.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">MX</td>
+              <td class="lightItem">Identifies mail exchange servers for a domain, with priority values.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">TXT</td>
+              <td class="lightItem">Arbitrary text; used for domain ownership verification, SPF, DKIM, DMARC.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">NS</td>
+              <td class="lightItem">Identifies the authoritative name servers for a zone.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">SOA</td>
+              <td class="lightItem">Start of Authority: zone metadata including primary NS, serial number, and refresh intervals.</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          <strong>DNSSEC</strong> adds digital signatures to DNS responses, allowing resolvers
+          to verify that records are authentic and unmodified. The root zone and most TLDs are
+          signed; DNSSEC adoption at the registrant level is growing but not yet universal.
+        </t-b>
+      </indent-blocks>
+
+      <a id="tools"></a>
+      <h3>3.5&nbsp; Network Tools</h3>
+      <indent-blocks>
+        <t-b>
+          The following command-line tools observe and interact with the network stack. Each
+          maps to one or more layers of the TCP/IP model and is available on Linux, macOS,
+          and Windows (some names differ on Windows).
+        </t-b>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">Tool</th>
+              <th class="darkItem">Layer</th>
+              <th class="darkItem">Purpose</th>
+            </tr>
+            <tr>
+              <td class="lightItem"><c-s>ping</c-s></td>
+              <td class="lightItem">Internet</td>
+              <td class="lightItem">Sends ICMP echo requests to test reachability and measure round-trip time.
+                <c-s>ping -c 4 example.com</c-s> sends four probes and reports min/avg/max RTT.</td>
+            </tr>
+            <tr>
+              <td class="lightItem"><c-s>traceroute</c-s> / <c-s>tracert</c-s></td>
+              <td class="lightItem">Internet</td>
+              <td class="lightItem">Maps the path a packet takes by sending probes with incrementing TTL values.
+                Each router that drops TTL to zero returns an ICMP Time Exceeded message, revealing its address and latency.</td>
+            </tr>
+            <tr>
+              <td class="lightItem"><c-s>dig</c-s> / <c-s>nslookup</c-s></td>
+              <td class="lightItem">Application</td>
+              <td class="lightItem">Queries DNS resolvers directly.
+                <c-s>dig example.com A</c-s> returns the A-record chain;
+                <c-s>dig +trace example.com</c-s> walks the full resolution path from root to authoritative server.</td>
+            </tr>
+            <tr>
+              <td class="lightItem"><c-s>curl</c-s></td>
+              <td class="lightItem">Application</td>
+              <td class="lightItem">Transfers data over URLs from the command line. Tests REST APIs, downloads files,
+                and inspects HTTP headers. <c-s>curl -I https://example.com</c-s> shows the response headers only.</td>
+            </tr>
+            <tr>
+              <td class="lightItem"><c-s>ssh</c-s></td>
+              <td class="lightItem">Application</td>
+              <td class="lightItem">Opens an encrypted remote shell over TCP port 22. Authenticates with password or
+                public key; all traffic is protected by TLS-grade encryption. Also tunnels arbitrary TCP ports.</td>
+            </tr>
+            <tr>
+              <td class="lightItem"><c-s>ss</c-s> / <c-s>netstat</c-s></td>
+              <td class="lightItem">Transport</td>
+              <td class="lightItem">Lists open TCP and UDP sockets and listening ports.
+                <c-s>ss -tlnp</c-s> shows all listening TCP sockets with the owning process. Useful for
+                confirming a service is bound to the expected port.</td>
+            </tr>
+            <tr>
+              <td class="lightItem"><c-s>nmap</c-s></td>
+              <td class="lightItem">Transport</td>
+              <td class="lightItem">Scans a host or subnet to discover open ports and running services.
+                <c-s>nmap -sV &lt;host&gt;</c-s> attempts service version detection. Also used for security
+                auditing to identify unintended exposed services.</td>
+            </tr>
+            <tr>
+              <td class="lightItem"><c-s>iperf3</c-s></td>
+              <td class="lightItem">Transport</td>
+              <td class="lightItem">Measures TCP or UDP throughput between two hosts. Start a server
+                (<c-s>iperf3 -s</c-s>) and run the client (<c-s>iperf3 -c &lt;host&gt;</c-s>) to benchmark
+                available bandwidth. Essential for validating Wi-Fi link quality.</td>
+            </tr>
+            <tr>
+              <td class="lightItem"><c-s>ip</c-s> / <c-s>ifconfig</c-s></td>
+              <td class="lightItem">Internet / Link</td>
+              <td class="lightItem">Displays and configures network interfaces, IP addresses, and routing tables.
+                <c-s>ip addr show</c-s> lists all interfaces; <c-s>ip route show</c-s> prints the kernel
+                routing table.</td>
+            </tr>
+            <tr>
+              <td class="lightItem"><c-s>tcpdump</c-s> / Wireshark</td>
+              <td class="lightItem">All layers</td>
+              <td class="lightItem">Captures live packets and decodes protocols at every layer.
+                <c-s>tcpdump -i eth0 port 443</c-s> captures TLS traffic; Wireshark provides a GUI
+                with full protocol dissectors. Indispensable for diagnosing unexpected behavior.</td>
+            </tr>
+          </table>
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue3"></a>
+      <h3>3.6&nbsp; Epilogue</h3>
+      <t-b>
+        The layered model separates concerns cleanly: an application using TCP need not know
+        how routing tables are built, and a router need not understand HTTP. Each layer exposes
+        a stable interface and relies only on the layer below it. The next chapter examines how
+        these protocols scale to the global internet and how Wi-Fi connects devices to it wirelessly.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>3.7&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://www.ietf.org/rfc/rfc793.txt">RFC 793 &ndash; TCP</a><br />
+        <a target="_blank" href="https://www.ietf.org/rfc/rfc791.txt">RFC 791 &ndash; IP</a><br />
+        <a target="_blank" href="https://www.ietf.org/rfc/rfc1034.txt">RFC 1034 &ndash; DNS Concepts</a><br />
+        <a target="_blank" href="https://www.cloudflare.com/learning/network-layer/what-is-bgp/">What is BGP? &ndash; Cloudflare Learning</a><br />
+        <a target="_blank" href="https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml">DNS Parameters &ndash; IANA</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#structure">structure</a></menu-elem>
+        <menu-elem class="secElem"><a href="#protocols">protocols</a></menu-elem>
+        <menu-elem class="secElem"><a href="#routing">routing</a></menu-elem>
+        <menu-elem class="secElem"><a href="#dns">DNS</a></menu-elem>
+        <menu-elem class="secElem"><a href="#tools">tools</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 11);
+  </script>
+</body>
+</html>

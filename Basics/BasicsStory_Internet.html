@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsStory_Internet.html
+-->
+<head>
+  <title>Basics Story Internet and Wi-Fi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsStory_Internet.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/11/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Basics Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #4 &ndash; Internet and Wi-Fi</h2>
+        <h4 class="indent" id="subtitle">internet architecture, world wide web, Wi-Fi standards, physical layer, security</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>4.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          The internet is not a single network but a federation of thousands of independently
+          operated networks exchanging reachability information through BGP and routing packets
+          on a best-effort basis. Wi-Fi is the dominant last-hop medium connecting end devices
+          to that infrastructure. Understanding both &mdash; how traffic crosses a global backbone
+          and how it crosses the final ten meters wirelessly &mdash; is prerequisite knowledge for
+          writing software that behaves correctly under real network conditions.
+        </t-b>
+      </indent-blocks>
+
+      <a id="architecture"></a>
+      <h3>4.1&nbsp; Internet Architecture</h3>
+      <indent-blocks>
+        <t-b>
+          The internet is a mesh of <strong>autonomous systems (ASes)</strong> &mdash; independently
+          managed address blocks operated by ISPs, cloud providers, universities, and enterprises.
+          Each AS holds a globally unique <strong>ASN (autonomous system number)</strong> and
+          exchanges routing information with its neighbors via BGP (covered in Chapter&nbsp;3).
+        </t-b>
+        <t-b>
+          ISPs are stratified by connectivity:
+          <ul class="tight">
+            <li>
+              <strong>Tier 1:</strong> A small number of carriers (AT&amp;T, Lumen, Telia, NTT)
+              that peer globally with each other at no cost. They own submarine cables and land-based
+              fiber backbones spanning continents and connect to every destination on the internet
+              without paying transit fees.
+            </li>
+            <li>
+              <strong>Tier 2:</strong> Regional ISPs that peer freely with some networks but purchase
+              transit from Tier 1 carriers to reach the rest of the internet.
+            </li>
+            <li>
+              <strong>Tier 3:</strong> Local access ISPs that buy all their transit from Tier 1 or
+              Tier 2 providers and deliver last-mile connectivity to homes and businesses.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>Peering vs. transit:</strong>
+          <ul class="tight">
+            <li>
+              <em>Peering</em> &mdash; two networks exchange traffic between their respective customers
+              at no cost. Both benefit from the direct path; neither pays the other.
+            </li>
+            <li>
+              <em>Transit</em> &mdash; one network pays another to carry its traffic to any destination
+              on the internet. The paying network reaches the world; the transit provider earns revenue.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>IXPs (Internet Exchange Points)</strong> are physical switching facilities where
+          hundreds of networks connect to peer directly over a shared fabric. Major IXPs
+          (DE-CIX Frankfurt, AMS-IX Amsterdam, Equinix IX) exchange several terabits per second,
+          dramatically reducing the latency and cost of inter-network traffic compared to routing
+          through transit providers.
+        </t-b>
+        <t-b>
+          <strong>CDNs (Content Delivery Networks)</strong> cache content at hundreds of edge
+          locations (Points of Presence, PoPs) distributed worldwide. When a client requests a
+          resource, the CDN intercepts the DNS query and returns the IP address of the nearest PoP
+          rather than the origin server. Cloudflare, Akamai, and AWS CloudFront collectively serve
+          a large fraction of global web traffic. CDNs reduce round-trip latency, absorb traffic
+          spikes, and mitigate DDoS attacks by distributing load across many edge nodes.
+        </t-b>
+      </indent-blocks>
+
+      <a id="packets"></a>
+      <h3>4.2&nbsp; Packets and Flow Control</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>Packet types:</strong> internet traffic is carried in discrete packets; the
+          type depends on which protocol layer produced it.
+          <table>
+            <tr>
+              <th class="darkItem">Name</th>
+              <th class="darkItem">Protocol</th>
+              <th class="darkItem">Purpose</th>
+              <th class="darkItem">Header overhead</th>
+            </tr>
+            <tr>
+              <td class="defn">IP datagram</td>
+              <td class="defn">IPv4 / IPv6</td>
+              <td class="defn">Carries all higher-layer data across routers; each router
+                  reads the destination address and forwards independently.</td>
+              <td class="defn">20 B (IPv4 min) / 40 B (IPv6)</td>
+            </tr>
+            <tr>
+              <td class="defn">TCP segment</td>
+              <td class="defn">TCP (inside IP)</td>
+              <td class="defn">Reliable, ordered byte stream; carries sequence/ack numbers,
+                  flags, and a window field for flow control.</td>
+              <td class="defn">20 B min (+ IP header)</td>
+            </tr>
+            <tr>
+              <td class="defn">UDP datagram</td>
+              <td class="defn">UDP (inside IP)</td>
+              <td class="defn">Unreliable, unordered delivery; no retransmission. Used for
+                  DNS, QUIC, video streaming, and real-time games.</td>
+              <td class="defn">8 B (+ IP header)</td>
+            </tr>
+            <tr>
+              <td class="defn">ICMP message</td>
+              <td class="defn">ICMP (inside IP)</td>
+              <td class="defn">Control and error reporting: Echo Request/Reply (ping),
+                  Destination Unreachable, Time Exceeded (traceroute).</td>
+              <td class="defn">8 B (+ IP header)</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          <strong>Flow control</strong> prevents a fast sender from overwhelming a slow
+          receiver. TCP implements it through the <em>receive window</em>: the receiver
+          advertises in every ACK how many bytes of free buffer space it has.
+          The sender must not have more unacknowledged bytes in flight than the
+          advertised window. As the receiver drains its buffer and sends ACKs, the window
+          grows; if the application stops reading, the window shrinks to zero and the sender
+          pauses. This is a receiver-driven mechanism &mdash; it protects a single endpoint.
+        </t-b>
+        <t-b>
+          <strong>Congestion control</strong> protects the network itself. TCP infers
+          congestion from packet loss or, with ECN (Explicit Congestion Notification),
+          from router-marked packets, and reduces its sending rate accordingly:
+          <ul class="tight">
+            <li>
+              <strong>Slow start:</strong> the sender begins with a congestion window
+              (<c-s>cwnd</c-s>) of 1&ndash;10 segments and doubles it each round-trip until
+              reaching the slow-start threshold or detecting loss. Despite the name, growth
+              is exponential.
+            </li>
+            <li>
+              <strong>Congestion avoidance:</strong> above the threshold, <c-s>cwnd</c-s>
+              grows by one segment per RTT (additive increase). On loss, it is halved
+              (multiplicative decrease) &mdash; the AIMD (Additive Increase Multiplicative
+              Decrease) algorithm that keeps TCP flows stable and fair when sharing a link.
+            </li>
+            <li>
+              <strong>Fast retransmit / fast recovery:</strong> three duplicate ACKs signal
+              a dropped segment without waiting for a timeout. The sender retransmits
+              immediately and enters fast recovery, halving <c-s>cwnd</c-s> rather than
+              resetting to 1, so throughput recovers quickly.
+            </li>
+            <li>
+              <strong>ECN (Explicit Congestion Notification):</strong> a router near
+              capacity marks IP packets instead of dropping them; the receiver reflects
+              the mark back to the sender, which reduces rate before a drop occurs.
+              Requires support in the router, sender OS, and receiver OS.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          The effective throughput of a TCP connection is bounded by
+          <c-s>min(rwnd, cwnd)</c-s> bytes per RTT, where <c-s>rwnd</c-s> is the
+          receive window and <c-s>cwnd</c-s> is the congestion window. A high-latency
+          link (large RTT) suppresses throughput even when both endpoints have spare capacity,
+          which is why protocols such as QUIC and BBR were developed to make better use of
+          high-bandwidth, high-latency paths.
+        </t-b>
+      </indent-blocks>
+
+      <a id="web"></a>
+      <h3>4.3&nbsp; The World Wide Web</h3>
+      <indent-blocks>
+        <t-b>
+          The web is an application layer built on the internet, defined by three technologies:
+          <ul class="tight">
+            <li><strong>URL (Uniform Resource Locator):</strong> identifies a resource by scheme
+                (<c-s>https</c-s>), host (<c-s>example.com</c-s>), path (<c-s>/articles/42</c-s>),
+                and optional query string or fragment.</li>
+            <li><strong>HTTP (HyperText Transfer Protocol):</strong> request/response protocol for
+                fetching and submitting resources (covered in Chapter&nbsp;3).</li>
+            <li><strong>HTML:</strong> markup language that describes document structure; the browser
+                parses it into a DOM (Document Object Model) for rendering and scripting.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Sequence of events for a browser loading <c-s>https://example.com/page</c-s>:
+          <ol class="tight">
+            <li>Browser resolves <c-s>example.com</c-s> via DNS to an IP address.</li>
+            <li>Browser opens a TCP connection; TLS handshake establishes session keys.</li>
+            <li>Browser sends <c-s>GET /page HTTP/2</c-s> with headers (Host, Accept, cookies).</li>
+            <li>Server returns a response: status line, headers, and an HTML body.</li>
+            <li>Browser parses the HTML, discovers sub-resources (CSS, JS, images), and fetches
+                them in parallel over the existing HTTP/2 connection.</li>
+            <li>Browser constructs the render tree, lays out and paints the page, then runs
+                JavaScript event loops.</li>
+          </ol>
+        </t-b>
+        <t-b>
+          <strong>REST APIs</strong> expose server-side resources over HTTP using standard methods:
+          <table>
+            <tr>
+              <th class="darkItem">Method</th>
+              <th class="darkItem">Semantics</th>
+              <th class="darkItem">Idempotent?</th>
+            </tr>
+            <tr>
+              <td class="lightItem">GET</td>
+              <td class="lightItem">Retrieve a resource; must not modify state.</td>
+              <td class="lightItem">Yes</td>
+            </tr>
+            <tr>
+              <td class="lightItem">POST</td>
+              <td class="lightItem">Create a new resource or trigger an action.</td>
+              <td class="lightItem">No</td>
+            </tr>
+            <tr>
+              <td class="lightItem">PUT</td>
+              <td class="lightItem">Replace a resource entirely.</td>
+              <td class="lightItem">Yes</td>
+            </tr>
+            <tr>
+              <td class="lightItem">PATCH</td>
+              <td class="lightItem">Apply a partial update to a resource.</td>
+              <td class="lightItem">No (by default)</td>
+            </tr>
+            <tr>
+              <td class="lightItem">DELETE</td>
+              <td class="lightItem">Remove a resource.</td>
+              <td class="lightItem">Yes</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          HTTP status codes communicate outcome. Key families:
+          <c-s>2xx</c-s> success (200 OK, 201 Created, 204 No Content),
+          <c-s>3xx</c-s> redirect (301 Moved Permanently, 302 Found, 304 Not Modified),
+          <c-s>4xx</c-s> client error (400 Bad Request, 401 Unauthorized, 403 Forbidden,
+          404 Not Found, 429 Too Many Requests),
+          <c-s>5xx</c-s> server error (500 Internal Server Error, 502 Bad Gateway,
+          503 Service Unavailable).
+        </t-b>
+      </indent-blocks>
+
+      <a id="inet-security"></a>
+      <h3>4.4&nbsp; Internet Security</h3>
+      <indent-blocks>
+        <t-b>
+          The internet was designed for openness and interoperability, not security. Every layer
+          &mdash; from the physical to the application &mdash; is a potential attack surface.
+          Security is achieved by layering defenses at each level, because no single mechanism
+          protects against every threat class.
+        </t-b>
+        <t-b>
+          <strong>Common attack categories:</strong>
+          <ul class="tight">
+            <li>
+              <strong>Eavesdropping / packet sniffing:</strong> an attacker with access to a
+              network path captures unencrypted traffic.
+              Defense: TLS everywhere; never transmit credentials or sensitive data over plain HTTP.
+            </li>
+            <li>
+              <strong>Man-in-the-middle (MITM):</strong> the attacker sits between client and
+              server, relaying and optionally modifying traffic. Enabled by ARP spoofing on a
+              LAN, a rogue access point, or BGP hijacking at internet scale.
+              Defense: TLS with certificate validation; HSTS (HTTP Strict Transport Security)
+              prevents downgrade to plain HTTP.
+            </li>
+            <li>
+              <strong>Denial-of-Service (DoS) / Distributed DoS (DDoS):</strong> floods a
+              target with traffic to exhaust its bandwidth, CPU, or connection-table capacity.
+              Amplification attacks use protocols with asymmetric request/response size
+              (DNS, NTP, SSDP) to multiply small attacker bandwidth into massive volume.
+              Defense: rate limiting, traffic scrubbing services (Cloudflare, AWS Shield),
+              anycast routing to distribute load across many ingress points.
+            </li>
+            <li>
+              <strong>DNS poisoning / spoofing:</strong> fraudulent DNS responses redirect users
+              to malicious servers while the address bar shows the legitimate hostname.
+              Defense: DNSSEC (cryptographically signed DNS records); DNS-over-HTTPS (DoH)
+              and DNS-over-TLS (DoT) encrypt the query so it cannot be tampered in transit.
+            </li>
+            <li>
+              <strong>BGP hijacking:</strong> a malicious or misconfigured AS announces
+              more-specific prefixes for IP space it does not own, attracting traffic intended
+              for the legitimate owner.
+              Defense: RPKI (Resource Public Key Infrastructure) lets prefix owners publish
+              cryptographically signed route origin authorizations that routers can validate.
+            </li>
+            <li>
+              <strong>Injection attacks (SQL, command, LDAP):</strong> user-supplied input is
+              interpreted as code rather than data. An unsanitized SQL query can expose or
+              destroy a database; a command injection can execute arbitrary shell commands.
+              Defense: parameterized queries / prepared statements; never build queries by
+              string-concatenating user input.
+            </li>
+            <li>
+              <strong>Cross-Site Scripting (XSS):</strong> malicious script is injected into
+              pages served by a trusted site and executes in victims&rsquo; browsers, stealing
+              session cookies or credentials.
+              Defense: output encoding at render time; Content Security Policy (CSP) header
+              restricts which script sources the browser will execute.
+            </li>
+            <li>
+              <strong>Cross-Site Request Forgery (CSRF):</strong> a victim&rsquo;s authenticated
+              session is exploited by a third-party page that silently issues state-changing
+              requests to a trusted site on the victim&rsquo;s behalf.
+              Defense: CSRF tokens (server-issued random values validated on every mutating
+              request); <c-s>SameSite=Strict</c-s> or <c-s>Lax</c-s> cookie attribute.
+            </li>
+            <li>
+              <strong>Phishing / social engineering:</strong> attackers impersonate trusted
+              entities to trick users into revealing credentials or installing malware.
+              Defense: multi-factor authentication (MFA); FIDO2/WebAuthn hardware security
+              keys are phishing-resistant because they bind the credential to the origin URL.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>Defense-in-depth layers:</strong>
+          <ul class="tight">
+            <li>
+              <strong>Transport security (TLS 1.3):</strong> authenticates the server via
+              certificate, negotiates ephemeral keys for forward secrecy, and encrypts all
+              application data. HSTS preload lists enforce TLS even on first contact.
+            </li>
+            <li>
+              <strong>Firewalls:</strong> stateful packet inspection filters by source/destination
+              IP, port, and connection state. Next-generation firewalls add deep packet inspection
+              and application-layer awareness.
+            </li>
+            <li>
+              <strong>Intrusion Detection / Prevention (IDS/IPS):</strong> monitor traffic for
+              known attack signatures or anomalous behavior and alert (IDS) or block (IPS).
+            </li>
+            <li>
+              <strong>Web Application Firewalls (WAF):</strong> filter HTTP requests for common
+              attack patterns (SQL injection, XSS, path traversal) before they reach application
+              code.
+            </li>
+            <li>
+              <strong>Least privilege and network segmentation:</strong> services expose only
+              the ports they require; database and admin tiers are isolated from public-facing
+              segments so a breach in one zone does not propagate freely.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>CWE Top 25 Most Dangerous Software Weaknesses:</strong> MITRE publishes a
+          ranked list of software weaknesses most frequently exploited in real-world attacks.
+          The 2025 list is led by out-of-bounds writes, cross-site scripting, SQL injection,
+          use-after-free, and missing authorization &mdash; weaknesses at the application layer
+          that are routinely exploited over the network. Directing defensive effort toward these
+          weaknesses yields the highest reduction in exploitable attack surface.
+          See: <a target="_blank" rel="noopener" href="https://cwe.mitre.org/top25/archive/2025/2025_cwe_top25.html">MITRE CWE Top 25 (2025)</a>.
+        </t-b>
+      </indent-blocks>
+
+      <a id="standards"></a>
+      <h3>4.5&nbsp; Wi-Fi Standards</h3>
+      <indent-blocks>
+        <t-b>
+          IEEE 802.11 is the standard family governing wireless LAN. Each generation extended
+          throughput, range, or spectrum efficiency:
+          <table>
+            <tr>
+              <th class="darkItem">Brand</th>
+              <th class="darkItem">Standard</th>
+              <th class="darkItem">Max Throughput</th>
+              <th class="darkItem">Bands</th>
+              <th class="darkItem">Key Additions</th>
+            </tr>
+            <tr>
+              <td class="lightItem">Wi-Fi 4</td>
+              <td class="lightItem">802.11n</td>
+              <td class="lightItem">600 Mbps</td>
+              <td class="lightItem">2.4 / 5 GHz</td>
+              <td class="lightItem">MIMO, 40 MHz channel bonding</td>
+            </tr>
+            <tr>
+              <td class="lightItem">Wi-Fi 5</td>
+              <td class="lightItem">802.11ac</td>
+              <td class="lightItem">3.5 Gbps</td>
+              <td class="lightItem">5 GHz only</td>
+              <td class="lightItem">MU-MIMO (downlink), 80/160 MHz channels, 256-QAM</td>
+            </tr>
+            <tr>
+              <td class="lightItem">Wi-Fi 6</td>
+              <td class="lightItem">802.11ax</td>
+              <td class="lightItem">9.6 Gbps</td>
+              <td class="lightItem">2.4 / 5 GHz</td>
+              <td class="lightItem">OFDMA, BSS Coloring, Target Wake Time, 1024-QAM</td>
+            </tr>
+            <tr>
+              <td class="lightItem">Wi-Fi 6E</td>
+              <td class="lightItem">802.11ax</td>
+              <td class="lightItem">9.6 Gbps</td>
+              <td class="lightItem">2.4 / 5 / 6 GHz</td>
+              <td class="lightItem">1.2 GHz of new unlicensed 6 GHz spectrum</td>
+            </tr>
+            <tr>
+              <td class="lightItem">Wi-Fi 7</td>
+              <td class="lightItem">802.11be</td>
+              <td class="lightItem">46 Gbps</td>
+              <td class="lightItem">2.4 / 5 / 6 GHz</td>
+              <td class="lightItem">Multi-link operation, 320 MHz channels, 4096-QAM</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          <strong>Frequency bands:</strong>
+          <ul class="tight">
+            <li>
+              <strong>2.4 GHz:</strong> only 3 non-overlapping 20 MHz channels (1, 6, 11) within
+              the 83.5 MHz allocation. Provides longer range and better wall penetration than 5 GHz
+              but is congested in dense environments; Bluetooth and microwave ovens share the band.
+            </li>
+            <li>
+              <strong>5 GHz:</strong> 25 non-overlapping 20 MHz channels available in the US.
+              Shorter range than 2.4 GHz but far less congested and supports wider channel bonding
+              (40/80/160 MHz).
+            </li>
+            <li>
+              <strong>6 GHz (Wi-Fi 6E and 7):</strong> 59 non-overlapping 20 MHz channels; no
+              legacy 802.11a/b/g/n/ac devices permitted. The cleanest available Wi-Fi spectrum.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>CSMA/CA</strong> (Carrier Sense Multiple Access with Collision Avoidance) is
+          the medium-access protocol used by all 802.11 variants. Before transmitting, a station
+          listens to determine whether the channel is idle. If busy, it backs off for a random
+          interval drawn from a contention window, then retries. Unlike Ethernet&rsquo;s
+          CSMA/CD, collisions cannot be detected over radio, so avoidance is essential.
+          The <em>hidden node problem</em> &mdash; where two stations cannot hear each other but
+          both reach the access point &mdash; is addressed by optional RTS/CTS handshaking.
+        </t-b>
+      </indent-blocks>
+
+      <a id="physical"></a>
+      <h3>4.6&nbsp; Wi-Fi Physical Layer</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>OFDM (Orthogonal Frequency-Division Multiplexing)</strong> divides a channel
+          into many narrow parallel subcarriers, each modulated at a low symbol rate. A 20 MHz
+          802.11g channel uses 52 data subcarriers. Parallel transmission makes OFDM highly
+          resistant to <em>multipath interference</em> &mdash; where signals reflected off walls
+          arrive at the receiver slightly delayed &mdash; because the symbol duration is long
+          relative to the delay spread.
+        </t-b>
+        <t-b>
+          <strong>OFDMA (Wi-Fi 6+)</strong> extends OFDM by subdividing subcarriers into
+          <em>resource units</em> (RUs) and assigning different RUs to different clients
+          simultaneously. Where OFDM serves one client per transmission, OFDMA serves many,
+          reducing latency in high-density environments such as stadiums, offices, and
+          apartment buildings.
+        </t-b>
+        <t-b>
+          <strong>MIMO (Multiple Input Multiple Output)</strong> places multiple antennas at
+          both transmitter and receiver to send independent <em>spatial streams</em> over the
+          same channel, multiplying throughput. An access point described as 4&times;4:4 has
+          4 transmit antennas, 4 receive antennas, and supports 4 spatial streams; the throughput
+          is up to four times that of a 1&times;1 link under the same conditions.
+        </t-b>
+        <t-b>
+          <strong>MU-MIMO (Multi-User MIMO)</strong> extends MIMO to serve several clients
+          simultaneously. The access point uses <em>beamforming</em> to direct each spatial
+          stream toward its target client by adjusting the phase relationship of signals across
+          its antenna array. A sounding exchange between AP and client measures the channel
+          matrix needed to compute the beamforming weights.
+        </t-b>
+        <t-b>
+          <strong>Channel bonding</strong> combines adjacent 20 MHz channels into 40, 80, or
+          160 MHz channels, doubling or quadrupling the raw data rate at the cost of reducing
+          the number of usable non-overlapping channels. In the congested 2.4 GHz band, bonding
+          beyond 20 MHz is impractical; in the 6 GHz band it is the primary throughput strategy.
+        </t-b>
+      </indent-blocks>
+
+      <a id="security"></a>
+      <h3>4.7&nbsp; Wi-Fi Security</h3>
+      <indent-blocks>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">Protocol</th>
+              <th class="darkItem">Year</th>
+              <th class="darkItem">Cipher</th>
+              <th class="darkItem">Status</th>
+            </tr>
+            <tr>
+              <td class="lightItem">WEP</td>
+              <td class="lightItem">1999</td>
+              <td class="lightItem">RC4, 40-bit key, 24-bit IV</td>
+              <td class="lightItem">Broken; key recoverable from ~50,000 packets. Do not use.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">WPA (TKIP)</td>
+              <td class="lightItem">2003</td>
+              <td class="lightItem">RC4 + per-packet keys</td>
+              <td class="lightItem">Deprecated; emergency fix while 802.11i was finalized.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">WPA2 (802.11i)</td>
+              <td class="lightItem">2004</td>
+              <td class="lightItem">AES-CCMP, 128-bit</td>
+              <td class="lightItem">Widely deployed; vulnerable to KRACK (2017) on unpatched clients.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">WPA3</td>
+              <td class="lightItem">2018</td>
+              <td class="lightItem">AES-GCMP, SAE key exchange</td>
+              <td class="lightItem">Current standard; forward secrecy, PMF mandatory.</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          <strong>KRACK (Key Reinstallation Attack, 2017):</strong> a man-in-the-middle attacker
+          can replay and retransmit WPA2 handshake messages to force nonce reuse in the
+          session key, allowing decryption or forgery of traffic on unpatched clients. Patched
+          in OS updates; WPA3&rsquo;s SAE handshake is not vulnerable to this class of attack.
+        </t-b>
+        <t-b>
+          <strong>WPA3 Personal &mdash; SAE (Simultaneous Authentication of Equals):</strong>
+          replaces the WPA2 PSK four-way handshake with a Dragonfly-based zero-knowledge proof.
+          Each session negotiates a unique key even when the same passphrase is used, providing
+          <em>forward secrecy</em>: capturing past encrypted traffic gives no advantage after
+          the passphrase is compromised.
+        </t-b>
+        <t-b>
+          <strong>WPA3 Enterprise:</strong> mandates a 192-bit security suite (GCMP-256,
+          HMAC-SHA-384) for networks requiring higher assurance. Organizations also deploy
+          <strong>802.1X/EAP</strong>: each client authenticates to a RADIUS server with
+          individual credentials (certificate or username/password via EAP-TLS or PEAP).
+          The RADIUS server issues per-user, per-session encryption keys, so compromising one
+          device does not expose traffic of other users.
+        </t-b>
+        <t-b>
+          <strong>Protected Management Frames (PMF / 802.11w)</strong> are mandatory in WPA3.
+          They authenticate deauthentication and disassociation frames, preventing attackers from
+          forcing clients off a network with forged management packets (deauth flood attacks).
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue4"></a>
+      <h3>4.8&nbsp; Epilogue</h3>
+      <t-b>
+        Wi-Fi and the internet together close the gap between running software and delivering
+        it to users: packets travel across a federated backbone of autonomous systems and
+        descend through ISP tiers, and the final hop is wireless. The next chapter examines
+        the programming languages used to write software that runs across this infrastructure.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>4.9&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://www.ietf.org/rfc/rfc9110.txt">RFC 9110 &ndash; HTTP Semantics</a><br />
+        <a target="_blank" href="https://www.cloudflare.com/learning/network-layer/how-does-the-internet-work/">How the Internet Works &ndash; Cloudflare Learning</a><br />
+        <a target="_blank" href="https://www.wi-fi.org/discover-wi-fi/wi-fi-certified-6">Wi-Fi 6 Certification &ndash; Wi-Fi Alliance</a><br />
+        <a target="_blank" href="https://www.wi-fi.org/discover-wi-fi/security">Wi-Fi Security &ndash; Wi-Fi Alliance</a><br />
+        <a target="_blank" href="https://www.krackattacks.com/">KRACK Attacks &ndash; Vanhoef &amp; Piessens</a><br />
+        <a target="_blank" rel="noopener" href="https://cwe.mitre.org/top25/archive/2025/2025_cwe_top25.html">MITRE CWE Top 25 Most Dangerous Software Weaknesses (2025)</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#architecture">architecture</a></menu-elem>
+        <menu-elem class="secElem"><a href="#packets">packets</a></menu-elem>
+        <menu-elem class="secElem"><a href="#web">web</a></menu-elem>
+        <menu-elem class="secElem"><a href="#inet-security">net security</a></menu-elem>
+        <menu-elem class="secElem"><a href="#standards">standards</a></menu-elem>
+        <menu-elem class="secElem"><a href="#physical">physical</a></menu-elem>
+        <menu-elem class="secElem"><a href="#security">security</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 11);
+  </script>
+</body>
+</html>

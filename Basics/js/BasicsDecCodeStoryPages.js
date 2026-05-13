@@ -8,7 +8,7 @@ function buildPages() {
   const pgs = document.getElementById('pages');
   if(isDefined(pgs)) {
     pgs.innerHTML =
-    "<div class='darkItem listheader' onclick='togglePages()'>Dec Code Story Pages</div>\
+    "<div class='darkItem listheader' onclick='togglePages()'>Declarative Code Story Pages</div>\
     <div class='menuBody'>\
       <a href='BasicsDecCodeStory_Prologue.html'>Prologue</a>\
       <a href='BasicsDecCodeStory_Expressions.html'>Chap 1 - Expressions &amp; Values</a>\
@@ -23,6 +23,7 @@ function buildPages() {
       <a href='BasicsDecCodeStory_Persistence.html'>Chap 10 - Persistent Data</a>\
       <a href='BasicsDecCodeStory_Concurrency.html'>Chap 11 - Dec Concurrency</a>\
       <a href='BasicsDecCodeStory_Queries.html'>Chap 12 - Queries &amp; Rules</a>\
+      <a href='BasicsDecCodeStory_Projects.html'>Chap 13 - Projects</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
