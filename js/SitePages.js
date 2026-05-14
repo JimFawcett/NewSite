@@ -13,7 +13,7 @@ function buildPages() {
       <a href='SiteMap.html'>Site Map</a>\
       <a href='SiteDemo.html'>Site Demo</a>\
       <a href='SiteDesign.html'>Site Design</a>\
-      <a href='SiteRepos.html'>Site Repos</a>\
+      <a target='_parent' href='../Rust/ExploreReposRust.html'>Site Repos</a>\
       <a href='SiteChanges.html'>Changes</a>\
       </div>\
     <div style='height:0.5em;'></div>";
