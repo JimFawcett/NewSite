@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  WebDevStory_JavaScript_Async.html
+-->
+<head>
+  <title>WebDev Story JavaScript Async</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeWebDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github table.reftable {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #github table.reftable th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+      padding: 0.25rem 0.5rem;
+    }
+    #github table.reftable td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+    #github table.reftable code {
+      font-family: monospace;
+      background: #eef;
+      border-radius: 3px;
+      padding: 0 2px;
+    }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreWebDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    WebDevStory_JavaScript_Async.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">WebDev Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">WebDev Story: JavaScript Async</h2>
+        <h4 class="indent" id="subtitle">callbacks, promises, async/await, fetch</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="problem"></a>
+      <h3>8.0  The Problem: Blocking Code</h3>
+      <t-b>
+        JavaScript runs on a single thread. A long synchronous operation &mdash; reading a
+        file, querying a database, waiting for a network response &mdash; blocks every other
+        operation until it finishes. The page freezes; the user sees no response to clicks or
+        key presses.
+      </t-b>
+      <pre><code class="language-javascript">// bad: synchronous network (hypothetical — blocks the thread)
+const data = fetchSync('/api/items');    // nothing else can run here
+render(data);</code></pre>
+      <t-b>
+        JavaScript solves this with <strong>asynchronous patterns</strong> that let the engine
+        continue processing other events while waiting for a slow operation to complete.
+        Three patterns exist, in historical order: callbacks, Promises, and
+        <c-s>async</c-s>/<c-s>await</c-s>.
+      </t-b>
+
+      <a id="callbacks"></a>
+      <h3>8.1  Callbacks</h3>
+      <t-b>
+        The original async pattern: pass a function to be called when the operation completes.
+      </t-b>
+      <pre><code class="language-javascript">setTimeout(() => {
+  console.log('ran after 1 second');
+}, 1000);
+
+// Node-style: error-first callback
+fs.readFile('data.txt', 'utf8', (err, text) => {
+  if (err) { console.error(err); return; }
+  console.log(text);
+});</code></pre>
+      <t-b>
+        Callbacks work, but nesting them for sequential async steps produces deeply indented,
+        hard-to-follow code known as <strong>callback hell</strong>:
+      </t-b>
+      <pre><code class="language-javascript">getUser(id, (err, user) => {
+  if (err) return handleErr(err);
+  getOrders(user.id, (err, orders) => {
+    if (err) return handleErr(err);
+    getItems(orders[0].id, (err, items) => {
+      if (err) return handleErr(err);
+      render(items);   // three levels deep, and errors repeat
+    });
+  });
+});</code></pre>
+
+      <a id="promises"></a>
+      <h3>8.2  Promises</h3>
+      <t-b>
+        A <strong>Promise</strong> is an object representing the eventual result of an async
+        operation. It is always in one of three states:
+      </t-b>
+      <t-b class="indent">
+        <ul class="tight">
+          <li><strong>pending</strong> &mdash; the operation has not completed yet.</li>
+          <li><strong>fulfilled</strong> &mdash; the operation succeeded; the Promise holds its result value.</li>
+          <li><strong>rejected</strong> &mdash; the operation failed; the Promise holds a reason (usually an <c-s>Error</c-s>).</li>
+        </ul>
+      </t-b>
+
+      <a id="creating"></a>
+      <h4>8.2.1  Creating a Promise</h4>
+      <pre><code class="language-javascript">function delay(ms) {
+  return new Promise((resolve, reject) => {
+    if (ms &lt; 0) { reject(new Error('negative delay')); return; }
+    setTimeout(() => resolve(ms), ms);
+  });
+}
+
+delay(500).then(ms => console.log(`done after ${ms}ms`));</code></pre>
+      <t-b>
+        The constructor receives an <strong>executor</strong> function with two callbacks:
+        call <c-s>resolve(value)</c-s> on success, <c-s>reject(reason)</c-s> on failure.
+      </t-b>
+
+      <a id="chaining"></a>
+      <h4>8.2.2  Chaining</h4>
+      <t-b>
+        <c-s>.then(onFulfilled)</c-s> returns a new Promise, enabling flat sequential chains
+        that replace nested callbacks:
+      </t-b>
+      <pre><code class="language-javascript">getUser(id)
+  .then(user   => getOrders(user.id))
+  .then(orders => getItems(orders[0].id))
+  .then(items  => render(items))
+  .catch(err   => handleErr(err));    // one error handler for the whole chain</code></pre>
+      <t-b>
+        <c-s>.catch(fn)</c-s> is shorthand for <c-s>.then(undefined, fn)</c-s>. A
+        <c-s>.finally(fn)</c-s> block runs regardless of outcome and is useful for cleanup.
+      </t-b>
+
+      <a id="combinators"></a>
+      <h4>8.2.3  Promise Combinators</h4>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Promise.all, race, allSettled, any</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup>
+              <col style="width:11rem;">
+              <col style="width:auto;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Combinator</th>
+                <th>Behavior</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>Promise.all(iterable)</code></td>
+                <td>Fulfills when <em>all</em> fulfill; rejects as soon as any one rejects. Result is an array of values in input order.</td>
+              </tr>
+              <tr>
+                <td><code>Promise.allSettled(iterable)</code></td>
+                <td>Always fulfills when every Promise settles. Result is an array of <code>{status, value|reason}</code> objects &mdash; no early rejection.</td>
+              </tr>
+              <tr>
+                <td><code>Promise.race(iterable)</code></td>
+                <td>Settles with the first Promise to settle, fulfilled or rejected.</td>
+              </tr>
+              <tr>
+                <td><code>Promise.any(iterable)</code></td>
+                <td>Fulfills with the first fulfilled value. Rejects with <code>AggregateError</code> only if <em>all</em> reject.</td>
+              </tr>
+              <tr>
+                <td><code>Promise.resolve(value)</code></td>
+                <td>Returns a Promise already fulfilled with <code>value</code>.</td>
+              </tr>
+              <tr>
+                <td><code>Promise.reject(reason)</code></td>
+                <td>Returns a Promise already rejected with <code>reason</code>.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+      <pre><code class="language-javascript">// fetch three resources in parallel, wait for all
+const [users, posts, tags] = await Promise.all([
+  fetch('/api/users').then(r => r.json()),
+  fetch('/api/posts').then(r => r.json()),
+  fetch('/api/tags').then(r => r.json()),
+]);</code></pre>
+
+      <a id="asyncawait"></a>
+      <h3>8.3  async / await</h3>
+      <t-b>
+        <c-s>async</c-s>/<c-s>await</c-s> is syntactic sugar over Promises that lets you
+        write async code with the same linear structure as synchronous code.
+      </t-b>
+      <t-b class="indent">
+        <ul class="tight">
+          <li>
+            Marking a function <c-s>async</c-s> makes it always return a Promise.
+          </li>
+          <li>
+            <c-s>await expr</c-s> pauses the <em>function</em> (not the thread) until the
+            Promise resolves, then evaluates to the fulfilled value.
+          </li>
+          <li>
+            <c-s>await</c-s> may only appear inside an <c-s>async</c-s> function or at the
+            top level of a module.
+          </li>
+        </ul>
+      </t-b>
+      <pre><code class="language-javascript">async function loadDashboard(userId) {
+  const user   = await getUser(userId);
+  const orders = await getOrders(user.id);
+  const items  = await getItems(orders[0].id);
+  render(items);
+}</code></pre>
+      <t-b>
+        This is exactly equivalent to the <c-s>.then</c-s> chain above, but reads top-to-bottom
+        like synchronous code.
+      </t-b>
+
+      <a id="errors"></a>
+      <h3>8.4  Error Handling</h3>
+      <t-b>
+        Use <c-s>try</c-s>/<c-s>catch</c-s> inside <c-s>async</c-s> functions instead of
+        <c-s>.catch()</c-s> on a chain:
+      </t-b>
+      <pre><code class="language-javascript">async function loadDashboard(userId) {
+  try {
+    const user   = await getUser(userId);
+    const orders = await getOrders(user.id);
+    render(orders);
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    hideSpinner();
+  }
+}</code></pre>
+      <t-b>
+        Always handle rejections. An unhandled Promise rejection triggers the browser's
+        <c-s>unhandledrejection</c-s> event and in Node logs a warning or crashes the process:
+      </t-b>
+      <pre><code class="language-javascript">window.addEventListener('unhandledrejection', e => {
+  console.error('Unhandled rejection:', e.reason);
+});</code></pre>
+
+      <a id="fetch"></a>
+      <h3>8.5  The Fetch API</h3>
+      <t-b>
+        <c-s>fetch(url, options)</c-s> is the modern way to make HTTP requests from the browser.
+        It returns a Promise for a <c-s>Response</c-s> object.
+      </t-b>
+      <pre><code class="language-javascript">async function getItems() {
+  const resp = await fetch('/api/items');
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();          // .json() also returns a Promise
+}</code></pre>
+      <t-b>
+        Key detail: <c-s>fetch</c-s> only rejects on network failure, not on HTTP error
+        status codes like 404 or 500. Always check <c-s>resp.ok</c-s> (or
+        <c-s>resp.status</c-s>) explicitly.
+      </t-b>
+
+      <a id="fetch-options"></a>
+      <h4>8.5.1  Fetch Options</h4>
+      <pre><code class="language-javascript">const resp = await fetch('/api/items', {
+  method:  'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body:    JSON.stringify({ name: 'widget' }),
+  signal:  controller.signal,    // AbortController for cancellation
+});</code></pre>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Common fetch options</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup>
+              <col style="width:10rem;">
+              <col style="width:auto;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Option</th>
+                <th>Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>method</code></td><td>HTTP verb: <code>GET</code> (default), <code>POST</code>, <code>PUT</code>, <code>PATCH</code>, <code>DELETE</code>.</td></tr>
+              <tr><td><code>headers</code></td><td>Object or <code>Headers</code> instance of request headers.</td></tr>
+              <tr><td><code>body</code></td><td>Request body: string, <code>FormData</code>, <code>Blob</code>, <code>ReadableStream</code>, etc. Not allowed on <code>GET</code>/<code>HEAD</code>.</td></tr>
+              <tr><td><code>credentials</code></td><td><code>omit</code> | <code>same-origin</code> (default) | <code>include</code> — whether to send cookies cross-origin.</td></tr>
+              <tr><td><code>mode</code></td><td><code>cors</code> (default) | <code>no-cors</code> | <code>same-origin</code> — CORS policy for the request.</td></tr>
+              <tr><td><code>cache</code></td><td><code>default</code> | <code>no-store</code> | <code>reload</code> | <code>force-cache</code> | <code>only-if-cached</code>.</td></tr>
+              <tr><td><code>signal</code></td><td><code>AbortSignal</code> from an <code>AbortController</code> to cancel the request.</td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="fetch-response"></a>
+      <h4>8.5.2  Reading the Response</h4>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Response methods and properties</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup>
+              <col style="width:12rem;">
+              <col style="width:auto;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>resp.ok</code></td><td><code>true</code> when status is 200&ndash;299.</td></tr>
+              <tr><td><code>resp.status</code></td><td>HTTP status code (200, 404, 500, …).</td></tr>
+              <tr><td><code>resp.headers</code></td><td><code>Headers</code> object; use <code>.get('content-type')</code> to read.</td></tr>
+              <tr><td><code>resp.json()</code></td><td>Parse body as JSON; returns a Promise.</td></tr>
+              <tr><td><code>resp.text()</code></td><td>Read body as a UTF-8 string; returns a Promise.</td></tr>
+              <tr><td><code>resp.formData()</code></td><td>Parse body as <code>FormData</code>; returns a Promise.</td></tr>
+              <tr><td><code>resp.blob()</code></td><td>Read body as a <code>Blob</code>; returns a Promise.</td></tr>
+              <tr><td><code>resp.arrayBuffer()</code></td><td>Read body as an <code>ArrayBuffer</code>; returns a Promise.</td></tr>
+              <tr><td><code>resp.body</code></td><td><code>ReadableStream</code> for streaming large responses.</td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="abort"></a>
+      <h4>8.5.3  Cancelling a Request</h4>
+      <pre><code class="language-javascript">const controller = new AbortController();
+
+// cancel after 5 seconds
+const timeout = setTimeout(() => controller.abort(), 5000);
+
+try {
+  const resp = await fetch('/api/slow', { signal: controller.signal });
+  const data = await resp.json();
+  render(data);
+} catch (err) {
+  if (err.name === 'AbortError') {
+    console.log('request was cancelled');
+  } else {
+    throw err;
+  }
+} finally {
+  clearTimeout(timeout);
+}</code></pre>
+
+      <a id="patterns"></a>
+      <h3>8.6  Common Async Patterns</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Async pattern recipes</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup>
+              <col style="width:14rem;">
+              <col style="width:auto;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Pattern</th>
+                <th>Code</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Sequential steps</td>
+                <td><pre style="margin:0; padding:0.25rem; width:auto;"><code class="language-javascript">const a = await step1();
+const b = await step2(a);
+const c = await step3(b);</code></pre></td>
+              </tr>
+              <tr>
+                <td>Parallel requests</td>
+                <td><pre style="margin:0; padding:0.25rem; width:auto;"><code class="language-javascript">const [a, b] = await Promise.all([
+  fetchA(), fetchB()
+]);</code></pre></td>
+              </tr>
+              <tr>
+                <td>Retry on failure</td>
+                <td><pre style="margin:0; padding:0.25rem; width:auto;"><code class="language-javascript">async function withRetry(fn, n = 3) {
+  for (let i = 0; i &lt; n; i++) {
+    try { return await fn(); }
+    catch (e) { if (i === n-1) throw e; }
+  }
+}</code></pre></td>
+              </tr>
+              <tr>
+                <td>Debounce async</td>
+                <td><pre style="margin:0; padding:0.25rem; width:auto;"><code class="language-javascript">let timer;
+input.addEventListener('input', () => {
+  clearTimeout(timer);
+  timer = setTimeout(() => search(input.value), 300);
+});</code></pre></td>
+              </tr>
+              <tr>
+                <td>Sequential array</td>
+                <td><pre style="margin:0; padding:0.25rem; width:auto;"><code class="language-javascript">for (const id of ids) {
+  await processOne(id);   // one at a time
+}</code></pre></td>
+              </tr>
+              <tr>
+                <td>Parallel array</td>
+                <td><pre style="margin:0; padding:0.25rem; width:auto;"><code class="language-javascript">await Promise.all(
+  ids.map(id => processOne(id))  // all at once
+);</code></pre></td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="tutorials"></a>
+      <h3>8.7  Tutorials</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Async JavaScript Tutorials</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup>
+              <col style="width:14rem;">
+              <col style="width:11rem;">
+              <col style="width:auto;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Tutorial</th>
+                <th>Type</th>
+                <th>Why Use It</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><a target="_blank" href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS">MDN: Asynchronous JavaScript</a></td>
+                <td>Beginner&rarr;Intermediate</td>
+                <td>Complete series from callbacks through async/await with examples.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="https://javascript.info/async">javascript.info: Async/await</a></td>
+                <td>Intermediate</td>
+                <td>Clear, concise explanations with runnable examples for each concept.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch">MDN: Using the Fetch API</a></td>
+                <td>Intermediate</td>
+                <td>Comprehensive guide to fetch options, response handling, and error patterns.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="https://javascript.info/promise-basics">javascript.info: Promises</a></td>
+                <td>Beginner&rarr;Intermediate</td>
+                <td>Four-part series covering creation, chaining, error handling, and combinators.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="https://web.dev/articles/promises">web.dev: JavaScript Promises</a></td>
+                <td>Intermediate</td>
+                <td>Thorough treatment of promise states, chaining, and parallelism.</td>
+              </tr>
+              <tr>
+                <td><a target="_blank" href="https://youtu.be/DHvZLI7Db8E">Jake Archibald: Event Loop (talk)</a></td>
+                <td>Deep dive</td>
+                <td>Visual explanation of how the event loop, tasks, and microtasks interact.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="refs"></a>
+      <h3>8.8  References</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Async JavaScript References</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup>
+              <col style="width:14rem;">
+              <col style="width:auto;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Resource</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise" target="_blank">MDN: Promise</a></td>
+                <td>Full API reference for Promise, including all static methods and instance methods.</td>
+              </tr>
+              <tr>
+                <td><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function" target="_blank">MDN: async function</a></td>
+                <td>Reference for async function syntax, return values, and interaction with await.</td>
+              </tr>
+              <tr>
+                <td><a href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API" target="_blank">MDN: Fetch API</a></td>
+                <td>Complete reference for fetch(), Request, Response, and Headers.</td>
+              </tr>
+              <tr>
+                <td><a href="https://developer.mozilla.org/en-US/docs/Web/API/AbortController" target="_blank">MDN: AbortController</a></td>
+                <td>API for cancelling fetch requests and other async operations.</td>
+              </tr>
+              <tr>
+                <td><a href="https://tc39.es/ecma262/#sec-promise-objects" target="_blank">ECMAScript spec: Promises</a></td>
+                <td>Formal specification of the Promise abstract operations and state machine.</td>
+              </tr>
+              <tr>
+                <td><a href="https://html.spec.whatwg.org/multipage/webappapis.html#event-loops" target="_blank">WHATWG: Event Loops</a></td>
+                <td>Authoritative specification of the event loop, task queues, and microtask checkpoint.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#problem">blocking</a></menu-elem>
+        <menu-elem class="secElem"><a href="#callbacks">callbacks</a></menu-elem>
+        <menu-elem class="secElem"><a href="#promises">promises</a></menu-elem>
+        <menu-elem class="secElem"><a href="#asyncawait">async/await</a></menu-elem>
+        <menu-elem class="secElem"><a href="#errors">errors</a></menu-elem>
+        <menu-elem class="secElem"><a href="#fetch">fetch</a></menu-elem>
+        <menu-elem class="secElem"><a href="#patterns">patterns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#tutorials">tutorials</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/WebDevStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 8, 10);
+  </script>
+</body>
+</html>
