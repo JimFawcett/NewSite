@@ -73,7 +73,7 @@
         <a class="repoLinks" target="_self" href="BasicsHome.html" style="position:absolute; left:6em; color:var(--atten); ">Track Summary</a>
       </div>
 
-      <t-b>
+      <tm-b>
         I/O operations send or receive data using terminals, files, in-memory strings, sockets, Graphical User
         Interfaces (GUIs), and devices like keyboards, mice, trackpads, and speakers.
         This involves one of two rather distinct types of processing: synchronous or asynchronous.
@@ -88,7 +88,7 @@
             Programming language libraries provide async read and async write functions for that purpose.
           </li>
         </ul>
-      </t-b>
+      </tm-b>
       <t-b>
         Synchronous operations interact with the platform API to translate to and from
         an external environment.
@@ -111,7 +111,7 @@
         </div>
       </div>      
       <a id="IOCP"></a>
-      <h3>I/O Completion Ports</h3>
+      <h3>1.&nbsp; I/O Completion Ports</h3>
       <t-b>
         I/O completion ports provide a mechanism for processing multiple asynchronous I/O requests.  When sending
         a request the requesting thread returns without waiting for the I/O process to complete.
@@ -129,22 +129,205 @@
         device driver and await its completion.  If a callback is registered it will invoke the callback on completion.
       </t-b>
       <t-b>
-        <details>
-          <summary class="lightItem">
-            <h3 style="display:inline;">Async Await</h3><br />
-          </summary>
-          <div class="indent">
-            <t-b>
-              .Net provides a Task type that is used with async functions that invoke await and is
-              executed on the current synchronization context.  If that is a thread-pool
-              context each task is run on a thread-pool thread.  If a non thread-pool synchronization context is used, then
-              when the task blocks it is suspended, enqueued, and another task is dequeued by the same thread.
-            </t-b>
-            <t-b>
-              I suspect that the Rust async await functionality works the same way.
-            </t-b>
-          </div>
-        </details>
+        <strong>IOCP as a kernel object.</strong>  An I/O Completion Port is a Windows kernel object created
+        with <inline-code>CreateIoCompletionPort</inline-code>.  The same call associates one or more file or
+        socket handles with the port.  Any overlapped I/O operation initiated on an associated handle will, on
+        completion, post a completion packet to the port&apos;s internal queue.
+      </t-b>
+      <t-b>
+        <strong>Overlapped I/O.</strong>  Every asynchronous request is initiated by calling
+        <inline-code>ReadFile</inline-code> or <inline-code>WriteFile</inline-code> (or socket equivalents)
+        with an <inline-code>OVERLAPPED</inline-code> structure pointer and the handle already associated with the
+        completion port.  The call returns immediately with <inline-code>ERROR_IO_PENDING</inline-code>; the kernel
+        continues the operation independently.  When the device driver signals completion, the kernel places a
+        completion packet on the port queue containing the number of bytes transferred, the original
+        <inline-code>OVERLAPPED</inline-code> pointer, and a user-supplied completion key.
+      </t-b>
+      <t-b>
+        <strong>Worker threads and the completion queue.</strong>  A pool of worker threads each call
+        <inline-code>GetQueuedCompletionStatus</inline-code>, which blocks until a completion packet arrives.
+        The call returns the transferred byte count, the completion key, and the
+        <inline-code>OVERLAPPED</inline-code> pointer, giving the worker everything it needs to continue
+        processing the result.  <inline-code>PostQueuedCompletionStatus</inline-code> lets application code
+        inject synthetic packets into the queue &mdash; a common technique for signaling workers to shut down.
+      </t-b>
+      <t-b>
+        <strong>Concurrency limit.</strong>  <inline-code>CreateIoCompletionPort</inline-code> accepts a
+        <em>NumberOfConcurrentThreads</em> parameter.  When set to the number of logical processors (or 0,
+        which defaults to that), the kernel releases only that many threads from
+        <inline-code>GetQueuedCompletionStatus</inline-code> at a time.  This prevents the
+        <em>thundering herd</em> problem where a burst of completions wakes every waiting thread simultaneously,
+        saturating the scheduler and causing context-switch thrashing.
+      </t-b>
+      <t-b>
+        <strong>Scalability.</strong>  IOCP enables a small, fixed-size thread pool to multiplex over a very
+        large number of concurrent connections.  A server with 10,000 active sockets needs only a handful of
+        threads &mdash; typically 2&ndash;4 per logical core.  Threads never block waiting for a specific
+        connection; they dequeue whichever completion arrives next.  This is the model used internally by
+        ASP.NET, Node.js on Windows, and Rust&apos;s tokio runtime on Windows.
+      </t-b>
+      <t-b>
+        <strong>Key Windows API calls:</strong>
+        <table>
+          <colgroup>
+            <col style="width: 18rem;" />
+            <col />
+          </colgroup>
+          <tr>
+            <th class="darkItem" style="text-align:left;">Function</th>
+            <th class="darkItem" style="text-align:left;">Purpose</th>
+          </tr>
+          <tr>
+            <td><inline-code>CreateIoCompletionPort</inline-code></td>
+            <td>Create a new port or associate an existing handle with a port</td>
+          </tr>
+          <tr>
+            <td><inline-code>ReadFile / WriteFile</inline-code></td>
+            <td>Initiate overlapped I/O on an associated handle</td>
+          </tr>
+          <tr>
+            <td><inline-code>GetQueuedCompletionStatus</inline-code></td>
+            <td>Block until a completion packet is available, then dequeue it</td>
+          </tr>
+          <tr>
+            <td><inline-code>GetQueuedCompletionStatusEx</inline-code></td>
+            <td>Dequeue multiple completion packets in a single call</td>
+          </tr>
+          <tr>
+            <td><inline-code>PostQueuedCompletionStatus</inline-code></td>
+            <td>Inject a synthetic completion packet (e.g., shutdown signal)</td>
+          </tr>
+          <tr>
+            <td><inline-code>CloseHandle</inline-code></td>
+            <td>Destroy the port; wakes all blocked workers with an error</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>
+        <strong>Cross-platform equivalents.</strong>  Other operating systems provide analogous async I/O
+        notification mechanisms:
+        <ul class="tight" style="margin-left: 2em;">
+          <li>
+            <strong>epoll (Linux):</strong> level-triggered or edge-triggered readiness notification on
+            file descriptors.  Used by libuv (Node.js), tokio, and most Linux async runtimes.
+          </li>
+          <li>
+            <strong>kqueue (BSD / macOS):</strong> a unified event queue for file descriptors, signals,
+            timers, and process events.  Conceptually closer to IOCP than epoll.
+          </li>
+          <li>
+            <strong>io_uring (Linux 5.1+):</strong> a pair of ring buffers shared between kernel and user
+            space for submitting and collecting I/O operations with near-zero system-call overhead.
+            Supports true async I/O (not just readiness notification) and is increasingly the preferred
+            mechanism on modern Linux kernels.
+          </li>
+        </ul>
+        All three serve the same purpose as IOCP: allow a small thread pool to drive very high concurrency
+        without one thread per connection.
+      </t-b>
+      <a id="asyncawait"></a>
+      <h3>2.&nbsp; Async / Await</h3>
+      <tm-b>
+        <strong>What it is.</strong>  <inline-code>async</inline-code> / <inline-code>await</inline-code>
+        is a syntactic feature that lets a developer write asynchronous code in a straight-line,
+        sequential style without explicit callbacks.  The compiler transforms an
+        <inline-code>async</inline-code> function into a state machine whose execution can be
+        suspended at each <inline-code>await</inline-code> point and resumed later, potentially
+        on a different thread, without blocking the thread it was running on.
+      </tm-b>
+      <t-b>
+        <strong>Compiler transformation.</strong>  When the compiler encounters
+        <inline-code>await expr</inline-code>, it splits the function at that point.  Everything
+        before the <inline-code>await</inline-code> becomes one state; everything after becomes
+        a continuation registered as the callback that fires when <inline-code>expr</inline-code>
+        completes.  The resulting state machine is heap-allocated (a <em>future</em> in Rust, a
+        <em>Task</em> in .NET, a <em>coroutine object</em> in Python) and driven by a runtime
+        scheduler rather than a call stack.
+      </t-b>
+      <t-b>
+        <strong>The runtime scheduler (executor).</strong>  An <inline-code>async</inline-code>
+        function does nothing when called &mdash; it returns a future/task object immediately.
+        Progress only happens when a scheduler polls the future.  The scheduler runs on one or
+        more OS threads and maintains a ready queue of futures that have received a completion
+        signal (<em>wakeup</em>) from the underlying I/O subsystem (IOCP on Windows,
+        <inline-code>epoll</inline-code> / <inline-code>io_uring</inline-code> on Linux).
+        When a future yields at an <inline-code>await</inline-code>, the scheduler dequeues
+        another ready future and resumes it on the same thread &mdash; cooperative multitasking
+        within the thread pool.
+      </t-b>
+      <t-b>
+        <strong>Language implementations:</strong>
+        <table>
+          <colgroup>
+            <col style="width: 8rem;" />
+            <col style="width: 10rem;" />
+            <col />
+          </colgroup>
+          <tr>
+            <th class="darkItem" style="text-align:left;">Language</th>
+            <th class="darkItem" style="text-align:left;">Future / task type</th>
+            <th class="darkItem" style="text-align:left;">Runtime / executor</th>
+          </tr>
+          <tr>
+            <td>C#</td>
+            <td><inline-code>Task&lt;T&gt;</inline-code></td>
+            <td>ThreadPool + SynchronizationContext; IOCP-backed on Windows</td>
+          </tr>
+          <tr>
+            <td>Rust</td>
+            <td><inline-code>Future&lt;Output=T&gt;</inline-code></td>
+            <td>tokio or async-std; zero-cost, no heap allocation for leaf futures</td>
+          </tr>
+          <tr>
+            <td>Python</td>
+            <td><inline-code>Coroutine / Task</inline-code></td>
+            <td>asyncio event loop; single-threaded by default</td>
+          </tr>
+          <tr>
+            <td>JavaScript</td>
+            <td><inline-code>Promise&lt;T&gt;</inline-code></td>
+            <td>V8 event loop; single-threaded; microtask queue</td>
+          </tr>
+          <tr>
+            <td>C++ (C++20)</td>
+            <td><inline-code>co_await</inline-code> expr</td>
+            <td>no standard executor; Asio (<inline-code>asio::awaitable&lt;T&gt;</inline-code>),
+                cppcoro, or folly required; standard executor (<inline-code>std::execution</inline-code>) targets C++26</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>
+        <strong>Key behaviors and caveats:</strong>
+        <ul class="tight" style="margin-left: 2em;">
+          <li>
+            <strong>Non-blocking, not free.</strong>  <inline-code>await</inline-code> yields the
+            thread so other work can proceed, but every suspension point allocates a wakeup
+            registration and involves scheduler bookkeeping.  Very high-frequency tiny I/O
+            operations can incur more overhead from the async machinery than from the I/O itself.
+          </li>
+          <li>
+            <strong>Cancellation.</strong>  C# uses <inline-code>CancellationToken</inline-code>
+            passed through the call chain.  Rust futures are cancelled by dropping them (the
+            destructor runs immediately).  Python uses <inline-code>Task.cancel()</inline-code>
+            which injects a <inline-code>CancelledError</inline-code> at the next
+            <inline-code>await</inline-code> point.
+          </li>
+          <li>
+            <strong>Colored functions.</strong>  An <inline-code>async</inline-code> function can
+            only be <inline-code>await</inline-code>ed from another <inline-code>async</inline-code>
+            function or from the executor entry point.  This &ldquo;colors&rdquo; the call graph:
+            synchronous and asynchronous code cannot freely intermix without bridging (e.g.,
+            <inline-code>block_on</inline-code> in Rust, <inline-code>asyncio.run()</inline-code>
+            in Python).
+          </li>
+          <li>
+            <strong>CPU-bound work blocks the executor.</strong>  Long-running synchronous
+            computation on an async thread starves other futures.  The remedy is to offload
+            CPU-bound work to a separate thread pool
+            (<inline-code>Task.Run</inline-code> in C#, <inline-code>spawn_blocking</inline-code>
+            in tokio, <inline-code>loop.run_in_executor</inline-code> in asyncio).
+          </li>
+        </ul>
       </t-b>
       <div style="width:calc(100vw - 5rem);">
         <div style="padding:1rem; float:right">
@@ -162,7 +345,24 @@
        </div>
       </div>
       <a id="msg"></a>
-      <h3>Windows Messaging</h3>
+      <h3>3.&nbsp; Windows Messaging</h3>
+      <t-b>
+        Windows messaging is the mechanism the operating system uses to notify applications of user input,
+        system events, and inter-window communication.  Every GUI element &mdash; a button, text box, or
+        top-level window &mdash; is identified by a window handle (<inline-code>HWND</inline-code>) and
+        receives events as messages posted to its thread&apos;s message queue.  The application&apos;s message
+        loop dequeues and dispatches those messages to the appropriate window procedure.
+      </t-b>
+      <t-b>
+        <strong>Message structure.</strong>  A Windows message is a small structure:
+        <ul class="tight" style="margin-left: 2em;">
+          <li><inline-code>hwnd</inline-code> &mdash; handle of the target window</li>
+          <li><inline-code>message</inline-code> &mdash; numeric message identifier (e.g., <inline-code>WM_LBUTTONDOWN</inline-code>, <inline-code>WM_KEYDOWN</inline-code>)</li>
+          <li><inline-code>wParam</inline-code> / <inline-code>lParam</inline-code> &mdash; message-specific parameters (key code, mouse coordinates, etc.)</li>
+          <li><inline-code>time</inline-code> &mdash; timestamp of when the message was posted</li>
+          <li><inline-code>pt</inline-code> &mdash; cursor position at posting time</li>
+        </ul>
+      </t-b>
       <t-b>
         When external devices are used to send key presses, mouse movements, button clicks, ... each device event
         results in a device driver creating a message and enqueueing to a raw input queue.
@@ -180,8 +380,49 @@
       <t-b>
         Note that an application may send messages to a hidden window as a means of internal communication.
       </t-b>
+      <t-b>
+        <strong>Message loop.</strong>  Every GUI thread runs a message loop that drives event processing:
+        <inline-code>GetMessage</inline-code> blocks until a message arrives, <inline-code>TranslateMessage</inline-code>
+        converts raw key messages into character messages (<inline-code>WM_CHAR</inline-code>), and
+        <inline-code>DispatchMessage</inline-code> calls the window procedure (<inline-code>WndProc</inline-code>)
+        registered for the target <inline-code>HWND</inline-code>.  The loop runs on a single thread, so all
+        window procedure calls for windows on that thread are serialized &mdash; no synchronization is needed
+        within the handler, but a long-running handler will freeze the UI.
+      </t-b>
+      <t-b>
+        <strong>SendMessage vs. PostMessage.</strong>
+        <ul class="tight" style="margin-left: 2em;">
+          <li>
+            <inline-code>PostMessage</inline-code> places the message on the target thread&apos;s queue and
+            returns immediately.  The sender does not wait for the handler to run.
+          </li>
+          <li>
+            <inline-code>SendMessage</inline-code> delivers the message directly to the window procedure and
+            blocks the caller until the handler returns.  Calling <inline-code>SendMessage</inline-code> from
+            one thread to a window on another thread can deadlock if both threads are simultaneously trying
+            to send to each other.
+          </li>
+          <li>
+            <inline-code>SendMessageTimeout</inline-code> and <inline-code>SendNotifyMessage</inline-code>
+            provide non-blocking or time-limited variants.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        <strong>System-wide broadcast and registered messages.</strong>  <inline-code>PostMessage(HWND_BROADCAST, ...)</inline-code>
+        delivers a message to all top-level windows &mdash; used sparingly for system notifications.
+        <inline-code>RegisterWindowMessage</inline-code> allocates a globally unique message identifier at
+        runtime, allowing unrelated processes to coordinate without hardcoding numeric identifiers.
+      </t-b>
+      <t-b>
+        <strong>Relationship to IOCP.</strong>  Windows messaging and I/O completion ports are complementary,
+        not competing, mechanisms.  IOCP handles high-volume, low-latency I/O (network, file, pipe) on background
+        thread-pool threads.  Windows messaging handles GUI events on a dedicated UI thread.  A common pattern is
+        to process I/O on IOCP worker threads and marshal results back to the UI thread with
+        <inline-code>PostMessage</inline-code>, keeping the two subsystems cleanly separated.
+      </t-b>
       <a id="streams"></a>
-      <h3 class="clear">Streams</h3>
+      <h3 class="clear">4.&nbsp; Streams</h3>
       <t-b>
         Streams provide buffered I/O operations that collect data from possibly several requests and send that
         data collection to a device driver as one operation.  Each basic read or write request needs to enter the platform kernel
@@ -196,7 +437,7 @@
         by the program - output.
       </t-b>
       <a id="conseq"></a>
-      <h3 class="clear">Consequences</h3>
+      <h3 class="clear">5.&nbsp; Consequences</h3>
       <t-b>
         Each application has the option of sending and receiving either synchronous or asynchronous I/O:
         <ul>
@@ -231,7 +472,7 @@
         should be tested before committing to production code.
       </t-b>
       <a id="refs"></a>
-      <h3 class="clear">References:</h3>
+      <h3 class="clear">6.&nbsp; References</h3>
       <ol class="indent tight">
         <li>
           <a href="https://www.microsoftpressstore.com/articles/article.aspx?p=2201309&seqNum=3">Understanding the Windows IO System</a>
@@ -261,6 +502,7 @@
       <div class="menuBody">
         <a href="#top">top</a>
         <menu-elem class="secElem"><a href="#IOCP">IOCP</a></menu-elem>
+        <menu-elem class="secElem"><a href="#asyncawait">async/await</a></menu-elem>
         <menu-elem class="secElem"><a href="#msg">msg-ing</a></menu-elem>
         <menu-elem class="secElem"><a href="#streams">streams</a></menu-elem>
         <menu-elem class="secElem"><a href="#conseq">conseq</a></menu-elem>
@@ -285,7 +527,7 @@
   <script>createSiteNavMenu('goto')</script>
   <script src="js/link-nav.js" defer></script>
   <script>
-    setCookie('#pages', 4, 10);
+    setCookie('#pages', 5, 11);
   </script>
 </body>
 </html>

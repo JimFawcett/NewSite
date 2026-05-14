@@ -14,6 +14,7 @@ function buildPages() {
         <a href='Basics_Memory.html'>Virtual memory</a>\
         <a href='Basics_Scheduling.html'>Scheduling</a>\
         <a href='Basics_Processes.html'>Processes</a>\
+        <a href='Basics_Threads.html'>Threads</a>\
         <a href='Basics_IO.html'>IO</a>\
         <a href='Basics_SysRescr.html'>System Resources</a>\
         <a href='Basics_Languages.html'>Languages</a>\

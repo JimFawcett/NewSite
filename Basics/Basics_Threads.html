@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  Basics_Threads.html
+-->
+<head>
+  <title>Basics Threads</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      // setCookie('#pages', 0, 11);
+      setPersistantElements();
+      hideInfoMsgs();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    Basics_Threads.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/13/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Basic Bites: Threads</h2>
+        <h4 id="subtitle" class="indent">Creation, lifecycle, synchronization, thread pools</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="BasicsHome.html" style="position:absolute; left:6em; color:var(--atten);">Track Summary</a>
+      </div>
+    </header>
+      <tm-b>
+        A thread is the unit of execution that the operating system schedules on a processor core.
+        Every process starts with one thread &mdash; the primary thread &mdash; and may create additional
+        threads to perform work concurrently.  All threads within a process share its address space,
+        open file handles, and other resources, but each thread has its own stack, register set, and
+        program counter.  This shared-memory model enables efficient communication between threads
+        but introduces the possibility of data races and requires explicit synchronization.
+      </tm-b>
+
+      <a id="basics"></a>
+      <h3>1.&nbsp; Thread Basics</h3>
+      <t-b>
+        <strong>Threads vs. processes.</strong>  Creating a new process duplicates the parent&apos;s
+        page tables, file descriptor table, and kernel bookkeeping &mdash; an expensive operation.
+        Creating a thread within an existing process is much cheaper: it allocates a new stack
+        (typically 1&ndash;8 MB reserved, a few pages committed) and a kernel thread object, but
+        shares everything else.  This is why servers favor thread pools or async I/O over
+        spawning a new process per request.
+      </t-b>
+      <t-b>
+        <strong>The thread stack.</strong>  Each thread gets its own call stack.  Local variables,
+        function parameters, and return addresses for that thread&apos;s call chain all live there.
+        Stack size is fixed at thread creation; overflowing it causes a stack overflow exception
+        or a segmentation fault.  Heap memory, global variables, and static data are shared among
+        all threads in the process.
+      </t-b>
+      <t-b>
+        <strong>Hardware threads and logical processors.</strong>  A physical core may expose two
+        hardware threads via simultaneous multithreading (SMT, marketed as Hyper-Threading on Intel).
+        The OS scheduler sees each hardware thread as a logical processor.  Software threads are
+        multiplexed onto logical processors by the scheduler; a machine with 8 logical processors
+        can run 8 threads truly in parallel at any instant.
+      </t-b>
+
+      <a id="lifecycle"></a>
+      <h3>2.&nbsp; Thread Lifecycle</h3>
+      <t-b>
+        A thread moves through a sequence of states from creation to termination:
+        <ul class="tight" style="margin-left: 2em;">
+          <li>
+            <strong>New:</strong> the thread object has been created but the OS thread has not
+            yet started executing (e.g., a newly constructed <inline-code>std::thread</inline-code>
+            before its entry function runs).
+          </li>
+          <li>
+            <strong>Runnable:</strong> the thread is ready to execute and waiting for the scheduler
+            to assign it a processor.  It is in the run queue.
+          </li>
+          <li>
+            <strong>Running:</strong> the thread is actively executing on a logical processor.
+            The scheduler may preempt it at any time &mdash; saving its register state and placing
+            it back in the run queue &mdash; to let another thread run.
+          </li>
+          <li>
+            <strong>Blocked / Waiting:</strong> the thread is not runnable because it is waiting
+            for an event: an I/O completion, a mutex lock, a condition variable signal, a
+            <inline-code>sleep</inline-code> timer, or a <inline-code>join</inline-code> on
+            another thread.  The scheduler does not waste CPU cycles on a blocked thread.
+          </li>
+          <li>
+            <strong>Terminated:</strong> the thread&apos;s entry function has returned or the
+            thread was explicitly killed.  Resources (stack, kernel object) are reclaimed when
+            the thread is joined or detached.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        <strong>Join and detach.</strong>  A thread that was created must be either joined or
+        detached before the owning object is destroyed.  <em>Joining</em> blocks the calling
+        thread until the target terminates and reclaims its resources.  <em>Detaching</em>
+        lets the thread run independently; its resources are reclaimed automatically on
+        termination, but the caller cannot observe its result.  Destroying a joinable thread
+        handle without joining or detaching is undefined behavior in C++ and a panic in Rust.
+      </t-b>
+
+      <a id="sync"></a>
+      <h3>3.&nbsp; Synchronization</h3>
+      <t-b>
+        Shared mutable state is the root cause of most threading bugs.  Two threads reading
+        the same memory location concurrently is safe; any concurrent access where at least
+        one thread writes is a <em>data race</em> and produces undefined behavior in C++ and
+        a compile error in Rust.  Synchronization primitives serialize access so that only
+        one thread at a time operates on shared data.
+      </t-b>
+      <t-b>
+        <strong>Common primitives:</strong>
+        <table>
+          <colgroup>
+            <col style="width: 12rem;" />
+            <col />
+          </colgroup>
+          <tr>
+            <th class="darkItem" style="text-align:left;">Primitive</th>
+            <th class="darkItem" style="text-align:left;">Purpose</th>
+          </tr>
+          <tr>
+            <td>Mutex</td>
+            <td>
+              Mutual exclusion lock: only one thread may hold it at a time.
+              Other threads block on <inline-code>lock()</inline-code> until the holder calls
+              <inline-code>unlock()</inline-code>.
+            </td>
+          </tr>
+          <tr>
+            <td>Recursive mutex</td>
+            <td>
+              Like a mutex but the same thread may acquire it multiple times without deadlocking;
+              must release it the same number of times.
+            </td>
+          </tr>
+          <tr>
+            <td>Read/write mutex</td>
+            <td>
+              Allows many concurrent readers or exactly one writer.  Improves throughput when
+              reads heavily outnumber writes.
+            </td>
+          </tr>
+          <tr>
+            <td>Semaphore</td>
+            <td>
+              A counter that allows up to N threads to proceed simultaneously.  Used to limit
+              concurrency (e.g., a pool of N database connections).
+            </td>
+          </tr>
+          <tr>
+            <td>Condition variable</td>
+            <td>
+              Lets a thread sleep until a predicate becomes true.  Always used with a mutex:
+              the thread atomically releases the mutex and sleeps; it reacquires the mutex
+              before returning from <inline-code>wait()</inline-code>.
+            </td>
+          </tr>
+          <tr>
+            <td>Spinlock</td>
+            <td>
+              Busy-waits in a loop rather than yielding to the scheduler.  Efficient only when
+              the wait is expected to be very short (microseconds); wastes CPU on longer waits.
+            </td>
+          </tr>
+          <tr>
+            <td>Atomic operation</td>
+            <td>
+              Hardware-guaranteed indivisible read-modify-write on a single word.  Lock-free;
+              used for flags, counters, and reference counts.
+            </td>
+          </tr>
+          <tr>
+            <td>Barrier / latch</td>
+            <td>
+              Blocks a group of threads until all have reached the barrier, then releases them
+              together.  Useful for phased parallel algorithms.
+            </td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>
+        <strong>Deadlock.</strong>  Deadlock occurs when two or more threads each hold a resource
+        the other needs and none can proceed.  The four necessary conditions are:
+        <ul class="tight" style="margin-left: 2em;">
+          <li><strong>Mutual exclusion:</strong> at least one resource is non-shareable.</li>
+          <li><strong>Hold and wait:</strong> a thread holds one resource while waiting for another.</li>
+          <li><strong>No preemption:</strong> resources are released only voluntarily.</li>
+          <li><strong>Circular wait:</strong> a cycle exists in the resource-dependency graph.</li>
+        </ul>
+        Breaking any one condition prevents deadlock.  The most practical strategies are
+        consistent lock ordering (always acquire mutexes in the same global order) and
+        timed lock attempts with backoff.
+      </t-b>
+      <t-b>
+        <strong>Memory ordering.</strong>  Modern CPUs and compilers reorder instructions for
+        performance.  Atomic operations carry a memory order parameter
+        (<inline-code>seq_cst</inline-code>, <inline-code>acquire</inline-code>,
+        <inline-code>release</inline-code>, <inline-code>relaxed</inline-code>) that constrains
+        reordering.  Incorrect memory ordering produces subtle, hardware-dependent bugs that
+        only appear on multi-core systems under specific timing conditions.
+      </t-b>
+
+      <a id="pools"></a>
+      <h3>4.&nbsp; Thread Pools</h3>
+      <t-b>
+        Creating and destroying OS threads for every unit of work is expensive: each thread
+        requires stack allocation, a kernel object, and scheduler registration.  A <em>thread pool</em>
+        pre-creates a fixed number of worker threads that pull tasks from a shared work queue,
+        amortizing creation cost over many tasks.
+      </t-b>
+      <t-b>
+        <strong>Work queue.</strong>  Tasks (closures, function pointers, or futures) are enqueued
+        by producers.  Worker threads dequeue and execute them.  The queue is protected by a mutex
+        or is a lock-free structure; a condition variable wakes idle workers when work arrives.
+      </t-b>
+      <t-b>
+        <strong>Work stealing.</strong>  Each worker maintains its own local deque of tasks.
+        When a worker&apos;s queue is empty it steals tasks from the back of another worker&apos;s
+        deque.  This reduces contention on a central queue and improves cache locality.
+        Rust&apos;s tokio and the .NET ThreadPool both use work-stealing schedulers.
+      </t-b>
+      <t-b>
+        <strong>Sizing the pool.</strong>  CPU-bound work typically uses one thread per logical
+        processor.  I/O-bound work can use more threads because most are blocked waiting at any
+        given time; the optimal count depends on the I/O latency and throughput requirements.
+        Oversizing the pool wastes memory (each thread has a stack) and increases scheduler overhead.
+      </t-b>
+
+      <a id="langs"></a>
+      <h3>5.&nbsp; Language Support</h3>
+      <t-b>
+        <table>
+          <colgroup>
+            <col style="width: 7rem;" />
+            <col style="width: 14rem;" />
+            <col />
+          </colgroup>
+          <tr>
+            <th class="darkItem" style="text-align:left;">Language</th>
+            <th class="darkItem" style="text-align:left;">Thread type</th>
+            <th class="darkItem" style="text-align:left;">Key synchronization and safety</th>
+          </tr>
+          <tr>
+            <td>Rust</td>
+            <td>
+              <inline-code>std::thread::spawn</inline-code>; returns a
+              <inline-code>JoinHandle&lt;T&gt;</inline-code>
+            </td>
+            <td>
+              <inline-code>Mutex&lt;T&gt;</inline-code>, <inline-code>RwLock&lt;T&gt;</inline-code>,
+              <inline-code>Condvar</inline-code>, <inline-code>Arc&lt;T&gt;</inline-code> for shared
+              ownership; <inline-code>Send</inline-code> and <inline-code>Sync</inline-code> traits
+              enforce data-race freedom at compile time &mdash; sharing non-<inline-code>Send</inline-code>
+              types across threads is a compile error
+            </td>
+          </tr>
+          <tr>
+            <td>C++</td>
+            <td>
+              <inline-code>std::thread</inline-code> (C++11),
+              <inline-code>std::jthread</inline-code> (C++20, auto-joins)
+            </td>
+            <td>
+              <inline-code>std::mutex</inline-code>, <inline-code>std::shared_mutex</inline-code>,
+              <inline-code>std::condition_variable</inline-code>, <inline-code>std::atomic&lt;T&gt;</inline-code>;
+              no compile-time data-race prevention &mdash; correctness is the programmer&apos;s responsibility
+            </td>
+          </tr>
+          <tr>
+            <td>C#</td>
+            <td>
+              <inline-code>System.Threading.Thread</inline-code>;
+              <inline-code>ThreadPool</inline-code>; <inline-code>Task</inline-code> (preferred)
+            </td>
+            <td>
+              <inline-code>lock</inline-code> statement (Monitor), <inline-code>Mutex</inline-code>,
+              <inline-code>SemaphoreSlim</inline-code>, <inline-code>ReaderWriterLockSlim</inline-code>,
+              <inline-code>Interlocked</inline-code> for atomics; no compile-time race detection
+            </td>
+          </tr>
+          <tr>
+            <td>Python</td>
+            <td>
+              <inline-code>threading.Thread</inline-code>
+            </td>
+            <td>
+              <inline-code>threading.Lock</inline-code>, <inline-code>RLock</inline-code>,
+              <inline-code>Condition</inline-code>, <inline-code>Semaphore</inline-code>;
+              the GIL serializes bytecode execution in CPython, preventing true parallel CPU
+              work on multiple threads &mdash; use <inline-code>multiprocessing</inline-code>
+              or <inline-code>concurrent.futures.ProcessPoolExecutor</inline-code> for
+              CPU-bound parallelism
+            </td>
+          </tr>
+        </table>
+      </t-b>
+      <tm-b>
+        For Rust, you will find more details with examples in <a target="_blank" href="../Rust/RustBites_Threads.html">../Rust/RustBites_Threads.html</a>. 
+        Eventually details with examples will arrive for C++, C#, and Python. 
+      </tm-b>
+      <a id="repos"></a>
+      <h3>6.&nbsp; Repository Support</h3>
+      <t-b>
+        <table>
+          <colgroup>
+            <col style="width: 7rem;" />
+            <col style="width: 18rem;" />
+            <col />
+          </colgroup>
+          <tr>
+            <th class="darkItem" style="text-align:left;">Language</th>
+            <th class="darkItem" style="text-align:left;">Repositories</th>
+            <th class="darkItem" style="text-align:left;">Interface</th>
+          </tr>
+          <tr>
+            <td>Rust</td>
+            <td>
+              <a target="_blank" rel="noopener" href="https://github.com/JimFawcett/RustThreadPool">RustThreadPool</a><br />
+              <a target="_blank" rel="noopener" href="https://github.com/JimFawcett/RustBlockingQueue">RustBlockingQueue</a>
+            </td>
+            <td>
+              <inline-code>ThreadPool&lt;M&gt;</inline-code>: <inline-code>new(nt, f)</inline-code>,
+              <inline-code>post_message()</inline-code>, <inline-code>get_message()</inline-code>,
+              <inline-code>wait()</inline-code>, <inline-code>shut_down()</inline-code><br />
+              <hr>
+              <inline-code>BlockingQueue&lt;T&gt;</inline-code>: <inline-code>new()</inline-code>,
+              <inline-code>en_q()</inline-code>, <inline-code>de_q()</inline-code>,
+              <inline-code>len()</inline-code>
+            </td>
+          </tr>
+          <tr>
+            <td>C++</td>
+            <td>
+              <a target="_blank" rel="noopener" href="https://github.com/JimFawcett/ThreadPool">ThreadPool</a><br />
+              <a target="_blank" rel="noopener" href="https://github.com/JimFawcett/CppBlockingQueue">CppBlockingQueue</a>
+            </td>
+            <td>
+              <inline-code>ThreadPool&lt;W,N&gt;</inline-code>: N threads dequeue and execute callable workitems W;
+              <inline-code>Task</inline-code> wraps a static pool instance for fire-and-forget use<br />
+              <hr>
+              <inline-code>BlockingQueue&lt;T&gt;</inline-code>: <inline-code>enQ()</inline-code>,
+              <inline-code>deQ()</inline-code> (blocks on empty);
+              <inline-code>std::mutex</inline-code> + <inline-code>std::condition_variable</inline-code> internals
+            </td>
+          </tr>
+          <tr>
+            <td>C#</td>
+            <td>
+              <a target="_blank" rel="noopener" href="https://github.com/JimFawcett/CsBlockingQueue">CsBlockingQueue</a>
+            </td>
+            <td>
+              <inline-code>BlockingQueue&lt;T&gt;</inline-code>: blocks dequeuer when empty;
+              <inline-code>Monitor</inline-code> (condition variable + lock) internals; moveable, not copyable<br />
+              <hr>
+              ThreadPool: <inline-code>System.Threading.ThreadPool</inline-code> (built-in)
+            </td>
+          </tr>
+          <tr>
+            <td>Python</td>
+            <td>none yet</td>
+            <td></td>
+          </tr>
+        </table>
+      </t-b>
+
+      <a id="conseq"></a>
+      <h3>7.&nbsp; Consequences</h3>
+      <t-b>
+        Threads enable a program to use multiple processor cores and to overlap I/O latency with
+        computation, but they introduce failure modes that do not exist in single-threaded code:
+        <ul class="tight" style="margin-left: 2em;">
+          <li>
+            <strong>Data races</strong> produce non-deterministic results that change with timing,
+            compiler optimization level, and hardware architecture.  They are among the hardest
+            bugs to reproduce and diagnose.
+          </li>
+          <li>
+            <strong>Deadlock</strong> freezes the program silently; no exception is thrown.
+            Detection requires thread-aware debuggers or watchdog timeouts.
+          </li>
+          <li>
+            <strong>Priority inversion</strong> occurs when a high-priority thread is blocked
+            on a mutex held by a low-priority thread that is itself preempted.  Real-time systems
+            address this with priority inheritance protocols.
+          </li>
+          <li>
+            <strong>False sharing</strong> degrades performance when two threads write to different
+            variables that happen to occupy the same cache line, causing the cache line to bounce
+            between cores.  Padding structs to cache-line boundaries eliminates this.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        Where possible, prefer designs that minimize shared mutable state: immutable data needs
+        no synchronization, and message passing (channels, queues) confines mutation to one owner
+        at a time.  Rust enforces this structurally; in other languages it is a discipline.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>8.&nbsp; References</h3>
+      <ol class="indent tight" style="margin-left: 2rem;">
+        <li>
+          <a href="https://en.cppreference.com/w/cpp/thread">C++ thread support library &ndash; cppreference</a>
+        </li>
+        <li>
+          <a href="https://doc.rust-lang.org/book/ch16-00-concurrency.html">Fearless Concurrency &ndash; The Rust Programming Language</a>
+        </li>
+        <li>
+          <a href="https://learn.microsoft.com/en-us/dotnet/standard/threading/managed-threading-basics">Managed Threading Basics &ndash; Microsoft Docs</a>
+        </li>
+        <li>
+          <a href="https://docs.python.org/3/library/threading.html">threading &ndash; Python 3 Docs</a>
+        </li>
+        <li>
+          <a href="https://www.microsoftpressstore.com/articles/article.aspx?p=2201309">Understanding the Windows Threading Model</a>
+        </li>
+      </ol>
+      <div style="height:15rem;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Page Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#basics">basics</a></menu-elem>
+        <menu-elem class="secElem"><a href="#lifecycle">lifecycle</a></menu-elem>
+        <menu-elem class="secElem"><a href="#sync">sync</a></menu-elem>
+        <menu-elem class="secElem"><a href="#pools">pools</a></menu-elem>
+        <menu-elem class="secElem"><a href="#langs">languages</a></menu-elem>
+        <menu-elem class="secElem"><a href="#repos">repos</a></menu-elem>
+        <menu-elem class="secElem"><a href="#conseq">conseq</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden">
+      <div class="darkItem listheader" onclick="togglePages()">Pages</div>
+      <div class="menuBody">
+        <a href="Basics_Platform.html">Platform</a>
+        <a href="Basics_Memory.html">Virtual Memory</a>
+      </div>
+    </div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/BasicsBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 11);
+  </script>
+</body>
+</html>
