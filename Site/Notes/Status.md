@@ -1,6 +1,6 @@
 # Project Status
 
-_Last updated: 2026-05-08 15:19_
+_Last updated: 2026-05-15 10:29_
 
 ## Site Overview
 
@@ -32,20 +32,26 @@ Static educational web platform documenting multiple programming languages and s
 
 | Date / Time       | Activity |
 |-------------------|----------|
+| 2026-05-15 10:29  | Added Hardware, CPUs, and GPUs chapters to Basics Story; renumbered all chapters |
+| 2026-05-14 22:05  | Fixed bug in extracting page address in PageHost |
+| 2026-05-14 21:30  | Added many new C++ Bites; C++ track now rivals Rust track in coverage |
+| 2026-05-14 11:07  | Added HTML, JavaScript, and CSS chapters to WebDev Story |
+| 2026-05-14 10:17  | Added new entries to WebDev, Basics, and Python glossaries |
+| 2026-05-14 09:10  | Added new entries to C# Glossary |
+| 2026-05-14 08:36  | Added new entries to C++ Glossary |
+| 2026-05-14 08:30  | Added new entries to Rust Glossary |
+| 2026-05-13 22:47  | Added glossary links to Rust Bites pages and Site Glossary |
+| 2026-05-13 20:36  | Fixed link in SitePages.js |
+| 2026-05-13 20:14  | Added Basics_Threads.html; clarifying text in Basics_IO.html |
+| 2026-05-13 13:40  | Text fixes and clarification in SiteDesign and SiteDemo pages |
+| 2026-05-13 12:06  | Added more information to Basics Story and Code AI Story |
+| 2026-05-11 10:38  | Added BasicsCodeStory and BasicsDecCodeStory pages |
+| 2026-05-10 22:08  | Fixed Basics Repo Explorer and several links |
+| 2026-05-10 20:29  | Added new WebDev Repo docs |
+| 2026-05-10 14:10  | Added AI Story (12-chapter sequence in Code track) |
+| 2026-05-08 22:20  | Added notes ideas |
+| 2026-05-08 18:45  | Minor text corrections |
 | 2026-05-08 15:19  | Added bookmarks; moved Notes from NewSite to NewSite/Site |
-| 2026-05-08 09:33  | PageHost link fix in Page Controls > GoTo |
-| 2026-05-08 09:10  | Windows messaging update |
-| 2026-05-08 08:48  | Removed status links from explorers; clarifying text in SiteMap |
-| 2026-05-07 21:18  | Repo-page indexing bug fixes; updated README for RustByteRecord |
-| 2026-05-07 11:17  | Cookie page-counter fixes |
-| 2026-05-06 21:28  | SiteMap link fixes; Copy URL bug fix |
-| 2026-05-06 14:50  | Repository file access reworked |
-| 2026-05-05 19:54  | Track summary subtitle changes |
-| 2026-05-05 09:30  | Added Demo and Design pages |
-| 2026-05-04 22:48  | Added code comparisons across repositories; added CodeStory |
-| 2026-05-04 01:09  | New Code track summary |
-| 2026-05-03 20:07  | Added SWDevStory |
-| 2026-05-03 13:11  | Revised home pages for Rust, C++, C#, Python, WebDev tracks |
 
 ## Conventions (reminders)
 

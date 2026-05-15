@@ -1,5 +1,9 @@
 # ToDo
 
+- **2026-05-15** — Add "where do I find" section to SiteMap
+
+---
+
 - **2026-05-15** — Compare CPUs and GPUs
 
 ---
