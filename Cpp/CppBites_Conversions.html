@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_Conversions.html
+-->
+<head>
+  <title>CppBites Conversions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_Conversions.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Conversions</h2>
+        <h4 id="subtitle" class="indent">
+          implicit conversions, casts, and explicit constructors
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="syn">1.0 Synopsis</h3>
+    <t-b id="syn-body" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      C++ supports implicit and explicit type conversions. Implicit conversions happen automatically
+      when the compiler can match types without a cast; explicit conversions require the programmer
+      to write a cast expression. C++ provides four named cast operators —
+      <c-s>static_cast</c-s>, <c-s>dynamic_cast</c-s>, <c-s>reinterpret_cast</c-s>, and
+      <c-s>const_cast</c-s> — each with defined semantics and safety characteristics. The C-style
+      cast <c-s>(Type)expr</c-s> is best avoided in new code because it silently selects whichever
+      named cast applies.
+    </t-b>
+
+    <h3 id="implicit">2.0 Implicit Conversions</h3>
+    <t-b>
+      Widening conversions (e.g., <c-s>int</c-s> to <c-s>double</c-s>) are safe and happen
+      automatically. Narrowing conversions (e.g., <c-s>double</c-s> to <c-s>int</c-s>) truncate
+      silently — a common source of bugs. Brace initialization <c-s>{}</c-s> rejects narrowing
+      conversions at compile time, making it the safer initialization form.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">int   i = 3.9;    // compiles: truncated to 3, no warning
+// int j{3.9};   // error: narrowing conversion not allowed with {}
+
+double d = 42;    // safe widening: int -&gt; double
+float  f = d;     // compiles: precision may be lost</code></pre>
+    </div>
+
+    <h3 id="static">3.0 static_cast</h3>
+    <t-b>
+      <c-s>static_cast</c-s> performs conversions that are verified at compile time. It handles
+      numeric conversions, upcasting and downcasting within a known class hierarchy, and
+      conversions between related pointer/reference types. It will not remove cv-qualifiers or
+      reinterpret memory. Prefer it over C-style casts for all numeric conversions.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// safe numeric conversion
+double d = 3.14;
+int    i = static_cast&lt;int&gt;(d);   // 3, truncated
+
+// dynamic_cast: safe polymorphic downcast
+Shape* s = new Circle(5.0);
+Circle* c = dynamic_cast&lt;Circle*&gt;(s);  // succeeds
+if (c) c-&gt;draw();
+
+// upcast (always safe, no cast needed but explicit is fine)
+Circle  circ(2.0);
+Shape&amp;  ref = circ;                // implicit upcast</code></pre>
+    </div>
+
+    <h3 id="dynamic">4.0 dynamic_cast</h3>
+    <t-b>
+      <c-s>dynamic_cast</c-s> performs a runtime-checked downcast within a polymorphic hierarchy.
+      The base class must have at least one virtual function (so RTTI is available). When casting
+      a pointer, it returns <c-s>nullptr</c-s> on failure. When casting a reference, it throws
+      <c-s>std::bad_cast</c-s> on failure. Use it when the concrete type is genuinely unknown at
+      compile time.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;typeinfo&gt;
+#include &lt;stdexcept&gt;
+
+Shape* s = new Rectangle(3.0, 4.0);
+
+// pointer form: returns nullptr on failure
+if (Circle* c = dynamic_cast&lt;Circle*&gt;(s)) {
+  c-&gt;draw();
+} else {
+  // s is not a Circle
+}
+
+// reference form: throws std::bad_cast on failure
+try {
+  Circle&amp; c = dynamic_cast&lt;Circle&amp;&gt;(*s);
+} catch (const std::bad_cast&amp;) {
+  // s does not refer to a Circle
+}</code></pre>
+    </div>
+
+    <h3 id="reinterpret">5.0 reinterpret_cast</h3>
+    <t-b>
+      <c-s>reinterpret_cast</c-s> reinterprets the bit pattern of a value as a different type.
+      It provides no safety checks and easily produces undefined behavior. Legitimate uses are
+      narrow: hardware register access, type-punning via <c-s>memcpy</c-s> equivalents, and
+      certain platform ABI boundaries. Avoid it in application code.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Reading hardware register at a fixed address (embedded systems)
+volatile uint32_t* reg =
+  reinterpret_cast&lt;volatile uint32_t*&gt;(0x4000'0000);
+
+// Viewing the byte representation of a float (undefined behavior in general;
+// use std::bit_cast (C++20) or memcpy instead)
+float f = 1.0f;
+uint32_t bits;
+std::memcpy(&amp;bits, &amp;f, sizeof bits);  // safe alternative</code></pre>
+    </div>
+
+    <h3 id="const">6.0 const_cast</h3>
+    <t-b>
+      <c-s>const_cast</c-s> adds or removes <c-s>const</c-s> (or <c-s>volatile</c-s>) from a
+      type. Its only legitimate use is interfacing with legacy C APIs that accept non-const
+      pointers but do not actually modify the data. Writing through a pointer obtained by casting
+      away const from a genuinely const object is undefined behavior.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Legacy C API that takes char* but doesn't modify it
+void legacy_print(char* s);
+
+const char* msg = "hello";
+legacy_print(const_cast&lt;char*&gt;(msg));  // safe: legacy_print won't write</code></pre>
+    </div>
+
+    <h3 id="explicit">7.0 Explicit Constructors</h3>
+    <t-b>
+      A single-argument constructor is a converting constructor — the compiler can use it
+      implicitly to convert the argument type to the class type. Marking the constructor
+      <c-s>explicit</c-s> disables that implicit conversion and requires the caller to write
+      the construction explicitly. This prevents surprising implicit conversions that compile
+      but produce wrong behavior.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">class Radius {
+public:
+  /* implicit */ Radius(double r) : r_(r) {}  // allows implicit conversion
+  double value() const { return r_; }
+private:
+  double r_;
+};
+
+class SafeRadius {
+public:
+  explicit SafeRadius(double r) : r_(r) {}
+  double value() const { return r_; }
+private:
+  double r_;
+};
+
+void useRadius(Radius r) {}
+
+useRadius(5.0);          // OK: implicit Radius(5.0)
+// useRadius(SafeRadius{5.0}); // OK: explicit construction
+// useRadius(5.0);       // error if useRadius took SafeRadius</code></pre>
+    </div>
+
+    <h3 id="refs">8.0 References</h3>
+    <table class="indent">
+      <tr>
+        <th class="darkItem">Resource</th>
+        <th class="darkItem">Link</th>
+      </tr>
+      <tr>
+        <td>cppreference: explicit casts</td>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/explicit_cast">cppreference.com/explicit_cast</a></td>
+      </tr>
+      <tr>
+        <td>cppreference: explicit specifier</td>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/explicit">cppreference.com/explicit</a></td>
+      </tr>
+    </table>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#syn">synopsis</a>
+        <a href="#implicit">implicit</a>
+        <a href="#static">static_cast</a>
+        <a href="#dynamic">dynamic_cast</a>
+        <a href="#reinterpret">reinterpret_cast</a>
+        <a href="#const">const_cast</a>
+        <a href="#explicit">explicit ctors</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 24, 10);
+  </script>
+</body>
+</html>

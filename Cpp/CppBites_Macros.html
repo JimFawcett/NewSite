@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_Macros.html
+-->
+<head>
+  <title>CppBites Macros</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_Macros.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Macros</h2>
+        <h4 id="subtitle" class="indent">
+          preprocessor macros and modern alternatives
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synop">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      C preprocessor macros (<c-s>#define</c-s>) predate the type system and operate as textual
+      substitution before compilation. The preprocessor sees no types, no scopes, no overloads -
+      it performs blind token replacement. Macros are still used for include guards and conditional
+      compilation, but the C++ type system provides safer alternatives for almost every other use.
+    </t-b>
+
+    <h3 id="objectlike">2.0 Object-like Macros</h3>
+    <t-b>
+      An object-like macro names a token sequence that the preprocessor substitutes wherever the
+      name appears.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#define PI 3.14159    // no type, no scope, no debugger visibility
+
+// Modern equivalent: type-safe, scoped, debugger-visible
+constexpr double pi = 3.14159265358979;
+</code></pre>
+    </div>
+    <t-b>
+      The <c-s>#define PI</c-s> version has no type information, cannot be inspected in a debugger,
+      participates in no namespace, and cannot be overloaded or specialized. Prefer
+      <c-s>constexpr</c-s> variables in all cases where the macro is used as a named constant.
+    </t-b>
+
+    <h3 id="funclike">3.0 Function-like Macros</h3>
+    <t-b>
+      Function-like macros accept arguments and substitute them into an expansion. They are prone to
+      subtle bugs because the preprocessor expands arguments by token substitution, not by value.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Old: unsafe macro
+#define SQUARE(x) ((x) * (x))
+int a = 3;
+int r = SQUARE(a++);   // undefined behavior: a incremented twice
+
+// New: type-safe constexpr
+constexpr double pi = 3.14159265358979;
+
+template&lt;typename T&gt;
+constexpr T square(T x) { return x * x; }
+
+static_assert(square(3) == 9);
+</code></pre>
+    </div>
+    <t-b>
+      The macro expansion of <c-s>SQUARE(a++)</c-s> produces <c-s>((a++) * (a++))</c-s> - two
+      increments of <c-s>a</c-s>, which is undefined behavior. The template version receives the
+      value of <c-s>a</c-s> after a single increment and squares that value safely.
+    </t-b>
+
+    <h3 id="guards">4.0 Include Guards</h3>
+    <t-b>
+      Include guards prevent a header from being processed more than once per translation unit.
+      They are one of the few remaining legitimate uses of macros in modern C++.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Traditional include guard
+#ifndef MY_WIDGET_H
+#define MY_WIDGET_H
+
+class Widget { /* ... */ };
+
+#endif  // MY_WIDGET_H
+</code></pre>
+    </div>
+    <t-b>
+      The non-standard but universally supported alternative is <c-s>#pragma once</c-s>. It is
+      shorter, immune to name collisions, and sufficient for all major compilers (GCC, Clang, MSVC).
+      With C++20 modules, header guards become unnecessary for module interface units.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#pragma once
+
+class Widget { /* ... */ };
+</code></pre>
+    </div>
+
+    <h3 id="conditional">5.0 Conditional Compilation</h3>
+    <t-b>
+      <c-s>#ifdef</c-s>, <c-s>#if</c-s>, <c-s>#elif</c-s>, and <c-s>#endif</c-s> select which
+      code the compiler sees. This is the primary remaining use case where macros have no clean
+      language-level replacement.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#if defined(_WIN32)
+  #include &lt;windows.h&gt;
+  using handle_t = HANDLE;
+#elif defined(__linux__)
+  #include &lt;unistd.h&gt;
+  using handle_t = int;
+#else
+  #error "Unsupported platform"
+#endif
+
+#ifdef NDEBUG
+  #define ASSERT(expr) ((void)0)
+#else
+  #define ASSERT(expr) assert(expr)
+#endif
+</code></pre>
+    </div>
+    <t-b>
+      C++17 <c-s>if constexpr</c-s> replaces many per-type conditional branches inside templates,
+      but platform detection at the file level still requires preprocessor conditionals.
+    </t-b>
+
+    <h3 id="constexprs">6.0 constexpr and consteval</h3>
+    <t-b>
+      <c-s>constexpr</c-s> (C++11) marks a function or variable as potentially evaluable at compile
+      time. When given constant-expression arguments, the compiler folds the result into the binary
+      as a literal. The function remains callable at runtime with non-constant arguments.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">constexpr int factorial(int n) {
+  return n &lt;= 1 ? 1 : n * factorial(n - 1);
+}
+
+constexpr int f6 = factorial(6);   // computed at compile time: 720
+int           fx = factorial(x);   // computed at runtime for non-const x
+</code></pre>
+    </div>
+    <t-b>
+      <c-s>consteval</c-s> (C++20) declares an <em>immediate function</em> that must be evaluated
+      at compile time. Calling it with a non-constant argument is a compile error.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">consteval int compileTimeOnly(int n) { return n * n; }
+
+constexpr int r = compileTimeOnly(5);   // OK: 25
+// int y = compileTimeOnly(x);          // error: x not a constant expression
+</code></pre>
+    </div>
+
+    <h3 id="stringify">7.0 Stringification and Token Pasting</h3>
+    <t-b>
+      Two operators are available only inside function-like macro expansions:
+    </t-b>
+    <t-b>
+      <ul class="indent">
+        <li><c-s>#arg</c-s> - stringifies the argument, producing a string literal of its text.</li>
+        <li><c-s>a ## b</c-s> - concatenates two tokens to form a new token.</li>
+      </ul>
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#define STRINGIFY(x) #x
+#define CONCAT(a, b) a ## b
+
+std::string s = STRINGIFY(hello world);   // "hello world"
+int CONCAT(my, Var) = 42;                 // declares int myVar = 42;
+
+// Practical use: assertion macro that shows failing expression
+#define ASSERT_TRUE(expr) \
+  do { \
+    if (!(expr)) { \
+      std::cerr &lt;&lt; "Assertion failed: " #expr \
+                &lt;&lt; " at " __FILE__ ":" &lt;&lt; __LINE__ &lt;&lt; '\n'; \
+      std::abort(); \
+    } \
+  } while (false)
+</code></pre>
+    </div>
+    <t-b>
+      The <c-s>do { ... } while (false)</c-s> wrapper makes the macro behave as a single statement
+      so it works correctly inside <c-s>if</c-s> branches without braces.
+    </t-b>
+
+    <h3 id="refs">8.0 References</h3>
+    <table class="indent">
+      <tr><th class="darkItem">Resource</th><th class="darkItem">Notes</th></tr>
+      <tr>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/preprocessor">cppreference: preprocessor</a></td>
+        <td>Complete preprocessor directive reference</td>
+      </tr>
+      <tr>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/constexpr">cppreference: constexpr</a></td>
+        <td>constexpr specifier rules and examples</td>
+      </tr>
+      <tr>
+        <td><a target="_blank" href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#es31-dont-use-macros-for-constants-or-functions">C++ Core Guidelines: ES.31</a></td>
+        <td>Don't use macros for constants or functions</td>
+      </tr>
+    </table>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synop">synopsis</a>
+        <a href="#objectlike">object-like</a>
+        <a href="#funclike">function-like</a>
+        <a href="#guards">include guards</a>
+        <a href="#conditional">conditional</a>
+        <a href="#constexprs">constexpr</a>
+        <a href="#stringify">stringify</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 13, 10);
+  </script>
+</body>
+</html>

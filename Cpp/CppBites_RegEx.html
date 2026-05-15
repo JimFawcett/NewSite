@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_RegEx.html
+-->
+<head>
+  <title>CppBites RegEx</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_RegEx.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Regular Expressions</h2>
+        <h4 id="subtitle" class="indent">
+          std::regex, matching, searching, and replacing
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synop">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      The <c-s>&lt;regex&gt;</c-s> header (C++11) provides ECMAScript-syntax regular expressions.
+      The three primary types are <c-s>std::regex</c-s> (compiled pattern),
+      <c-s>std::smatch</c-s> (match results for <c-s>std::string</c-s>), and
+      <c-s>std::ssub_match</c-s> (a single capture group within a match). Wide-string variants
+      (<c-s>std::wregex</c-s>, <c-s>std::wsmatch</c-s>) are also provided.
+    </t-b>
+
+    <h3 id="compile">2.0 Compiling a Pattern</h3>
+    <t-b>
+      Constructing a <c-s>std::regex</c-s> from a string compiles the pattern. The default grammar
+      is ECMAScript. Pass flag constants to select alternatives.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;regex&gt;
+#include &lt;string&gt;
+
+// ECMAScript (default)
+std::regex digits(R"(\d+)");
+
+// Case-insensitive flag
+std::regex word(R"(\bword\b)", std::regex_constants::icase);
+
+// Extended POSIX syntax
+std::regex posix("[0-9]+", std::regex_constants::extended);
+</code></pre>
+    </div>
+    <t-b>
+      Raw string literals <c-s>R"(...)"</c-s> avoid double-escaping backslashes and make
+      regex patterns significantly more readable.
+    </t-b>
+
+    <h3 id="match">3.0 regex_match</h3>
+    <t-b>
+      <c-s>std::regex_match</c-s> tests whether the <em>entire</em> string conforms to the pattern.
+      It returns <c-s>bool</c-s>. Passing an <c-s>std::smatch</c-s> populates capture groups
+      (group 0 is the full match; groups 1..N are the parenthesized sub-expressions).
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">std::string date = "2026-05-14";
+std::regex  pat(R"((\d{4})-(\d{2})-(\d{2}))");
+std::smatch m;
+
+if (std::regex_match(date, m, pat)) {
+  std::cout &lt;&lt; "year:  " &lt;&lt; m[1] &lt;&lt; '\n';   // 2026
+  std::cout &lt;&lt; "month: " &lt;&lt; m[2] &lt;&lt; '\n';   // 05
+  std::cout &lt;&lt; "day:   " &lt;&lt; m[3] &lt;&lt; '\n';   // 14
+}
+</code></pre>
+    </div>
+    <t-b>
+      <c-s>regex_match</c-s> requires the pattern to match from the first to the last character.
+      Use <c-s>regex_search</c-s> when the match may appear anywhere in the string.
+    </t-b>
+
+    <h3 id="search">4.0 regex_search and regex_replace</h3>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;regex&gt;
+#include &lt;string&gt;
+#include &lt;iostream&gt;
+
+int main() {
+  std::string text = "user@example.com";
+  std::regex email(R"((\w+)@(\w+)\.(\w+))");
+  std::smatch m;
+
+  // match_search: find pattern anywhere
+  if (std::regex_search(text, m, email)) {
+    std::cout &lt;&lt; "user: " &lt;&lt; m[1] &lt;&lt; '\n';  // user
+    std::cout &lt;&lt; "host: " &lt;&lt; m[2] &lt;&lt; '\n';  // example
+  }
+
+  // regex_replace: substitute match
+  std::string masked = std::regex_replace(text, email, "$1@***");
+  std::cout &lt;&lt; masked &lt;&lt; '\n';  // user@***
+}
+</code></pre>
+    </div>
+    <t-b>
+      In the replacement string, <c-s>$0</c-s> expands to the full match, <c-s>$1</c-s> to the
+      first capture group, and so on. <c-s>$$</c-s> inserts a literal dollar sign.
+    </t-b>
+
+    <h3 id="iterate">5.0 Iterating All Matches</h3>
+    <t-b>
+      <c-s>std::sregex_iterator</c-s> iterates over all non-overlapping matches of a pattern
+      in a string. Dereference it to get an <c-s>std::smatch</c-s>.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">std::string text  = "one 1, two 2, three 3";
+std::regex  num(R"(\d+)");
+
+auto begin = std::sregex_iterator(text.begin(), text.end(), num);
+auto end   = std::sregex_iterator();
+
+for (auto it = begin; it != end; ++it) {
+  std::smatch match = *it;
+  std::cout &lt;&lt; "found: " &lt;&lt; match[0] &lt;&lt; '\n';
+}
+// Output:
+// found: 1
+// found: 2
+// found: 3
+</code></pre>
+    </div>
+    <t-b>
+      <c-s>std::sregex_token_iterator</c-s> provides a similar interface but yields individual
+      sub-matches or the parts of the string between matches (useful for splitting on a delimiter).
+    </t-b>
+
+    <h3 id="replace">6.0 Regex Replace with Callback</h3>
+    <t-b>
+      The standard library does not directly support a callable replacement (a function that
+      transforms each match). A common workaround is to use <c-s>sregex_iterator</c-s> to collect
+      matches and rebuild the string manually, or to use third-party extensions.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Replace each number with its double
+std::string text = "a=1, b=2, c=10";
+std::regex  num(R"(\d+)");
+std::string result;
+auto last = text.cbegin();
+
+for (auto it = std::sregex_iterator(text.begin(), text.end(), num);
+     it != std::sregex_iterator(); ++it) {
+  result.append(last, it-&gt;prefix().second);
+  int value = std::stoi((*it)[0]);
+  result += std::to_string(value * 2);
+  last = it-&gt;suffix().first;
+}
+result.append(last, text.cend());
+std::cout &lt;&lt; result &lt;&lt; '\n';   // a=2, b=4, c=20
+</code></pre>
+    </div>
+
+    <h3 id="perf">7.0 Performance Note</h3>
+    <t-b>
+      Regex compilation is expensive - constructing <c-s>std::regex</c-s> from a string parses and
+      compiles the pattern into an internal representation. Never construct a <c-s>std::regex</c-s>
+      inside a loop that calls it on many strings. Declare it <c-s>static</c-s> or store it as a
+      member or module-level variable.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Bad: compiles the regex on every call
+bool isDigits(const std::string&amp; s) {
+  return std::regex_match(s, std::regex(R"(\d+)"));  // expensive
+}
+
+// Good: compile once
+bool isDigits(const std::string&amp; s) {
+  static const std::regex digits(R"(\d+)");
+  return std::regex_match(s, digits);
+}
+</code></pre>
+    </div>
+    <t-b>
+      For high-throughput pattern matching, consider PCRE2 or RE2, which offer better performance
+      and more predictable worst-case behavior than the ECMAScript regex engine in most standard
+      library implementations.
+    </t-b>
+
+    <h3 id="refs">8.0 References</h3>
+    <table class="indent">
+      <tr><th class="darkItem">Resource</th><th class="darkItem">Notes</th></tr>
+      <tr>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/regex">cppreference: &lt;regex&gt;</a></td>
+        <td>Full API reference for all regex types and algorithms</td>
+      </tr>
+      <tr>
+        <td><a target="_blank" href="https://ecma-international.org/publications-and-standards/standards/ecma-262/">ECMAScript regex syntax</a></td>
+        <td>The grammar used by std::regex by default</td>
+      </tr>
+      <tr>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/regex/regex_constants">cppreference: regex_constants</a></td>
+        <td>Flags for grammar selection and match behavior</td>
+      </tr>
+    </table>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synop">synopsis</a>
+        <a href="#compile">compile</a>
+        <a href="#match">regex_match</a>
+        <a href="#search">search &amp; replace</a>
+        <a href="#iterate">iterating matches</a>
+        <a href="#replace">replace with callback</a>
+        <a href="#perf">performance</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 27, 10);
+  </script>
+</body>
+</html>

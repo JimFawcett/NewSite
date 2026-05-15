@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_Strings.html
+-->
+<head>
+  <title>CppBites Strings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_Strings.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Strings</h2>
+        <h4 id="subtitle" class="indent">
+          std::string, string_view, and string operations
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synopsis">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      C++ provides two primary string abstractions:
+      <ul>
+        <li><c-s>std::string</c-s> - owning, heap-managed, mutable byte string. Lives in <c-s>&lt;string&gt;</c-s>.</li>
+        <li><c-s>std::string_view</c-s> - non-owning, read-only reference to an existing string or substring. Lives in <c-s>&lt;string_view&gt;</c-s>.</li>
+      </ul>
+      Use <c-s>std::string</c-s> when you need to own or modify the text. Use <c-s>string_view</c-s> for function parameters
+      that only read a string - it avoids copies and accepts string literals, <c-s>std::string</c-s>, and substrings without
+      allocation.
+    </t-b>
+
+    <h3 id="stdstring">2.0 std::string</h3>
+    <t-b>
+      <c-s>std::string</c-s> is a dynamic sequence of <c-s>char</c-s> backed by heap memory. Construction from string
+      literals, concatenation with <c-s>+</c-s> or <c-s>+=</c-s>, lexicographic comparison with <c-s>==</c-s> and
+      <c-s>&lt;</c-s>, and substring extraction with <c-s>substr(pos, len)</c-s> are all built in. <c-s>find</c-s> and
+      <c-s>rfind</c-s> return <c-s>std::string::npos</c-s> on failure.
+    </t-b>
+    <t-b>
+      Small String Optimization (SSO) keeps strings below ~15 characters entirely on the stack, avoiding a heap
+      allocation for short strings. SSO is implementation-defined but standard in all major libraries.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;string&gt;
+#include &lt;iostream&gt;
+
+std::string s = "Hello";
+s += ", World";
+std::cout &lt;&lt; s.size() &lt;&lt; '\n';    // 12
+std::cout &lt;&lt; s.substr(7) &lt;&lt; '\n'; // World
+
+auto pos = s.find("World");
+if (pos != std::string::npos)
+  std::cout &lt;&lt; "found at " &lt;&lt; pos &lt;&lt; '\n';  // 7</code></pre>
+    </div>
+
+    <h3 id="stringview">3.0 string_view</h3>
+    <t-b>
+      <c-s>std::string_view</c-s> is a lightweight (pointer + length) non-owning reference. Constructing one from
+      a string literal or a <c-s>std::string</c-s> involves no allocation. It supports the same read-only
+      operations as <c-s>std::string</c-s>: <c-s>size</c-s>, <c-s>substr</c-s>, <c-s>find</c-s>, range-for, etc.
+    </t-b>
+    <t-b>
+      <strong>Dangling view warning:</strong> never store a <c-s>string_view</c-s> that refers to a temporary
+      <c-s>std::string</c-s> - the string may be destroyed while the view is still alive. Use it only as a
+      short-lived parameter or local variable.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;string_view&gt;
+
+// no allocation: just a pointer + length
+void print(std::string_view sv) {
+  std::cout &lt;&lt; sv.size() &lt;&lt; ": " &lt;&lt; sv &lt;&lt; '\n';
+}
+
+print("literal");                  // string literal
+std::string s = "dynamic";
+print(s);                          // std::string
+print(std::string_view(s).substr(0, 3)); // "dyn"</code></pre>
+    </div>
+
+    <h3 id="literals">4.0 String Literals</h3>
+    <t-b>
+      C++ supports several literal prefixes and suffixes for strings:
+    </t-b>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Literal</th>
+          <th class="darkItem">Type</th>
+          <th class="darkItem">Notes</th>
+        </tr>
+        <tr>
+          <td><c-s>"hello"</c-s></td>
+          <td><c-s>const char*</c-s></td>
+          <td>narrow string literal</td>
+        </tr>
+        <tr>
+          <td><c-s>"hello"s</c-s></td>
+          <td><c-s>std::string</c-s></td>
+          <td>user-defined literal (C++14), needs <c-s>using namespace std::string_literals</c-s></td>
+        </tr>
+        <tr>
+          <td><c-s>R"(path\to\file)"</c-s></td>
+          <td><c-s>const char*</c-s></td>
+          <td>raw literal - backslashes and quotes are not escaped</td>
+        </tr>
+        <tr>
+          <td><c-s>u8"..."</c-s></td>
+          <td><c-s>const char8_t*</c-s></td>
+          <td>UTF-8 encoded (C++20 type)</td>
+        </tr>
+        <tr>
+          <td><c-s>L"..."</c-s></td>
+          <td><c-s>const wchar_t*</c-s></td>
+          <td>wide string</td>
+        </tr>
+        <tr>
+          <td><c-s>u"..."</c-s></td>
+          <td><c-s>const char16_t*</c-s></td>
+          <td>UTF-16</td>
+        </tr>
+        <tr>
+          <td><c-s>U"..."</c-s></td>
+          <td><c-s>const char32_t*</c-s></td>
+          <td>UTF-32</td>
+        </tr>
+      </table>
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">using namespace std::string_literals;
+
+auto s1 = "hello"s;                    // std::string, no null-terminator issues
+auto s2 = R"(C:\Users\jim\file.txt)";  // raw: backslash is literal
+auto s3 = R"(He said "hi".)";          // raw: quotes are literal</code></pre>
+    </div>
+
+    <h3 id="conversions">5.0 Conversions</h3>
+    <t-b>
+      Convert numeric types to <c-s>std::string</c-s> with <c-s>std::to_string</c-s>. Parse strings to numbers
+      with <c-s>std::stoi</c-s>, <c-s>std::stol</c-s>, <c-s>std::stod</c-s>, etc. These throw
+      <c-s>std::invalid_argument</c-s> if parsing fails and <c-s>std::out_of_range</c-s> on overflow.
+    </t-b>
+    <t-b>
+      C++20 adds <c-s>std::format</c-s> (in <c-s>&lt;format&gt;</c-s>) for Python-style string formatting without
+      the overhead of <c-s>std::ostringstream</c-s>.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;string&gt;
+#include &lt;format&gt;  // C++20
+
+std::string a = std::to_string(42);     // "42"
+int         n = std::stoi("123");       // 123
+double      d = std::stod("3.14");      // 3.14
+
+// C++20 formatting
+std::string msg = std::format("x={}, y={:.2f}", 10, 3.14159);
+// "x=10, y=3.14"</code></pre>
+    </div>
+
+    <h3 id="operations">6.0 Common Operations</h3>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Operation</th>
+          <th class="darkItem">Example</th>
+        </tr>
+        <tr>
+          <td>length / size</td>
+          <td><c-s>s.size()</c-s>, <c-s>s.length()</c-s> (identical)</td>
+        </tr>
+        <tr>
+          <td>empty check</td>
+          <td><c-s>s.empty()</c-s></td>
+        </tr>
+        <tr>
+          <td>clear</td>
+          <td><c-s>s.clear()</c-s></td>
+        </tr>
+        <tr>
+          <td>append char</td>
+          <td><c-s>s.push_back('!')</c-s></td>
+        </tr>
+        <tr>
+          <td>insert</td>
+          <td><c-s>s.insert(pos, "text")</c-s></td>
+        </tr>
+        <tr>
+          <td>erase</td>
+          <td><c-s>s.erase(pos, len)</c-s></td>
+        </tr>
+        <tr>
+          <td>replace</td>
+          <td><c-s>s.replace(pos, len, "new")</c-s></td>
+        </tr>
+        <tr>
+          <td>starts_with (C++20)</td>
+          <td><c-s>s.starts_with("Hello")</c-s></td>
+        </tr>
+        <tr>
+          <td>ends_with (C++20)</td>
+          <td><c-s>s.ends_with(".txt")</c-s></td>
+        </tr>
+        <tr>
+          <td>contains (C++23)</td>
+          <td><c-s>s.contains("World")</c-s></td>
+        </tr>
+      </table>
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">std::string s = "Hello, World!";
+s.insert(7, "beautiful ");         // "Hello, beautiful World!"
+s.erase(7, 10);                    // "Hello, World!"
+
+if (s.starts_with("Hello"))
+  std::cout &lt;&lt; "greeting\n";
+if (s.ends_with("!"))
+  std::cout &lt;&lt; "exclamation\n";</code></pre>
+    </div>
+
+    <h3 id="refs">7.0 References</h3>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Resource</th>
+          <th class="darkItem">URL</th>
+        </tr>
+        <tr>
+          <td>cppreference string</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/string/basic_string">en.cppreference.com/w/cpp/string/basic_string</a></td>
+        </tr>
+        <tr>
+          <td>cppreference string_view</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/string/basic_string_view">en.cppreference.com/w/cpp/string/basic_string_view</a></td>
+        </tr>
+        <tr>
+          <td>cppreference format</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/utility/format/format">en.cppreference.com/w/cpp/utility/format/format</a></td>
+        </tr>
+      </table>
+    </t-b>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synopsis">synopsis</a>
+        <a href="#stdstring">std::string</a>
+        <a href="#stringview">string_view</a>
+        <a href="#literals">string literals</a>
+        <a href="#conversions">conversions</a>
+        <a href="#operations">common operations</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 6, 10);
+  </script>
+</body>
+</html>

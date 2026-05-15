@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_Traits.html
+-->
+<head>
+  <title>CppBites Traits</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_Traits.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Concepts and Traits</h2>
+        <h4 id="subtitle" class="indent">
+          C++20 concepts, type traits, and constrained templates
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synopsis">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      C++20 concepts provide named, readable constraints on template parameters. They replace ad-hoc SFINAE
+      with compiler-enforced requirements and clear error messages. Type traits from <c-s>&lt;type_traits&gt;</c-s>
+      are the building blocks: compile-time predicates and type transformations used inside concepts,
+      <c-s>if constexpr</c-s>, and template metaprogramming. Together they enable expressive, safe generic code
+      - analogous to Rust's trait bounds, but compile-time only.
+    </t-b>
+
+    <h3 id="typetraits">2.0 Type Traits</h3>
+    <t-b>
+      Type traits are struct templates in <c-s>&lt;type_traits&gt;</c-s> that expose compile-time information
+      about types. The <c-s>_v</c-s> suffix gives a <c-s>bool</c-s> value; the <c-s>_t</c-s> suffix gives a
+      transformed type.
+    </t-b>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Trait</th>
+          <th class="darkItem">Meaning</th>
+        </tr>
+        <tr>
+          <td><c-s>std::is_integral_v&lt;T&gt;</c-s></td>
+          <td>true for int, char, long, bool, etc.</td>
+        </tr>
+        <tr>
+          <td><c-s>std::is_floating_point_v&lt;T&gt;</c-s></td>
+          <td>true for float, double, long double</td>
+        </tr>
+        <tr>
+          <td><c-s>std::is_same_v&lt;T, U&gt;</c-s></td>
+          <td>true when T and U are the same type</td>
+        </tr>
+        <tr>
+          <td><c-s>std::is_copy_constructible_v&lt;T&gt;</c-s></td>
+          <td>true when T can be copy-constructed</td>
+        </tr>
+        <tr>
+          <td><c-s>std::is_trivially_copyable_v&lt;T&gt;</c-s></td>
+          <td>true when T can be safely memcpy'd</td>
+        </tr>
+        <tr>
+          <td><c-s>std::remove_reference_t&lt;T&gt;</c-s></td>
+          <td>strips reference from T</td>
+        </tr>
+        <tr>
+          <td><c-s>std::decay_t&lt;T&gt;</c-s></td>
+          <td>strips reference, cv-qualifiers, and array/function decay</td>
+        </tr>
+        <tr>
+          <td><c-s>std::conditional_t&lt;B, T, F&gt;</c-s></td>
+          <td>T if B is true, F otherwise</td>
+        </tr>
+      </table>
+    </t-b>
+
+    <h3 id="defining">3.0 Defining a Concept</h3>
+    <t-b>
+      A concept is defined with the <c-s>concept</c-s> keyword followed by a boolean constant expression.
+      The expression may use type traits, requires-expressions, or logical combinations of other concepts.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;concepts&gt;
+#include &lt;type_traits&gt;
+
+// define a concept
+template&lt;typename T&gt;
+concept Numeric = std::integral&lt;T&gt; || std::floating_point&lt;T&gt;;
+
+// constrain a template - three equivalent forms:
+template&lt;Numeric T&gt;
+T square(T x) { return x * x; }
+
+template&lt;typename T&gt; requires Numeric&lt;T&gt;
+T cube(T x) { return x * x * x; }
+
+auto abs_val(Numeric auto x) { return x &lt; 0 ? -x : x; }</code></pre>
+    </div>
+
+    <h3 id="constraining">4.0 Constraining Templates</h3>
+    <t-b>
+      The three syntaxes in section 3 are fully equivalent; choose whichever reads best for the context.
+      The <c-s>requires</c-s> clause form is most explicit and also supports complex multi-concept
+      conjunctions: <c-s>requires Numeric&lt;T&gt; &amp;&amp; std::copyable&lt;T&gt;</c-s>.
+    </t-b>
+    <t-b>
+      When a concept constraint is violated, the compiler reports which requirement failed and why, rather than
+      the deep substitution errors typical of unconstrained templates. This is the primary practical benefit
+      over pre-C++20 SFINAE.
+    </t-b>
+
+    <h3 id="stdconcepts">5.0 Standard Concepts</h3>
+    <t-b>
+      <c-s>&lt;concepts&gt;</c-s> provides a rich set of pre-defined concepts:
+    </t-b>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Concept</th>
+          <th class="darkItem">Requires</th>
+        </tr>
+        <tr>
+          <td><c-s>std::integral&lt;T&gt;</c-s></td>
+          <td>T is an integer type</td>
+        </tr>
+        <tr>
+          <td><c-s>std::floating_point&lt;T&gt;</c-s></td>
+          <td>T is a floating-point type</td>
+        </tr>
+        <tr>
+          <td><c-s>std::copyable&lt;T&gt;</c-s></td>
+          <td>T is copy-constructible and copy-assignable</td>
+        </tr>
+        <tr>
+          <td><c-s>std::movable&lt;T&gt;</c-s></td>
+          <td>T is move-constructible and move-assignable</td>
+        </tr>
+        <tr>
+          <td><c-s>std::equality_comparable&lt;T&gt;</c-s></td>
+          <td>T supports == and !=</td>
+        </tr>
+        <tr>
+          <td><c-s>std::totally_ordered&lt;T&gt;</c-s></td>
+          <td>T supports all comparison operators</td>
+        </tr>
+        <tr>
+          <td><c-s>std::invocable&lt;F, Args...&gt;</c-s></td>
+          <td>F is callable with Args</td>
+        </tr>
+        <tr>
+          <td><c-s>std::ranges::range&lt;T&gt;</c-s></td>
+          <td>T provides begin() and end()</td>
+        </tr>
+        <tr>
+          <td><c-s>std::convertible_to&lt;T, U&gt;</c-s></td>
+          <td>T is implicitly convertible to U</td>
+        </tr>
+      </table>
+    </t-b>
+
+    <h3 id="requires">6.0 requires-expression</h3>
+    <t-b>
+      A <c-s>requires</c-s>-expression tests whether a set of expressions are syntactically valid and, optionally,
+      that they return a type satisfying another concept. It appears inside concept definitions or directly in
+      requires clauses.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">template&lt;typename T&gt;
+concept HasSize = requires(T t) {
+  { t.size() } -&gt; std::convertible_to&lt;std::size_t&gt;;
+};
+
+template&lt;HasSize C&gt;
+void printSize(const C&amp; c) {
+  std::cout &lt;&lt; "size: " &lt;&lt; c.size() &lt;&lt; '\n';
+}</code></pre>
+    </div>
+    <t-b>
+      The <c-s>{ expr } -&gt; Concept</c-s> form checks two things: the expression must compile, and its
+      return type must satisfy the given concept. Without the arrow, only compilability is checked.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">template&lt;typename T&gt;
+concept Addable = requires(T a, T b) {
+  a + b;                                 // expression must compile
+  { a + b } -&gt; std::same_as&lt;T&gt;;        // and return type T
+  { a += b } -&gt; std::same_as&lt;T&amp;&gt;;      // and += returns T&amp;
+};</code></pre>
+    </div>
+
+    <h3 id="vsrust">7.0 Comparison with Rust Traits</h3>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Aspect</th>
+          <th class="darkItem">C++ Concepts</th>
+          <th class="darkItem">Rust Traits</th>
+        </tr>
+        <tr>
+          <td>Purpose</td>
+          <td>constrain template arguments</td>
+          <td>define shared behavior; constrain generics</td>
+        </tr>
+        <tr>
+          <td>Runtime dispatch</td>
+          <td>no (concepts are compile-time only)</td>
+          <td>yes, via <c-s>dyn Trait</c-s> trait objects</td>
+        </tr>
+        <tr>
+          <td>Implementation site</td>
+          <td>type must provide the required operations anywhere</td>
+          <td><c-s>impl Trait for Type</c-s> must be explicit</td>
+        </tr>
+        <tr>
+          <td>Orphan rules</td>
+          <td>none</td>
+          <td>enforced: impl must be in crate of trait or type</td>
+        </tr>
+        <tr>
+          <td>Default methods</td>
+          <td>no direct equivalent in concepts</td>
+          <td>yes, traits can provide default method bodies</td>
+        </tr>
+        <tr>
+          <td>Error quality</td>
+          <td>much improved over SFINAE</td>
+          <td>generally excellent</td>
+        </tr>
+      </table>
+    </t-b>
+
+    <h3 id="refs">8.0 References</h3>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Resource</th>
+          <th class="darkItem">URL</th>
+        </tr>
+        <tr>
+          <td>cppreference concepts</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/constraints">en.cppreference.com/w/cpp/language/constraints</a></td>
+        </tr>
+        <tr>
+          <td>cppreference type_traits</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/header/type_traits">en.cppreference.com/w/cpp/header/type_traits</a></td>
+        </tr>
+        <tr>
+          <td>cppreference standard concepts</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/concepts">en.cppreference.com/w/cpp/concepts</a></td>
+        </tr>
+        <tr>
+          <td>C++ Story</td>
+          <td><a href="CppStory_Concept.html">CppStory_Concept.html</a></td>
+        </tr>
+      </table>
+    </t-b>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synopsis">synopsis</a>
+        <a href="#typetraits">type traits</a>
+        <a href="#defining">defining concepts</a>
+        <a href="#constraining">constraining templates</a>
+        <a href="#stdconcepts">standard concepts</a>
+        <a href="#requires">requires-expression</a>
+        <a href="#vsrust">vs Rust traits</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 19, 10);
+  </script>
+</body>
+</html>

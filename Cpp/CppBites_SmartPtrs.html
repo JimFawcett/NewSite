@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_SmartPtrs.html
+-->
+<head>
+  <title>CppBites SmartPtrs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_SmartPtrs.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Smart Pointers</h2>
+        <h4 id="subtitle" class="indent">
+          unique_ptr, shared_ptr, weak_ptr, and custom deleters
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synopsis">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      Smart pointers manage heap-allocated objects through RAII. The standard library provides three:
+      <ul>
+        <li><c-s>std::unique_ptr</c-s> - exclusive ownership; destroyed when it goes out of scope.</li>
+        <li><c-s>std::shared_ptr</c-s> - reference-counted shared ownership; destroyed when the last owner releases it.</li>
+        <li><c-s>std::weak_ptr</c-s> - non-owning observer of a <c-s>shared_ptr</c-s>; breaks reference cycles.</li>
+      </ul>
+      All three live in <c-s>&lt;memory&gt;</c-s> and eliminate the need to call <c-s>delete</c-s> manually.
+    </t-b>
+
+    <h3 id="unique">2.0 unique_ptr</h3>
+    <t-b>
+      <c-s>std::unique_ptr&lt;T&gt;</c-s> enforces single ownership. It is non-copyable but movable, so ownership
+      transfers via <c-s>std::move</c-s>. Use <c-s>std::make_unique&lt;T&gt;(args...)</c-s> to construct - it is
+      exception-safe and avoids a raw <c-s>new</c-s> expression. The managed object is destroyed automatically
+      when the <c-s>unique_ptr</c-s> goes out of scope. There is zero runtime overhead compared to a raw pointer.
+    </t-b>
+    <t-b>
+      Access the underlying pointer with <c-s>.get()</c-s>, release ownership without deleting with
+      <c-s>.release()</c-s>, and reset to a new pointer with <c-s>.reset()</c-s>.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;memory&gt;
+
+// unique ownership
+auto u = std::make_unique&lt;int&gt;(42);
+std::cout &lt;&lt; *u &lt;&lt; '\n';   // 42
+// auto u2 = u;              // error: not copyable
+auto u2 = std::move(u);    // transfer ownership</code></pre>
+    </div>
+
+    <h3 id="shared">3.0 shared_ptr</h3>
+    <t-b>
+      <c-s>std::shared_ptr&lt;T&gt;</c-s> allows multiple owners. Each copy increments a reference count stored in a
+      heap-allocated control block. When the count reaches zero the managed object is destroyed. Use
+      <c-s>std::make_shared&lt;T&gt;(args...)</c-s> - it allocates the object and control block in a single allocation,
+      which is more cache-friendly and faster than constructing from a raw pointer.
+    </t-b>
+    <t-b>
+      Inspect the reference count with <c-s>.use_count()</c-s>. The control block adds slight overhead compared to
+      <c-s>unique_ptr</c-s>; prefer <c-s>unique_ptr</c-s> when shared ownership is not needed.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// shared ownership
+auto s1 = std::make_shared&lt;std::string&gt;("hello");
+auto s2 = s1;                       // share ownership
+std::cout &lt;&lt; s1.use_count() &lt;&lt; '\n'; // 2</code></pre>
+    </div>
+
+    <h3 id="weak">4.0 weak_ptr</h3>
+    <t-b>
+      <c-s>std::weak_ptr&lt;T&gt;</c-s> holds a non-owning reference to an object managed by a <c-s>shared_ptr</c-s>.
+      It does not affect the reference count. To access the object, call <c-s>.lock()</c-s>, which returns a
+      temporary <c-s>shared_ptr</c-s> - or an empty one if the object has already been destroyed. Use
+      <c-s>weak_ptr</c-s> to break ownership cycles in graph-like structures, caches, and observer patterns.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">std::shared_ptr&lt;int&gt; sp = std::make_shared&lt;int&gt;(10);
+std::weak_ptr&lt;int&gt;   wp = sp;
+
+if (auto locked = wp.lock()) {      // obtain temporary shared_ptr
+  std::cout &lt;&lt; *locked &lt;&lt; '\n';    // 10
+}
+sp.reset();                          // destroy object
+if (!wp.lock()) std::cout &lt;&lt; "expired\n";</code></pre>
+    </div>
+
+    <h3 id="deleters">5.0 Custom Deleters</h3>
+    <t-b>
+      Both <c-s>unique_ptr</c-s> and <c-s>shared_ptr</c-s> accept a custom deleter - a callable invoked instead of
+      <c-s>delete</c-s> when the object is released. This makes smart pointers suitable for non-memory resources
+      such as file handles, sockets, and C library handles.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;cstdio&gt;
+#include &lt;memory&gt;
+
+// unique_ptr with custom deleter type
+auto fileDeleter = [](FILE* f) { if (f) std::fclose(f); };
+std::unique_ptr&lt;FILE, decltype(fileDeleter)&gt;
+  fp(std::fopen("data.txt", "r"), fileDeleter);
+
+// shared_ptr accepts deleter in constructor
+auto sp = std::shared_ptr&lt;FILE&gt;(
+  std::fopen("out.txt", "w"),
+  [](FILE* f) { if (f) std::fclose(f); }
+);</code></pre>
+    </div>
+
+    <h3 id="mistakes">6.0 Common Mistakes</h3>
+    <t-b>
+      <strong>Cyclic shared_ptrs.</strong> If object A holds a <c-s>shared_ptr</c-s> to B and B holds a
+      <c-s>shared_ptr</c-s> back to A, neither is ever destroyed. Break the cycle by making one direction a
+      <c-s>weak_ptr</c-s>.
+    </t-b>
+    <t-b>
+      <strong>Multiple independent shared_ptrs from the same raw pointer.</strong> Each creates its own control
+      block; the object is deleted twice. Always copy or move an existing <c-s>shared_ptr</c-s> to share
+      ownership. If a class needs to return <c-s>shared_ptr&lt;this&gt;</c-s>, inherit from
+      <c-s>std::enable_shared_from_this&lt;T&gt;</c-s> and call <c-s>shared_from_this()</c-s>.
+    </t-b>
+    <t-b>
+      <strong>Mixing raw pointers and smart pointers.</strong> Storing a raw pointer extracted from a
+      <c-s>unique_ptr</c-s> or <c-s>shared_ptr</c-s> and then deleting it manually leads to double-free.
+      Use <c-s>.get()</c-s> only when the called API requires a raw pointer and the lifetime is clear.
+    </t-b>
+
+    <h3 id="refs">7.0 References</h3>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Resource</th>
+          <th class="darkItem">URL</th>
+        </tr>
+        <tr>
+          <td>cppreference unique_ptr</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/memory/unique_ptr">en.cppreference.com/w/cpp/memory/unique_ptr</a></td>
+        </tr>
+        <tr>
+          <td>cppreference shared_ptr</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/memory/shared_ptr">en.cppreference.com/w/cpp/memory/shared_ptr</a></td>
+        </tr>
+        <tr>
+          <td>cppreference weak_ptr</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/memory/weak_ptr">en.cppreference.com/w/cpp/memory/weak_ptr</a></td>
+        </tr>
+        <tr>
+          <td>cppreference enable_shared_from_this</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/memory/enable_shared_from_this">en.cppreference.com/w/cpp/memory/enable_shared_from_this</a></td>
+        </tr>
+      </table>
+    </t-b>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synopsis">synopsis</a>
+        <a href="#unique">unique_ptr</a>
+        <a href="#shared">shared_ptr</a>
+        <a href="#weak">weak_ptr</a>
+        <a href="#deleters">custom deleters</a>
+        <a href="#mistakes">common mistakes</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 21, 10);
+  </script>
+</body>
+</html>

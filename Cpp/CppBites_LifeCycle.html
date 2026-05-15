@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_LifeCycle.html
+-->
+<head>
+  <title>CppBites LifeCycle</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_LifeCycle.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Object Life Cycle</h2>
+        <h4 id="subtitle" class="indent">
+          construction, copy, move, and destruction
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synop">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      Every C++ object has a well-defined life cycle: it is constructed, possibly copied or moved,
+      and eventually destroyed. Six special member functions control this cycle. Understanding exactly
+      when each is called - and what the compiler generates when you don't declare them - is
+      foundational to writing correct C++ code.
+    </t-b>
+
+    <h3 id="construct">2.0 Construction</h3>
+    <t-b>
+      An object comes into existence via a constructor. The compiler selects the matching constructor
+      based on the arguments provided at the point of definition.
+    </t-b>
+    <t-b>
+      <ul class="indent">
+        <li><strong>Default constructor</strong> <c-s>T()</c-s> - called when no arguments are given. Value-initializes fundamental types to zero when invoked with <c-s>{}</c-s>.</li>
+        <li><strong>Parameterized constructors</strong> - take arguments that configure initial state.</li>
+        <li><strong>Delegating constructors</strong> (C++11) - one constructor calls another of the same class via <c-s>: ClassName(args)</c-s> in the member initializer list.</li>
+      </ul>
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">struct Point {
+  int x, y;
+  Point() : x(0), y(0) {}              // default
+  Point(int x, int y) : x(x), y(y) {} // parameterized
+  explicit Point(int v) : Point(v, v) {}  // delegating
+};
+
+Point p1;          // default: (0, 0)
+Point p2(3, 4);    // parameterized: (3, 4)
+Point p3(7);       // delegating: (7, 7)
+</code></pre>
+    </div>
+    <t-b>
+      Member initialization order follows the order of declaration in the class body, not the order
+      of the initializer list. Initializer lists are preferred over assignment in the constructor body
+      because they run before the body executes and avoid default-constructing then overwriting members.
+    </t-b>
+
+    <h3 id="copy">3.0 Copy Semantics</h3>
+    <t-b>
+      Copying creates a new object that is an independent duplicate of an existing one.
+    </t-b>
+    <t-b>
+      <ul class="indent">
+        <li><strong>Copy constructor</strong> <c-s>T(const T&amp;)</c-s> - invoked for direct initialization from another object, pass-by-value, and return-by-value (when copy elision does not apply).</li>
+        <li><strong>Copy assignment</strong> <c-s>T&amp; operator=(const T&amp;)</c-s> - invoked when assigning to an already-constructed object.</li>
+      </ul>
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">class MyString {
+public:
+  MyString(const char* s)
+    : len_(std::strlen(s)), data_(new char[len_ + 1]) {
+    std::strcpy(data_, s);
+  }
+  MyString(const MyString&amp; other)
+    : len_(other.len_), data_(new char[len_ + 1]) {
+    std::strcpy(data_, other.data_);   // deep copy
+  }
+  MyString&amp; operator=(const MyString&amp; other) {
+    if (this != &amp;other) {
+      MyString tmp(other);             // copy-and-swap
+      std::swap(data_, tmp.data_);
+      std::swap(len_,  tmp.len_);
+    }
+    return *this;
+  }
+  ~MyString() { delete[] data_; }
+private:
+  size_t len_;
+  char*  data_;
+};
+</code></pre>
+    </div>
+
+    <h3 id="move">4.0 Move Semantics</h3>
+    <t-b>
+      Moving transfers ownership of resources from a source object to a destination without copying.
+      The source is left in a valid but unspecified state - it can be destructed safely but should
+      not be used further without reassignment.
+    </t-b>
+    <t-b>
+      Mark move operations <c-s>noexcept</c-s> so STL containers can use them during reallocation;
+      without <c-s>noexcept</c-s>, <c-s>std::vector</c-s> falls back to copies to preserve the
+      strong exception guarantee.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">class Buffer {
+public:
+  Buffer(size_t n) : data_(new int[n]), size_(n) {}
+  ~Buffer() { delete[] data_; }
+
+  Buffer(Buffer&amp;&amp; other) noexcept
+    : data_(other.data_), size_(other.size_) {
+    other.data_ = nullptr;
+    other.size_ = 0;
+  }
+  Buffer&amp; operator=(Buffer&amp;&amp; other) noexcept {
+    if (this != &amp;other) {
+      delete[] data_;
+      data_ = other.data_;  size_ = other.size_;
+      other.data_ = nullptr; other.size_ = 0;
+    }
+    return *this;
+  }
+private:
+  int*   data_;
+  size_t size_;
+};
+</code></pre>
+    </div>
+    <t-b>
+      <c-s>std::move(x)</c-s> is a cast that converts <c-s>x</c-s> to an rvalue reference, enabling
+      the compiler to select the move constructor or move assignment operator. It does not move
+      anything by itself.
+    </t-b>
+
+    <h3 id="destroy">5.0 Destruction</h3>
+    <t-b>
+      The destructor <c-s>~T()</c-s> runs when an object's lifetime ends. It releases resources
+      and is the cornerstone of RAII. Destruction happens:
+    </t-b>
+    <t-b>
+      <ul class="indent">
+        <li>automatically when a local variable leaves scope (including during exception unwinding);</li>
+        <li>when <c-s>delete</c-s> is called on a heap object;</li>
+        <li>when a container erases or destroys an element;</li>
+        <li>when a member object's containing object is destroyed (members are destroyed in reverse declaration order).</li>
+      </ul>
+    </t-b>
+    <t-b>
+      Base class destructors must be <c-s>virtual</c-s> whenever a derived object may be deleted
+      through a pointer to base. Without a virtual destructor, deleting through a base pointer is
+      undefined behavior.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">class Base {
+public:
+  virtual ~Base() = default;   // virtual: derived destructors run correctly
+};
+
+class Derived : public Base {
+  std::vector&lt;int&gt; data_;
+public:
+  Derived() : data_(1000) {}
+  ~Derived() { /* data_ freed automatically */ }
+};
+
+Base* p = new Derived();
+delete p;   // calls ~Derived() then ~Base() - correct
+</code></pre>
+    </div>
+
+    <h3 id="genrules">6.0 Compiler Generation Rules</h3>
+    <t-b>
+      The compiler generates special member functions under specific conditions. Declaring any of them
+      influences whether others are generated:
+    </t-b>
+    <table class="indent">
+      <tr>
+        <th class="darkItem">Declared by user</th>
+        <th class="darkItem">Default ctor</th>
+        <th class="darkItem">Copy ctor</th>
+        <th class="darkItem">Copy assign</th>
+        <th class="darkItem">Move ctor</th>
+        <th class="darkItem">Move assign</th>
+        <th class="darkItem">Destructor</th>
+      </tr>
+      <tr><td>Nothing</td><td>generated</td><td>generated</td><td>generated</td><td>generated</td><td>generated</td><td>generated</td></tr>
+      <tr><td>Destructor</td><td>generated</td><td>generated*</td><td>generated*</td><td>not generated</td><td>not generated</td><td>-</td></tr>
+      <tr><td>Copy ctor</td><td>not generated</td><td>-</td><td>generated*</td><td>not generated</td><td>not generated</td><td>generated</td></tr>
+      <tr><td>Move ctor</td><td>not generated</td><td>deleted</td><td>deleted</td><td>-</td><td>not generated</td><td>generated</td></tr>
+    </table>
+    <t-b>
+      Entries marked * are deprecated (generated for backward compatibility but flagged by
+      linters). Use <c-s>= default</c-s> to explicitly request compiler generation; use
+      <c-s>= delete</c-s> to prohibit a special member function.
+    </t-b>
+
+    <h3 id="refs">7.0 References</h3>
+    <table class="indent">
+      <tr><th class="darkItem">Resource</th><th class="darkItem">Notes</th></tr>
+      <tr>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/rule_of_three">cppreference: special member functions</a></td>
+        <td>Rule of three/five/zero, generation rules</td>
+      </tr>
+      <tr>
+        <td><a target="_self" href="../../CppStoryRepo.html">C++ Story</a></td>
+        <td>Jim Fawcett's comprehensive C++ narrative</td>
+      </tr>
+      <tr>
+        <td><a target="_self" href="CppBites_Objects.html">C++ Bites: Objects</a></td>
+        <td>Classes, members, and object model</td>
+      </tr>
+      <tr>
+        <td><a target="_self" href="CppBites_Idioms.html">C++ Bites: Idioms</a></td>
+        <td>RAII, Rule of Zero/Three/Five, copy-and-swap</td>
+      </tr>
+    </table>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synop">synopsis</a>
+        <a href="#construct">construction</a>
+        <a href="#copy">copy semantics</a>
+        <a href="#move">move semantics</a>
+        <a href="#destroy">destruction</a>
+        <a href="#genrules">generation rules</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 15, 10);
+  </script>
+</body>
+</html>

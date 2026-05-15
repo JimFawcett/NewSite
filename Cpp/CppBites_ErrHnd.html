@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_ErrHnd.html
+-->
+<head>
+  <title>CppBites Error Handling</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_ErrHnd.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Error Handling</h2>
+        <h4 id="subtitle" class="indent">
+          exceptions, noexcept, and RAII-based error safety
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="syn">1.0 Synopsis</h3>
+    <t-b id="syn-body" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      C++ supports error handling through exceptions, error codes, and (C++23)
+      <c-s>std::expected</c-s>. The right choice depends on context: exceptions suit truly
+      exceptional conditions where the call site cannot recover locally; error codes suit
+      performance-critical paths or expected failures in tight loops. RAII ties resource
+      cleanup to scope exit, making exception safety automatic when resources are wrapped in
+      owning types.
+    </t-b>
+
+    <h3 id="except">2.0 Exceptions</h3>
+    <t-b>
+      The <c-s>try</c-s>/<c-s>throw</c-s>/<c-s>catch</c-s> mechanism unwinds the call stack
+      until a matching handler is found. Catch blocks are checked in order; the first match wins.
+      <c-s>catch(...)</c-s> catches any exception. The standard exception hierarchy under
+      <c-s>std::exception</c-s> provides <c-s>std::runtime_error</c-s>,
+      <c-s>std::logic_error</c-s>, <c-s>std::bad_alloc</c-s>, and others. Always catch by
+      <c-s>const</c-s> reference to avoid slicing.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;stdexcept&gt;
+#include &lt;iostream&gt;
+
+void parse(const std::string&amp; s) {
+  if (s.empty())
+    throw std::invalid_argument("empty input");
+}
+
+int main() {
+  try {
+    parse("");
+  } catch (const std::invalid_argument&amp; e) {
+    std::cerr &lt;&lt; "Error: " &lt;&lt; e.what() &lt;&lt; '\n';
+  } catch (...) {
+    std::cerr &lt;&lt; "Unknown error\n";
+  }
+}</code></pre>
+    </div>
+
+    <h3 id="noexcept">3.0 noexcept</h3>
+    <t-b>
+      Declaring a function <c-s>noexcept</c-s> tells the compiler the function will not throw.
+      This enables optimizations — particularly in move semantics, where the STL uses
+      <c-s>noexcept</c-s> move constructors to avoid copying on reallocation. If an exception
+      escapes a <c-s>noexcept</c-s> function, <c-s>std::terminate</c-s> is called immediately.
+      Use <c-s>noexcept(noexcept(...))</c-s> to conditionally propagate the specification.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Move constructor must not throw for STL to use it efficiently
+class Buffer {
+public:
+  Buffer(Buffer&amp;&amp; other) noexcept
+    : data_(other.data_), size_(other.size_) {
+    other.data_ = nullptr;
+    other.size_ = 0;
+  }
+private:
+  int*   data_;
+  size_t size_;
+};</code></pre>
+    </div>
+
+    <h3 id="raii">4.0 RAII and Exception Safety</h3>
+    <t-b>
+      RAII (Resource Acquisition Is Initialization) ensures that resources held by an object
+      are released when the object's destructor runs — including during stack unwinding caused
+      by an exception. Wrapping every resource in an owning RAII type (
+      <c-s>std::unique_ptr</c-s>, <c-s>std::lock_guard</c-s>, <c-s>std::fstream</c-s>)
+      eliminates the need for <c-s>try/finally</c-s>-style cleanup and makes strong exception
+      safety achievable.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;memory&gt;
+#include &lt;mutex&gt;
+#include &lt;fstream&gt;
+
+void process(const std::string&amp; path) {
+  std::ifstream file(path);          // closed in destructor
+  std::unique_ptr&lt;int[]&gt; buf(new int[1024]); // freed in destructor
+
+  // if any operation below throws, file and buf are still cleaned up
+  doWork(file, buf.get());
+}  // destructors run here, even on exception</code></pre>
+    </div>
+
+    <h3 id="codes">5.0 Error Codes</h3>
+    <t-b>
+      <c-s>std::error_code</c-s> (from <c-s>&lt;system_error&gt;</c-s>) is a portable,
+      type-safe alternative to raw integer error codes. It pairs an integer value with an
+      <c-s>error_category</c-s> that provides message strings and comparison semantics.
+      Return an <c-s>error_code</c-s> by value for operations that fail frequently and where
+      exception overhead is unacceptable (networking, filesystem hot paths).
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;system_error&gt;
+#include &lt;filesystem&gt;
+#include &lt;iostream&gt;
+
+std::error_code ec;
+auto sz = std::filesystem::file_size("data.bin", ec);
+if (ec) {
+  std::cerr &lt;&lt; "file_size failed: " &lt;&lt; ec.message() &lt;&lt; '\n';
+} else {
+  std::cout &lt;&lt; sz &lt;&lt; " bytes\n";
+}</code></pre>
+    </div>
+
+    <h3 id="expected">6.0 std::expected (C++23)</h3>
+    <t-b>
+      <c-s>std::expected&lt;T, E&gt;</c-s> represents either a value of type <c-s>T</c-s> or
+      an error of type <c-s>E</c-s> — a type-safe, composable alternative to returning both
+      an error code and an out-parameter. It avoids the overhead of exceptions while keeping
+      error paths explicit and hard to ignore. Use <c-s>.value()</c-s>, <c-s>.error()</c-s>,
+      and the monadic interface (<c-s>.and_then()</c-s>, <c-s>.or_else()</c-s>,
+      <c-s>.transform()</c-s>) to compose operations.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;expected&gt;
+#include &lt;string&gt;
+
+std::expected&lt;int, std::string&gt; parse_int(const std::string&amp; s) {
+  try {
+    return std::stoi(s);
+  } catch (...) {
+    return std::unexpected("not an integer: " + s);
+  }
+}
+
+auto result = parse_int("42");
+if (result)
+  use(*result);
+else
+  std::cerr &lt;&lt; result.error() &lt;&lt; '\n';</code></pre>
+    </div>
+
+    <h3 id="refs">7.0 References</h3>
+    <table class="indent">
+      <tr>
+        <th class="darkItem">Resource</th>
+        <th class="darkItem">Link</th>
+      </tr>
+      <tr>
+        <td>cppreference: exceptions</td>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/exceptions">cppreference.com/exceptions</a></td>
+      </tr>
+      <tr>
+        <td>cppreference: noexcept specifier</td>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/noexcept_spec">cppreference.com/noexcept_spec</a></td>
+      </tr>
+      <tr>
+        <td>cppreference: std::expected</td>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/utility/expected">cppreference.com/expected</a></td>
+      </tr>
+      <tr>
+        <td>C++ Story</td>
+        <td><a target="_self" href="../../CppStoryRepo.html">CppStoryRepo.html</a></td>
+      </tr>
+    </table>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#syn">synopsis</a>
+        <a href="#except">exceptions</a>
+        <a href="#noexcept">noexcept</a>
+        <a href="#raii">RAII</a>
+        <a href="#codes">error codes</a>
+        <a href="#expected">std::expected</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 26, 10);
+  </script>
+</body>
+</html>

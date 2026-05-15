@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_DataStr.html
+-->
+<head>
+  <title>CppBites Data Structures</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_DataStr.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Data Structures</h2>
+        <h4 id="subtitle" class="indent">
+          struct layouts, aggregate initialization, and member alignment
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="syn">1.0 Synopsis</h3>
+    <t-b id="syn-body" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      C++ structs and classes model data structures directly in memory. Understanding memory
+      layout — padding, alignment, and member ordering — helps write efficient, portable code
+      and avoid subtle bugs when interfacing with hardware, file formats, or network protocols.
+      The standard also provides <c-s>std::pair</c-s> and <c-s>std::tuple</c-s> as generic
+      heterogeneous data holders.
+    </t-b>
+
+    <h3 id="structclass">2.0 Struct vs Class</h3>
+    <t-b>
+      The only technical difference between <c-s>struct</c-s> and <c-s>class</c-s> in C++ is
+      default member access: <c-s>struct</c-s> members default to <c-s>public</c-s>,
+      <c-s>class</c-s> members default to <c-s>private</c-s>. Convention: use
+      <c-s>struct</c-s> for plain data aggregates with no invariants, and <c-s>class</c-s> for
+      types that encapsulate state and enforce invariants via constructors and accessors.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Plain data: struct is idiomatic
+struct Point { double x, y, z; };
+
+// Invariant-enforcing type: class is idiomatic
+class Circle {
+public:
+  explicit Circle(double r) : radius_(r) { /* assert r > 0 */ }
+  double area() const { return 3.14159 * radius_ * radius_; }
+private:
+  double radius_;
+};</code></pre>
+    </div>
+
+    <h3 id="agg">3.0 Aggregate Initialization</h3>
+    <t-b>
+      An aggregate is a class/struct with no user-provided constructors, no private or protected
+      non-static data members, no base classes (pre-C++17), and no virtual functions. Aggregates
+      support brace initialization, which initializes members in declaration order. C++20 adds
+      designated initializers, allowing members to be initialized by name in any subset.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">struct Point { double x, y, z; };
+
+Point p1 = {1.0, 2.0, 3.0};       // aggregate init
+Point p2{.x=1.0, .y=2.0, .z=3.0}; // C++20 designated
+
+auto [x, y, z] = p2;              // structured binding</code></pre>
+    </div>
+
+    <h3 id="align">4.0 Padding and Alignment</h3>
+    <t-b>
+      The compiler inserts padding bytes between members to align each member on its natural
+      alignment boundary (typically equal to its size). The struct's total size is then padded
+      to a multiple of its largest member's alignment. Ordering members from largest to smallest
+      minimizes padding and reduces struct size — important in large arrays or cache-sensitive code.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">struct Bad  { char a; int b; char c; };  // sizeof: 12
+struct Good { int b; char a; char c; };  // sizeof: 8
+
+static_assert(sizeof(Bad)  == 12);
+static_assert(sizeof(Good) ==  8);
+
+// alignas forces a minimum alignment
+struct alignas(64) CacheLine {
+  int data[16];  // occupies one 64-byte cache line
+};</code></pre>
+    </div>
+
+    <h3 id="pair">5.0 std::pair and std::tuple</h3>
+    <t-b>
+      <c-s>std::pair&lt;T1, T2&gt;</c-s> bundles two heterogeneous values; members are accessed
+      as <c-s>.first</c-s> and <c-s>.second</c-s>.
+      <c-s>std::tuple&lt;Ts...&gt;</c-s> generalizes to N values; use <c-s>std::get&lt;N&gt;(t)</c-s>
+      or structured bindings to unpack. Both support comparison operators when the element types do.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;utility&gt;
+#include &lt;tuple&gt;
+#include &lt;string&gt;
+#include &lt;iostream&gt;
+
+auto pair = std::make_pair(42, std::string("hello"));
+std::cout &lt;&lt; pair.first &lt;&lt; ' ' &lt;&lt; pair.second &lt;&lt; '\n';
+
+auto [a, b] = pair;  // structured binding
+
+std::tuple&lt;int, double, std::string&gt; t{1, 3.14, "world"};
+std::cout &lt;&lt; std::get&lt;0&gt;(t) &lt;&lt; '\n';   // 1
+auto [i, d, s] = t;                     // unpack all three</code></pre>
+    </div>
+
+    <h3 id="refs">6.0 References</h3>
+    <table class="indent">
+      <tr>
+        <th class="darkItem">Resource</th>
+        <th class="darkItem">Link</th>
+      </tr>
+      <tr>
+        <td>cppreference: aggregate initialization</td>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/aggregate_initialization">cppreference.com/aggregate_initialization</a></td>
+      </tr>
+      <tr>
+        <td>cppreference: alignof / alignas</td>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/alignof">cppreference.com/alignof</a></td>
+      </tr>
+      <tr>
+        <td>C++ Story</td>
+        <td><a target="_self" href="../../CppStoryRepo.html">CppStoryRepo.html</a></td>
+      </tr>
+    </table>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#syn">synopsis</a>
+        <a href="#structclass">struct vs class</a>
+        <a href="#agg">aggregate init</a>
+        <a href="#align">padding/alignment</a>
+        <a href="#pair">pair/tuple</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 9, 10);
+  </script>
+</body>
+</html>

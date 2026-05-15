@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_Idioms.html
+-->
+<head>
+  <title>CppBites Idioms</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_Idioms.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Idioms</h2>
+        <h4 id="subtitle" class="indent">
+          RAII, copy-swap, PIMPL, NVI, CRTP, and rule of zero/three/five
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synop">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      C++ idioms are proven patterns that exploit language features to write safer, more maintainable
+      code. They are not design patterns in the Gang-of-Four sense - they are language-level conventions
+      that encode decades of practical experience. Mastering them separates code that compiles from
+      code that behaves correctly under every condition.
+    </t-b>
+
+    <h3 id="raii">2.0 RAII</h3>
+    <t-b>
+      <strong>Resource Acquisition Is Initialization.</strong> Resources are acquired in a constructor
+      and released in the destructor. Because the C++ runtime calls the destructor automatically when
+      an object leaves scope - including during stack unwinding from a thrown exception - no explicit
+      cleanup code is needed at call sites.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">class FileHandle {
+public:
+  explicit FileHandle(const char* path)
+    : file_(std::fopen(path, "r")) {
+    if (!file_) throw std::runtime_error("cannot open file");
+  }
+  ~FileHandle() { std::fclose(file_); }   // guaranteed cleanup
+
+  FileHandle(const FileHandle&amp;) = delete;
+  FileHandle&amp; operator=(const FileHandle&amp;) = delete;
+private:
+  FILE* file_;
+};
+</code></pre>
+    </div>
+    <t-b>
+      Copy is deleted because two <c-s>FileHandle</c-s> objects should not own the same
+      <c-s>FILE*</c-s>. The standard library codifies this pattern in
+      <c-s>std::unique_ptr</c-s>, <c-s>std::lock_guard</c-s>, <c-s>std::fstream</c-s>, and others.
+    </t-b>
+
+    <h3 id="rules">3.0 Rule of Zero / Three / Five</h3>
+    <t-b>
+      These rules govern when to declare the six special member functions: default constructor,
+      destructor, copy constructor, copy assignment, move constructor, and move assignment.
+    </t-b>
+    <t-b>
+      <strong>Rule of Zero</strong> - prefer this. Store resources in member objects that manage
+      themselves (<c-s>std::string</c-s>, <c-s>std::vector</c-s>, <c-s>std::unique_ptr</c-s>).
+      Declare none of the five; the compiler generates correct implementations for all of them.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Rule of Zero: no special members needed
+struct Config {
+  std::string name;
+  std::vector&lt;int&gt; values;
+  std::unique_ptr&lt;Widget&gt; widget;
+};
+</code></pre>
+    </div>
+    <t-b>
+      <strong>Rule of Three</strong> - if a class manages a raw resource (raw pointer, file handle,
+      mutex), define destructor, copy constructor, and copy assignment. Without explicit copies, the
+      compiler generates a shallow copy that causes double-free on destruction.
+    </t-b>
+    <t-b>
+      <strong>Rule of Five</strong> - extend Rule of Three with move constructor and move assignment.
+      Without them, the compiler suppresses move generation when you declare any of the three, leaving
+      the class copy-only and potentially slow.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Rule of Five: raw pointer member requires all five
+class Buffer {
+public:
+  Buffer(size_t n) : data_(new int[n]), size_(n) {}
+  ~Buffer()                              { delete[] data_; }
+  Buffer(const Buffer&amp; o)               : data_(new int[o.size_]), size_(o.size_)
+                                          { std::copy(o.data_, o.data_ + o.size_, data_); }
+  Buffer&amp; operator=(const Buffer&amp; o)    { Buffer tmp(o); swap(tmp); return *this; }
+  Buffer(Buffer&amp;&amp; o) noexcept           : data_(o.data_), size_(o.size_)
+                                          { o.data_ = nullptr; o.size_ = 0; }
+  Buffer&amp; operator=(Buffer&amp;&amp; o) noexcept { swap(o); return *this; }
+
+  void swap(Buffer&amp; o) noexcept {
+    std::swap(data_, o.data_);
+    std::swap(size_, o.size_);
+  }
+private:
+  int*   data_;
+  size_t size_;
+};
+</code></pre>
+    </div>
+
+    <h3 id="copyswap">4.0 Copy-and-Swap</h3>
+    <t-b>
+      Implement <c-s>operator=</c-s> by constructing a local copy of the right-hand side, then
+      swapping it with <c-s>*this</c-s>. This provides the strong exception guarantee: if the copy
+      constructor throws, the original object is unmodified.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">Buffer&amp; Buffer::operator=(const Buffer&amp; other) {
+  Buffer tmp(other);      // copy: may throw, but *this is still intact
+  swap(tmp);              // noexcept swap
+  return *this;           // tmp (old data) destroyed here
+}
+
+// move assignment using the same swap
+Buffer&amp; Buffer::operator=(Buffer&amp;&amp; other) noexcept {
+  swap(other);
+  return *this;
+}
+</code></pre>
+    </div>
+
+    <h3 id="pimpl">5.0 PIMPL</h3>
+    <t-b>
+      <strong>Pointer to Implementation</strong> hides private members behind a forward-declared
+      struct pointer. Callers include the header and see only the public interface; the implementation
+      struct is defined only in the translation unit. This reduces compile-time coupling and provides
+      ABI stability - adding private members does not change the class size as seen by consumers.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// widget.h
+class Widget {
+public:
+  Widget();
+  ~Widget();
+  void render();
+private:
+  struct Impl;
+  std::unique_ptr&lt;Impl&gt; pImpl_;
+};
+
+// widget.cpp
+struct Widget::Impl {
+  int x, y;
+  std::string label;
+  void draw() { /* ... */ }
+};
+
+Widget::Widget()  : pImpl_(std::make_unique&lt;Impl&gt;()) {}
+Widget::~Widget() = default;   // defined here so Impl is complete
+void Widget::render() { pImpl_-&gt;draw(); }
+</code></pre>
+    </div>
+
+    <h3 id="nvi">6.0 NVI - Non-Virtual Interface</h3>
+    <t-b>
+      Declare public methods as non-virtual; have them delegate to private (or protected) virtual
+      methods. This separates the stable public interface from the customization point, allows the
+      base class to add pre/post conditions around the virtual call, and prevents accidental
+      interface breakage by derived classes.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">class Shape {
+public:
+  double area() const {          // public, non-virtual
+    return doArea();             // delegates to virtual hook
+  }
+private:
+  virtual double doArea() const = 0;  // customization point
+};
+
+class Circle : public Shape {
+  double radius_;
+  double doArea() const override { return 3.14159 * radius_ * radius_; }
+public:
+  explicit Circle(double r) : radius_(r) {}
+};
+</code></pre>
+    </div>
+
+    <h3 id="crtp">7.0 CRTP - Curiously Recurring Template Pattern</h3>
+    <t-b>
+      A base class template parameterized on its own derived class. This enables the base to call
+      derived methods without a vtable - static polymorphism with zero runtime overhead.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">template&lt;class Derived&gt;
+class Printable {
+public:
+  void print() const {
+    // Downcast is safe: Derived is always the concrete type
+    static_cast&lt;const Derived*&gt;(this)-&gt;printImpl();
+  }
+};
+
+class Point : public Printable&lt;Point&gt; {
+public:
+  void printImpl() const {
+    std::cout &lt;&lt; '(' &lt;&lt; x_ &lt;&lt; ',' &lt;&lt; y_ &lt;&lt; ")\n";
+  }
+private:
+  int x_ = 0, y_ = 0;
+};
+
+Point p;
+p.print();   // no virtual dispatch
+</code></pre>
+    </div>
+    <t-b>
+      CRTP is also used for mixin behavior (adding operator overloads or comparison operators to
+      derived classes) and for policy-based design. C++23 "deducing this" offers an alternative
+      for some CRTP use cases without the inheritance overhead.
+    </t-b>
+
+    <h3 id="refs">8.0 References</h3>
+    <table class="indent">
+      <tr><th class="darkItem">Resource</th><th class="darkItem">Notes</th></tr>
+      <tr>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/rule_of_three">cppreference: special member functions</a></td>
+        <td>Rule of three/five/zero with examples</td>
+      </tr>
+      <tr>
+        <td><a target="_blank" href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines">C++ Core Guidelines</a></td>
+        <td>Guidance on RAII, PIMPL, and idiom usage</td>
+      </tr>
+      <tr>
+        <td><a target="_self" href="CppBites_LifeCycle.html">C++ Bites: Object Life Cycle</a></td>
+        <td>Construction, copy, move, and destruction</td>
+      </tr>
+    </table>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synop">synopsis</a>
+        <a href="#raii">RAII</a>
+        <a href="#rules">rule of 0/3/5</a>
+        <a href="#copyswap">copy-and-swap</a>
+        <a href="#pimpl">PIMPL</a>
+        <a href="#nvi">NVI</a>
+        <a href="#crtp">CRTP</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 32, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_Enums.html
+-->
+<head>
+  <title>CppBites Enumerations</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_Enums.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Enumerations</h2>
+        <h4 id="subtitle" class="indent">
+          enum, enum class, and scoped enumerations
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="syn">1.0 Synopsis</h3>
+    <t-b id="syn-body" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      C++ provides two forms of enumeration. The traditional unscoped <c-s>enum</c-s> is
+      C-compatible: enumerators inject their names into the enclosing scope and implicitly
+      convert to <c-s>int</c-s>. The modern scoped <c-s>enum class</c-s> (C++11) restricts
+      enumerator names to the enum's scope and provides no implicit integer conversion — making
+      it type-safe and less prone to name collisions. Prefer <c-s>enum class</c-s> in new code.
+    </t-b>
+
+    <h3 id="unscoped">2.0 Traditional enum</h3>
+    <t-b>
+      Enumerators of an unscoped enum are injected directly into the enclosing namespace or
+      scope. They implicitly convert to their underlying integer type (default: <c-s>int</c-s>).
+      Two enums in the same scope with identically named enumerators cause a compilation error.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">enum Color { Red, Green, Blue };
+// Red, Green, Blue are now in the enclosing scope
+
+Color c = Red;       // OK: Red is visible directly
+int   i = Red;       // OK: implicit conversion to int; Red == 0
+
+// Name collision risk:
+// enum Fruit { Red, Yellow };  // error: Red already declared</code></pre>
+    </div>
+
+    <h3 id="scoped">3.0 enum class (Scoped)</h3>
+    <t-b>
+      Scoped enumerations prefix enumerator names with the enum name, preventing collisions and
+      accidental misuse. There is no implicit conversion to integer — an explicit
+      <c-s>static_cast</c-s> is required. The underlying type defaults to <c-s>int</c-s> but
+      can be specified explicitly with a trailing <c-s>: type</c-s>.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// unscoped — Red is in enclosing scope
+enum Color { Red, Green, Blue };
+Color c = Red;    // implicit int: Red == 0
+
+// scoped — must qualify with Direction::
+enum class Direction : uint8_t { North, South, East, West };
+Direction d = Direction::North;
+// int i = d;               // error: no implicit conversion
+int i = static_cast&lt;int&gt;(d);  // explicit cast required</code></pre>
+    </div>
+
+    <h3 id="underlying">4.0 Underlying Type</h3>
+    <t-b>
+      Both <c-s>enum</c-s> and <c-s>enum class</c-s> accept a trailing <c-s>: integral_type</c-s>
+      to fix the underlying type. This is useful for ABI stability across translation units,
+      forward declarations, controlling storage size in structs, and interfacing with bit-fields
+      or hardware registers.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">enum class Status : uint8_t {
+  Ok      = 0,
+  Warning = 1,
+  Error   = 2,
+  Fatal   = 3
+};
+
+// Forward declaration (requires explicit underlying type)
+enum class Protocol : uint16_t;
+
+// sizeof is now guaranteed
+static_assert(sizeof(Status) == 1);</code></pre>
+    </div>
+
+    <h3 id="switch">5.0 Switch and Comparison</h3>
+    <t-b>
+      <c-s>switch</c-s> over an <c-s>enum class</c-s> requires the fully-qualified enumerator
+      names in each <c-s>case</c-s>. The compiler warns (with appropriate flags) about missing
+      cases, which is a valuable safety check. Comparison uses <c-s>==</c-s> and <c-s>!=</c-s>
+      directly; relational operators (<c-s>&lt;</c-s>, <c-s>&gt;</c-s>) also work because the
+      underlying type supports them.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">Direction d = Direction::East;
+
+switch (d) {
+  case Direction::North: /* go north */ break;
+  case Direction::South: /* go south */ break;
+  case Direction::East:  /* go east  */ break;
+  case Direction::West:  /* go west  */ break;
+}
+
+if (d == Direction::East)
+  std::cout &lt;&lt; "heading east\n";</code></pre>
+    </div>
+
+    <h3 id="refs">6.0 References</h3>
+    <table class="indent">
+      <tr>
+        <th class="darkItem">Resource</th>
+        <th class="darkItem">Link</th>
+      </tr>
+      <tr>
+        <td>cppreference: enum declaration</td>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/enum">cppreference.com/language/enum</a></td>
+      </tr>
+      <tr>
+        <td>cppreference: scoped enumerations</td>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/enum#Scoped_enumerations">cppreference.com/enum#Scoped</a></td>
+      </tr>
+    </table>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#syn">synopsis</a>
+        <a href="#unscoped">traditional enum</a>
+        <a href="#scoped">enum class</a>
+        <a href="#underlying">underlying type</a>
+        <a href="#switch">switch/compare</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 7, 10);
+  </script>
+</body>
+</html>

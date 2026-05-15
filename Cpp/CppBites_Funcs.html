@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_Funcs.html
+-->
+<head>
+  <title>CppBites Funcs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_Funcs.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Functions</h2>
+        <h4 id="subtitle" class="indent">
+          free functions, overloading, lambdas, and function objects
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synop">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      Functions are the first-class building blocks of C++ programs. C++ supports free functions,
+      member functions, overloaded functions, function templates, lambdas, and
+      <c-s>std::function</c-s>. Each form serves a different purpose: free functions for global
+      operations, overloading for uniform interfaces across types, lambdas for local callables,
+      templates for generic algorithms, and <c-s>std::function</c-s> for type-erased storage of
+      any callable.
+    </t-b>
+
+    <h3 id="free">2.0 Free Functions</h3>
+    <t-b>
+      A free function is declared at namespace scope. Its signature consists of a return type, a name,
+      and a parameter list. Parameters may have default arguments; those must appear at the end of the
+      parameter list and be consistent across all declarations in the same translation unit.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Declaration (in header)
+int add(int a, int b = 0);
+
+// Definition
+int add(int a, int b) {
+  return a + b;
+}
+
+// Call sites
+int x = add(3, 4);   // 7
+int y = add(5);      // 5  (uses default b = 0)
+</code></pre>
+    </div>
+    <t-b>
+      Parameters are passed by value by default. Pass by <c-s>const</c-s> reference to avoid copies
+      of large objects: <c-s>void print(const std::string&amp; s)</c-s>. Pass by pointer only when
+      the argument is optional (nullable).
+    </t-b>
+
+    <h3 id="overload">3.0 Overloading</h3>
+    <t-b>
+      Multiple functions may share the same name as long as their parameter lists differ in type, count,
+      or both. The compiler selects the best match at call time using overload resolution - a
+      compile-time process that considers implicit conversions and template argument deduction.
+      Return type alone does not distinguish overloads.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">void display(int n)         { std::cout &lt;&lt; "int: " &lt;&lt; n &lt;&lt; '\n'; }
+void display(double d)      { std::cout &lt;&lt; "double: " &lt;&lt; d &lt;&lt; '\n'; }
+void display(const char* s) { std::cout &lt;&lt; "string: " &lt;&lt; s &lt;&lt; '\n'; }
+
+display(42);      // calls display(int)
+display(3.14);    // calls display(double)
+display("hello"); // calls display(const char*)
+</code></pre>
+    </div>
+    <t-b>
+      Overload resolution follows a ranked set of rules: exact match beats promotion beats standard
+      conversion beats user-defined conversion. Ambiguous calls that cannot be resolved uniquely
+      produce a compile error.
+    </t-b>
+
+    <h3 id="lambdas">4.0 Lambdas</h3>
+    <t-b>
+      A lambda is an unnamed function object defined inline. The syntax is
+      <c-s>[capture](params) -&gt; RetType { body }</c-s>. The return type is inferred when omitted.
+      The capture clause controls which names from the enclosing scope the lambda body can access.
+    </t-b>
+    <t-b>
+      Capture modes:
+    </t-b>
+    <t-b>
+      <ul class="indent">
+        <li><c-s>[=]</c-s> - capture all referenced locals by value (copy at lambda creation).</li>
+        <li><c-s>[&amp;]</c-s> - capture all referenced locals by reference (dangling risk if lambda outlives scope).</li>
+        <li><c-s>[x, &amp;y]</c-s> - capture <c-s>x</c-s> by value and <c-s>y</c-s> by reference.</li>
+        <li><c-s>[]</c-s> - capture nothing; the lambda can only use its parameters and globals.</li>
+      </ul>
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">auto square = [](int x) { return x * x; };
+auto add    = [](auto a, auto b) { return a + b; };  // generic lambda
+
+int y = 10;
+auto addY = [y](int x) { return x + y; };  // capture by value
+
+std::function&lt;int(int)&gt; fn = square;
+std::cout &lt;&lt; fn(5);  // 25
+</code></pre>
+    </div>
+    <t-b>
+      Since C++14, lambda parameters may be <c-s>auto</c-s>, producing a generic lambda whose
+      call operator is itself a template. Since C++20, explicit template parameter lists are allowed:
+      <c-s>[]&lt;typename T&gt;(T x) { ... }</c-s>.
+    </t-b>
+
+    <h3 id="templates">5.0 Function Templates</h3>
+    <t-b>
+      A function template is a recipe for generating a family of functions. The compiler instantiates
+      a concrete function for each unique set of template arguments it encounters. Type deduction
+      eliminates the need to specify arguments explicitly in most cases.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">template&lt;typename T&gt;
+T max(T a, T b) {
+  return (a &gt; b) ? a : b;
+}
+
+int    i = max(3, 7);          // T = int, deduced
+double d = max(1.2, 3.4);      // T = double, deduced
+auto   s = max&lt;std::string&gt;("alpha", "beta");  // T explicit
+
+// Explicit (full) specialization for const char*
+template&lt;&gt;
+const char* max&lt;const char*&gt;(const char* a, const char* b) {
+  return std::strcmp(a, b) &gt; 0 ? a : b;
+}
+</code></pre>
+    </div>
+    <t-b>
+      C++20 Concepts constrain template parameters:
+      <c-s>template&lt;std::totally_ordered T&gt; T max(T a, T b)</c-s> rejects types that lack
+      <c-s>operator&gt;</c-s> at instantiation time with a clear error message.
+    </t-b>
+
+    <h3 id="stdfunc">6.0 std::function and std::invoke</h3>
+    <t-b>
+      <c-s>std::function&lt;Sig&gt;</c-s> is a type-erased wrapper that stores any callable
+      (free function pointer, lambda, functor, member function pointer bound via
+      <c-s>std::bind</c-s>) with a compatible signature. It is copy-constructible and assignable,
+      making it suitable for callbacks stored in containers or class members.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;functional&gt;
+
+// Store a free function
+std::function&lt;int(int, int)&gt; op = add;
+
+// Replace with a lambda
+op = [](int a, int b) { return a * b; };
+std::cout &lt;&lt; op(3, 4);  // 12
+
+// std::invoke: uniform call syntax for any callable
+struct Obj { int value(int x) { return x * 2; } };
+Obj obj;
+int r = std::invoke(&amp;Obj::value, obj, 5);  // 10
+</code></pre>
+    </div>
+    <t-b>
+      <c-s>std::function</c-s> incurs a heap allocation for large callables and a virtual dispatch
+      on each call. Prefer template parameters or <c-s>auto</c-s> for performance-critical callbacks.
+      C++23 <c-s>std::move_only_function</c-s> removes the <c-s>CopyConstructible</c-s> requirement.
+    </t-b>
+
+    <h3 id="refs">7.0 References</h3>
+    <table class="indent">
+      <tr><th class="darkItem">Resource</th><th class="darkItem">Notes</th></tr>
+      <tr>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/lambda">cppreference: lambda</a></td>
+        <td>Full lambda syntax and capture rules</td>
+      </tr>
+      <tr>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/utility/functional/function">cppreference: std::function</a></td>
+        <td>Type-erased callable wrapper</td>
+      </tr>
+      <tr>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/utility/functional/invoke">cppreference: std::invoke</a></td>
+        <td>Uniform callable invocation</td>
+      </tr>
+      <tr>
+        <td><a target="_self" href="../../CppStoryRepo.html">C++ Story</a></td>
+        <td>Jim Fawcett's comprehensive C++ narrative</td>
+      </tr>
+    </table>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synop">synopsis</a>
+        <a href="#free">free functions</a>
+        <a href="#overload">overloading</a>
+        <a href="#lambdas">lambdas</a>
+        <a href="#templates">templates</a>
+        <a href="#stdfunc">std::function</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 12, 10);
+  </script>
+</body>
+</html>

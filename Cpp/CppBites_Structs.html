@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_Structs.html
+-->
+<head>
+  <title>CppBites Structs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_Structs.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Structs</h2>
+        <h4 id="subtitle" class="indent">
+          aggregates, designated initializers, and POD types
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synopsis">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      A C++ <c-s>struct</c-s> is a class whose members are public by default. Structs work well as plain data
+      holders (aggregates) that benefit from brace initialization, C++20 designated initializers, and structured
+      bindings. The conventional distinction: use <c-s>struct</c-s> for data, <c-s>class</c-s> for types that
+      enforce invariants through private members and constructors.
+    </t-b>
+
+    <h3 id="declaration">2.0 Struct Declaration</h3>
+    <t-b>
+      A struct can contain data members, member functions, constructors, and static members - everything a class
+      can. The only language difference between <c-s>struct</c-s> and <c-s>class</c-s> is default access: public
+      for struct, private for class.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">struct Color {
+  uint8_t r = 0;
+  uint8_t g = 0;
+  uint8_t b = 0;
+  uint8_t a = 255;
+
+  // member function
+  bool isOpaque() const { return a == 255; }
+};
+
+Color red = {255, 0, 0};       // aggregate init
+Color transparent = {0,0,0,0};
+std::cout &lt;&lt; red.isOpaque() &lt;&lt; '\n';  // 1</code></pre>
+    </div>
+
+    <h3 id="aggregate">3.0 Aggregate Initialization</h3>
+    <t-b>
+      An aggregate is a class type with no user-provided constructors, no private or protected non-static data
+      members, no virtual functions, and no virtual, private, or protected base classes (the definition was
+      relaxed in C++17 to allow public base classes). Aggregates can be initialized with a brace-enclosed list
+      in declaration order - no constructor call required.
+    </t-b>
+    <t-b>
+      Members omitted from the initializer list are value-initialized (zeroed for scalars, default-constructed
+      for class types). Default member initializers (<c-s>= value</c-s> in the member declaration) are used for
+      any member not explicitly provided.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">struct Point3D {
+  double x = 0.0;
+  double y = 0.0;
+  double z = 0.0;
+};
+
+// aggregate initialization
+Point3D a = {1.0, 2.0, 3.0};
+
+// C++20 designated initializers
+Point3D b = {.x = 1.0, .z = 3.0};  // y defaults to 0.0
+
+// structured binding
+auto [x, y, z] = a;</code></pre>
+    </div>
+
+    <h3 id="designated">4.0 Designated Initializers (C++20)</h3>
+    <t-b>
+      Designated initializers allow naming each field being initialized. The advantages over positional
+      initialization are clarity (the field name is visible at the call site) and tolerance of field additions
+      (new fields default-initialize unless explicitly named). Fields must be specified in declaration order;
+      skipping fields is allowed.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">struct Config {
+  int    timeout  = 30;
+  bool   verbose  = false;
+  int    retries  = 3;
+  double interval = 1.0;
+};
+
+// only specify what differs from defaults
+Config c = {
+  .timeout  = 60,
+  .verbose  = true,
+  // retries and interval keep their defaults
+};
+
+// positional would be error-prone with 4+ fields
+// Config c2 = {60, true};  // compiles but fragile</code></pre>
+    </div>
+
+    <h3 id="pod">5.0 POD and Trivially Copyable</h3>
+    <t-b>
+      A POD (Plain Old Data) type satisfies two requirements: it is trivially copyable (copy and move operations
+      are bitwise copies; destructor does nothing non-trivial) and it has standard layout (no virtual functions,
+      no mixed access specifiers in the same class, members in predictable order). POD types can be safely
+      <c-s>memcpy</c-s>'d, serialized byte-by-byte, and passed to C APIs.
+    </t-b>
+    <t-b>
+      Type traits in <c-s>&lt;type_traits&gt;</c-s> let you check these properties at compile time:
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;type_traits&gt;
+
+struct Vec2 { float x; float y; };
+
+static_assert(std::is_trivially_copyable_v&lt;Vec2&gt;);
+static_assert(std::is_standard_layout_v&lt;Vec2&gt;);
+
+// std::string is NOT trivially copyable
+static_assert(!std::is_trivially_copyable_v&lt;std::string&gt;);
+
+// safe to memcpy a POD
+Vec2 a = {1.0f, 2.0f};
+Vec2 b;
+std::memcpy(&amp;b, &amp;a, sizeof(Vec2));</code></pre>
+    </div>
+
+    <h3 id="nested">6.0 Nested Structs</h3>
+    <t-b>
+      Structs can nest freely. Nested types are accessed via the outer type's scope. Aggregate initialization
+      can initialize nested aggregates with inner brace groups.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">struct Point {
+  double x = 0.0;
+  double y = 0.0;
+};
+
+struct Segment {
+  Point start;
+  Point end;
+
+  double length() const {
+    double dx = end.x - start.x;
+    double dy = end.y - start.y;
+    return std::sqrt(dx*dx + dy*dy);
+  }
+};
+
+// nested aggregate initialization
+Segment s = {{0.0, 0.0}, {3.0, 4.0}};
+std::cout &lt;&lt; s.length() &lt;&lt; '\n';  // 5.0
+
+// C++20 designated
+Segment t = {.start = {.x = 1.0, .y = 1.0}, .end = {.x = 4.0, .y = 5.0}};</code></pre>
+    </div>
+
+    <h3 id="refs">7.0 References</h3>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Resource</th>
+          <th class="darkItem">URL</th>
+        </tr>
+        <tr>
+          <td>cppreference aggregates</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/aggregate_initialization">en.cppreference.com/w/cpp/language/aggregate_initialization</a></td>
+        </tr>
+        <tr>
+          <td>cppreference designated initializers</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/aggregate_initialization#Designated_initializers">en.cppreference.com - designated initializers</a></td>
+        </tr>
+        <tr>
+          <td>cppreference is_trivially_copyable</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/types/is_trivially_copyable">en.cppreference.com/w/cpp/types/is_trivially_copyable</a></td>
+        </tr>
+        <tr>
+          <td>cppreference is_standard_layout</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/types/is_standard_layout">en.cppreference.com/w/cpp/types/is_standard_layout</a></td>
+        </tr>
+      </table>
+    </t-b>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synopsis">synopsis</a>
+        <a href="#declaration">declaration</a>
+        <a href="#aggregate">aggregate init</a>
+        <a href="#designated">designated init</a>
+        <a href="#pod">POD types</a>
+        <a href="#nested">nested structs</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 8, 10);
+  </script>
+</body>
+</html>

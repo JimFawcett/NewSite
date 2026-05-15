@@ -1,5 +1,25 @@
 # ToDo
 
+- **2026-05-14 11:07** — New C++ Bite: functions, methods, and lambdas
+
+---
+
+- **2026-05-14 11:07** — Expand C++ Story Libraries to include Files, Threads, and Synchronization
+
+---
+
+- **2026-05-14 11:07** — Expand C++ Bites to include Thread and Synchronization examples
+
+---
+
+- **2026-05-14 11:07** — Add C# Story pages for Threading and Synchronization
+
+---
+
+- **2026-05-14 11:07** — Add C# Bites for Threading and Synchronization examples
+
+---
+
 - **2026-05-08 11:08** — Create PWA that lists the most important tools, with run syntax and options
 
 ---

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_AsyncAwt.html
+-->
+<head>
+  <title>CppBites Async and Await</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_AsyncAwt.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Async and Await</h2>
+        <h4 id="subtitle" class="indent">
+          std::async, std::future, and std::promise
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="syn">1.0 Synopsis</h3>
+    <t-b id="syn-body" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      C++ provides asynchronous execution through <c-s>std::async</c-s>, <c-s>std::future</c-s>,
+      and <c-s>std::promise</c-s> in the <c-s>&lt;future&gt;</c-s> header. Unlike the coroutine-based
+      async/await found in languages like C# or JavaScript, C++ futures represent a value that will
+      be available at some later point. The caller launches work, continues with other computation,
+      then blocks on <c-s>future.get()</c-s> only when the result is actually needed.
+    </t-b>
+
+    <h3 id="async">2.0 std::async</h3>
+    <t-b>
+      <c-s>std::async</c-s> launches a callable asynchronously and returns a
+      <c-s>std::future&lt;T&gt;</c-s> that holds the eventual result. The launch policy controls
+      scheduling: <c-s>std::launch::async</c-s> runs the callable on a new thread immediately;
+      <c-s>std::launch::deferred</c-s> delays execution until <c-s>get()</c-s> or
+      <c-s>wait()</c-s> is called on the future (lazy evaluation on the calling thread).
+      Omitting the policy lets the implementation choose.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;future&gt;
+#include &lt;iostream&gt;
+
+int compute(int x) { return x * x; }
+
+int main() {
+  std::future&lt;int&gt; f = std::async(std::launch::async, compute, 7);
+  // do other work while compute runs
+  int result = f.get();   // blocks until ready
+  std::cout &lt;&lt; result &lt;&lt; '\n';  // 49
+}</code></pre>
+    </div>
+
+    <h3 id="promise">3.0 std::promise and std::future</h3>
+    <t-b>
+      A <c-s>std::promise&lt;T&gt;</c-s> and its associated <c-s>std::future&lt;T&gt;</c-s> form
+      a one-shot channel between threads. The producer calls <c-s>promise.set_value()</c-s> to
+      fulfill the promise; the consumer calls <c-s>future.get()</c-s> to retrieve the value,
+      blocking if necessary. A promise can also propagate an exception via
+      <c-s>promise.set_exception()</c-s>.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;future&gt;
+#include &lt;thread&gt;
+#include &lt;iostream&gt;
+
+int main() {
+  std::promise&lt;int&gt; prom;
+  std::future&lt;int&gt;  fut = prom.get_future();
+
+  std::thread producer([&amp;prom]() {
+    // simulate work
+    int answer = 42;
+    prom.set_value(answer);
+  });
+
+  std::cout &lt;&lt; fut.get() &lt;&lt; '\n';  // blocks until producer sets value
+  producer.join();
+}</code></pre>
+    </div>
+
+    <h3 id="packaged">4.0 std::packaged_task</h3>
+    <t-b>
+      <c-s>std::packaged_task&lt;F&gt;</c-s> wraps a callable and connects it to a future.
+      Unlike <c-s>std::async</c-s>, it does not launch automatically — you invoke it explicitly,
+      often by passing it to a thread. This gives more control over when and where execution
+      occurs while still providing a future for the result.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;future&gt;
+#include &lt;thread&gt;
+
+int compute(int x) { return x * x; }
+
+int main() {
+  std::packaged_task&lt;int(int)&gt; task(compute);
+  std::future&lt;int&gt; fut = task.get_future();
+
+  std::thread t(std::move(task), 9);  // runs compute(9)
+  t.join();
+
+  return fut.get();  // 81
+}</code></pre>
+    </div>
+
+    <h3 id="except">5.0 Exception Propagation</h3>
+    <t-b>
+      If the callable passed to <c-s>std::async</c-s> (or fulfilled via <c-s>set_exception</c-s>)
+      throws, the exception is captured and stored in the shared state. Calling
+      <c-s>future.get()</c-s> re-throws it at the call site. This means async exceptions surface
+      naturally in the consuming thread without any manual exception-transport code.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;future&gt;
+#include &lt;stdexcept&gt;
+#include &lt;iostream&gt;
+
+int risky(int x) {
+  if (x &lt; 0) throw std::invalid_argument("negative input");
+  return x * x;
+}
+
+int main() {
+  auto f = std::async(std::launch::async, risky, -1);
+  try {
+    f.get();  // re-throws std::invalid_argument
+  } catch (const std::exception&amp; e) {
+    std::cerr &lt;&lt; "Caught: " &lt;&lt; e.what() &lt;&lt; '\n';
+  }
+}</code></pre>
+    </div>
+
+    <h3 id="refs">6.0 References</h3>
+    <table class="indent">
+      <tr>
+        <th class="darkItem">Resource</th>
+        <th class="darkItem">Link</th>
+      </tr>
+      <tr>
+        <td>cppreference: std::future</td>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/thread/future">cppreference.com/future</a></td>
+      </tr>
+      <tr>
+        <td>cppreference: std::async</td>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/thread/async">cppreference.com/async</a></td>
+      </tr>
+      <tr>
+        <td>C++ Story</td>
+        <td><a target="_self" href="../../CppStoryRepo.html">CppStoryRepo.html</a></td>
+      </tr>
+    </table>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#syn">synopsis</a>
+        <a href="#async">std::async</a>
+        <a href="#promise">promise/future</a>
+        <a href="#packaged">packaged_task</a>
+        <a href="#except">exceptions</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 31, 10);
+  </script>
+</body>
+</html>

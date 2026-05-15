@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_TipsAndTricks.html
+-->
+<head>
+  <title>CppBites TipsAndTricks</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_TipsAndTricks.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Tips and Tricks</h2>
+        <h4 id="subtitle" class="indent">
+          structured bindings, fold expressions, if constexpr, and modern utilities
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synopsis">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      Modern C++ (C++17 and C++20) adds concise, expressive features that reduce boilerplate and improve
+      clarity. This page collects practical tips organized by feature area. All examples compile with
+      <c-s>-std=c++20</c-s>; features introduced in C++17 are noted inline.
+    </t-b>
+
+    <h3 id="bindings">2.0 Structured Bindings (C++17)</h3>
+    <t-b>
+      <c-s>auto [a, b] = expr</c-s> unpacks a pair, tuple, array, or aggregate into named variables. The
+      bindings are references to the underlying members when declared with <c-s>auto&amp;</c-s>. Structured
+      bindings are most useful in range-for over maps and when returning multiple values from a function.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">std::map&lt;std::string, int&gt; scores{{"Alice", 95}, {"Bob", 87}};
+
+for (auto&amp; [name, score] : scores)     // structured binding
+  std::cout &lt;&lt; name &lt;&lt; ": " &lt;&lt; score &lt;&lt; '\n';
+
+if (auto it = scores.find("Alice"); it != scores.end())
+  std::cout &lt;&lt; it-&gt;second &lt;&lt; '\n';   // 95
+
+// unpack a pair returned from insert
+auto [iter, inserted] = scores.emplace("Carol", 91);</code></pre>
+    </div>
+
+    <h3 id="ifinit">3.0 if and switch with Initializer (C++17)</h3>
+    <t-b>
+      <c-s>if (init; condition)</c-s> scopes the initialized variable to the if/else block, preventing accidental
+      use after the condition. It also eliminates the need for a separate declaration line before the if. The
+      same syntax works in <c-s>switch</c-s>.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// variable 'it' is scoped to the if/else block
+if (auto it = scores.find("Bob"); it != scores.end()) {
+  it-&gt;second += 5;    // in-scope here
+} // 'it' goes out of scope here
+
+// switch with initializer
+switch (int status = getStatus(); status) {
+  case 0:  handleOk();    break;
+  case -1: handleError(); break;
+}</code></pre>
+    </div>
+
+    <h3 id="ifconstexpr">4.0 if constexpr (C++17)</h3>
+    <t-b>
+      Inside a template, <c-s>if constexpr</c-s> evaluates the condition at compile time and discards the
+      non-taken branch entirely - it is not even required to be syntactically valid for the instantiated type.
+      This replaces most uses of SFINAE for selecting type-specific code paths.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">template&lt;typename T&gt;
+void describe(T x) {
+  if constexpr (std::is_integral_v&lt;T&gt;)
+    std::cout &lt;&lt; x &lt;&lt; " is an integer\n";
+  else if constexpr (std::is_floating_point_v&lt;T&gt;)
+    std::cout &lt;&lt; x &lt;&lt; " is floating point\n";
+}
+
+describe(42);      // "42 is an integer"
+describe(3.14);    // "3.14 is floating point"</code></pre>
+    </div>
+
+    <h3 id="fold">5.0 Fold Expressions (C++17)</h3>
+    <t-b>
+      Fold expressions apply a binary operator across a parameter pack. <c-s>(args + ...)</c-s> is a unary
+      right fold; <c-s>(... + args)</c-s> is a unary left fold. They replace recursive template implementations
+      for variadic operations such as sum, print, and logical AND/OR.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">template&lt;typename... Ts&gt;
+auto sum(Ts... args) { return (args + ...); }
+
+std::cout &lt;&lt; sum(1, 2, 3, 4) &lt;&lt; '\n';  // 10
+
+// print all args separated by spaces
+template&lt;typename... Ts&gt;
+void printAll(Ts... args) {
+  ((std::cout &lt;&lt; args &lt;&lt; ' '), ...);
+  std::cout &lt;&lt; '\n';
+}
+
+// check all conditions
+template&lt;typename... Bools&gt;
+bool allTrue(Bools... bs) { return (bs &amp;&amp; ...); }</code></pre>
+    </div>
+
+    <h3 id="attributes">6.0 [[nodiscard]] and [[maybe_unused]]</h3>
+    <t-b>
+      <c-s>[[nodiscard]]</c-s> causes the compiler to warn when the annotated function's return value is
+      discarded without being used. Apply it to functions whose return value carries an error code or a
+      resource that must be released. <c-s>[[maybe_unused]]</c-s> suppresses unused-variable warnings for
+      variables that are intentionally present (e.g., debug-only parameters).
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">[[nodiscard]] int openFile(const char* path);
+
+openFile("data.txt");    // warning: result discarded
+
+void compute([[maybe_unused]] int debugLevel) {
+  // debugLevel only used in debug builds
+}</code></pre>
+    </div>
+
+    <h3 id="exchange">7.0 std::exchange</h3>
+    <t-b>
+      <c-s>std::exchange(obj, newVal)</c-s> assigns <c-s>newVal</c-s> to <c-s>obj</c-s> and returns the
+      previous value of <c-s>obj</c-s>. It is particularly useful in move constructors and move assignment
+      operators to transfer a value while simultaneously setting the source to a safe default.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;utility&gt;
+
+struct Handle {
+  int fd = -1;
+
+  Handle(Handle&amp;&amp; other) noexcept
+    : fd(std::exchange(other.fd, -1)) {}  // take fd, leave other invalid
+
+  ~Handle() { if (fd != -1) close(fd); }
+};</code></pre>
+    </div>
+
+    <h3 id="ctad">8.0 CTAD - Class Template Argument Deduction (C++17)</h3>
+    <t-b>
+      CTAD lets the compiler deduce template arguments from constructor arguments, removing the need to spell
+      out the type explicitly. It works for most standard containers, <c-s>std::pair</c-s>,
+      <c-s>std::tuple</c-s>, <c-s>std::lock_guard</c-s>, and user-defined types with deduction guides.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Before C++17 - explicit template arguments required
+std::vector&lt;int&gt; v1{1, 2, 3};
+std::pair&lt;std::string, int&gt; p1{"Alice", 42};
+
+// C++17 CTAD - deduced from arguments
+std::vector v2{1, 2, 3};           // std::vector&lt;int&gt;
+std::pair   p2{"Alice", 42};       // std::pair&lt;const char*, int&gt;
+std::array  a{1.0, 2.0, 3.0};     // std::array&lt;double, 3&gt;
+
+std::mutex mtx;
+std::lock_guard lk(mtx);          // std::lock_guard&lt;std::mutex&gt;</code></pre>
+    </div>
+
+    <h3 id="refs">9.0 References</h3>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Resource</th>
+          <th class="darkItem">URL</th>
+        </tr>
+        <tr>
+          <td>cppreference structured bindings</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/structured_binding">en.cppreference.com/w/cpp/language/structured_binding</a></td>
+        </tr>
+        <tr>
+          <td>cppreference fold expressions</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/fold">en.cppreference.com/w/cpp/language/fold</a></td>
+        </tr>
+        <tr>
+          <td>cppreference if constexpr</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/if#Constexpr_if">en.cppreference.com - if constexpr</a></td>
+        </tr>
+        <tr>
+          <td>cppreference std::exchange</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/utility/exchange">en.cppreference.com/w/cpp/utility/exchange</a></td>
+        </tr>
+        <tr>
+          <td>cppreference CTAD</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/class_template_argument_deduction">en.cppreference.com - CTAD</a></td>
+        </tr>
+      </table>
+    </t-b>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synopsis">synopsis</a>
+        <a href="#bindings">structured bindings</a>
+        <a href="#ifinit">if with initializer</a>
+        <a href="#ifconstexpr">if constexpr</a>
+        <a href="#fold">fold expressions</a>
+        <a href="#attributes">[[nodiscard]]</a>
+        <a href="#exchange">std::exchange</a>
+        <a href="#ctad">CTAD</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 33, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_Threads.html
+-->
+<head>
+  <title>CppBites Threads</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_Threads.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Threads</h2>
+        <h4 id="subtitle" class="indent">
+          std::thread, jthread, and thread-local storage
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synopsis">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      <c-s>std::thread</c-s> in <c-s>&lt;thread&gt;</c-s> creates OS threads. Every thread must be joined or
+      detached before it is destroyed, or <c-s>std::terminate</c-s> is called. C++20 adds
+      <c-s>std::jthread</c-s>, which auto-joins on destruction and supports cooperative cancellation via
+      <c-s>std::stop_token</c-s>. For shared mutable state, see
+      <a href="CppBites_Synchron.html">C++ Bites: Synchronization</a>.
+    </t-b>
+
+    <h3 id="creating">2.0 Creating Threads</h3>
+    <t-b>
+      Construct a <c-s>std::thread</c-s> with any callable (function pointer, lambda, functor) plus its
+      arguments. The callable runs concurrently in the new thread immediately upon construction. Arguments are
+      copied by default; use <c-s>std::ref</c-s> to pass by reference.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;thread&gt;
+#include &lt;iostream&gt;
+
+void worker(int id) {
+  std::cout &lt;&lt; "thread " &lt;&lt; id &lt;&lt; '\n';
+}
+
+int main() {
+  std::thread t1(worker, 1);
+  std::thread t2(worker, 2);
+  t1.join();
+  t2.join();
+}</code></pre>
+    </div>
+
+    <h3 id="joindelach">3.0 join and detach</h3>
+    <t-b>
+      <c-s>join()</c-s> blocks the calling thread until the target thread completes. It must be called exactly
+      once on each joinable thread. <c-s>detach()</c-s> releases the thread to run independently as a daemon -
+      it is then no longer joinable. Destroyed <c-s>std::thread</c-s> objects that are still joinable call
+      <c-s>std::terminate</c-s>.
+    </t-b>
+    <t-b>
+      Prefer join. Only detach when the thread's lifetime genuinely extends beyond the launching scope and you
+      have another mechanism to know when it finishes (e.g., a shared atomic flag).
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">std::thread t([] {
+  // background work
+});
+
+if (t.joinable())
+  t.join();   // wait for completion
+
+// or:
+// t.detach(); // fire and forget - use with caution</code></pre>
+    </div>
+
+    <h3 id="jthread">4.0 std::jthread (C++20)</h3>
+    <t-b>
+      <c-s>std::jthread</c-s> is a safer wrapper around <c-s>std::thread</c-s>. Its destructor calls
+      <c-s>request_stop()</c-s> and then <c-s>join()</c-s> automatically, eliminating the risk of
+      <c-s>std::terminate</c-s>. If the thread function accepts a <c-s>std::stop_token</c-s> as its first
+      argument, the token is connected to the jthread's stop source - enabling cooperative cancellation.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;thread&gt;
+
+std::jthread t([](std::stop_token st) {
+  while (!st.stop_requested()) {
+    // do work
+  }
+});
+// t.request_stop() followed by auto-join on destruction</code></pre>
+    </div>
+
+    <h3 id="args">5.0 Passing Arguments</h3>
+    <t-b>
+      <c-s>std::thread</c-s> copies all arguments by default. Pass a reference with <c-s>std::ref(x)</c-s>
+      (from <c-s>&lt;functional&gt;</c-s>). Lambdas that capture by reference are equivalent and often clearer,
+      but require the captured variables to outlive the thread.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;thread&gt;
+#include &lt;functional&gt;
+
+void fill(std::vector&lt;int&gt;&amp; v, int val) {
+  std::fill(v.begin(), v.end(), val);
+}
+
+std::vector&lt;int&gt; data(100);
+
+// pass by reference
+std::thread t1(fill, std::ref(data), 42);
+t1.join();
+
+// equivalent lambda capture
+std::thread t2([&amp;data]{ std::fill(data.begin(), data.end(), 7); });
+t2.join();</code></pre>
+    </div>
+
+    <h3 id="threadlocal">6.0 thread_local</h3>
+    <t-b>
+      Variables declared with <c-s>thread_local</c-s> have thread storage duration: each thread gets its own
+      independent instance, initialized the first time that thread reaches the declaration. This is useful for
+      per-thread caches, random number engines, and C-library errno-style error codes.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;random&gt;
+
+// each thread has its own engine - no synchronization needed
+thread_local std::mt19937 rng{std::random_device{}()};
+
+double randDouble() {
+  std::uniform_real_distribution&lt;double&gt; dist(0.0, 1.0);
+  return dist(rng);
+}</code></pre>
+    </div>
+
+    <h3 id="hwconc">7.0 Hardware Concurrency</h3>
+    <t-b>
+      <c-s>std::thread::hardware_concurrency()</c-s> returns the number of logical CPU cores the runtime
+      reports. It may return 0 if the value is not computable. Use it as a starting point for thread pool
+      sizing; tune based on profiling, since the optimal count depends on workload type (CPU-bound vs IO-bound).
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;thread&gt;
+#include &lt;iostream&gt;
+
+int main() {
+  unsigned n = std::thread::hardware_concurrency();
+  std::cout &lt;&lt; "logical cores: " &lt;&lt; (n ? n : 1) &lt;&lt; '\n';
+}</code></pre>
+    </div>
+
+    <h3 id="refs">8.0 References</h3>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Resource</th>
+          <th class="darkItem">URL</th>
+        </tr>
+        <tr>
+          <td>cppreference thread</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/thread/thread">en.cppreference.com/w/cpp/thread/thread</a></td>
+        </tr>
+        <tr>
+          <td>cppreference jthread</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/thread/jthread">en.cppreference.com/w/cpp/thread/jthread</a></td>
+        </tr>
+        <tr>
+          <td>cppreference thread_local</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/storage_duration#thread_local">en.cppreference.com - thread_local</a></td>
+        </tr>
+        <tr>
+          <td>C++ Bites: Synchronization</td>
+          <td><a href="CppBites_Synchron.html">CppBites_Synchron.html</a></td>
+        </tr>
+      </table>
+    </t-b>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synopsis">synopsis</a>
+        <a href="#creating">creating threads</a>
+        <a href="#joindelach">join and detach</a>
+        <a href="#jthread">jthread</a>
+        <a href="#args">passing arguments</a>
+        <a href="#threadlocal">thread_local</a>
+        <a href="#hwconc">hardware concurrency</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 28, 10);
+  </script>
+</body>
+</html>

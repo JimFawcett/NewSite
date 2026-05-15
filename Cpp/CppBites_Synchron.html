@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_Synchron.html
+-->
+<head>
+  <title>CppBites Synchronization</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_Synchron.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Synchronization</h2>
+        <h4 id="subtitle" class="indent">
+          mutex, lock_guard, condition_variable, and atomic
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synopsis">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      When multiple threads share mutable data, synchronization prevents data races - which are undefined behavior
+      in C++. The standard library provides three complementary mechanisms:
+      <ul>
+        <li><c-s>&lt;mutex&gt;</c-s> - mutual exclusion locks and RAII wrappers.</li>
+        <li><c-s>&lt;condition_variable&gt;</c-s> - blocking coordination between producer and consumer threads.</li>
+        <li><c-s>&lt;atomic&gt;</c-s> - lock-free operations on scalar types.</li>
+      </ul>
+    </t-b>
+
+    <h3 id="mutex">2.0 std::mutex</h3>
+    <t-b>
+      <c-s>std::mutex</c-s> provides exclusive ownership: only one thread holds the lock at a time. Calling
+      <c-s>lock()</c-s> on an already-locked mutex blocks until the owner calls <c-s>unlock()</c-s>. Do not
+      call <c-s>lock</c-s> and <c-s>unlock</c-s> directly - an exception between them leaks the lock.
+      Always use an RAII wrapper.
+    </t-b>
+    <t-b>
+      Other mutex variants: <c-s>std::recursive_mutex</c-s> (same thread may lock multiple times),
+      <c-s>std::timed_mutex</c-s> (<c-s>try_lock_for</c-s> / <c-s>try_lock_until</c-s>),
+      <c-s>std::shared_mutex</c-s> (reader-writer lock, C++17).
+    </t-b>
+
+    <h3 id="lockguard">3.0 lock_guard and unique_lock</h3>
+    <t-b>
+      <c-s>std::lock_guard&lt;std::mutex&gt;</c-s> locks on construction and unlocks on destruction. It is
+      non-movable and non-copyable, so it works only within a single scope. Prefer it when you need a simple
+      scoped lock.
+    </t-b>
+    <t-b>
+      <c-s>std::unique_lock&lt;std::mutex&gt;</c-s> is more flexible: it supports deferred locking
+      (<c-s>std::defer_lock</c-s>), timed locking, manual unlock/relock, and move semantics.
+      <c-s>std::condition_variable::wait</c-s> requires a <c-s>unique_lock</c-s>.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;mutex&gt;
+#include &lt;vector&gt;
+
+std::mutex mtx;
+std::vector&lt;int&gt; shared_data;
+
+void producer(int v) {
+  std::lock_guard&lt;std::mutex&gt; lock(mtx);  // RAII lock
+  shared_data.push_back(v);
+}  // lock released here</code></pre>
+    </div>
+    <t-b>
+      C++17 introduced <c-s>std::scoped_lock</c-s> for locking multiple mutexes simultaneously without
+      deadlock risk. Prefer it over <c-s>lock_guard</c-s> when multi-mutex locking is needed.
+    </t-b>
+
+    <h3 id="condvar">4.0 condition_variable</h3>
+    <t-b>
+      <c-s>std::condition_variable</c-s> lets a thread block until a condition becomes true, without busy-waiting.
+      The producer signals with <c-s>notify_one()</c-s> or <c-s>notify_all()</c-s>. The consumer waits with
+      <c-s>wait(lock, predicate)</c-s>.
+    </t-b>
+    <t-b>
+      The predicate form of <c-s>wait</c-s> is essential. Spurious wakeups - where the thread wakes without a
+      notification - can occur on any platform. The predicate re-checks the condition and goes back to sleep if
+      it is still false.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;mutex&gt;
+#include &lt;condition_variable&gt;
+#include &lt;queue&gt;
+
+std::mutex              mtx;
+std::condition_variable cv;
+std::queue&lt;int&gt;         q;
+
+void producer(int v) {
+  {
+    std::lock_guard&lt;std::mutex&gt; lk(mtx);
+    q.push(v);
+  }
+  cv.notify_one();
+}
+
+void consumer() {
+  std::unique_lock&lt;std::mutex&gt; lk(mtx);
+  cv.wait(lk, [&amp;]{ return !q.empty(); });  // handles spurious wakeup
+  int v = q.front(); q.pop();
+  lk.unlock();
+  // process v ...
+}</code></pre>
+    </div>
+
+    <h3 id="atomic">5.0 std::atomic</h3>
+    <t-b>
+      For simple shared counters or flags, <c-s>std::atomic&lt;T&gt;</c-s> avoids a mutex entirely. Operations
+      such as <c-s>++</c-s>, <c-s>--</c-s>, <c-s>load()</c-s>, <c-s>store()</c-s>, and
+      <c-s>compare_exchange_strong()</c-s> are guaranteed to be indivisible. <c-s>std::atomic</c-s> works for
+      trivially copyable types; practical hardware support is best for integral types and pointers.
+    </t-b>
+    <t-b>
+      The default memory order (<c-s>std::memory_order_seq_cst</c-s>) is the safest and the slowest. For
+      performance-critical code, weaker orders such as <c-s>memory_order_relaxed</c-s> or
+      <c-s>memory_order_acquire</c-s>/<c-s>memory_order_release</c-s> can be used with care.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;atomic&gt;
+
+std::atomic&lt;int&gt; counter{0};
+
+void increment() {
+  ++counter;    // atomic: no data race
+}
+
+std::atomic&lt;bool&gt; done{false};</code></pre>
+    </div>
+
+    <h3 id="deadlock">6.0 Deadlock Prevention</h3>
+    <t-b>
+      Deadlock occurs when two threads each hold a lock the other needs. The root fix is a consistent lock
+      ordering: always acquire locks in the same global order across all threads. When consistent ordering is
+      impractical, use <c-s>std::scoped_lock</c-s> (C++17), which locks multiple mutexes simultaneously using
+      a deadlock-avoidance algorithm.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;mutex&gt;
+
+std::mutex m1, m2;
+
+void safeTransfer() {
+  // C++17: locks both atomically, no deadlock
+  std::scoped_lock lock(m1, m2);
+  // ... operate on resources guarded by m1 and m2
+}
+
+// C++11/14 equivalent using std::lock + adopt_lock
+void safeTransferOld() {
+  std::lock(m1, m2);                              // lock both atomically
+  std::lock_guard&lt;std::mutex&gt; lg1(m1, std::adopt_lock);
+  std::lock_guard&lt;std::mutex&gt; lg2(m2, std::adopt_lock);
+  // ...
+}</code></pre>
+    </div>
+
+    <h3 id="refs">7.0 References</h3>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Resource</th>
+          <th class="darkItem">URL</th>
+        </tr>
+        <tr>
+          <td>cppreference mutex</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/thread/mutex">en.cppreference.com/w/cpp/thread/mutex</a></td>
+        </tr>
+        <tr>
+          <td>cppreference condition_variable</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/thread/condition_variable">en.cppreference.com/w/cpp/thread/condition_variable</a></td>
+        </tr>
+        <tr>
+          <td>cppreference atomic</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/atomic/atomic">en.cppreference.com/w/cpp/atomic/atomic</a></td>
+        </tr>
+        <tr>
+          <td>cppreference scoped_lock</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/thread/scoped_lock">en.cppreference.com/w/cpp/thread/scoped_lock</a></td>
+        </tr>
+        <tr>
+          <td>C++ Bites: Threads</td>
+          <td><a href="CppBites_Threads.html">CppBites_Threads.html</a></td>
+        </tr>
+      </table>
+    </t-b>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synopsis">synopsis</a>
+        <a href="#mutex">std::mutex</a>
+        <a href="#lockguard">lock_guard / unique_lock</a>
+        <a href="#condvar">condition_variable</a>
+        <a href="#atomic">std::atomic</a>
+        <a href="#deadlock">deadlock prevention</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 29, 10);
+  </script>
+</body>
+</html>

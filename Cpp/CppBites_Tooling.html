@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_Tooling.html
+-->
+<head>
+  <title>CppBites Tooling</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_Tooling.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Tooling</h2>
+        <h4 id="subtitle" class="indent">
+          compilers, CMake, vcpkg, debuggers, and static analysis
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synopsis">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      The C++ ecosystem includes compilers, build system generators, package managers, debuggers, static
+      analyzers, and runtime sanitizers. Mastering these tools is as important as mastering the language itself.
+      The typical modern stack: <strong>compiler</strong> (MSVC, GCC, or Clang) +
+      <strong>CMake</strong> + <strong>vcpkg</strong> + <strong>clang-tidy</strong> +
+      <strong>sanitizers</strong>.
+    </t-b>
+
+    <h3 id="compilers">2.0 Compilers</h3>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Compiler</th>
+          <th class="darkItem">Executable</th>
+          <th class="darkItem">Primary Platform</th>
+          <th class="darkItem">Notes</th>
+        </tr>
+        <tr>
+          <td>MSVC</td>
+          <td><c-s>cl.exe</c-s></td>
+          <td>Windows</td>
+          <td>Visual Studio; <c-s>/std:c++20</c-s>, <c-s>/W4</c-s>, <c-s>/O2</c-s></td>
+        </tr>
+        <tr>
+          <td>GCC</td>
+          <td><c-s>g++</c-s></td>
+          <td>Linux / macOS / MinGW</td>
+          <td><c-s>-std=c++20 -Wall -Wextra -O2</c-s></td>
+        </tr>
+        <tr>
+          <td>Clang</td>
+          <td><c-s>clang++</c-s></td>
+          <td>cross-platform</td>
+          <td>best diagnostics; required for clang-tidy and LLDB</td>
+        </tr>
+      </table>
+    </t-b>
+    <t-b>
+      All three compilers fully support C++20 and have partial C++23 support as of 2024. Use
+      <c-s>-std=c++20</c-s> (GCC/Clang) or <c-s>/std:c++20</c-s> (MSVC). Always enable warnings:
+      <c-s>-Wall -Wextra</c-s> on GCC/Clang or <c-s>/W4</c-s> on MSVC. Add <c-s>-Werror</c-s> /
+      <c-s>/WX</c-s> in CI to treat warnings as errors.
+    </t-b>
+
+    <h3 id="cmake">3.0 CMake</h3>
+    <t-b>
+      CMake is the de facto build-system generator for C++. It produces Makefiles, Ninja build files, or Visual
+      Studio solutions from a <c-s>CMakeLists.txt</c-s> description. The typical workflow:
+      <c-s>cmake -B build -DCMAKE_BUILD_TYPE=Release</c-s> then <c-s>cmake --build build</c-s>.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cmake">cmake_minimum_required(VERSION 3.20)
+project(MyProject)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_executable(myapp src/main.cpp)
+target_compile_options(myapp PRIVATE -Wall -Wextra)</code></pre>
+    </div>
+    <t-b>
+      Use <c-s>target_include_directories</c-s>, <c-s>target_link_libraries</c-s>, and
+      <c-s>target_compile_definitions</c-s> to express per-target properties. Avoid setting directory-wide
+      properties with <c-s>include_directories</c-s> or <c-s>add_definitions</c-s> - they leak into
+      subdirectories.
+    </t-b>
+
+    <h3 id="vcpkg">4.0 vcpkg</h3>
+    <t-b>
+      vcpkg is Microsoft's C++ package manager. It installs pre-built or source-compiled libraries and
+      integrates with CMake via a toolchain file. In manifest mode (recommended), dependencies are declared in
+      a <c-s>vcpkg.json</c-s> file and installed automatically during the CMake configure step.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-bash"># install vcpkg (one time)
+git clone https://github.com/microsoft/vcpkg
+.\vcpkg\bootstrap-vcpkg.bat
+
+# install a library
+.\vcpkg\vcpkg install fmt
+
+# integrate with CMake
+cmake -B build -DCMAKE_TOOLCHAIN_FILE=path/to/vcpkg/scripts/buildsystems/vcpkg.cmake</code></pre>
+    </div>
+    <t-b>
+      In <c-s>CMakeLists.txt</c-s>, find and link the installed library as normal:
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cmake">find_package(fmt CONFIG REQUIRED)
+target_link_libraries(myapp PRIVATE fmt::fmt)</code></pre>
+    </div>
+
+    <h3 id="debuggers">5.0 Debuggers</h3>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Debugger</th>
+          <th class="darkItem">Platform</th>
+          <th class="darkItem">Usage</th>
+        </tr>
+        <tr>
+          <td>Visual Studio debugger</td>
+          <td>Windows</td>
+          <td>integrated; press F5; excellent for MSVC and CMake projects</td>
+        </tr>
+        <tr>
+          <td>GDB</td>
+          <td>Linux</td>
+          <td><c-s>gdb ./myapp</c-s>; run, break, next, print</td>
+        </tr>
+        <tr>
+          <td>LLDB</td>
+          <td>macOS / Clang</td>
+          <td>similar command set to GDB; integrates with Xcode</td>
+        </tr>
+        <tr>
+          <td>VS Code C++ extension</td>
+          <td>cross-platform</td>
+          <td>drives GDB or LLDB via <c-s>launch.json</c-s>; works with CMake Tools</td>
+        </tr>
+      </table>
+    </t-b>
+
+    <h3 id="staticanalysis">6.0 Static Analysis</h3>
+    <t-b>
+      Static analysis tools examine source code without running it, finding potential bugs, style violations,
+      and security issues at zero runtime cost.
+    </t-b>
+    <t-b>
+      <strong>clang-tidy</strong> - enforces a configurable set of C++ Core Guidelines and lint checks.
+      Configure via <c-s>.clang-tidy</c-s>. Integrate with CMake:
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cmake">set(CMAKE_CXX_CLANG_TIDY clang-tidy;--warnings-as-errors=*)</code></pre>
+    </div>
+    <t-b>
+      <strong>cppcheck</strong> - finds uninitialized variables, out-of-bounds reads, memory leaks, and other
+      bugs statically. Runs separately from the build.
+    </t-b>
+    <t-b>
+      <strong>MSVC /analyze</strong> - built-in static analysis in the MSVC compiler; enabled with
+      <c-s>/analyze</c-s> in project properties.
+    </t-b>
+
+    <h3 id="sanitizers">7.0 Sanitizers</h3>
+    <t-b>
+      Sanitizers instrument compiled code to detect runtime errors that are otherwise silent or non-deterministic.
+      They impose a runtime overhead (typically 2-5x) but are invaluable in debug and CI builds.
+    </t-b>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Sanitizer</th>
+          <th class="darkItem">Flag (GCC/Clang)</th>
+          <th class="darkItem">MSVC Flag</th>
+          <th class="darkItem">Detects</th>
+        </tr>
+        <tr>
+          <td>AddressSanitizer (ASAN)</td>
+          <td><c-s>-fsanitize=address</c-s></td>
+          <td><c-s>/fsanitize=address</c-s></td>
+          <td>heap/stack overflows, use-after-free, double-free</td>
+        </tr>
+        <tr>
+          <td>UndefinedBehaviorSanitizer (UBSAN)</td>
+          <td><c-s>-fsanitize=undefined</c-s></td>
+          <td>-</td>
+          <td>signed overflow, null deref, invalid shifts</td>
+        </tr>
+        <tr>
+          <td>ThreadSanitizer (TSAN)</td>
+          <td><c-s>-fsanitize=thread</c-s></td>
+          <td>-</td>
+          <td>data races</td>
+        </tr>
+        <tr>
+          <td>MemorySanitizer (MSAN)</td>
+          <td><c-s>-fsanitize=memory</c-s></td>
+          <td>-</td>
+          <td>uninitialized reads (Clang only)</td>
+        </tr>
+      </table>
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-bash">g++ -std=c++20 -g -fsanitize=address,undefined -o myapp src/main.cpp
+./myapp   # errors printed at runtime with file/line info</code></pre>
+    </div>
+
+    <h3 id="refs">8.0 References</h3>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Resource</th>
+          <th class="darkItem">URL</th>
+        </tr>
+        <tr>
+          <td>cmake.org</td>
+          <td><a target="_blank" href="https://cmake.org/documentation/">cmake.org/documentation</a></td>
+        </tr>
+        <tr>
+          <td>vcpkg.io</td>
+          <td><a target="_blank" href="https://vcpkg.io/">vcpkg.io</a></td>
+        </tr>
+        <tr>
+          <td>clang-tidy</td>
+          <td><a target="_blank" href="https://clang.llvm.org/extra/clang-tidy/">clang.llvm.org/extra/clang-tidy</a></td>
+        </tr>
+        <tr>
+          <td>cppreference</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp">en.cppreference.com/w/cpp</a></td>
+        </tr>
+        <tr>
+          <td>C++ Bites: Hello C++</td>
+          <td><a href="CppBites_HelloCpp.html">CppBites_HelloCpp.html</a></td>
+        </tr>
+      </table>
+    </t-b>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synopsis">synopsis</a>
+        <a href="#compilers">compilers</a>
+        <a href="#cmake">CMake</a>
+        <a href="#vcpkg">vcpkg</a>
+        <a href="#debuggers">debuggers</a>
+        <a href="#staticanalysis">static analysis</a>
+        <a href="#sanitizers">sanitizers</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>

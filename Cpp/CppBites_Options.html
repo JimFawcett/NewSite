@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_Options.html
+-->
+<head>
+  <title>CppBites Options</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_Options.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Optional and Variant</h2>
+        <h4 id="subtitle" class="indent">
+          std::optional, std::variant, and std::any
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synop">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      C++ provides three sum-type utilities for expressing "one of several possibilities."
+      <c-s>std::optional&lt;T&gt;</c-s> (C++17) holds either a value of type <c-s>T</c-s> or nothing.
+      <c-s>std::variant&lt;Ts...&gt;</c-s> (C++17) holds exactly one value chosen from a fixed set of types.
+      <c-s>std::any</c-s> (C++17) holds any <c-s>CopyConstructible</c-s> value with type-erased storage.
+      Headers: <c-s>&lt;optional&gt;</c-s>, <c-s>&lt;variant&gt;</c-s>, <c-s>&lt;any&gt;</c-s>.
+    </t-b>
+
+    <h3 id="optional">2.0 std::optional</h3>
+    <t-b>
+      <c-s>std::optional&lt;T&gt;</c-s> wraps a value that may or may not be present. It stores the
+      value inline - no heap allocation. Accessing the value when it is absent throws
+      <c-s>std::bad_optional_access</c-s> (via <c-s>value()</c-s>) or returns a default
+      (via <c-s>value_or()</c-s>).
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;optional&gt;
+#include &lt;string&gt;
+
+std::optional&lt;std::string&gt; lookup(int id) {
+  if (id == 42) return "found";
+  return std::nullopt;
+}
+
+auto result = lookup(42);
+if (result.has_value())
+  std::cout &lt;&lt; result.value() &lt;&lt; '\n';
+
+std::string s = lookup(0).value_or("not found");
+</code></pre>
+    </div>
+    <t-b>
+      Key operations:
+    </t-b>
+    <t-b>
+      <ul class="indent">
+        <li><c-s>has_value()</c-s> / <c-s>operator bool</c-s> - test whether a value is present.</li>
+        <li><c-s>value()</c-s> - return the value; throws <c-s>std::bad_optional_access</c-s> if empty.</li>
+        <li><c-s>value_or(default)</c-s> - return the value or the supplied default.</li>
+        <li><c-s>operator*</c-s>, <c-s>operator-&gt;</c-s> - unchecked access (undefined behavior if empty).</li>
+        <li><c-s>reset()</c-s> - destroy the contained value, leaving the optional empty.</li>
+        <li><c-s>emplace(args...)</c-s> - construct the value in place.</li>
+      </ul>
+    </t-b>
+    <t-b>
+      C++23 adds monadic operations for composing optionals without nested <c-s>if</c-s> chains:
+      <c-s>and_then(f)</c-s> calls <c-s>f</c-s> if the optional has a value;
+      <c-s>transform(f)</c-s> applies <c-s>f</c-s> to the value and wraps the result;
+      <c-s>or_else(f)</c-s> calls <c-s>f</c-s> if the optional is empty.
+    </t-b>
+
+    <h3 id="variant">3.0 std::variant</h3>
+    <t-b>
+      <c-s>std::variant&lt;Ts...&gt;</c-s> is a type-safe union. It always holds exactly one value
+      from its type list and tracks the active type. It cannot be empty (unless
+      <c-s>std::monostate</c-s> is included as one of the types).
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;variant&gt;
+#include &lt;string&gt;
+
+std::variant&lt;int, double, std::string&gt; v = 3.14;
+
+std::visit([](auto&amp;&amp; val) {
+  std::cout &lt;&lt; val &lt;&lt; '\n';
+}, v);
+
+if (std::holds_alternative&lt;double&gt;(v))
+  std::cout &lt;&lt; std::get&lt;double&gt;(v) &lt;&lt; '\n';
+</code></pre>
+    </div>
+    <t-b>
+      Key operations:
+    </t-b>
+    <t-b>
+      <ul class="indent">
+        <li><c-s>std::get&lt;T&gt;(v)</c-s> - return the active value if its type is <c-s>T</c-s>; throws <c-s>std::bad_variant_access</c-s> otherwise.</li>
+        <li><c-s>std::get&lt;I&gt;(v)</c-s> - access by index.</li>
+        <li><c-s>std::holds_alternative&lt;T&gt;(v)</c-s> - test the active type.</li>
+        <li><c-s>v.index()</c-s> - return the zero-based index of the active alternative.</li>
+        <li><c-s>std::visit(visitor, v)</c-s> - call a callable with the active value; the callable must handle all types (exhaustive dispatch).</li>
+        <li><c-s>std::monostate</c-s> - an empty-state sentinel type usable as the first alternative to make a variant default-constructible.</li>
+      </ul>
+    </t-b>
+    <t-b>
+      <c-s>std::visit</c-s> with an overloaded lambda set is idiomatic for exhaustive dispatch:
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Overload helper (C++17)
+template&lt;class... Ts&gt; struct overloaded : Ts... { using Ts::operator()...; };
+template&lt;class... Ts&gt; overloaded(Ts...) -&gt; overloaded&lt;Ts...&gt;;
+
+std::variant&lt;int, double, std::string&gt; v = "hello";
+std::visit(overloaded{
+  [](int i)               { std::cout &lt;&lt; "int: "    &lt;&lt; i &lt;&lt; '\n'; },
+  [](double d)            { std::cout &lt;&lt; "double: " &lt;&lt; d &lt;&lt; '\n'; },
+  [](const std::string&amp; s){ std::cout &lt;&lt; "string: " &lt;&lt; s &lt;&lt; '\n'; }
+}, v);
+</code></pre>
+    </div>
+
+    <h3 id="any">4.0 std::any</h3>
+    <t-b>
+      <c-s>std::any</c-s> stores a single value of any <c-s>CopyConstructible</c-s> type. The
+      type is erased at the point of storage; retrieval requires <c-s>std::any_cast&lt;T&gt;</c-s>
+      with the exact stored type. For large objects, <c-s>std::any</c-s> may heap-allocate;
+      small-buffer optimization is implementation-defined.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;any&gt;
+#include &lt;string&gt;
+
+std::any a = 42;
+a = std::string("hello");   // replace stored value
+
+try {
+  std::string s = std::any_cast&lt;std::string&gt;(a);
+  std::cout &lt;&lt; s &lt;&lt; '\n';
+} catch (const std::bad_any_cast&amp;) {
+  std::cout &lt;&lt; "wrong type\n";
+}
+
+if (a.type() == typeid(std::string))
+  std::cout &lt;&lt; "holds a string\n";
+
+a.reset();   // clear
+</code></pre>
+    </div>
+    <t-b>
+      Use <c-s>std::any</c-s> sparingly. It loses compile-time type safety and incurs virtual
+      dispatch on access. Prefer <c-s>std::variant</c-s> when the set of possible types is known
+      at compile time.
+    </t-b>
+
+    <h3 id="vsptr">5.0 Comparison with Pointers</h3>
+    <t-b>
+      Using a raw pointer as an optional value is a common C idiom but is ambiguous and error-prone:
+    </t-b>
+    <t-b>
+      <ul class="indent">
+        <li>A null pointer may mean "no value," "error," or "uninitialized" - the intent is unclear.</li>
+        <li>The caller may forget to check for null.</li>
+        <li>Heap allocation introduces ownership questions and potential leaks.</li>
+      </ul>
+    </t-b>
+    <t-b>
+      <c-s>std::optional</c-s> avoids all three problems: the type itself communicates optionality,
+      <c-s>has_value()</c-s> makes the check explicit, and no heap allocation occurs for small types.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Pointer: intent unclear, allocation required, null check easy to miss
+std::string* find(int id);
+
+// Optional: intent explicit, no allocation, deliberate value access
+std::optional&lt;std::string&gt; find(int id);
+</code></pre>
+    </div>
+
+    <h3 id="refs">6.0 References</h3>
+    <table class="indent">
+      <tr><th class="darkItem">Resource</th><th class="darkItem">Notes</th></tr>
+      <tr>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/utility/optional">cppreference: std::optional</a></td>
+        <td>Full API and monadic operations (C++23)</td>
+      </tr>
+      <tr>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/utility/variant">cppreference: std::variant</a></td>
+        <td>Type-safe union, std::visit examples</td>
+      </tr>
+      <tr>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/utility/any">cppreference: std::any</a></td>
+        <td>Type-erased value storage</td>
+      </tr>
+    </table>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synop">synopsis</a>
+        <a href="#optional">optional</a>
+        <a href="#variant">variant</a>
+        <a href="#any">any</a>
+        <a href="#vsptr">vs pointers</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 25, 10);
+  </script>
+</body>
+</html>

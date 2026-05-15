@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_Safety.html
+-->
+<head>
+  <title>CppBites Safety</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_Safety.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Safety</h2>
+        <h4 id="subtitle" class="indent">
+          memory safety, undefined behavior, sanitizers, and protective patterns
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synop">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      C++ does not prevent incorrect memory use at the language level, but a combination of RAII,
+      smart pointers, modern idioms, and runtime tooling (sanitizers) dramatically reduces safety
+      issues in practice. No single technique is sufficient on its own; a defense-in-depth approach -
+      safe coding patterns backed by automated analysis and testing - is the standard professional
+      approach.
+    </t-b>
+
+    <h3 id="pitfalls">2.0 Common Pitfalls</h3>
+    <t-b>
+      Each item below is undefined behavior (UB): the standard imposes no requirement on what the
+      program does, and the compiler may assume these conditions never occur, enabling optimizations
+      that produce surprising results.
+    </t-b>
+    <t-b>
+      <ul class="indent">
+        <li>
+          <strong>Dangling pointer</strong> - a pointer that still holds the address of an object after
+          that object has been destroyed. Accessing a dangling pointer is UB.
+        </li>
+        <li>
+          <strong>Use-after-free</strong> - accessing heap memory after it has been returned to the
+          allocator via <c-s>delete</c-s> or <c-s>free</c-s>. The allocator may have already reused
+          or returned that memory to the OS.
+        </li>
+        <li>
+          <strong>Buffer overflow</strong> - writing past the end of an array or allocation. Overwrites
+          adjacent memory, corrupts the stack or heap, and enables exploits.
+        </li>
+        <li>
+          <strong>Null pointer dereference</strong> - dereferencing a pointer whose value is
+          <c-s>nullptr</c-s>. Always check pointers obtained from fallible operations.
+        </li>
+        <li>
+          <strong>Double-free</strong> - calling <c-s>delete</c-s> on the same pointer twice. Corrupts
+          allocator metadata and is a common source of exploitable vulnerabilities.
+        </li>
+        <li>
+          <strong>Uninitialized read</strong> - reading a variable before it has been assigned a value.
+          Always initialize variables at the point of declaration.
+        </li>
+      </ul>
+    </t-b>
+
+    <h3 id="raiismptr">3.0 RAII and Smart Pointers</h3>
+    <t-b>
+      Replacing raw owning pointers with <c-s>std::unique_ptr</c-s> and <c-s>std::shared_ptr</c-s>
+      eliminates most memory-management errors at the source. The destructor runs automatically;
+      double-free and use-after-free cannot occur through the smart pointer itself.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Unsafe: manual new/delete
+int* p = new int[100];
+// ... if exception thrown here, p leaks
+delete[] p;
+
+// Safe: RAII
+auto p = std::make_unique&lt;int[]&gt;(100);
+// automatically freed when p goes out of scope
+</code></pre>
+    </div>
+    <t-b>
+      Ownership model:
+    </t-b>
+    <t-b>
+      <ul class="indent">
+        <li>
+          <c-s>std::unique_ptr&lt;T&gt;</c-s> - sole ownership. Non-copyable; transfer via
+          <c-s>std::move</c-s>. Zero overhead compared to a raw pointer.
+        </li>
+        <li>
+          <c-s>std::shared_ptr&lt;T&gt;</c-s> - shared ownership via reference counting. Incurs a
+          control block allocation and atomic reference count updates.
+        </li>
+        <li>
+          <c-s>std::weak_ptr&lt;T&gt;</c-s> - non-owning observer of a <c-s>shared_ptr</c-s>-managed
+          object. Lock to obtain a temporary <c-s>shared_ptr</c-s>; safe for breaking ownership cycles.
+        </li>
+      </ul>
+    </t-b>
+    <t-b>
+      The C++ Core Guidelines rule: <em>raw pointers and references are never owning</em>. If a
+      raw pointer appears in an interface, it should always be documented as non-owning.
+    </t-b>
+
+    <h3 id="bounds">4.0 Bounds Safety</h3>
+    <t-b>
+      Array subscript operators do not perform bounds checking by default. Out-of-bounds access is UB.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">std::vector&lt;int&gt; v = {1, 2, 3};
+
+v[5];       // undefined behavior: no bounds check
+v.at(5);    // throws std::out_of_range: bounds check
+
+// std::span (C++20): safe view of contiguous data
+void process(std::span&lt;int&gt; data) {
+  for (int x : data) std::cout &lt;&lt; x &lt;&lt; ' ';
+}
+process(v);  // no copy, bounds preserved in span
+</code></pre>
+    </div>
+    <t-b>
+      Debug-build options that add instrumentation:
+    </t-b>
+    <t-b>
+      <ul class="indent">
+        <li>GCC/libstdc++: define <c-s>_GLIBCXX_DEBUG</c-s> before including STL headers.</li>
+        <li>MSVC: checked iterators are enabled in debug builds by default via <c-s>_ITERATOR_DEBUG_LEVEL</c-s>.</li>
+        <li>libc++ (Clang): <c-s>-D_LIBCPP_ENABLE_ASSERTIONS=1</c-s> enables iterator and container checks.</li>
+      </ul>
+    </t-b>
+
+    <h3 id="sanitizers">5.0 Sanitizers</h3>
+    <t-b>
+      Sanitizers instrument the compiled binary to detect errors at runtime. They impose a build-time
+      cost (larger binary, slower execution) but catch bugs that static analysis misses.
+    </t-b>
+    <table class="indent">
+      <tr><th class="darkItem">Sanitizer</th><th class="darkItem">What it catches</th><th class="darkItem">Compiler flag</th></tr>
+      <tr>
+        <td>AddressSanitizer (ASAN)</td>
+        <td>Heap/stack buffer overflows, use-after-free, use-after-scope, double-free</td>
+        <td><c-s>-fsanitize=address</c-s> (GCC/Clang)<br /><c-s>/fsanitize=address</c-s> (MSVC)</td>
+      </tr>
+      <tr>
+        <td>UndefinedBehaviorSanitizer (UBSAN)</td>
+        <td>Signed integer overflow, null pointer dereference, misaligned access, invalid enum values</td>
+        <td><c-s>-fsanitize=undefined</c-s></td>
+      </tr>
+      <tr>
+        <td>LeakSanitizer (LSAN)</td>
+        <td>Memory leaks at program exit</td>
+        <td><c-s>-fsanitize=leak</c-s> (included in ASAN on Linux)</td>
+      </tr>
+      <tr>
+        <td>ThreadSanitizer (TSAN)</td>
+        <td>Data races between threads</td>
+        <td><c-s>-fsanitize=thread</c-s></td>
+      </tr>
+    </table>
+    <t-b>
+      Combine ASAN and UBSAN in a single build for broad coverage:
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Compile with:
+// g++ -fsanitize=address,undefined -g -O1 myfile.cpp
+
+// ASAN output on use-after-free:
+// ==ERROR: AddressSanitizer: heap-use-after-free
+//  READ of size 4 at 0x... thread T0
+//  #0 main myfile.cpp:12
+</code></pre>
+    </div>
+
+    <h3 id="static">6.0 Static Analysis</h3>
+    <t-b>
+      Static analyzers examine the source code without running it, catching a different class of
+      issues than sanitizers.
+    </t-b>
+    <t-b>
+      <ul class="indent">
+        <li>
+          <strong>clang-tidy</strong> - a Clang-based linter with hundreds of checks. The
+          <c-s>cppcoreguidelines-*</c-s> and <c-s>modernize-*</c-s> check sets enforce the C++ Core
+          Guidelines and flag obsolete patterns. Integrate with <c-s>compile_commands.json</c-s> or
+          CMake.
+        </li>
+        <li>
+          <strong>cppcheck</strong> - focused on detecting undefined behavior, memory leaks, and
+          portability issues. Fast, low false-positive rate.
+        </li>
+        <li>
+          <strong>MSVC /analyze</strong> - Microsoft's static analysis checker, integrated into the
+          compiler. Runs the SAL (Source Annotation Language) checks and Core Guidelines checker.
+        </li>
+        <li>
+          <strong>PVS-Studio, Coverity, SonarQube</strong> - commercial tools with broader interprocedural
+          analysis.
+        </li>
+      </ul>
+    </t-b>
+    <t-b>
+      No tool finds everything. A CI pipeline that runs at minimum clang-tidy and ASAN+UBSAN on
+      every pull request catches the vast majority of common safety issues before code ships.
+    </t-b>
+
+    <h3 id="refs">7.0 References</h3>
+    <table class="indent">
+      <tr><th class="darkItem">Resource</th><th class="darkItem">Notes</th></tr>
+      <tr>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/ub">cppreference: undefined behavior</a></td>
+        <td>List of UB categories in the C++ standard</td>
+      </tr>
+      <tr>
+        <td><a target="_blank" href="https://clang.llvm.org/docs/AddressSanitizer.html">ASAN documentation</a></td>
+        <td>Usage, flags, and suppression options</td>
+      </tr>
+      <tr>
+        <td><a target="_blank" href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines">C++ Core Guidelines</a></td>
+        <td>Canonical guidance for safe modern C++</td>
+      </tr>
+      <tr>
+        <td><a target="_self" href="CppBites_UDB.html">C++ Bites: UDB</a></td>
+        <td>Undefined behavior in depth</td>
+      </tr>
+    </table>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synop">synopsis</a>
+        <a href="#pitfalls">pitfalls</a>
+        <a href="#raiismptr">RAII &amp; smart ptrs</a>
+        <a href="#bounds">bounds safety</a>
+        <a href="#sanitizers">sanitizers</a>
+        <a href="#static">static analysis</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 22, 10);
+  </script>
+</body>
+</html>

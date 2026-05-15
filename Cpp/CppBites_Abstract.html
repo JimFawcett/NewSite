@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_Abstract.html
+-->
+<head>
+  <title>CppBites Abstract Classes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_Abstract.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Abstract Classes</h2>
+        <h4 id="subtitle" class="indent">
+          pure virtual functions, abstract base classes, and polymorphic hierarchies
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="syn">1.0 Synopsis</h3>
+    <t-b id="syn-body" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      An abstract class is a class that has at least one pure virtual function declared with the
+      syntax <c-s>virtual ReturnType f() = 0;</c-s>. An abstract class cannot be instantiated
+      directly — it serves as an interface contract that derived classes must fulfill. Any class
+      that inherits from an abstract base but does not override all pure virtual functions is
+      itself abstract. Abstract classes enable polymorphism: code written against the base class
+      interface works uniformly with any conforming derived type.
+    </t-b>
+
+    <h3 id="pure">2.0 Pure Virtual Functions</h3>
+    <t-b>
+      A pure virtual function is declared by appending <c-s>= 0</c-s> to the virtual function
+      declaration. Derived classes must override every pure virtual function to become concrete.
+      The <c-s>override</c-s> keyword on the derived class is not required but is strongly
+      recommended — it lets the compiler verify that the function actually overrides a base
+      class virtual.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">class Shape {
+public:
+  virtual double area() const = 0;   // pure virtual
+  virtual void draw() const = 0;
+  virtual ~Shape() = default;        // must be virtual
+};
+
+class Circle : public Shape {
+public:
+  explicit Circle(double r) : radius_(r) {}
+  double area() const override { return 3.14159 * radius_ * radius_; }
+  void draw() const override { /* render circle */ }
+private:
+  double radius_;
+};</code></pre>
+    </div>
+
+    <h3 id="abc">3.0 Abstract Base Classes</h3>
+    <t-b>
+      The <c-s>Shape</c-s> class above is an abstract base class (ABC). It declares the interface
+      that all shapes must implement. <c-s>Circle</c-s> and <c-s>Rectangle</c-s> are concrete
+      types that provide implementations for every pure virtual function.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">class Rectangle : public Shape {
+public:
+  Rectangle(double w, double h) : width_(w), height_(h) {}
+  double area() const override { return width_ * height_; }
+  void draw() const override { /* render rectangle */ }
+private:
+  double width_, height_;
+};
+
+// Shape s;  // error: cannot instantiate abstract class
+Circle    c(5.0);
+Rectangle r(3.0, 4.0);</code></pre>
+    </div>
+
+    <h3 id="dtor">4.0 Virtual Destructors</h3>
+    <t-b>
+      Any class that serves as a polymorphic base must declare its destructor <c-s>virtual</c-s>.
+      Without it, deleting a derived object through a base pointer invokes undefined behavior —
+      only the base destructor runs and the derived class resources leak.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// Correct: virtual destructor ensures full cleanup
+class Shape {
+public:
+  virtual ~Shape() = default;  // non-pure virtual destructor
+  virtual double area() const = 0;
+  virtual void draw() const = 0;
+};
+
+// Safe deletion through base pointer
+Shape* s = new Circle(5.0);
+delete s;  // calls ~Circle(), then ~Shape()</code></pre>
+    </div>
+
+    <h3 id="poly">5.0 Polymorphism</h3>
+    <t-b>
+      The canonical C++ pattern for polymorphism stores derived objects through base pointers or
+      references. <c-s>std::unique_ptr&lt;Shape&gt;</c-s> manages ownership safely and calls the
+      correct destructor automatically. Virtual dispatch selects the right override at runtime.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">#include &lt;vector&gt;
+#include &lt;memory&gt;
+#include &lt;iostream&gt;
+
+int main() {
+  std::vector&lt;std::unique_ptr&lt;Shape&gt;&gt; shapes;
+  shapes.push_back(std::make_unique&lt;Circle&gt;(5.0));
+  shapes.push_back(std::make_unique&lt;Rectangle&gt;(3.0, 4.0));
+  shapes.push_back(std::make_unique&lt;Circle&gt;(2.0));
+
+  for (const auto&amp; s : shapes) {
+    std::cout &lt;&lt; s-&gt;area() &lt;&lt; '\n';  // virtual dispatch
+    s-&gt;draw();
+  }
+  // unique_ptrs call virtual destructor on scope exit
+}</code></pre>
+    </div>
+
+    <h3 id="refs">6.0 References</h3>
+    <table class="indent">
+      <tr>
+        <th class="darkItem">Resource</th>
+        <th class="darkItem">Link</th>
+      </tr>
+      <tr>
+        <td>cppreference: virtual functions</td>
+        <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/virtual">cppreference.com/virtual</a></td>
+      </tr>
+      <tr>
+        <td>C++ Story</td>
+        <td><a target="_self" href="../../CppStoryRepo.html">CppStoryRepo.html</a></td>
+      </tr>
+      <tr>
+        <td>C++ Bites Intro</td>
+        <td><a target="_self" href="CppBites_Intro.html">CppBites_Intro.html</a></td>
+      </tr>
+    </table>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#syn">synopsis</a>
+        <a href="#pure">pure virtual</a>
+        <a href="#abc">abstract base</a>
+        <a href="#dtor">virtual dtor</a>
+        <a href="#poly">polymorphism</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 17, 10);
+  </script>
+</body>
+</html>

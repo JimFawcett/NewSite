@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppBites_UDB.html
+-->
+<head>
+  <title>CppBites UDB</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <link rel="stylesheet" href="../css/CppBites_Code.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader {
+      padding:0.0rem 0.5rem 0.25rem 0.5rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="next" class="hidden" href=""></a>
+  <a id="prev" class="hidden" href=""></a> -->
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CppBites_UDB.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/14/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">C++ Bites: Undefined Behavior</h2>
+        <h4 id="subtitle" class="indent">
+          causes, consequences, detection, and avoidance
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="CppHome.html" style="color:var(--atten); margin-left:1rem;">C++ Track</a>
+      </div>
+    </header>
+
+    <h3 id="synopsis">1.0 Synopsis</h3>
+    <t-b id="syn" style="border:1px solid var(--dark); padding:0.25em 1em 0.5em 1em;">
+      Undefined behavior (UB) means the C++ standard places no requirements on what the program does when that
+      behavior occurs. The compiler is free to assume UB never happens and to optimize accordingly - producing
+      results that are correct in debug builds and silently wrong in optimized release builds. Understanding UB
+      is essential for writing correct, portable C++.
+    </t-b>
+
+    <h3 id="dangerous">2.0 What Makes UB Dangerous</h3>
+    <t-b>
+      The optimizer treats "this code path cannot exhibit UB" as an axiom. When code does contain UB, the
+      optimizer may legally delete branches, reorder operations, or transform the code in ways the programmer
+      did not intend - without any warning. The program may appear correct under a debug build (less
+      optimization, less aggressive assumptions) and break only under <c-s>-O2</c-s> or <c-s>-O3</c-s>.
+    </t-b>
+    <t-b>
+      Common categories: signed integer overflow, null/dangling pointer dereference, out-of-bounds array
+      access, uninitialized variable reads, and strict aliasing violations. Each is covered in its own section
+      below.
+    </t-b>
+
+    <h3 id="overflow">3.0 Signed Integer Overflow</h3>
+    <t-b>
+      Signed integer overflow is UB. Unsigned overflow is well-defined: it wraps modulo 2<sup>N</sup>.
+      The optimizer exploits the "no signed overflow" axiom to eliminate checks that only fire after overflow
+      - including security-critical range checks.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// UB: signed overflow - optimizer may remove the check
+int add_signed(int a, int b) {
+  if (a + b &lt; a) return INT_MAX;  // optimizer may delete this!
+  return a + b;
+}
+
+// Safe: use unsigned or check before overflow
+bool will_overflow(int a, int b) {
+  return b &gt; 0 &amp;&amp; a &gt; INT_MAX - b;
+}</code></pre>
+    </div>
+    <t-b>
+      Safe alternatives: check before the operation (as above), use <c-s>unsigned</c-s> when wraparound is
+      acceptable, use <c-s>__builtin_add_overflow</c-s> (GCC/Clang), or use <c-s>std::add_overflow</c-s>
+      from upcoming C++26 proposals.
+    </t-b>
+
+    <h3 id="pointers">4.0 Null and Dangling Pointers</h3>
+    <t-b>
+      Dereferencing a null pointer is UB. The optimizer may assume that any pointer that is dereferenced is
+      non-null, enabling it to hoist loads above null checks. Dereferencing a dangling pointer (one pointing
+      to freed or out-of-scope memory) is also UB and can corrupt memory or execute arbitrary code.
+    </t-b>
+    <t-b>
+      Avoidance: use smart pointers (<c-s>unique_ptr</c-s>, <c-s>shared_ptr</c-s>) to manage lifetime, prefer
+      references over pointers when nullability is not needed, and use ASAN to detect dangling pointer use at
+      runtime.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">int* p = nullptr;
+// *p = 42;   // UB: null dereference
+
+std::vector&lt;int&gt; v{1, 2, 3};
+int* dangling = v.data();
+v.push_back(4);      // may reallocate; dangling is now invalid
+// *dangling = 9;    // UB: dangling pointer</code></pre>
+    </div>
+
+    <h3 id="bounds">5.0 Out-of-Bounds Access</h3>
+    <t-b>
+      Indexing a <c-s>std::vector</c-s> or C array beyond its bounds with <c-s>operator[]</c-s> is UB.
+      It may read or write adjacent memory, corrupt the heap, crash, or silently produce wrong results.
+      Use <c-s>v.at(i)</c-s> in debug code - it throws <c-s>std::out_of_range</c-s> instead.
+      Use <c-s>std::span</c-s> (C++20) to pass array views with known bounds to functions.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">std::vector&lt;int&gt; v{10, 20, 30};
+// v[5] = 99;             // UB: out of bounds
+
+v.at(5);                 // throws std::out_of_range in debug
+
+// std::span: bounds-safe array view
+#include &lt;span&gt;
+void process(std::span&lt;int&gt; s) {
+  for (auto x : s) std::cout &lt;&lt; x &lt;&lt; ' ';
+}</code></pre>
+    </div>
+
+    <h3 id="uninit">6.0 Uninitialized Variables</h3>
+    <t-b>
+      Reading an uninitialized variable is UB. On some architectures and compilers, the value may be
+      whatever was previously in that memory location; on others, the compiler may use the "never UB" axiom
+      to produce output that changes between builds. Always initialize variables at declaration.
+    </t-b>
+    <t-b>
+      The compiler flag <c-s>-Wuninitialized</c-s> (included in <c-s>-Wall</c-s>) catches many cases. MSAN
+      (<c-s>-fsanitize=memory</c-s>, Clang only) detects uninitialized reads at runtime.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">int x;          // uninitialized
+// std::cout &lt;&lt; x;  // UB: indeterminate value
+
+int y = 0;      // safe: always initialize
+
+// range: prefer value-initialization
+std::vector&lt;int&gt; counts(10);      // zero-initialized to {0,0,...,0}
+int arr[10] = {};                  // zero-initialized</code></pre>
+    </div>
+
+    <h3 id="aliasing">7.0 Strict Aliasing</h3>
+    <t-b>
+      The strict aliasing rule says that objects of different types occupy distinct memory and may not alias
+      (with exceptions: <c-s>char*</c-s>, <c-s>unsigned char*</c-s>, and <c-s>std::byte*</c-s> may alias
+      any type). Accessing an object via a pointer of an incompatible type is UB. The optimizer uses this
+      assumption to avoid reloading values from memory after a store through an apparently unrelated pointer.
+    </t-b>
+    <div class="codeBlock">
+      <pre class="code-examples"><code class="language-cpp">// UB: aliasing float as int
+float f = 1.0f;
+int*  p = reinterpret_cast&lt;int*&gt;(&amp;f);  // strict aliasing violation
+int   i = *p;
+
+// Safe C++20: bit_cast preserves bit pattern legally
+#include &lt;bit&gt;
+int bits = std::bit_cast&lt;int&gt;(f);  // well-defined</code></pre>
+    </div>
+    <t-b>
+      <c-s>std::bit_cast&lt;To&gt;(from)</c-s> (C++20) reinterprets the bit pattern of <c-s>from</c-s> as type
+      <c-s>To</c-s> without triggering aliasing UB. Both types must be the same size and trivially copyable.
+      Pre-C++20, use <c-s>memcpy</c-s> into a properly typed variable.
+    </t-b>
+
+    <h3 id="detection">8.0 Detection</h3>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Tool</th>
+          <th class="darkItem">How to Enable</th>
+          <th class="darkItem">What It Finds</th>
+        </tr>
+        <tr>
+          <td>UBSAN</td>
+          <td><c-s>-fsanitize=undefined</c-s> (GCC/Clang)</td>
+          <td>signed overflow, null deref, invalid shift, bad cast</td>
+        </tr>
+        <tr>
+          <td>ASAN</td>
+          <td><c-s>-fsanitize=address</c-s> (GCC/Clang), <c-s>/fsanitize=address</c-s> (MSVC)</td>
+          <td>out-of-bounds, use-after-free, double-free</td>
+        </tr>
+        <tr>
+          <td>MSAN</td>
+          <td><c-s>-fsanitize=memory</c-s> (Clang only)</td>
+          <td>uninitialized reads</td>
+        </tr>
+        <tr>
+          <td>Valgrind</td>
+          <td><c-s>valgrind --tool=memcheck ./myapp</c-s></td>
+          <td>memory errors, leaks; slower but no recompile needed</td>
+        </tr>
+        <tr>
+          <td>clang-tidy</td>
+          <td><c-s>clang-tidy src.cpp</c-s></td>
+          <td>static patterns: null deref, uninitialized, unsafe casts</td>
+        </tr>
+      </table>
+    </t-b>
+    <t-b>
+      Run sanitizers in CI on debug builds (<c-s>-O1 -g</c-s> is a good balance: some optimization to surface
+      optimizer-dependent UB, with debug info for readable reports). Do not ship sanitizer builds to end users.
+    </t-b>
+
+    <h3 id="refs">9.0 References</h3>
+    <t-b>
+      <table class="indent">
+        <tr>
+          <th class="darkItem">Resource</th>
+          <th class="darkItem">URL</th>
+        </tr>
+        <tr>
+          <td>cppreference undefined behavior</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/language/ub">en.cppreference.com/w/cpp/language/ub</a></td>
+        </tr>
+        <tr>
+          <td>UBSAN documentation</td>
+          <td><a target="_blank" href="https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html">clang.llvm.org/docs/UndefinedBehaviorSanitizer.html</a></td>
+        </tr>
+        <tr>
+          <td>C++ Core Guidelines</td>
+          <td><a target="_blank" href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines">isocpp.github.io/CppCoreGuidelines</a></td>
+        </tr>
+        <tr>
+          <td>cppreference std::bit_cast</td>
+          <td><a target="_blank" href="https://en.cppreference.com/w/cpp/numeric/bit_cast">en.cppreference.com/w/cpp/numeric/bit_cast</a></td>
+        </tr>
+        <tr>
+          <td>C++ Bites: Safety</td>
+          <td><a href="CppBites_Safety.html">CppBites_Safety.html</a></td>
+        </tr>
+      </table>
+    </t-b>
+
+    <div style="height:15em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#synopsis">synopsis</a>
+        <a href="#dangerous">why UB is dangerous</a>
+        <a href="#overflow">signed overflow</a>
+        <a href="#pointers">null / dangling</a>
+        <a href="#bounds">out-of-bounds</a>
+        <a href="#uninit">uninitialized</a>
+        <a href="#aliasing">strict aliasing</a>
+        <a href="#detection">detection</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/CppBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 23, 10);
+  </script>
+</body>
+</html>
