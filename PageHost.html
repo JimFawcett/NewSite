@@ -226,37 +226,41 @@
         return toUrl;
       }
     }
-    function getExplorerUrl() {
-      const frm = document.getElementById('pgframe');
-      if (!frm) return '';
+    function explorerForContent(contentUrl) {
+      const tracks = [
+        ['/Rust/',   'Rust/ExploreRust.html'],
+        ['/Cpp/',    'Cpp/ExploreCpp.html'],
+        ['/CSharp/', 'CSharp/ExploreCSharp.html'],
+        ['/Python/', 'Python/ExplorePython.html'],
+        ['/WebDev/', 'WebDev/ExploreWebDev.html'],
+        ['/SWDev/',  'SWDev/ExploreSWDev.html'],
+        ['/Basics/', 'Basics/ExploreBasics.html'],
+        ['/Code/',   'Code/ExploreCode.html'],
+        ['/Site/',   'Site/Explore.html'],
+      ];
       try {
-        const loc = frm.contentWindow && frm.contentWindow.location
-          ? frm.contentWindow.location.href
-          : '';
-        if (loc && loc !== 'about:blank') return loc;
+        const u = new URL(contentUrl, window.location.href);
+        for (const [seg, explorer] of tracks) {
+          if (u.pathname.includes(seg)) {
+            return new URL(explorer, window.location.href).href;
+          }
+        }
       } catch {}
-      return frm.getAttribute('src') || frm.src || '';
+      return new URL('Site/Explore.html', window.location.href).href;
     }
     function bookmarkCurrentPage() {
       ensureBookmarkList();
       if (!bookmarkList) return;
       const input = document.getElementById('urlinput');
       const contentUrl = (input && input.value) || '';
-      const explorerUrl = getExplorerUrl();
-      if (!explorerUrl) return;
-      const explorerBase = explorerUrl.split('?')[0].split('#')[0];
-      let srcParam = '';
-      if (contentUrl) {
-        try {
-          const contentAbs = new URL(contentUrl, window.location.href).href;
-          srcParam = relPathTo(explorerBase, contentAbs);
-        } catch {
-          srcParam = contentUrl;
-        }
-      }
-      const bookmarkUrl = srcParam ? `${explorerBase}?src=${srcParam}` : explorerBase;
-      const displayName =
-        pageNameFromUrl(contentUrl) || pageNameFromUrl(explorerBase);
+      if (!contentUrl) return;
+      let contentAbs;
+      try { contentAbs = new URL(contentUrl, window.location.href).href; }
+      catch { return; }
+      const explorerBase = explorerForContent(contentAbs);
+      const srcParam = relPathTo(explorerBase, contentAbs);
+      const bookmarkUrl = `${explorerBase}?src=${srcParam}`;
+      const displayName = pageNameFromUrl(contentAbs);
       try { bookmarkList.add(bookmarkUrl, displayName); }
       catch (err) { console.warn('bookmark add failed:', err); }
     }
