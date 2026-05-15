@@ -49,21 +49,21 @@
   <div id="about" class="hidden" onclick="toggleAbout()">
     BasicsStory_Software.html<br />
     copyright &copy; James Fawcett<br />
-    Revised: 04/29/2026
+    Revised: 05/15/2026
   </div>
 
   <content-block>
     <header>
       <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Basics Story</a>
       <div id="pagetitle" class="header">
-        <h2 id="title">Chapter #2 &ndash; Software &amp; Operating Systems</h2>
+        <h2 id="title">Chapter #4 &ndash; Software &amp; Operating Systems</h2>
         <h4 class="indent" id="subtitle">OS role, kernel, processes, threads, virtual memory, file systems</h4>
       </div>
     </header>
 
     <div>
       <a id="prologue"></a>
-      <h3>2.0&nbsp; Prologue</h3>
+      <h3>4.0&nbsp; Prologue</h3>
       <indent-blocks>
         <t-b>
           An operating system is the layer between hardware and user applications. It provides the
@@ -74,7 +74,7 @@
       </indent-blocks>
 
       <a id="osprovides"></a>
-      <h3>2.1&nbsp; What the OS Provides</h3>
+      <h3>4.1&nbsp; What the OS Provides</h3>
       <indent-blocks>
         <t-b>
           <ul class="tight">
@@ -95,7 +95,7 @@
       </indent-blocks>
 
       <a id="kernel"></a>
-      <h3>2.2&nbsp; Kernel Space vs. User Space</h3>
+      <h3>4.2&nbsp; Kernel Space vs. User Space</h3>
       <indent-blocks>
         <t-b>
           Modern CPUs provide (at least) two protection rings:
@@ -117,7 +117,7 @@
       </indent-blocks>
 
       <a id="processes"></a>
-      <h3>2.3&nbsp; Processes</h3>
+      <h3>4.3&nbsp; Processes</h3>
       <indent-blocks>
         <t-b>
           A <strong>process</strong> is a running instance of a program. Each process has:
@@ -146,7 +146,7 @@
       </indent-blocks>
 
       <a id="threads"></a>
-      <h3>2.4&nbsp; Threads</h3>
+      <h3>4.4&nbsp; Threads</h3>
       <indent-blocks>
         <t-b>
           A <strong>thread</strong> is a unit of execution within a process. All threads in a
@@ -175,7 +175,7 @@
       </indent-blocks>
 
       <a id="virtmem"></a>
-      <h3>2.5&nbsp; Virtual Memory</h3>
+      <h3>4.5&nbsp; Virtual Memory</h3>
       <indent-blocks>
         <t-b>
           The OS gives each process the illusion of a private, contiguous address space.
@@ -214,7 +214,7 @@ Low   [text (code)  — read-only program instructions]</defn-code>
       </indent-blocks>
 
       <a id="filesys"></a>
-      <h3>2.6&nbsp; File Systems</h3>
+      <h3>4.6&nbsp; File Systems</h3>
       <indent-blocks>
         <t-b>
           A file system organises persistent data into named files and directories.
@@ -243,7 +243,7 @@ Low   [text (code)  — read-only program instructions]</defn-code>
       </indent-blocks>
 
       <a id="platforms"></a>
-      <h3>2.7&nbsp; Major Platforms</h3>
+      <h3>4.7&nbsp; Major Platforms</h3>
       <indent-blocks>
         <t-b>
           <table>
@@ -280,8 +280,205 @@ Low   [text (code)  — read-only program instructions]</defn-code>
         </t-b>
       </indent-blocks>
 
+      <a id="cpugpu"></a>
+      <h3>4.8&nbsp; CPU vs. GPU Programming Models</h3>
+      <indent-blocks>
+        <t-b>
+          CPUs and GPUs solve different problems. A CPU is a latency engine &mdash; it runs a
+          small number of independent instruction streams as fast as possible. A GPU is a
+          throughput engine &mdash; it runs hundreds of thousands of lightweight threads
+          concurrently, sacrificing per-thread speed for aggregate data throughput.
+          Understanding this distinction determines which hardware to target and how to
+          structure code for each.
+        </t-b>
+
+        <h4>CPU programming model</h4>
+        <t-b>
+          A modern desktop CPU has 4&ndash;32 large, deeply pipelined cores. Each core has
+          out-of-order execution, branch prediction, and large private caches (L1/L2 up to
+          several MB). A single core can run an independent instruction stream (a thread) at
+          2&ndash;5 GHz, finishing one complex operation per cycle on average.
+        </t-b>
+        <t-b>
+          <strong>Threading model (MIMD):</strong> each thread follows its own instruction
+          sequence with its own data &mdash; Multiple Instruction, Multiple Data. Threads are
+          created by the OS and scheduled independently. The programmer explicitly launches
+          threads and coordinates them with mutexes, condition variables, or higher-level
+          abstractions (thread pools, async/await, channels).
+        </t-b>
+        <t-b>
+          <strong>Memory model:</strong> all CPU threads share a single coherent address space.
+          The hardware cache-coherency protocol (MESI or similar) ensures that a write by one
+          core is eventually visible to all others. This makes sharing data simple but requires
+          synchronization primitives to prevent data races.
+        </t-b>
+        <t-b>
+          <strong>Suited for:</strong>
+          <ul class="tight">
+            <li>Complex, irregular control flow (deep call graphs, recursive algorithms)</li>
+            <li>Latency-sensitive work (web request handling, UI, real-time systems)</li>
+            <li>Tasks with many dependencies or frequent branching</li>
+            <li>I/O-bound workloads (network, file, database)</li>
+            <li>Any problem where parallelism is limited (&lt;64 independent tasks)</li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>APIs and languages:</strong> OS threads (pthreads on POSIX, Win32 threads),
+          standard library threading (<c-s>std::thread</c-s> in C++/Rust,
+          <c-s>Thread</c-s>/<c-s>Task</c-s> in C#), async runtimes (Tokio, asyncio, .NET
+          Task Parallel Library), and OpenMP for data-parallel loops on CPU.
+        </t-b>
+
+        <h4>GPU programming model</h4>
+        <t-b>
+          A modern GPU has thousands of small shader cores grouped into streaming
+          multiprocessors (NVIDIA) or compute units (AMD). Each core is simpler than a CPU
+          core &mdash; smaller caches, no out-of-order execution, no branch prediction &mdash;
+          but there are so many that aggregate throughput dwarfs a CPU for the right workloads.
+          A current high-end GPU can perform over 100 TFLOPS of 16-bit floating-point math per
+          second.
+        </t-b>
+        <t-b>
+          <strong>Threading model (SIMT):</strong> GPU threads are grouped into
+          <em>warps</em> (NVIDIA, 32 threads) or <em>wavefronts</em> (AMD, 64 threads).
+          All threads in a warp execute the same instruction simultaneously &mdash; Single
+          Instruction, Multiple Threads. Warps are grouped into <em>thread blocks</em>
+          (or workgroups); blocks are dispatched across the GPU&rsquo;s multiprocessors.
+          The full collection of blocks for one kernel launch is called a <em>grid</em>.
+        </t-b>
+        <t-b>
+          <strong>Warp divergence:</strong> when threads in a warp take different branches
+          (<c-s>if/else</c-s>), the hardware serializes both paths &mdash; threads on the
+          inactive branch are masked off. This can cut throughput in half or worse. Writing
+          GPU-friendly code means minimizing control-flow divergence within a warp.
+        </t-b>
+        <t-b>
+          <strong>Memory hierarchy (discrete GPU):</strong>
+          <ul class="tight">
+            <li><strong>Registers:</strong> per-thread, fastest, limited count (&sim;256 per thread).</li>
+            <li><strong>Shared memory / L1 cache:</strong> per-block, programmer-managed scratchpad,
+                very fast (&sim;20 ns). Used to stage data for reuse within a block.</li>
+            <li><strong>L2 cache:</strong> shared across the GPU, larger but slower.</li>
+            <li><strong>Global DRAM (VRAM / HBM):</strong> hundreds of GB/s bandwidth, but
+                &sim;200&ndash;600 ns latency. Most kernel time is spent waiting for VRAM if
+                access patterns are not coalesced.</li>
+            <li><strong>CPU RAM:</strong> reached via PCIe; &sim;16&ndash;64 GB/s &mdash;
+                an order of magnitude slower than VRAM. Minimising PCIe transfers is critical.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>Coalesced memory access:</strong> when adjacent threads in a warp read or
+          write adjacent memory addresses, the hardware combines the requests into one wide
+          transaction (coalesced). Scattered access (each thread reading a random address)
+          issues one transaction per thread &mdash; 32&times; the memory traffic. Memory
+          layout is therefore a first-class design concern for GPU code.
+        </t-b>
+        <t-b>
+          <strong>Suited for:</strong>
+          <ul class="tight">
+            <li>Dense linear algebra: matrix multiplication, convolutions (deep learning)</li>
+            <li>Image and video processing: each pixel or block processed identically</li>
+            <li>Physics simulation: particle systems, fluid dynamics, finite-element meshes</li>
+            <li>Signal processing: FFTs, filtering on large arrays</li>
+            <li>Any problem expressible as &ldquo;apply the same operation to millions of data items&rdquo;</li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>APIs and frameworks:</strong>
+          <ul class="tight">
+            <li><strong>CUDA</strong> (NVIDIA): the most mature and widely used GPU compute
+                API. Extends C/C++ with kernel launch syntax
+                (<c-s>kernel&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;(args)</c-s>) and provides
+                cuBLAS, cuDNN, and other libraries.</li>
+            <li><strong>ROCm / HIP</strong> (AMD): CUDA-like API portable between AMD and
+                NVIDIA hardware.</li>
+            <li><strong>OpenCL</strong>: open standard, portable across CPUs, GPUs, and FPGAs;
+                more verbose than CUDA.</li>
+            <li><strong>Metal Shading Language</strong> (Apple): used for both graphics and
+                GPU compute on Apple Silicon; benefits from unified CPU/GPU memory.</li>
+            <li><strong>WebGPU</strong>: browser-accessible GPU compute and graphics; uses
+                WGSL shading language.</li>
+            <li><strong>PyTorch / TensorFlow / JAX</strong>: high-level ML frameworks that
+                generate GPU kernels automatically; most practitioners never write raw CUDA.</li>
+          </ul>
+        </t-b>
+
+        <h4>Side-by-side comparison</h4>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">Aspect</th>
+              <th class="darkItem">CPU</th>
+              <th class="darkItem">GPU</th>
+            </tr>
+            <tr>
+              <td class="defn">Core count</td>
+              <td class="defn">4&ndash;128 large cores</td>
+              <td class="defn">Thousands of small cores</td>
+            </tr>
+            <tr>
+              <td class="defn">Execution model</td>
+              <td class="defn">MIMD &mdash; independent threads</td>
+              <td class="defn">SIMT &mdash; warps of 32 threads in lockstep</td>
+            </tr>
+            <tr>
+              <td class="defn">Latency per thread</td>
+              <td class="defn">Low (&sim;1&ndash;4 ns/op)</td>
+              <td class="defn">Higher; hidden by warp switching</td>
+            </tr>
+            <tr>
+              <td class="defn">Peak throughput</td>
+              <td class="defn">Moderate (&sim;1&ndash;5 TFLOPS FP32)</td>
+              <td class="defn">Very high (60&ndash;150+ TFLOPS FP32)</td>
+            </tr>
+            <tr>
+              <td class="defn">Control flow</td>
+              <td class="defn">Complex branching is efficient</td>
+              <td class="defn">Divergent branches serialize; keep uniform</td>
+            </tr>
+            <tr>
+              <td class="defn">Memory model</td>
+              <td class="defn">Coherent shared memory; caches automatic</td>
+              <td class="defn">Separate VRAM; shared memory is explicit scratchpad</td>
+            </tr>
+            <tr>
+              <td class="defn">Data movement</td>
+              <td class="defn">None (data lives in system RAM)</td>
+              <td class="defn">CPU&harr;GPU transfers over PCIe (costly)</td>
+            </tr>
+            <tr>
+              <td class="defn">Programming model</td>
+              <td class="defn">Threads, async/await, locks</td>
+              <td class="defn">Kernel launches, warps, shared memory management</td>
+            </tr>
+            <tr>
+              <td class="defn">Best for</td>
+              <td class="defn">Irregular, latency-sensitive, I/O-bound work</td>
+              <td class="defn">Regular, data-parallel, compute-bound work</td>
+            </tr>
+          </table>
+        </t-b>
+
+        <h4>Hybrid workloads</h4>
+        <t-b>
+          Most GPU-accelerated applications are hybrid: the CPU handles orchestration, I/O,
+          and irregular logic while the GPU runs compute kernels on large data sets.
+          A typical deep learning training loop runs entirely on the CPU (data loading,
+          optimizer bookkeeping, logging) except for the forward and backward passes, which
+          execute as a sequence of GPU kernel calls. Keeping the GPU occupied &mdash;
+          avoiding long CPU stalls between kernel launches &mdash; is the primary
+          performance concern.
+        </t-b>
+        <t-b>
+          <strong>Unified memory</strong> (Apple Silicon, CUDA managed memory, AMD APUs)
+          places CPU and GPU in the same physical address space, eliminating explicit PCIe
+          transfers. This simplifies programming significantly and enables new classes of
+          fine-grained CPU/GPU cooperation, at the cost of bandwidth sharing.
+        </t-b>
+      </indent-blocks>
+
       <a id="epilogue2"></a>
-      <h3>2.8&nbsp; Epilogue</h3>
+      <h3>4.9&nbsp; Epilogue</h3>
       <t-b>
         The operating system builds a safe, managed environment on top of the hardware described
         in Chapter 1. Applications live entirely in this managed environment, speaking to the
@@ -289,7 +486,7 @@ Low   [text (code)  — read-only program instructions]</defn-code>
         that connects systems to the wider world.
       </t-b>
       <a id="refs"></a>
-      <h3>2.9&nbsp; References</h3>
+      <h3>4.10&nbsp; References</h3>
       <t-b class="indent">
         <a target="_blank" href="https://pages.cs.wisc.edu/~remzi/OSTEP/">Operating Systems: Three Easy Pieces (free online book)</a><br />
         <a target="_blank" href="https://www.kernel.org/doc/html/latest/">Linux Kernel Documentation</a><br />
@@ -315,6 +512,7 @@ Low   [text (code)  — read-only program instructions]</defn-code>
         <menu-elem class="secElem"><a href="#virtmem">virtual mem</a></menu-elem>
         <menu-elem class="secElem"><a href="#filesys">file systems</a></menu-elem>
         <menu-elem class="secElem"><a href="#platforms">platforms</a></menu-elem>
+        <menu-elem class="secElem"><a href="#cpugpu">cpu vs gpu</a></menu-elem>
         <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
         <a href="#bottom">bottom</a>
       </div>
@@ -328,7 +526,7 @@ Low   [text (code)  — read-only program instructions]</defn-code>
   <script>createSiteNavMenu('goto')</script>
   <script src="../js/link-nav.js" defer></script>
   <script>
-    setCookie('#pages', 2, 11);
+    setCookie('#pages', 4, 11);
   </script>
 </body>
 </html>

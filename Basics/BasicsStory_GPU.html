@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsStory_GPU.html
+-->
+<head>
+  <title>Basics Story GPU</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsStory_GPU.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Basics Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #3 &ndash; GPUs</h2>
+        <h4 class="indent" id="subtitle">architecture, memory, CPU comparison, programming models, use cases</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>3.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          A GPU (Graphics Processing Unit) was designed to render frames &mdash; computing
+          the color of millions of pixels simultaneously. That same ability to run thousands
+          of small computations in parallel turned out to be exactly what machine learning and
+          scientific simulation needed. Today GPUs drive graphics, AI training, physics
+          simulation, and data-center workloads alike.
+        </t-b>
+      </indent-blocks>
+
+      <a id="architecture"></a>
+      <h3>3.1&nbsp; GPU Architecture</h3>
+      <indent-blocks>
+        <t-b>
+          A CPU optimizes for low latency on a small number of independent instruction
+          streams &mdash; it uses large caches, out-of-order execution, and branch prediction
+          to finish each task as fast as possible. A GPU takes the opposite trade: it packs
+          thousands of simpler cores onto one chip and hides memory latency by switching among
+          many threads rather than by caching aggressively.
+        </t-b>
+        <t-b>
+          <strong>Key structural units:</strong>
+          <ul class="tight">
+            <li><strong>Shader cores / CUDA cores / stream processors:</strong> the basic
+                arithmetic unit. A high-end GPU may have 10,000&ndash;18,000 of them.</li>
+            <li><strong>Streaming Multiprocessor (SM) / Compute Unit (CU):</strong> a cluster
+                of 64&ndash;128 cores that share instruction fetch, a register file, and
+                shared (fast scratchpad) memory. An NVIDIA H100 has 132 SMs.</li>
+            <li><strong>Warp / wavefront:</strong> the smallest schedulable group of threads
+                &mdash; typically 32 threads (NVIDIA) or 64 threads (AMD). All threads in a
+                warp execute the same instruction simultaneously (SIMT model).</li>
+            <li><strong>Tensor cores / Matrix cores:</strong> dedicated units for 4&times;4
+                matrix multiply-accumulate in FP16/BF16/INT8. Introduced for deep learning;
+                an H100 delivers ~3,958 TFLOPS in FP16 with tensor cores.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>SIMT execution model:</strong>
+          All threads in a warp run the same instruction each clock cycle. When threads
+          diverge at an <code>if</code>/<code>else</code>, both branches execute sequentially
+          with lanes masked off &mdash; the inactive lanes do nothing but still consume time.
+          Minimizing branch divergence within a warp is the primary GPU code-quality concern.
+        </t-b>
+      </indent-blocks>
+
+      <a id="memory"></a>
+      <h3>3.2&nbsp; GPU Memory</h3>
+      <indent-blocks>
+        <t-b>
+          GPU memory (VRAM) is physically on the graphics card, separate from system RAM.
+          High-bandwidth memory (HBM) stacks DRAM dies directly on the GPU package, achieving
+          bandwidths that CPU DDR cannot match:
+        </t-b>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">Memory type</th>
+              <th class="darkItem">Bandwidth</th>
+              <th class="darkItem">Capacity (typical)</th>
+              <th class="darkItem">Notes</th>
+            </tr>
+            <tr>
+              <td class="defn">GDDR6X (consumer)</td>
+              <td class="defn">~1 TB/s</td>
+              <td class="defn">12&ndash;24 GB</td>
+              <td class="defn">NVIDIA RTX 4090</td>
+            </tr>
+            <tr>
+              <td class="defn">HBM3 (data center)</td>
+              <td class="defn">~3.35 TB/s</td>
+              <td class="defn">80&ndash;141 GB</td>
+              <td class="defn">NVIDIA H100, AMD MI300X</td>
+            </tr>
+            <tr>
+              <td class="defn">CPU DDR5 (reference)</td>
+              <td class="defn">~50&ndash;80 GB/s</td>
+              <td class="defn">up to ~6 TB (server)</td>
+              <td class="defn">system RAM</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          <strong>Memory spaces visible to GPU code:</strong>
+          <ul class="tight">
+            <li><strong>Global memory:</strong> the main VRAM pool; all threads can read and
+                write it. Highest latency (~500 clock cycles), highest capacity.</li>
+            <li><strong>Shared memory / LDS:</strong> fast scratchpad per SM (~96 KB&ndash;228 KB).
+                Used for inter-thread cooperation within a thread block. ~20&times; faster
+                than global memory.</li>
+            <li><strong>Registers:</strong> private to each thread; the fastest storage.
+                Spilling registers to global memory is expensive.</li>
+            <li><strong>Constant / texture caches:</strong> read-only, broadcast-optimized
+                paths for uniform data.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Data must be transferred from CPU RAM to VRAM before the GPU can process it.
+          The PCIe bus caps that transfer at ~32&ndash;64 GB/s &mdash; roughly 50&times;
+          slower than HBM3 bandwidth. Minimizing host&ndash;device transfers is as important
+          as minimizing global-memory accesses within the kernel.
+        </t-b>
+      </indent-blocks>
+
+      <a id="comparison"></a>
+      <h3>3.3&nbsp; CPU vs. GPU Comparison</h3>
+      <indent-blocks>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">Property</th>
+              <th class="darkItem">CPU (e.g., Intel Core Ultra 9)</th>
+              <th class="darkItem">GPU (e.g., NVIDIA H100)</th>
+            </tr>
+            <tr>
+              <td class="defn">Core count</td>
+              <td class="defn">8&ndash;24 powerful cores</td>
+              <td class="defn">~16,896 CUDA cores</td>
+            </tr>
+            <tr>
+              <td class="defn">Clock speed</td>
+              <td class="defn">3&ndash;5 GHz</td>
+              <td class="defn">~1.8 GHz boost</td>
+            </tr>
+            <tr>
+              <td class="defn">FP32 throughput</td>
+              <td class="defn">~1&ndash;3 TFLOPS</td>
+              <td class="defn">~67 TFLOPS</td>
+            </tr>
+            <tr>
+              <td class="defn">Memory bandwidth</td>
+              <td class="defn">~50&ndash;80 GB/s</td>
+              <td class="defn">~3.35 TB/s</td>
+            </tr>
+            <tr>
+              <td class="defn">Cache per core</td>
+              <td class="defn">large (MB per core)</td>
+              <td class="defn">small (KB per SM)</td>
+            </tr>
+            <tr>
+              <td class="defn">Branch prediction</td>
+              <td class="defn">deep, speculative</td>
+              <td class="defn">minimal; divergence is costly</td>
+            </tr>
+            <tr>
+              <td class="defn">Best for</td>
+              <td class="defn">serial logic, OS, I/O, mixed workloads</td>
+              <td class="defn">data-parallel math (ML, graphics, sim)</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          Neither wins universally. A GPU requires the CPU to manage I/O, orchestrate
+          kernel launches, and handle control flow. In practice, high-performance systems
+          pipeline work: the CPU prepares the next batch of data while the GPU processes
+          the current one.
+        </t-b>
+      </indent-blocks>
+
+      <a id="programming"></a>
+      <h3>3.4&nbsp; Programming Models</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>CUDA (NVIDIA):</strong> the dominant GPU compute platform. Extends C++ with
+          kernel launch syntax (<code>kernel&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;(args)</code>).
+          NVIDIA-only; available since 2007. Most AI frameworks (PyTorch, TensorFlow) target
+          CUDA by default.
+        </t-b>
+        <t-b>
+          <strong>ROCm / HIP (AMD):</strong> AMD&rsquo;s open-source compute stack. HIP
+          kernels are syntactically close to CUDA; a translation tool (<code>hipify</code>)
+          automates much of the porting. Targets AMD Instinct and Radeon GPUs.
+        </t-b>
+        <t-b>
+          <strong>OpenCL:</strong> an open standard that targets GPUs, CPUs, and FPGAs from
+          any vendor. More portable but lower-level than CUDA; largely displaced by CUDA in
+          the AI space.
+        </t-b>
+        <t-b>
+          <strong>Metal (Apple):</strong> Apple&rsquo;s GPU API for macOS and iOS, covering
+          both graphics and compute on Apple Silicon.
+        </t-b>
+        <t-b>
+          <strong>WebGPU / WGSL:</strong> a W3C standard exposing GPU compute to web browsers.
+          The shading language WGSL compiles to native GPU instructions. Suitable for
+          in-browser ML inference on the user&rsquo;s GPU.
+        </t-b>
+        <t-b>
+          Higher-level libraries &mdash; cuDNN, cuBLAS, CUTLASS (NVIDIA) and rocBLAS (AMD)
+          &mdash; provide optimized implementations of matrix operations, convolutions, and
+          attention, so application code rarely writes raw CUDA kernels.
+        </t-b>
+      </indent-blocks>
+
+      <a id="usecases"></a>
+      <h3>3.5&nbsp; Use Cases</h3>
+      <indent-blocks>
+        <t-b>
+          <ul class="tight">
+            <li><strong>3D graphics and gaming:</strong> rasterization, ray tracing, shading.
+                The original GPU workload; still dominates consumer GPU sales.</li>
+            <li><strong>AI training:</strong> large language models, image classifiers, and
+                diffusion models require billions of matrix multiplications. A single training
+                run for a large model may use thousands of H100s for weeks.</li>
+            <li><strong>AI inference:</strong> serving a trained model in production. Smaller
+                GPUs or dedicated NPUs (Apple Neural Engine, Qualcomm Hexagon) handle
+                latency-sensitive inference.</li>
+            <li><strong>Scientific simulation:</strong> fluid dynamics (CFD), molecular
+                dynamics, finite-element analysis, weather modeling.</li>
+            <li><strong>Cryptocurrency mining:</strong> proof-of-work hashing is embarrassingly
+                parallel. GPU supply shortages in 2020&ndash;2022 were driven largely by
+                mining demand.</li>
+            <li><strong>Video encoding/decoding:</strong> fixed-function hardware blocks on
+                modern GPUs (NVENC, QuickSync, VCE) offload video codec work from the CPU.</li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="regions"></a>
+      <h3>3.6&nbsp; GPU Industry by Region</h3>
+      <indent-blocks>
+        <t-b>
+          The GPU value chain has three distinct phases: <strong>design</strong> (architecting
+          the chip &mdash; transistor layout, instruction set, memory subsystem), <strong>manufacturing</strong>
+          (physically fabricating the die in a semiconductor foundry), and <strong>application</strong>
+          (deploying GPUs in data centers, workstations, and consumer devices). Each phase
+          has a very different geographic profile. Regions below match those used in
+          Chapter 7 (Data Centers). Consumption percentages are approximate shares of
+          global GPU revenue as of 2025 and shift rapidly with AI-driven demand.
+        </t-b>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">Region</th>
+              <th class="darkItem">Design</th>
+              <th class="darkItem">Manufacturing</th>
+              <th class="darkItem">Consumption (~%)</th>
+            </tr>
+            <tr>
+              <td class="defn">United States</td>
+              <td class="defn">
+                Dominant globally. NVIDIA (Santa Clara) designs all GeForce and data-center
+                GPU lines including the H100 and Blackwell series. AMD (Santa Clara) designs
+                the Radeon and Instinct lines. Qualcomm designs Adreno mobile GPUs.
+                Apple designs the GPU cores inside Apple Silicon (M and A series).
+                Intel designs the Arc discrete GPU and integrated Xe graphics.
+              </td>
+              <td class="defn">
+                US-designed GPUs are almost entirely fabricated abroad (see Taiwan, South Korea
+                below). TSMC&rsquo;s Arizona facility began N4P production in 2024 and will
+                handle a growing slice of Apple and potentially NVIDIA wafers. Intel
+                Foundry Services operates domestic fabs but holds no significant GPU
+                production share.
+              </td>
+              <td class="defn">
+                ~38&ndash;42%. The largest single market. Hyperscale AI clusters
+                (Microsoft&thinsp;/&thinsp;OpenAI, Google, Meta, Amazon) account for the
+                majority of data-center GPU spend. Consumer gaming and professional
+                workstation markets add a substantial base.
+              </td>
+            </tr>
+            <tr>
+              <td class="defn">Canada and Mexico</td>
+              <td class="defn">
+                Canada hosts notable AI chip startups; Tenstorrent (Toronto) designs
+                RISC-V-based AI accelerators that overlap GPU workloads. No volume GPU
+                brand originates here.
+              </td>
+              <td class="defn">
+                No leading-edge GPU fabrication. Some older-node semiconductor packaging
+                and assembly in Mexico for the broader electronics supply chain.
+              </td>
+              <td class="defn">
+                ~2&ndash;3%. Cloud deployments, enterprise AI pilots, and a
+                significant gaming market. Canadian universities and government labs
+                operate modest HPC GPU clusters.
+              </td>
+            </tr>
+            <tr>
+              <td class="defn">Central and South America</td>
+              <td class="defn">
+                No significant GPU design activity. University research groups in Brazil
+                and Chile contribute to GPU computing research but not to chip architecture.
+              </td>
+              <td class="defn">
+                No relevant fabrication. Brazil has a domestic electronics manufacturing
+                sector (Manaus free-trade zone) focused on assembly of imported components.
+              </td>
+              <td class="defn">
+                ~1%. Gaming dominates; enterprise and cloud AI adoption is early-stage.
+                Brazil (S&atilde;o Paulo) is the largest sub-regional market.
+              </td>
+            </tr>
+            <tr>
+              <td class="defn">European Union and UK</td>
+              <td class="defn">
+                ARM Holdings (Cambridge, UK) licenses Mali and Immortalis GPU IP cores,
+                which power mobile GPUs inside billions of Android devices and Apple&rsquo;s
+                early SoCs. Imagination Technologies (Hertfordshire, UK) licenses PowerVR
+                GPU IP used in embedded and automotive chips. EU-based chip startups focus
+                mostly on AI inference accelerators rather than discrete GPUs.
+              </td>
+              <td class="defn">
+                No leading-edge GPU fabrication. GlobalFoundries Dresden operates a mature-node
+                fab (12&ndash;22 nm) serving automotive and IoT markets. The EU Chips Act
+                (2023) targets 20% of global semiconductor production by 2030 but
+                leading-edge GPU fabrication remains at least a decade away.
+              </td>
+              <td class="defn">
+                ~13&ndash;15%. Large cloud providers (AWS, Azure, GCP European regions)
+                account for the bulk. HPC GPU clusters at national supercomputing
+                centres (CERN, J&uuml;lich, CINECA) contribute significantly. Gaming
+                is a large consumer market. GDPR data-localisation drives regional
+                GPU infrastructure independent of US clusters.
+              </td>
+            </tr>
+            <tr>
+              <td class="defn">Russia</td>
+              <td class="defn">
+                No competitive GPU design. MCST produces the Elbrus CPU/GPU hybrid for
+                domestic defence use; performance is well below contemporary NVIDIA or AMD
+                products. Sanctions since 2022 have cut off access to Western GPU tooling
+                and EDA software, freezing development further.
+              </td>
+              <td class="defn">
+                No relevant fabrication. Domestic fabs (Mikron, Angstrem) are limited
+                to 90&ndash;250 nm nodes &mdash; several generations behind GPU requirements.
+              </td>
+              <td class="defn">
+                ~1%. Severely constrained by export controls and sanctions blocking
+                imports of NVIDIA and AMD products. Domestic cloud and AI projects rely
+                on pre-sanction stockpiles and grey-market supply chains.
+              </td>
+            </tr>
+            <tr>
+              <td class="defn">China</td>
+              <td class="defn">
+                The most active emerging GPU design ecosystem outside the US. Key players:
+                Moore Threads (Beijing) &mdash; MTT S80/S4000 discrete GPUs; Biren Technology
+                (Shanghai) &mdash; BR100 data-center accelerator; Cambricon &mdash;
+                AI inference chips; Huawei &mdash; Ascend 910B GPU-class accelerator,
+                manufactured at SMIC 7 nm. All remain 1&ndash;3 generations behind NVIDIA
+                H100 in training performance and software ecosystem maturity.
+              </td>
+              <td class="defn">
+                SMIC (Shanghai) operates the most advanced domestic logic foundry,
+                reaching an effective ~7 nm node (N+2) for select products. US export
+                controls restrict SMIC from receiving EUV lithography equipment, capping
+                future node advancement. CXMT and YMTC produce DRAM and NAND; HBM
+                production (required for data-center GPUs) remains nascent domestically.
+                TSMC and Samsung are prohibited from supplying China with leading-edge
+                GPU production.
+              </td>
+              <td class="defn">
+                ~18&ndash;22%. Historically the second-largest market, driven by
+                Baidu, Alibaba, Tencent, ByteDance, and a large gaming industry.
+                US export controls introduced in 2022&ndash;2023 banned H100 and
+                subsequently A800/H800 exports, redirecting demand to domestic
+                alternatives and creating a significant supply gap for training-grade
+                hardware.
+              </td>
+            </tr>
+            <tr>
+              <td class="defn">Southeast Asia</td>
+              <td class="defn">
+                Singapore hosts R&amp;D centres for NVIDIA, AMD, and Qualcomm but
+                originates no major GPU architecture. No volume GPU design elsewhere
+                in the region.
+              </td>
+              <td class="defn">
+                No leading-edge GPU fabrication. Micron and GlobalFoundries operate
+                memory and mature-logic fabs in Singapore. Advanced packaging
+                (CoWoS, OSAT) for GPU chiplets is beginning to expand in Malaysia
+                (Penang) through Intel, Infineon, and others.
+              </td>
+              <td class="defn">
+                ~4&ndash;5%. Growing cloud infrastructure (AWS, Azure, GCP Singapore
+                regions), gaming, and AI adoption across the region. Singapore is the
+                primary data-center hub.
+              </td>
+            </tr>
+            <tr>
+              <td class="defn">India and Australia</td>
+              <td class="defn">
+                India has large design centres for NVIDIA, AMD, Qualcomm, and Intel in
+                Hyderabad and Bangalore, contributing to GPU architecture and verification
+                &mdash; but as engineering offices of US companies, not independent GPU
+                brands. No Australian GPU design of note.
+              </td>
+              <td class="defn">
+                India&rsquo;s semiconductor ambitions are materialising slowly; Tata
+                Electronics and PSMC announced a 28 nm fab (Gujarat, ~2026) aimed at
+                automotive and mobile chips, not GPU-class leading-edge nodes. No relevant
+                Australian fabrication.
+              </td>
+              <td class="defn">
+                ~4&ndash;5%. India is growing rapidly &mdash; Jio, Infosys AI, and
+                government HPC initiatives are driving GPU procurement. Australia serves
+                as a Pacific-region cloud hub (AWS Sydney, Azure Melbourne) with strict
+                data-sovereignty requirements.
+              </td>
+            </tr>
+            <tr>
+              <td class="defn">Rest of world</td>
+              <td class="defn">
+                <strong>Taiwan:</strong> MediaTek designs mobile GPU IP (using ARM
+                Mali cores); TSMC itself does not design GPUs.
+                <strong>South Korea:</strong> Samsung designs the Xclipse GPU (AMD
+                RDNA2 IP licensed) for Exynos SoCs. <strong>Japan:</strong> Sony
+                collaborates with AMD on the PlayStation GPU architecture.
+                <strong>Middle East / Japan / South Korea</strong> have emerging or
+                niche GPU design activity but no globally competitive discrete GPU brands.
+              </td>
+              <td class="defn">
+                <strong>Taiwan (TSMC)</strong> is the single most critical node in
+                global GPU manufacturing: NVIDIA, AMD, and Apple GPU dies are
+                fabricated at TSMC (N4P, N3 nodes) in Hsinchu and Taichung. TSMC holds
+                roughly 90% of the world&rsquo;s leading-edge GPU foundry capacity.
+                <strong>South Korea (Samsung Foundry)</strong> fabricates AMD RDNA-generation
+                GPUs and some Apple chips; Samsung and SK Hynix produce essentially all
+                HBM2e and HBM3 memory stacked on data-center GPUs. <strong>Japan:</strong>
+                TSMC&rsquo;s Kumamoto fab (JASM, opened 2024) serves mature-node demand;
+                Rapidus targets 2 nm by 2027 but not GPU production.
+              </td>
+              <td class="defn">
+                ~8&ndash;10%. <strong>Japan</strong> operates large national HPC GPU
+                clusters (ABCI, Fugaku follow-on). <strong>South Korea</strong> has a
+                significant gaming and enterprise AI market. <strong>Middle East</strong>
+                (UAE, Saudi Arabia) is the fastest-growing sub-region, with multi-billion-dollar
+                AI data center investments targeting thousands of H100-class GPUs.
+                <strong>Taiwan</strong> consumes GPUs domestically for gaming and industrial
+                AI but exports most of what it manufactures.
+              </td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          <strong>Key structural observations:</strong>
+          <ul class="tight">
+            <li>
+              GPU <em>design</em> is highly concentrated &mdash; the US (NVIDIA, AMD,
+              Qualcomm, Apple, Intel) and UK (ARM) account for essentially all commercially
+              significant GPU architectures. China is the only region making a determined
+              effort to close this gap.
+            </li>
+            <li>
+              GPU <em>manufacturing</em> is even more concentrated: TSMC in Taiwan
+              fabricates the vast majority of leading-edge GPU dies. A disruption to
+              TSMC &mdash; earthquake, energy shortage, or geopolitical crisis &mdash;
+              would halt global GPU supply within weeks. This dependency is the central
+              concern of US, EU, and Japanese semiconductor policy.
+            </li>
+            <li>
+              GPU <em>consumption</em> is more distributed, mirroring data-center investment
+              patterns but skewed toward the US and China. Export controls targeting
+              China have bifurcated the market and are accelerating Chinese domestic
+              GPU development.
+            </li>
+            <li>
+              <strong>HBM (High-Bandwidth Memory)</strong> is a separate but equally critical
+              dependency: Samsung and SK Hynix (both South Korean) supply essentially all
+              HBM used in data-center GPUs worldwide. A shortage in HBM production constrains
+              GPU availability as directly as a wafer shortage at TSMC.
+            </li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue"></a>
+      <h3>3.7&nbsp; Epilogue</h3>
+      <t-b>
+        GPUs redefine the performance ceiling for data-parallel workloads. Their value comes
+        from matching the problem structure: uniform operations over large datasets with
+        minimal branching and high arithmetic intensity. When that match holds, a single
+        GPU replaces dozens of CPU cores; when it does not, the CPU remains the right tool.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>3.8&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://en.wikipedia.org/wiki/Graphics_processing_unit">GPU &mdash; Wikipedia</a><br />
+        <a target="_blank" href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/">CUDA C++ Programming Guide &mdash; NVIDIA</a><br />
+        <a target="_blank" href="https://rocm.docs.amd.com/en/latest/">ROCm Documentation &mdash; AMD</a><br />
+        <a target="_blank" href="https://en.wikipedia.org/wiki/SIMT">SIMT &mdash; Wikipedia</a><br />
+        <a target="_blank" href="https://gpuopen.com/learn/understanding-gpu-memory/">Understanding GPU Memory &mdash; GPUOpen</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#architecture">architecture</a></menu-elem>
+        <menu-elem class="secElem"><a href="#memory">memory</a></menu-elem>
+        <menu-elem class="secElem"><a href="#comparison">CPU vs GPU</a></menu-elem>
+        <menu-elem class="secElem"><a href="#programming">programming</a></menu-elem>
+        <menu-elem class="secElem"><a href="#usecases">use cases</a></menu-elem>
+        <menu-elem class="secElem"><a href="#regions">regions</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 11);
+  </script>
+</body>
+</html>
