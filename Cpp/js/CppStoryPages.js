@@ -22,6 +22,9 @@ function buildPages() {
       <a href='CppStory_Libraries.html'>Libraries</a>\
       <a href='CppStory_LibraryStreams.html'>Streams</a>\
       <a href='CppStory_LibrarySTL.html'>STL</a>\
+      <a href='CppStory_LibraryFileSystem.html'>File System</a>\
+      <a href='CppStory_LibraryThreads.html'>Threads</a>\
+      <a href='CppStory_LibraryWinSockets.html'>Win Sockets</a>\
       <a href='CppStory_Interesting.html'>Interesting</a>\
       </div>\
     <div style='height:0.5em;'></div>";

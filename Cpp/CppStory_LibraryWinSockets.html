@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppStory_LibraryWinSockets.html
+-->
+<head>
+  <title>C++ Story LibraryWinSockets</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    summary {
+      padding: 3px 0px 5px 0px;
+    }
+
+
+    .gray {
+      background-color: #ddd;
+    }
+
+    .spread {
+      margin: 1em;
+    }
+
+    .tightSpread {
+      margin: 0.5em;
+    }
+
+    #github #pagetitle {
+      background-color: #002147;
+      color: #fafaff;
+    }
+
+    #github #title {
+      background-color: #002147;
+      color: #fafaff;
+    }
+
+    #github #subtitle {
+      background-color: #002147;
+      color: #fafaff;
+    }
+
+    #github a.repoLink {
+      background-color: #002147;
+      color: #fafaff;
+    }
+
+      #github a.repoLink:link {
+        background-color: #002147;
+        color: #fafaff;
+      }
+
+    #github c-s {
+      font-size: small;
+    }
+
+    #github defn-code {
+      font-size: small;
+    }
+
+    #github .codeStyle {
+      font-family: Consolas;
+      font-size: small;
+      font-weight: bold;
+    }
+
+    #github h3 {
+      margin-top: 1.0em;
+      margin-bottom: 1.0em;
+    }
+
+    #github h4 {
+      margin-top: 0.5em;
+      margin-bottom: 0.5em;
+    }
+
+    #github .normal {
+      font-weight: normal;
+      font-size: small;
+    }
+
+    #github .spreadup {
+      margin-top: 1em;
+    }
+
+    #github defn-block {
+      max-width: 50em;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="Next" href="CppStory_Interesting.html">N</a> <a id="Prev" href="CppStory_LibraryThreads.html">P</a> -->
+
+  <page-frame>
+    <main>
+      <div id="about" class="hidden" onclick="toggleAbout()">
+        CppStory_LibraryWinSockets.html<br />
+        copyright &copy; James Fawcett<br />
+        Revised: 05/15/2026
+      </div>
+      <content-block>
+
+        <header>
+          <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett/CppStory">C++ Story</a>
+          <div id="pagetitle" class="header">
+            <h2 id="title">Chapter #14 - Windows Sockets (WinSock2)</h2>
+            <h4 id="subtitle" class="indent">TCP server and client with the WinSock2 API</h4>
+          </div>
+        </header>
+
+        <h3 id="prologue">14.0 Prologue</h3>
+        <t-b>
+          Windows Sockets (WinSock2) is the Windows API for TCP/IP and UDP networking. It closely follows
+          the BSD sockets API with a few Windows-specific additions. Before using any WinSock2 facility,
+          include the required headers and link the library:
+        </t-b>
+        <t-b>
+          <defn-outerBlock>
+            <defn-block>
+              <defn-head>Required headers and lib</defn-head>
+              <defn-code>
+#define WIN32_LEAN_AND_MEAN
+#include &lt;winsock2.h&gt;
+#include &lt;ws2tcpip.h&gt;
+#pragma comment(lib, "Ws2_32.lib")
+              </defn-code>
+            </defn-block>
+          </defn-outerBlock>
+        </t-b>
+        <t-b>
+          All WinSock applications must call <c-s>WSAStartup()</c-s> before use and
+          <c-s>WSACleanup()</c-s> before exit.
+        </t-b>
+
+        <h3 id="init">14.1 WinSock2 Initialization</h3>
+        <t-b>
+          <c-s>WSAStartup(MAKEWORD(2,2), &amp;wsaData)</c-s> initializes the WinSock2 library for the process.
+          <c-s>WSACleanup()</c-s> releases it. The <c-s>SOCKET</c-s> type is the handle for a socket;
+          <c-s>INVALID_SOCKET</c-s> indicates failure. Use <c-s>closesocket()</c-s> to close a socket handle —
+          not the POSIX <c-s>close()</c-s>.
+        </t-b>
+        <t-b>
+          <details>
+            <summary class="labelStyle darkItem">Example: WSAStartup and WSACleanup</summary>
+            <t-b>
+              <defn-outerBlock>
+                <defn-block>
+                  <defn-head>Initialization and cleanup</defn-head>
+                  <defn-code>
+#define WIN32_LEAN_AND_MEAN
+#include &lt;winsock2.h&gt;
+#include &lt;ws2tcpip.h&gt;
+#include &lt;iostream&gt;
+#pragma comment(lib, "Ws2_32.lib")
+
+int main() {
+  WSADATA wsaData;
+  int result = WSAStartup(MAKEWORD(2, 2), &amp;wsaData);
+  if (result != 0) {
+    std::cerr &lt;&lt; "WSAStartup failed: " &lt;&lt; result &lt;&lt; "\n";
+    return 1;
+  }
+
+  // ... use sockets here ...
+
+  WSACleanup();
+  return 0;
+}
+                  </defn-code>
+                </defn-block>
+              </defn-outerBlock>
+            </t-b>
+          </details>
+        </t-b>
+
+        <h3 id="server">14.2 Server Operations</h3>
+        <t-b>
+          A TCP server follows this sequence: <c-s>socket()</c-s> &rarr; <c-s>bind()</c-s> &rarr;
+          <c-s>listen()</c-s> &rarr; <c-s>accept()</c-s> &rarr; <c-s>send()</c-s>/<c-s>recv()</c-s>
+          &rarr; <c-s>closesocket()</c-s>. Use <c-s>getaddrinfo()</c-s> to resolve a host name and
+          port string into a <c-s>sockaddr</c-s> structure suitable for <c-s>bind()</c-s> or
+          <c-s>connect()</c-s>.
+        </t-b>
+        <t-b>
+          <h3 style="display:inline-block">Table 1. Key Server Functions</h3>
+          <table style="width:calc(100vw - 12rem);">
+            <tr>
+              <th class="darkItem">Function</th>
+              <th class="darkItem">Signature</th>
+              <th class="darkItem">Description</th>
+            </tr>
+            <tr>
+              <td><c-s>socket</c-s></td>
+              <td><c-s>SOCKET socket(int af, int type, int protocol)</c-s></td>
+              <td>Creates a socket. Returns <c-s>INVALID_SOCKET</c-s> on failure.</td>
+            </tr>
+            <tr>
+              <td><c-s>bind</c-s></td>
+              <td><c-s>int bind(SOCKET s, const sockaddr* name, int namelen)</c-s></td>
+              <td>Binds the socket to a local address and port.</td>
+            </tr>
+            <tr>
+              <td><c-s>listen</c-s></td>
+              <td><c-s>int listen(SOCKET s, int backlog)</c-s></td>
+              <td>Places the socket in a listening state; <c-s>backlog</c-s> sets the pending-connection queue length.</td>
+            </tr>
+            <tr>
+              <td><c-s>accept</c-s></td>
+              <td><c-s>SOCKET accept(SOCKET s, sockaddr* addr, int* addrlen)</c-s></td>
+              <td>Blocks until a client connects, then returns a new socket for that connection.</td>
+            </tr>
+            <tr>
+              <td><c-s>send</c-s></td>
+              <td><c-s>int send(SOCKET s, const char* buf, int len, int flags)</c-s></td>
+              <td>Sends data on a connected socket. Returns bytes sent or <c-s>SOCKET_ERROR</c-s>.</td>
+            </tr>
+            <tr>
+              <td><c-s>recv</c-s></td>
+              <td><c-s>int recv(SOCKET s, char* buf, int len, int flags)</c-s></td>
+              <td>Receives data from a connected socket. Returns bytes received, 0 on close, or <c-s>SOCKET_ERROR</c-s>.</td>
+            </tr>
+            <tr>
+              <td><c-s>closesocket</c-s></td>
+              <td><c-s>int closesocket(SOCKET s)</c-s></td>
+              <td>Closes a socket handle and releases its resources.</td>
+            </tr>
+          </table>
+        </t-b>
+
+        <h3 id="client">14.3 Client Operations</h3>
+        <t-b>
+          A TCP client follows this sequence: <c-s>socket()</c-s> &rarr; <c-s>connect()</c-s> &rarr;
+          <c-s>send()</c-s>/<c-s>recv()</c-s> &rarr; <c-s>closesocket()</c-s>. The example below connects
+          to a server, sends a message, receives a reply, and closes cleanly.
+        </t-b>
+        <t-b>
+          <details>
+            <summary class="labelStyle darkItem">Example: TCP Client</summary>
+            <t-b>
+              <defn-outerBlock>
+                <defn-block>
+                  <defn-head>TcpClient.cpp</defn-head>
+                  <defn-code>
+#define WIN32_LEAN_AND_MEAN
+#include &lt;winsock2.h&gt;
+#include &lt;ws2tcpip.h&gt;
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+#pragma comment(lib, "Ws2_32.lib")
+
+int main() {
+  WSADATA wsaData;
+  if (WSAStartup(MAKEWORD(2, 2), &amp;wsaData) != 0) {
+    std::cerr &lt;&lt; "WSAStartup failed\n";
+    return 1;
+  }
+
+  addrinfo hints{}, *result = nullptr;
+  hints.ai_family   = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_protocol = IPPROTO_TCP;
+
+  if (getaddrinfo("127.0.0.1", "8080", &amp;hints, &amp;result) != 0) {
+    std::cerr &lt;&lt; "getaddrinfo failed\n";
+    WSACleanup();
+    return 1;
+  }
+
+  SOCKET sock = socket(
+    result-&gt;ai_family,
+    result-&gt;ai_socktype,
+    result-&gt;ai_protocol
+  );
+  if (sock == INVALID_SOCKET) {
+    std::cerr &lt;&lt; "socket() failed\n";
+    freeaddrinfo(result);
+    WSACleanup();
+    return 1;
+  }
+
+  if (connect(sock, result-&gt;ai_addr,
+              (int)result-&gt;ai_addrlen) == SOCKET_ERROR) {
+    std::cerr &lt;&lt; "connect() failed\n";
+    closesocket(sock);
+    freeaddrinfo(result);
+    WSACleanup();
+    return 1;
+  }
+  freeaddrinfo(result);
+
+  std::string msg = "Hello from client";
+  send(sock, msg.c_str(), (int)msg.size(), 0);
+
+  char buf[512]{};
+  int bytes = recv(sock, buf, sizeof(buf) - 1, 0);
+  if (bytes &gt; 0) {
+    std::cout &lt;&lt; "Server replied: " &lt;&lt; buf &lt;&lt; "\n";
+  }
+
+  closesocket(sock);
+  WSACleanup();
+  return 0;
+}
+                  </defn-code>
+                </defn-block>
+              </defn-outerBlock>
+            </t-b>
+          </details>
+        </t-b>
+
+        <h3 id="echo">14.4 Echo Server Example</h3>
+        <t-b>
+          The example below is a complete single-threaded TCP echo server. It initializes WinSock2,
+          resolves the bind address with <c-s>getaddrinfo()</c-s>, accepts one client at a time, echoes
+          every received buffer back, and cleans up on exit. Port <c-s>"8080"</c-s> and
+          <c-s>INADDR_ANY</c-s> (via <c-s>AI_PASSIVE</c-s>) are used.
+        </t-b>
+        <t-b>
+          <details>
+            <summary class="labelStyle darkItem">Example: Single-Threaded TCP Echo Server</summary>
+            <t-b>
+              <defn-outerBlock>
+                <defn-block>
+                  <defn-head>EchoServer.cpp</defn-head>
+                  <defn-code>
+#define WIN32_LEAN_AND_MEAN
+#include &lt;winsock2.h&gt;
+#include &lt;ws2tcpip.h&gt;
+#include &lt;iostream&gt;
+#pragma comment(lib, "Ws2_32.lib")
+
+int main() {
+  WSADATA wsaData;
+  if (WSAStartup(MAKEWORD(2, 2), &amp;wsaData) != 0) {
+    std::cerr &lt;&lt; "WSAStartup failed\n";
+    return 1;
+  }
+
+  addrinfo hints{}, *result = nullptr;
+  hints.ai_family   = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_protocol = IPPROTO_TCP;
+  hints.ai_flags    = AI_PASSIVE;   // bind to INADDR_ANY
+
+  if (getaddrinfo(nullptr, "8080", &amp;hints, &amp;result) != 0) {
+    std::cerr &lt;&lt; "getaddrinfo failed\n";
+    WSACleanup();
+    return 1;
+  }
+
+  SOCKET listenSock = socket(
+    result-&gt;ai_family,
+    result-&gt;ai_socktype,
+    result-&gt;ai_protocol
+  );
+  if (listenSock == INVALID_SOCKET) {
+    std::cerr &lt;&lt; "socket() failed\n";
+    freeaddrinfo(result);
+    WSACleanup();
+    return 1;
+  }
+
+  if (bind(listenSock, result-&gt;ai_addr,
+           (int)result-&gt;ai_addrlen) == SOCKET_ERROR) {
+    std::cerr &lt;&lt; "bind() failed\n";
+    closesocket(listenSock);
+    freeaddrinfo(result);
+    WSACleanup();
+    return 1;
+  }
+  freeaddrinfo(result);
+
+  if (listen(listenSock, SOMAXCONN) == SOCKET_ERROR) {
+    std::cerr &lt;&lt; "listen() failed\n";
+    closesocket(listenSock);
+    WSACleanup();
+    return 1;
+  }
+
+  std::cout &lt;&lt; "Echo server listening on port 8080\n";
+
+  // accept one client at a time (single-threaded)
+  for (;;) {
+    SOCKET clientSock = accept(listenSock, nullptr, nullptr);
+    if (clientSock == INVALID_SOCKET) {
+      std::cerr &lt;&lt; "accept() failed\n";
+      break;
+    }
+
+    char buf[512]{};
+    int bytes;
+    while ((bytes = recv(clientSock, buf, sizeof(buf), 0)) &gt; 0) {
+      send(clientSock, buf, bytes, 0);  // echo back
+    }
+
+    closesocket(clientSock);
+    std::cout &lt;&lt; "Client disconnected\n";
+  }
+
+  closesocket(listenSock);
+  WSACleanup();
+  return 0;
+}
+                  </defn-code>
+                </defn-block>
+              </defn-outerBlock>
+            </t-b>
+          </details>
+        </t-b>
+
+        <h3 id="epilogue">14.5 Epilogue</h3>
+        <t-b>
+          WinSock2 gives direct access to TCP/IP on Windows. The API is low-level; production code wraps
+          it in RAII classes so sockets and <c-s>WSACleanup()</c-s> are released deterministically on
+          scope exit.
+        </t-b>
+        <t-b>
+          For scalability, production servers use async I/O: <c-s>WSAAsyncSelect</c-s> for
+          message-based notification or I/O Completion Ports (IOCP) for high-throughput thread-pool designs.
+        </t-b>
+        <t-b>
+          Cross-platform code can target POSIX sockets on Linux and macOS - the call signatures are nearly
+          identical aside from initialization. Replacing the WinSock2 prologue/epilogue and
+          <c-s>closesocket()</c-s> with <c-s>close()</c-s> covers most of the porting work.
+        </t-b>
+
+        <h3 id="refs">14.6 References</h3>
+        <div>
+          <a href="https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-start-page-2">Microsoft: Windows Sockets 2</a><br />
+          <a href="https://learn.microsoft.com/en-us/windows/win32/api/winsock2/">WinSock2 API reference</a><br />
+          <a href="https://beej.us/guide/bgnet/">Beej&apos;s Guide to Network Programming</a><br />
+          <a href="CppStory_LibraryThreads.html">Chapter #13 - Threads</a><br />
+          <a href="CppStory_Interesting.html">Chapter #15 - Interesting Topics</a><br />
+        </div>
+        <spacer-25></spacer-25>
+      </content-block>
+      <a id="bottom"></a>
+      <div id="bottomMenu">
+        <div id="keys" class="hidden"></div>
+        <div id="sections" class="hidden">
+          <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+          <div class="menuBody">
+            <menu-elem class="secElem"><a href="#top">top</a></menu-elem>
+            <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+            <menu-elem class="secElem"><a href="#init">init</a></menu-elem>
+            <menu-elem class="secElem"><a href="#server">server</a></menu-elem>
+            <menu-elem class="secElem"><a href="#client">client</a></menu-elem>
+            <menu-elem class="secElem"><a href="#echo">echo</a></menu-elem>
+            <menu-elem class="secElem"><a href="#epilogue">epilogue</a></menu-elem>
+            <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+            <menu-elem class="secElem"><a href="#bottom">bottom</a></menu-elem>
+          </div>
+        </div>
+        <div id="pages" class="hidden"></div>
+        <div id="url" class="hidden">url</div>
+        <div id="goto" class="hidden">url</div>
+      </div>
+      <div style="height:15rem;"></div>
+    </main>
+  </page-frame>
+  <script>
+    let loc = document.getElementById("loc");
+    let fn = window.location.href.split(/\/|\\/).pop();
+    loc.innerHTML = fn + ": ";
+  </script>
+  <a id="bottom"></a>
+  <script src="js/CppStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 14, 10);
+  </script>
+</body>
+</html>

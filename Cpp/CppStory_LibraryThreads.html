@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CppStory_LibraryThreads.html
+-->
+<head>
+  <title>C++ Story LibraryThreads</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCpp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCpp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    summary {
+      padding: 3px 0px 5px 0px;
+    }
+
+
+    .gray {
+      background-color: #ddd;
+    }
+
+    .spread {
+      margin: 1em;
+    }
+
+    .tightSpread {
+      margin: 0.5em;
+    }
+
+    #github #pagetitle {
+      background-color: #002147;
+      color: #fafaff;
+    }
+
+    #github #title {
+      background-color: #002147;
+      color: #fafaff;
+    }
+
+    #github #subtitle {
+      background-color: #002147;
+      color: #fafaff;
+    }
+
+    #github a.repoLink {
+      background-color: #002147;
+      color: #fafaff;
+    }
+
+      #github a.repoLink:link {
+        background-color: #002147;
+        color: #fafaff;
+      }
+
+    #github c-s {
+      font-size: small;
+    }
+
+    #github defn-code {
+      font-size: small;
+    }
+
+    #github .codeStyle {
+      font-family: Consolas;
+      font-size: small;
+      font-weight: bold;
+    }
+
+    #github h3 {
+      margin-top: 1.0em;
+      margin-bottom: 1.0em;
+    }
+
+    #github h4 {
+      margin-top: 0.5em;
+      margin-bottom: 0.5em;
+    }
+
+    #github .normal {
+      font-weight: normal;
+      font-size: small;
+    }
+
+    #github .spreadup {
+      margin-top: 1em;
+    }
+
+    #github defn-block {
+      max-width: 50em;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- <a id="Next" href="CppStory_LibraryWinSockets.html">N</a> <a id="Prev" href="CppStory_LibraryFileSystem.html">P</a> -->
+
+  <page-frame>
+    <main>
+      <div id="about" class="hidden" onclick="toggleAbout()">
+        CppStory_LibraryThreads.html<br />
+        copyright &copy; James Fawcett<br />
+        Revised: 05/15/2026
+      </div>
+      <content-block>
+
+        <header>
+          <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett/CppStory">C++ Story</a>
+          <div id="pagetitle" class="header">
+            <h2 id="title">Chapter #13 - std::thread and Concurrency</h2>
+            <h4 id="subtitle" class="indent">threads, mutexes, condition variables, and futures</h4>
+          </div>
+        </header>
+
+        <h3 id="prologue">13.0 Prologue</h3>
+        <t-b>
+          C++11 introduced a portable threading library. <c-s>std::thread</c-s> wraps a system thread;
+          <c-s>std::mutex</c-s> and friends synchronize access to shared data; <c-s>std::future</c-s> and
+          <c-s>std::async</c-s> provide higher-level task-based concurrency. All live in
+          <c-s>&lt;thread&gt;</c-s>, <c-s>&lt;mutex&gt;</c-s>, <c-s>&lt;condition_variable&gt;</c-s>,
+          and <c-s>&lt;future&gt;</c-s>.
+        </t-b>
+
+        <h3 id="thread">13.1 std::thread</h3>
+        <t-b>
+          Constructing <c-s>std::thread</c-s> starts execution immediately. <c-s>join()</c-s> waits for
+          the thread to complete; <c-s>detach()</c-s> releases ownership and lets the thread run
+          independently. A joinable thread that goes out of scope without a call to either
+          <c-s>join()</c-s> or <c-s>detach()</c-s> calls <c-s>std::terminate</c-s> - an unconditional
+          program abort.
+        </t-b>
+        <t-b>
+          Threads accept any callable: a free function, a lambda, a functor, or a member function pointer
+          paired with an object pointer. Arguments are forwarded to the callable at construction time.
+        </t-b>
+        <t-b>
+          C++20 adds <c-s>std::jthread</c-s>, which auto-joins on destruction (eliminating the terminate
+          trap) and supports cooperative cancellation through a <c-s>std::stop_token</c-s> passed as the
+          first argument to the thread function.
+        </t-b>
+        <t-b>
+          <details>
+            <summary class="labelStyle darkItem">Example: launching two threads with a lambda</summary>
+            <t-b>
+              <defn-outerBlock>
+                <defn-block>
+                  <defn-head>thread_launch.cpp</defn-head>
+                  <defn-code>
+#include &lt;iostream&gt;
+#include &lt;thread&gt;
+#include &lt;string&gt;
+
+int main() {
+
+  auto worker = [](std::string name, int count) {
+    for (int i = 0; i &lt; count; ++i)
+      std::cout &lt;&lt; name &lt;&lt; ": " &lt;&lt; i &lt;&lt; "\n";
+  };
+
+  std::thread t1(worker, "alpha", 3);
+  std::thread t2(worker, "beta",  3);
+
+  t1.join();
+  t2.join();
+
+  std::cout &lt;&lt; "both threads finished\n";
+}
+                  </defn-code>
+                  <defn-head class="defnBorderTop">Output (order may vary)</defn-head>
+                  <defn-code>
+alpha: 0
+alpha: 1
+alpha: 2
+beta: 0
+beta: 1
+beta: 2
+both threads finished
+                  </defn-code>
+                </defn-block>
+                <defn-block>
+                  <defn-head>jthread with stop_token (C++20)</defn-head>
+                  <defn-code>
+#include &lt;iostream&gt;
+#include &lt;thread&gt;
+#include &lt;chrono&gt;
+
+int main() {
+
+  std::jthread worker([](std::stop_token st) {
+    int i = 0;
+    while (!st.stop_requested()) {
+      std::cout &lt;&lt; "tick " &lt;&lt; i++ &lt;&lt; "\n";
+      std::this_thread::sleep_for(
+        std::chrono::milliseconds(50)
+      );
+    }
+    std::cout &lt;&lt; "worker stopping\n";
+  });
+
+  std::this_thread::sleep_for(
+    std::chrono::milliseconds(175)
+  );
+  worker.request_stop();
+  // jthread destructor joins automatically
+}
+                  </defn-code>
+                  <defn-head class="defnBorderTop">Output</defn-head>
+                  <defn-code>
+tick 0
+tick 1
+tick 2
+worker stopping
+                  </defn-code>
+                </defn-block>
+              </defn-outerBlock>
+            </t-b>
+          </details>
+        </t-b>
+
+        <h3 id="sync">13.2 Synchronization</h3>
+        <t-b>
+          <c-s>std::mutex</c-s> protects shared data from concurrent modification. Never lock a mutex
+          manually with <c-s>lock()</c-s>/<c-s>unlock()</c-s> - use an RAII wrapper so the lock is
+          always released even when an exception unwinds the stack.
+        </t-b>
+        <t-b>
+          The two primary wrappers are <c-s>std::lock_guard</c-s> (non-movable, simplest) and
+          <c-s>std::unique_lock</c-s> (movable, deferrable, required by condition variables). C++17 adds
+          <c-s>std::scoped_lock</c-s>, which locks any number of mutexes simultaneously in a
+          deadlock-free order.
+        </t-b>
+        <t-b>
+          <c-s>std::condition_variable</c-s> lets threads wait for a condition to become true without
+          busy-spinning. <c-s>wait()</c-s> atomically releases the associated <c-s>unique_lock</c-s>
+          and blocks the calling thread. <c-s>notify_one()</c-s> wakes one waiter;
+          <c-s>notify_all()</c-s> wakes all of them. Always pass a predicate to <c-s>wait()</c-s>
+          to guard against spurious wakeups.
+        </t-b>
+        <t-b>
+          <details>
+            <summary class="labelStyle darkItem">Example: thread-safe queue with mutex and condition_variable</summary>
+            <t-b>
+              <defn-outerBlock>
+                <defn-block>
+                  <defn-head>SafeQueue.h</defn-head>
+                  <defn-code>
+#include &lt;queue&gt;
+#include &lt;mutex&gt;
+#include &lt;condition_variable&gt;
+#include &lt;optional&gt;
+
+template&lt;typename T&gt;
+class SafeQueue {
+public:
+  void push(T value) {
+    {
+      std::lock_guard&lt;std::mutex&gt; lk(mtx_);
+      q_.push(std::move(value));
+    }
+    cv_.notify_one();
+  }
+
+  T pop() {
+    std::unique_lock&lt;std::mutex&gt; lk(mtx_);
+    cv_.wait(lk, [this]{ return !q_.empty(); });
+    T value = std::move(q_.front());
+    q_.pop();
+    return value;
+  }
+
+  bool empty() const {
+    std::lock_guard&lt;std::mutex&gt; lk(mtx_);
+    return q_.empty();
+  }
+
+private:
+  mutable std::mutex mtx_;
+  std::condition_variable cv_;
+  std::queue&lt;T&gt; q_;
+};
+                  </defn-code>
+                </defn-block>
+                <defn-block>
+                  <defn-head>Using SafeQueue</defn-head>
+                  <defn-code>
+#include &lt;iostream&gt;
+#include &lt;thread&gt;
+#include "SafeQueue.h"
+
+int main() {
+
+  SafeQueue&lt;int&gt; sq;
+
+  std::thread producer([&amp;sq]() {
+    for (int i = 0; i &lt; 5; ++i) {
+      sq.push(i);
+      std::cout &lt;&lt; "pushed " &lt;&lt; i &lt;&lt; "\n";
+    }
+  });
+
+  std::thread consumer([&amp;sq]() {
+    for (int i = 0; i &lt; 5; ++i) {
+      int v = sq.pop();
+      std::cout &lt;&lt; "popped " &lt;&lt; v &lt;&lt; "\n";
+    }
+  });
+
+  producer.join();
+  consumer.join();
+}
+                  </defn-code>
+                  <defn-head class="defnBorderTop">Output (order may vary)</defn-head>
+                  <defn-code>
+pushed 0
+pushed 1
+popped 0
+popped 1
+pushed 2
+popped 2
+pushed 3
+pushed 4
+popped 3
+popped 4
+                  </defn-code>
+                </defn-block>
+              </defn-outerBlock>
+            </t-b>
+          </details>
+        </t-b>
+
+        <h3 id="futures">13.3 Futures and Async</h3>
+        <t-b>
+          <c-s>std::async</c-s> launches a callable as a task and returns a <c-s>std::future&lt;T&gt;</c-s>
+          that holds the eventual result. Calling <c-s>.get()</c-s> on the future blocks until the result
+          is ready and either returns the value or rethrows any exception the task threw.
+        </t-b>
+        <t-b>
+          The launch policy controls scheduling. <c-s>std::launch::async</c-s> guarantees a new thread;
+          <c-s>std::launch::deferred</c-s> runs the callable lazily in the calling thread when
+          <c-s>.get()</c-s> or <c-s>.wait()</c-s> is called. The default policy leaves the choice to
+          the implementation.
+        </t-b>
+        <t-b>
+          <c-s>std::promise&lt;T&gt;</c-s> lets any thread set a future&apos;s value manually via
+          <c-s>set_value()</c-s> or <c-s>set_exception()</c-s>. <c-s>std::packaged_task</c-s> wraps a
+          callable so its return value is captured in a future, useful for scheduling work on thread
+          pools or I/O dispatchers.
+        </t-b>
+        <t-b>
+          <details>
+            <summary class="labelStyle darkItem">Example: std::async with exception propagation</summary>
+            <t-b>
+              <defn-outerBlock>
+                <defn-block>
+                  <defn-head>async_example.cpp</defn-head>
+                  <defn-code>
+#include &lt;iostream&gt;
+#include &lt;future&gt;
+#include &lt;stdexcept&gt;
+#include &lt;numeric&gt;
+#include &lt;vector&gt;
+
+long long sumRange(int lo, int hi) {
+  if (lo &gt; hi)
+    throw std::invalid_argument("lo &gt; hi");
+  std::vector&lt;int&gt; v(hi - lo + 1);
+  std::iota(v.begin(), v.end(), lo);
+  return std::accumulate(
+    v.begin(), v.end(), 0LL
+  );
+}
+
+int main() {
+
+  // launch on a new thread
+  auto f = std::async(
+    std::launch::async,
+    sumRange, 1, 100
+  );
+
+  std::cout &lt;&lt; "computing...\n";
+
+  try {
+    long long result = f.get();
+    std::cout &lt;&lt; "sum(1..100) = "
+              &lt;&lt; result &lt;&lt; "\n";
+  }
+  catch (const std::exception&amp; e) {
+    std::cerr &lt;&lt; "error: " &lt;&lt; e.what() &lt;&lt; "\n";
+  }
+
+  // demonstrate exception propagation
+  auto bad = std::async(
+    std::launch::async,
+    sumRange, 10, 1
+  );
+
+  try {
+    bad.get();
+  }
+  catch (const std::invalid_argument&amp; e) {
+    std::cout &lt;&lt; "caught: " &lt;&lt; e.what() &lt;&lt; "\n";
+  }
+}
+                  </defn-code>
+                  <defn-head class="defnBorderTop">Output</defn-head>
+                  <defn-code>
+computing...
+sum(1..100) = 5050
+caught: lo > hi
+                  </defn-code>
+                </defn-block>
+                <defn-block>
+                  <defn-head>std::promise example</defn-head>
+                  <defn-code>
+#include &lt;iostream&gt;
+#include &lt;thread&gt;
+#include &lt;future&gt;
+
+int main() {
+
+  std::promise&lt;int&gt; prom;
+  std::future&lt;int&gt;  fut = prom.get_future();
+
+  std::thread t([](std::promise&lt;int&gt; p) {
+    // simulate work
+    std::this_thread::sleep_for(
+      std::chrono::milliseconds(50)
+    );
+    p.set_value(42);
+  }, std::move(prom));
+
+  std::cout &lt;&lt; "waiting for promise...\n";
+  std::cout &lt;&lt; "got: " &lt;&lt; fut.get() &lt;&lt; "\n";
+
+  t.join();
+}
+                  </defn-code>
+                  <defn-head class="defnBorderTop">Output</defn-head>
+                  <defn-code>
+waiting for promise...
+got: 42
+                  </defn-code>
+                </defn-block>
+              </defn-outerBlock>
+            </t-b>
+          </details>
+        </t-b>
+
+        <h3 id="epilogue">13.4 Epilogue</h3>
+        <t-b>
+          The C++ threading library makes concurrency portable across every major platform. Prefer
+          <c-s>std::async</c-s> and <c-s>std::future</c-s> for task-level parallelism - the
+          implementation manages thread lifetime for you. Drop to <c-s>std::thread</c-s> only when you
+          need precise control over thread affinity, priority, or lifetime.
+        </t-b>
+        <t-b>
+          Always protect shared data. Never access a shared variable from multiple threads without
+          synchronization - the C++ memory model gives no guarantees otherwise, and the resulting data
+          races are undefined behavior. Use <c-s>std::jthread</c-s> (C++20) in preference to raw
+          <c-s>std::thread</c-s> to eliminate the terminate-on-destruction trap.
+        </t-b>
+
+        <h3 id="refs">13.5 References</h3>
+        <div>
+          <a href="https://en.cppreference.com/w/cpp/thread/thread">cppreference std::thread</a><br />
+          <a href="https://en.cppreference.com/w/cpp/thread/mutex">cppreference std::mutex</a><br />
+          <a href="https://en.cppreference.com/w/cpp/thread/future">cppreference std::future</a><br />
+          <a href="https://en.cppreference.com/w/cpp/thread/condition_variable">cppreference std::condition_variable</a><br />
+          <a href="CppStory_LibraryFileSystem.html">Chapter #12 - std::filesystem</a><br />
+          <a href="CppStory_LibraryWinSockets.html">Chapter #14 - Windows Sockets</a><br />
+        </div>
+        <spacer-25></spacer-25>
+      </content-block>
+      <a id="bottom"></a>
+      <div id="bottomMenu">
+        <div id="keys" class="hidden"></div>
+        <div id="sections" class="hidden">
+          <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+          <div class="menuBody">
+            <menu-elem class="secElem"><a href="#top">top</a></menu-elem>
+            <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+            <menu-elem class="secElem"><a href="#thread">thread</a></menu-elem>
+            <menu-elem class="secElem"><a href="#sync">sync</a></menu-elem>
+            <menu-elem class="secElem"><a href="#futures">futures</a></menu-elem>
+            <menu-elem class="secElem"><a href="#epilogue">epilogue</a></menu-elem>
+            <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+            <menu-elem class="secElem"><a href="#bottom">bottom</a></menu-elem>
+          </div>
+        </div>
+        <div id="pages" class="hidden"></div>
+        <div id="url" class="hidden">url</div>
+        <div id="goto" class="hidden">url</div>
+      </div>
+      <div style="height:15rem;"></div>
+    </main>
+  </page-frame>
+  <script>
+    let loc = document.getElementById("loc");
+    let fn = window.location.href.split(/\/|\\/).pop();
+    loc.innerHTML = fn + ": ";
+  </script>
+  <a id="bottom"></a>
+  <script src="js/CppStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 13, 10);
+  </script>
+</body>
+</html>

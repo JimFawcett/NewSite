@@ -1,22 +1,30 @@
 # ToDo
 
+- **2026-05-15** — Create concurrency story: Ada, Rust, C++, C#
+
+---
+
+- **2026-05-15** — Create thread of resources, e.g., language syntax, design patterns, implementation patterns
+
+---
+
 - **2026-05-15** — Add "where do I find" section to SiteMap
 
 ---
 
-- **2026-05-15** — Compare CPUs and GPUs
+- ~~**2026-05-15** — Compare CPUs and GPUs~~
 
 ---
 
-- **2026-05-15** — Discuss GPUs near the Basics discussion of Data Centers in the same way
+- ~~**2026-05-15** — Discuss GPUs near the Basics discussion of Data Centers in the same way~~
 
 ---
 
-- **2026-05-15** — Add C# Bites similar to RustBites
+- ~~**2026-05-15** — Add C# Bites similar to RustBites~~
 
 ---
 
-- **2026-05-15** — Add C++ Methods to CppBites_Funcs.html
+- ~~**2026-05-15** — Add C++ Methods to CppBites_Funcs.html~~
 
 ---
 
