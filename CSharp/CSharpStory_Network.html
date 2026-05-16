@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CSharpStory_Network.html
+-->
+<head>
+  <title>C# Story Network Library</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCSharp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code { font-size: 0.95rem; background-color: #0d1b2a; color: #c8e4e8; width: max-content; border-radius: 0.25rem; padding: 0rem 2rem; margin-bottom: 1rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCSharp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CSharpStory_Network.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">C# Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #14 &ndash; Network Library</h2>
+        <h4 class="indent" id="subtitle">System.Net: HttpClient, TcpClient, UdpClient, Socket, WebSocket</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">14.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          .NET&apos;s networking support lives primarily in the <c-s>System.Net</c-s> and
+          <c-s>System.Net.Sockets</c-s> namespaces. This chapter covers the main APIs at each
+          layer of the networking stack: high-level HTTP with <c-s>HttpClient</c-s>, reliable
+          TCP streams with <c-s>TcpClient</c-s> / <c-s>TcpListener</c-s>, connectionless UDP
+          with <c-s>UdpClient</c-s>, raw socket programming with <c-s>Socket</c-s>, full-duplex
+          messaging with <c-s>WebSocket</c-s>, and the supporting address types
+          <c-s>IPAddress</c-s>, <c-s>IPEndPoint</c-s>, and <c-s>Dns</c-s>.
+        </t-b>
+      </indent-blocks>
+
+      <a id="httpclient"></a>
+      <h3>14.1  HttpClient</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>HttpClient</c-s> is the primary class for sending HTTP requests and receiving
+          responses. It is designed to be instantiated once and reused for the lifetime of the
+          application (or injected as a singleton via <c-s>IHttpClientFactory</c-s>).
+        </t-b>
+        <defn-code>
+using var client = new HttpClient();
+client.BaseAddress = new Uri("https://api.example.com/");
+client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+// GET
+string json = await client.GetStringAsync("items/42");
+
+// POST
+var payload = new StringContent(
+    """{"name":"widget"}""", Encoding.UTF8, "application/json");
+HttpResponseMessage resp = await client.PostAsync("items", payload);
+resp.EnsureSuccessStatusCode();
+        </defn-code>
+        <t-b>
+          Key members:
+          <ul class="tight">
+            <li><c-s>GetAsync</c-s> / <c-s>PostAsync</c-s> / <c-s>PutAsync</c-s> / <c-s>DeleteAsync</c-s> — verb-specific helpers</li>
+            <li><c-s>SendAsync(HttpRequestMessage)</c-s> — full control over method, headers, content</li>
+            <li><c-s>GetStreamAsync</c-s> — streams response body without buffering</li>
+            <li><c-s>GetFromJsonAsync&lt;T&gt;</c-s> / <c-s>PostAsJsonAsync</c-s> (System.Net.Http.Json) — JSON helpers that avoid manual serialization</li>
+          </ul>
+        </t-b>
+        <defn-code>
+// streaming download
+await using Stream stream = await client.GetStreamAsync("large-file.bin");
+await stream.CopyToAsync(File.OpenWrite("output.bin"));
+
+// JSON helper
+var item = await client.GetFromJsonAsync&lt;Item&gt;("items/42");
+        </defn-code>
+        <t-b>
+          Use <c-s>IHttpClientFactory</c-s> in ASP.NET Core to manage <c-s>HttpClient</c-s>
+          lifetimes and avoid socket exhaustion from excessive construction and disposal.
+        </t-b>
+      </indent-blocks>
+
+      <a id="tcp"></a>
+      <h3>14.2  TcpClient and TcpListener</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>TcpClient</c-s> and <c-s>TcpListener</c-s> wrap <c-s>Socket</c-s> for TCP
+          streams. They expose a <c-s>NetworkStream</c-s> that supports both synchronous and
+          asynchronous reads and writes.
+        </t-b>
+        <defn-code>
+// --- server ---
+var listener = new TcpListener(IPAddress.Any, 5000);
+listener.Start();
+TcpClient client = await listener.AcceptTcpClientAsync();
+NetworkStream ns = client.GetStream();
+using var reader = new StreamReader(ns);
+using var writer = new StreamWriter(ns) { AutoFlush = true };
+string? line = await reader.ReadLineAsync();
+await writer.WriteLineAsync("Echo: " + line);
+        </defn-code>
+        <defn-code>
+// --- client ---
+using var tcp = new TcpClient();
+await tcp.ConnectAsync("localhost", 5000);
+NetworkStream ns = tcp.GetStream();
+using var writer = new StreamWriter(ns) { AutoFlush = true };
+using var reader = new StreamReader(ns);
+await writer.WriteLineAsync("hello");
+Console.WriteLine(await reader.ReadLineAsync());
+        </defn-code>
+        <t-b>
+          <c-s>NetworkStream</c-s> supports <c-s>ReadAsync</c-s> / <c-s>WriteAsync</c-s>
+          with <c-s>Memory&lt;byte&gt;</c-s> overloads, making it easy to integrate with
+          <c-s>Span&lt;T&gt;</c-s>-based parsing pipelines.
+        </t-b>
+        <t-b>
+          Wrap the stream in <c-s>SslStream</c-s> (providing an
+          <c-s>X509Certificate2</c-s>) for TLS. Call
+          <c-s>AuthenticateAsServerAsync</c-s> / <c-s>AuthenticateAsClientAsync</c-s>
+          before reading or writing.
+        </t-b>
+      </indent-blocks>
+
+      <a id="udp"></a>
+      <h3>14.3  UdpClient</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>UdpClient</c-s> sends and receives datagrams. Unlike TCP it is connectionless
+          — each <c-s>Send</c-s> / <c-s>Receive</c-s> is independent. Useful for
+          low-latency telemetry, DNS queries, and multicast.
+        </t-b>
+        <defn-code>
+// sender
+using var sender = new UdpClient();
+byte[] data = Encoding.UTF8.GetBytes("ping");
+await sender.SendAsync(data, data.Length, "localhost", 9000);
+
+// receiver
+using var recv = new UdpClient(9000);
+UdpReceiveResult result = await recv.ReceiveAsync();
+string msg = Encoding.UTF8.GetString(result.Buffer);
+Console.WriteLine($"From {result.RemoteEndPoint}: {msg}");
+        </defn-code>
+        <t-b>
+          For multicast, call <c-s>JoinMulticastGroup(IPAddress)</c-s> and bind to the
+          multicast port. Use <c-s>DropMulticastGroup</c-s> to leave.
+        </t-b>
+      </indent-blocks>
+
+      <a id="socket"></a>
+      <h3>14.4  Socket</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>Socket</c-s> in <c-s>System.Net.Sockets</c-s> provides direct access to the
+          OS socket API. <c-s>TcpClient</c-s> and <c-s>UdpClient</c-s> are thin wrappers
+          over it. Use <c-s>Socket</c-s> directly when you need control over socket options,
+          raw protocols, or high-performance I/O.
+        </t-b>
+        <defn-code>
+// async TCP client via Socket
+var ep = new IPEndPoint(IPAddress.Loopback, 5000);
+using var sock = new Socket(
+    AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+await sock.ConnectAsync(ep);
+
+byte[] buf = Encoding.UTF8.GetBytes("hello\n");
+await sock.SendAsync(buf, SocketFlags.None);
+
+byte[] recv = new byte[256];
+int n = await sock.ReceiveAsync(recv, SocketFlags.None);
+Console.WriteLine(Encoding.UTF8.GetString(recv, 0, n));
+        </defn-code>
+        <t-b>
+          Useful <c-s>Socket</c-s> members:
+          <ul class="tight">
+            <li><c-s>AcceptAsync</c-s> — non-blocking accept on server sockets</li>
+            <li><c-s>SetSocketOption</c-s> — control TCP_NODELAY, SO_REUSEADDR, timeouts, etc.</li>
+            <li><c-s>SendToAsync</c-s> / <c-s>ReceiveFromAsync</c-s> — UDP-style with explicit endpoint</li>
+            <li><c-s>Poll</c-s> — check readability / writeability / error state without blocking</li>
+          </ul>
+        </t-b>
+        <t-b>
+          For very high throughput, use <c-s>SocketAsyncEventArgs</c-s> to avoid per-operation
+          allocations, or consider the <c-s>System.Net.Http.SocketsHttpHandler</c-s> pipeline
+          that <c-s>HttpClient</c-s> uses internally.
+        </t-b>
+      </indent-blocks>
+
+      <a id="websocket"></a>
+      <h3>14.5  WebSocket</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>ClientWebSocket</c-s> (client side) and <c-s>WebSocket</c-s> (server side,
+          obtained from <c-s>HttpContext.WebSockets.AcceptWebSocketAsync()</c-s> in ASP.NET
+          Core) provide full-duplex message framing over a single HTTP upgrade connection.
+        </t-b>
+        <defn-code>
+using var ws = new ClientWebSocket();
+await ws.ConnectAsync(new Uri("wss://echo.websocket.org"), CancellationToken.None);
+
+// send
+byte[] msg = Encoding.UTF8.GetBytes("hello");
+await ws.SendAsync(msg, WebSocketMessageType.Text, endOfMessage: true,
+                   CancellationToken.None);
+
+// receive
+byte[] buf = new byte[1024];
+WebSocketReceiveResult res =
+    await ws.ReceiveAsync(buf, CancellationToken.None);
+Console.WriteLine(Encoding.UTF8.GetString(buf, 0, res.Count));
+
+await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "",
+                    CancellationToken.None);
+        </defn-code>
+        <t-b>
+          <c-s>WebSocketMessageType</c-s> is either <c-s>Text</c-s> or <c-s>Binary</c-s>.
+          Messages larger than the receive buffer arrive across multiple calls — loop until
+          <c-s>result.EndOfMessage</c-s> is <c-s>true</c-s>.
+        </t-b>
+      </indent-blocks>
+
+      <a id="address"></a>
+      <h3>14.6  IPAddress, IPEndPoint, and Dns</h3>
+      <indent-blocks>
+        <t-b>
+          These supporting types handle address representation and resolution:
+        </t-b>
+        <defn-code>
+// IPAddress — parse or use constants
+IPAddress loopback = IPAddress.Loopback;          // 127.0.0.1
+IPAddress any      = IPAddress.Any;               // 0.0.0.0
+IPAddress ip6      = IPAddress.IPv6Loopback;
+IPAddress parsed   = IPAddress.Parse("192.168.1.10");
+bool ok = IPAddress.TryParse("10.0.0.1", out IPAddress? addr);
+
+// IPEndPoint — address + port
+var ep = new IPEndPoint(IPAddress.Loopback, 8080);
+Console.WriteLine(ep);   // 127.0.0.1:8080
+
+// Dns — async hostname resolution
+IPHostEntry entry = await Dns.GetHostEntryAsync("example.com");
+foreach (IPAddress a in entry.AddressList)
+    Console.WriteLine(a);
+
+string host = await Dns.GetHostNameAsync();   // local machine name
+        </defn-code>
+        <t-b>
+          <c-s>IPAddress.AddressFamily</c-s> distinguishes IPv4
+          (<c-s>AddressFamily.InterNetwork</c-s>) from IPv6
+          (<c-s>AddressFamily.InterNetworkV6</c-s>). Pass the right family to
+          <c-s>Socket</c-s> or <c-s>TcpClient</c-s> constructors.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue14"></a>
+      <h3>14.7  Epilogue</h3>
+      <t-b>
+        .NET&apos;s networking stack scales from single HTTP calls with <c-s>HttpClient</c-s>
+        to raw socket I/O with <c-s>Socket</c-s>. All APIs have async overloads that integrate
+        cleanly with <c-s>async</c-s> / <c-s>await</c-s> and <c-s>CancellationToken</c-s>.
+        For production services, prefer <c-s>IHttpClientFactory</c-s> for HTTP and
+        <c-s>System.IO.Pipelines</c-s> for high-throughput socket work.
+      </t-b>
+      <a id="refs"></a>
+      <h3>14.8  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient">HttpClient &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient">TcpClient &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.udpclient">UdpClient &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.socket">Socket &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.net.websockets.clientwebsocket">ClientWebSocket &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.net.dns">Dns &mdash; Microsoft docs</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#httpclient">HttpClient</a></menu-elem>
+        <menu-elem class="secElem"><a href="#tcp">TcpClient</a></menu-elem>
+        <menu-elem class="secElem"><a href="#udp">UdpClient</a></menu-elem>
+        <menu-elem class="secElem"><a href="#socket">Socket</a></menu-elem>
+        <menu-elem class="secElem"><a href="#websocket">WebSocket</a></menu-elem>
+        <menu-elem class="secElem"><a href="#address">IPAddress</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CSharpStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 14, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CSharpStory_LibraryThreads.html
+-->
+<head>
+  <title>C# Story Threads Library</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCSharp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code { font-size: 0.95rem; background-color: #0d1b2a; color: #c8e4e8; width: max-content; border-radius: 0.25rem; padding: 0rem 2rem; margin-bottom: 1rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCSharp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CSharpStory_LibraryThreads.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">C# Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #13 &ndash; Threads Library</h2>
+        <h4 class="indent" id="subtitle">System.Threading: threads, tasks, locks, cancellation, concurrent collections</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">13.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>System.Threading</c-s> and the Task Parallel Library (TPL) provide everything
+          needed for concurrent and parallel programming in C#. This chapter covers raw
+          <c-s>Thread</c-s> objects, the <c-s>ThreadPool</c-s>, <c-s>Task</c-s> and
+          <c-s>Task&lt;T&gt;</c-s> as the preferred high-level abstraction, mutual-exclusion
+          primitives, cooperative cancellation, lock-free operations, and the thread-safe
+          collection types in <c-s>System.Collections.Concurrent</c-s>.
+        </t-b>
+      </indent-blocks>
+
+      <a id="thread"></a>
+      <h3>13.1  Thread</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>System.Threading.Thread</c-s> is the lowest-level concurrency primitive. Each
+          thread runs a <c-s>ThreadStart</c-s> or <c-s>ParameterizedThreadStart</c-s> delegate:
+        </t-b>
+        <defn-code>
+var t = new Thread(() =&gt; {
+    Console.WriteLine($"worker on thread {Thread.CurrentThread.ManagedThreadId}");
+    Thread.Sleep(500);
+});
+t.IsBackground = true;   // don't block process exit
+t.Priority     = ThreadPriority.BelowNormal;
+t.Start();
+t.Join();                // wait for completion
+        </defn-code>
+        <t-b>
+          Key static members: <c-s>Thread.Sleep(ms)</c-s>, <c-s>Thread.Yield()</c-s>,
+          <c-s>Thread.CurrentThread</c-s>, <c-s>Thread.CurrentThread.ManagedThreadId</c-s>.
+          Foreground threads keep the process alive; background threads do not.
+        </t-b>
+        <t-b>
+          Prefer <c-s>Task</c-s> over raw threads for most work. Use <c-s>Thread</c-s> only
+          when you need fine-grained control over priority, <c-s>STA</c-s> apartment state
+          (COM interop), or a dedicated long-running thread.
+        </t-b>
+      </indent-blocks>
+
+      <a id="task"></a>
+      <h3>13.2  Task and Task&lt;T&gt;</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>Task</c-s> represents an asynchronous operation. <c-s>Task.Run</c-s> queues
+          work to the <c-s>ThreadPool</c-s>:
+        </t-b>
+        <defn-code>
+// fire and forget with result
+Task&lt;int&gt; task = Task.Run(() =&gt; Enumerable.Range(1, 1_000_000).Sum());
+Console.WriteLine("working...");
+int sum = await task;
+Console.WriteLine($"sum = {sum}");
+
+// run multiple tasks in parallel, wait for all
+Task[] tasks = Enumerable.Range(0, 4)
+    .Select(i =&gt; Task.Run(() =&gt; DoWork(i)))
+    .ToArray();
+await Task.WhenAll(tasks);
+
+// take the first result that arrives
+Task&lt;string&gt; winner = await Task.WhenAny(FetchFastAsync(), FetchSlowAsync());
+Console.WriteLine(winner.Result);
+        </defn-code>
+        <t-b>
+          <c-s>Task.Delay</c-s> is the async equivalent of <c-s>Thread.Sleep</c-s> — it
+          yields the thread rather than blocking it:
+        </t-b>
+        <defn-code>
+await Task.Delay(TimeSpan.FromSeconds(1));
+        </defn-code>
+        <t-b>
+          Use <c-s>TaskCreationOptions.LongRunning</c-s> when spawning tasks that occupy a
+          thread for an extended period to avoid starving the pool.
+        </t-b>
+      </indent-blocks>
+
+      <a id="lock"></a>
+      <h3>13.3  lock and Monitor</h3>
+      <indent-blocks>
+        <t-b>
+          The <c-s>lock</c-s> statement is syntactic sugar over <c-s>Monitor.Enter</c-s> and
+          <c-s>Monitor.Exit</c-s>. Always lock on a private <c-s>object</c-s> field, never
+          on <c-s>this</c-s> or a type:
+        </t-b>
+        <defn-code>
+private readonly object _gate = new();
+
+void Increment() {
+    lock (_gate) {
+        _count++;
+    }
+}
+        </defn-code>
+        <t-b>
+          <c-s>Monitor.Wait</c-s> / <c-s>Monitor.Pulse</c-s> / <c-s>Monitor.PulseAll</c-s>
+          implement condition-variable signaling inside a <c-s>lock</c-s> block. In .NET 9+
+          prefer <c-s>System.Threading.Lock</c-s> (a dedicated lock type) over locking on a
+          plain <c-s>object</c-s>:
+        </t-b>
+        <defn-code>
+private readonly Lock _lock = new();
+
+void Update() {
+    using (_lock.EnterScope()) {
+        _value = Compute();
+    }
+}
+        </defn-code>
+      </indent-blocks>
+
+      <a id="semaphore"></a>
+      <h3>13.4  Mutex, Semaphore, and SemaphoreSlim</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>Mutex</c-s> is a system-level lock that can span processes. Use it to ensure
+          only one instance of an application runs:
+        </t-b>
+        <defn-code>
+using var mutex = new Mutex(initiallyOwned: false, "Global\\MyApp");
+if (!mutex.WaitOne(TimeSpan.Zero))
+    return;   // another instance is running
+try { RunApp(); }
+finally { mutex.ReleaseMutex(); }
+        </defn-code>
+        <t-b>
+          <c-s>SemaphoreSlim</c-s> limits concurrency to N simultaneous holders. Its
+          <c-s>WaitAsync</c-s> overload integrates cleanly with <c-s>async</c-s>/<c-s>await</c-s>:
+        </t-b>
+        <defn-code>
+private static readonly SemaphoreSlim _throttle = new(3);   // max 3 concurrent
+
+async Task FetchAsync(string url) {
+    await _throttle.WaitAsync();
+    try     { /* do work */ }
+    finally { _throttle.Release(); }
+}
+        </defn-code>
+      </indent-blocks>
+
+      <a id="cancel"></a>
+      <h3>13.5  CancellationToken</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>CancellationTokenSource</c-s> produces a token that signals cancellation
+          cooperatively. Pass the token into every async or long-running method:
+        </t-b>
+        <defn-code>
+using var cts = new CancellationTokenSource();
+cts.CancelAfter(TimeSpan.FromSeconds(5));   // automatic timeout
+
+async Task ProcessAsync(CancellationToken ct) {
+    while (!ct.IsCancellationRequested) {
+        await DoStepAsync(ct);
+    }
+    ct.ThrowIfCancellationRequested();   // propagate as OperationCanceledException
+}
+
+try   { await ProcessAsync(cts.Token); }
+catch (OperationCanceledException) { Console.WriteLine("cancelled"); }
+        </defn-code>
+        <t-b>
+          Link multiple tokens with <c-s>CancellationTokenSource.CreateLinkedTokenSource</c-s>
+          to cancel when any one of them fires.
+        </t-b>
+      </indent-blocks>
+
+      <a id="lockfree"></a>
+      <h3>13.6  Interlocked and Volatile</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>Interlocked</c-s> provides atomic read-modify-write operations without a lock:
+        </t-b>
+        <defn-code>
+private int _counter;
+
+// atomic increment / decrement
+Interlocked.Increment(ref _counter);
+Interlocked.Decrement(ref _counter);
+
+// compare-and-swap: set to newVal only if current value equals comparand
+int old = Interlocked.CompareExchange(ref _counter, newVal: 10, comparand: 0);
+
+// atomic read of a long on 32-bit platforms
+long snapshot = Interlocked.Read(ref _largField);
+        </defn-code>
+        <t-b>
+          <c-s>Volatile.Read</c-s> / <c-s>Volatile.Write</c-s> (or the <c-s>volatile</c-s>
+          keyword) prevent the compiler and CPU from reordering accesses to a shared flag.
+          Use them for simple stop-flag patterns where a full lock would be excessive.
+        </t-b>
+      </indent-blocks>
+
+      <a id="concurrent"></a>
+      <h3>13.7  Concurrent Collections</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>System.Collections.Concurrent</c-s> provides thread-safe collections that
+          avoid coarse-grained locking:
+        </t-b>
+        <t-b>
+          <table>
+            <tr>
+              <th class="darkItem">Type</th>
+              <th class="darkItem">Use case</th>
+            </tr>
+            <tr><td class="defn"><c-s>ConcurrentDictionary&lt;K,V&gt;</c-s></td><td class="defn">Thread-safe key-value store with atomic <c-s>GetOrAdd</c-s>, <c-s>AddOrUpdate</c-s></td></tr>
+            <tr><td class="defn"><c-s>ConcurrentQueue&lt;T&gt;</c-s></td><td class="defn">FIFO producer-consumer queue; <c-s>TryDequeue</c-s> never blocks</td></tr>
+            <tr><td class="defn"><c-s>ConcurrentStack&lt;T&gt;</c-s></td><td class="defn">LIFO stack; <c-s>TryPop</c-s> never blocks</td></tr>
+            <tr><td class="defn"><c-s>ConcurrentBag&lt;T&gt;</c-s></td><td class="defn">Unordered, optimized for same-thread produce-and-consume</td></tr>
+            <tr><td class="defn"><c-s>BlockingCollection&lt;T&gt;</c-s></td><td class="defn">Bounded FIFO with blocking <c-s>Take</c-s> and <c-s>Add</c-s> for classic producer-consumer pipelines</td></tr>
+          </table>
+        </t-b>
+        <defn-code>
+// ConcurrentDictionary - atomic get-or-add
+var cache = new ConcurrentDictionary&lt;string, int&gt;();
+int count = cache.GetOrAdd("hits", _ =&gt; 0);
+cache.AddOrUpdate("hits", 1, (_, old) =&gt; old + 1);
+
+// BlockingCollection - bounded producer/consumer
+using var queue = new BlockingCollection&lt;string&gt;(boundedCapacity: 100);
+
+// producer
+Task.Run(() =&gt; {
+    foreach (string item in source) queue.Add(item);
+    queue.CompleteAdding();
+});
+
+// consumer
+foreach (string item in queue.GetConsumingEnumerable())
+    Process(item);
+        </defn-code>
+      </indent-blocks>
+
+      <a id="epilogue13"></a>
+      <h3>13.8  Epilogue</h3>
+      <t-b>
+        This chapter surveyed <c-s>System.Threading</c-s>: raw <c-s>Thread</c-s> objects,
+        the <c-s>Task</c-s> abstraction, mutual exclusion with <c-s>lock</c-s> and
+        <c-s>Monitor</c-s>, bounded concurrency with <c-s>SemaphoreSlim</c-s>, cooperative
+        cancellation, lock-free atomics, and concurrent collections. The next chapter
+        examines some of the more advanced and interesting corners of C#.
+      </t-b>
+      <a id="refs"></a>
+      <h3>13.9  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.thread">Thread &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task">Task &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.semaphoreslim">SemaphoreSlim &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtokensource">CancellationTokenSource &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/standard/collections/thread-safe/">Thread-safe collections overview</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/standard/threading/managed-threading-best-practices">Managed threading best practices</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#thread">Thread</a></menu-elem>
+        <menu-elem class="secElem"><a href="#task">Task</a></menu-elem>
+        <menu-elem class="secElem"><a href="#lock">lock</a></menu-elem>
+        <menu-elem class="secElem"><a href="#semaphore">semaphore</a></menu-elem>
+        <menu-elem class="secElem"><a href="#cancel">cancellation</a></menu-elem>
+        <menu-elem class="secElem"><a href="#lockfree">lock-free</a></menu-elem>
+        <menu-elem class="secElem"><a href="#concurrent">concurrent collections</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CSharpStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 13, 10);
+  </script>
+</body>
+</html>

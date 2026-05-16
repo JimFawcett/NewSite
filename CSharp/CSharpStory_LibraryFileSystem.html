@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CSharpStory_LibraryFileSystem.html
+-->
+<head>
+  <title>C# Story FileSystem Library</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeCSharp.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code { font-size: 0.95rem; background-color: #0d1b2a; color: #c8e4e8; width: max-content; border-radius: 0.25rem; padding: 0rem 2rem; margin-bottom: 1rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCSharp.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CSharpStory_LibraryFileSystem.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">C# Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #12 &ndash; FileSystem Library</h2>
+        <h4 class="indent" id="subtitle">System.IO: FileInfo, DirectoryInfo, enumeration, FileSystemWatcher</h4>
+      </div>
+    </header>
+
+    <div>
+      <h3 id="prologue">12.0  Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          The previous chapter covered stream-oriented I/O. This chapter focuses on the
+          file-system side of <c-s>System.IO</c-s>: the object-oriented <c-s>FileInfo</c-s> and
+          <c-s>DirectoryInfo</c-s> wrappers that expose rich metadata, flexible directory
+          enumeration with <c-s>EnumerationOptions</c-s>, reactive monitoring with
+          <c-s>FileSystemWatcher</c-s>, and drive-level information via <c-s>DriveInfo</c-s>.
+        </t-b>
+      </indent-blocks>
+
+      <a id="fileinfo"></a>
+      <h3>12.1  FileInfo</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>FileInfo</c-s> is an object-oriented wrapper around a single file path. Unlike the
+          static <c-s>File</c-s> class, it caches metadata after the first access and exposes
+          file operations as instance methods:
+        </t-b>
+        <t-b>
+          Key properties:
+          <ul class="tight">
+            <li><c-s>Name</c-s>, <c-s>FullName</c-s>, <c-s>Extension</c-s>, <c-s>DirectoryName</c-s></li>
+            <li><c-s>Length</c-s> &mdash; file size in bytes</li>
+            <li><c-s>CreationTime</c-s>, <c-s>LastWriteTime</c-s>, <c-s>LastAccessTime</c-s></li>
+            <li><c-s>Exists</c-s>, <c-s>IsReadOnly</c-s>, <c-s>Attributes</c-s></li>
+          </ul>
+        </t-b>
+        <t-b>
+          Key methods: <c-s>CopyTo</c-s>, <c-s>MoveTo</c-s>, <c-s>Delete</c-s>,
+          <c-s>OpenRead</c-s>, <c-s>OpenWrite</c-s>, <c-s>OpenText</c-s>, <c-s>Refresh</c-s>.
+        </t-b>
+        <defn-code>
+var fi = new FileInfo("report.txt");
+if (fi.Exists) {
+    Console.WriteLine($"{fi.Name}  {fi.Length} bytes  {fi.LastWriteTime:g}");
+    fi.CopyTo("report.bak", overwrite: true);
+}
+
+// rename in place
+fi.MoveTo(Path.Combine(fi.DirectoryName!, "report_2026.txt"));
+        </defn-code>
+        <t-b>
+          Call <c-s>Refresh()</c-s> to re-read cached metadata after external changes.
+        </t-b>
+      </indent-blocks>
+
+      <a id="dirinfo"></a>
+      <h3>12.2  DirectoryInfo</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>DirectoryInfo</c-s> mirrors <c-s>FileInfo</c-s> but for directories. It provides
+          typed enumeration methods that return <c-s>FileInfo</c-s> and
+          <c-s>DirectoryInfo</c-s> objects rather than raw strings:
+        </t-b>
+        <defn-code>
+var dir = new DirectoryInfo("./src");
+
+// all .cs files in this directory only
+foreach (FileInfo f in dir.GetFiles("*.cs"))
+    Console.WriteLine($"  {f.Name}  ({f.Length} bytes)");
+
+// all subdirectories
+foreach (DirectoryInfo sub in dir.GetDirectories())
+    Console.WriteLine($"  {sub.Name}/  created {sub.CreationTime:d}");
+        </defn-code>
+        <t-b>
+          <c-s>Create()</c-s>, <c-s>Delete(recursive)</c-s>, and <c-s>MoveTo(dest)</c-s> are
+          the primary mutation methods. <c-s>Parent</c-s> and <c-s>Root</c-s> navigate the tree.
+        </t-b>
+      </indent-blocks>
+
+      <a id="enumerate"></a>
+      <h3>12.3  Enumerating the File System</h3>
+      <indent-blocks>
+        <t-b>
+          The static <c-s>Directory</c-s> class and the instance <c-s>DirectoryInfo</c-s> both
+          offer <c-s>Get*</c-s> (eager array) and <c-s>Enumerate*</c-s> (lazy) variants.
+          Prefer <c-s>Enumerate*</c-s> for large trees because it yields results without
+          loading the entire list into memory:
+        </t-b>
+        <defn-code>
+// recursive enumeration - lazy, memory efficient
+foreach (string path in Directory.EnumerateFiles(".", "*.cs",
+             SearchOption.AllDirectories))
+    Console.WriteLine(path);
+        </defn-code>
+        <t-b>
+          <c-s>EnumerationOptions</c-s> (introduced in .NET Core 2.1) gives fine control:
+        </t-b>
+        <defn-code>
+var opts = new EnumerationOptions {
+    RecurseSubdirectories = true,
+    IgnoreInaccessible    = true,          // skip protected dirs silently
+    MatchCasing           = MatchCasing.CaseInsensitive,
+    AttributesToSkip      = FileAttributes.Hidden | FileAttributes.System,
+};
+
+foreach (string f in Directory.EnumerateFiles("C:/projects", "*.sln", opts))
+    Console.WriteLine(f);
+        </defn-code>
+        <t-b>
+          <c-s>DirectoryInfo.EnumerateFileSystemInfos()</c-s> returns a mixed sequence of
+          <c-s>FileInfo</c-s> and <c-s>DirectoryInfo</c-s> objects, useful when you need to
+          process files and directories in the same pass.
+        </t-b>
+      </indent-blocks>
+
+      <a id="watcher"></a>
+      <h3>12.4  FileSystemWatcher</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>FileSystemWatcher</c-s> raises events when files or directories change. It uses
+          OS-level change notifications rather than polling:
+        </t-b>
+        <defn-code>
+using var watcher = new FileSystemWatcher("./logs") {
+    Filter                = "*.log",
+    NotifyFilter          = NotifyFilters.LastWrite | NotifyFilters.FileName,
+    IncludeSubdirectories = false,
+    EnableRaisingEvents   = true,
+};
+
+watcher.Changed += (_, e) =&gt; Console.WriteLine($"changed: {e.FullPath}");
+watcher.Created += (_, e) =&gt; Console.WriteLine($"created: {e.FullPath}");
+watcher.Deleted += (_, e) =&gt; Console.WriteLine($"deleted: {e.FullPath}");
+watcher.Renamed += (_, e) =&gt; Console.WriteLine($"renamed: {e.OldFullPath} -&gt; {e.FullPath}");
+watcher.Error   += (_, e) =&gt; Console.WriteLine($"error: {e.GetException().Message}");
+
+Console.ReadLine();   // keep alive
+        </defn-code>
+        <t-b>
+          <c-s>NotifyFilter</c-s> flags control which OS-level attributes trigger events.
+          The internal buffer defaults to 8 KB; increase <c-s>InternalBufferSize</c-s> in
+          high-volume scenarios to avoid lost events.
+        </t-b>
+      </indent-blocks>
+
+      <a id="drive"></a>
+      <h3>12.5  DriveInfo</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>DriveInfo</c-s> reports the mounted volumes visible to the process:
+        </t-b>
+        <defn-code>
+foreach (DriveInfo drive in DriveInfo.GetDrives()) {
+    Console.Write($"{drive.Name}  {drive.DriveType,-12}");
+    if (drive.IsReady) {
+        long gb = drive.TotalSize / (1024L * 1024 * 1024);
+        long free = drive.AvailableFreeSpace / (1024L * 1024 * 1024);
+        Console.Write($"  {gb} GB total  {free} GB free  [{drive.VolumeLabel}]");
+    }
+    Console.WriteLine();
+}
+        </defn-code>
+        <t-b>
+          Check <c-s>IsReady</c-s> before reading size or label properties; removable drives
+          may be absent.
+        </t-b>
+      </indent-blocks>
+
+      <a id="attrs"></a>
+      <h3>12.6  File Attributes and Timestamps</h3>
+      <indent-blocks>
+        <t-b>
+          <c-s>FileAttributes</c-s> is a flags enum covering <c-s>ReadOnly</c-s>,
+          <c-s>Hidden</c-s>, <c-s>System</c-s>, <c-s>Directory</c-s>, <c-s>Archive</c-s>,
+          <c-s>Compressed</c-s>, <c-s>Encrypted</c-s>, and others:
+        </t-b>
+        <defn-code>
+// read
+FileAttributes attrs = File.GetAttributes("config.json");
+bool isHidden = attrs.HasFlag(FileAttributes.Hidden);
+
+// set / clear
+File.SetAttributes("config.json", attrs | FileAttributes.ReadOnly);
+File.SetAttributes("config.json", attrs &amp;&amp; ~FileAttributes.ReadOnly);
+
+// timestamps
+File.SetLastWriteTime("config.json", DateTime.UtcNow);
+DateTime created = File.GetCreationTimeUtc("config.json");
+        </defn-code>
+      </indent-blocks>
+
+      <a id="epilogue12"></a>
+      <h3>12.7  Epilogue</h3>
+      <t-b>
+        This chapter covered the object-oriented file-system API: <c-s>FileInfo</c-s> and
+        <c-s>DirectoryInfo</c-s> for metadata-rich access, lazy enumeration with
+        <c-s>EnumerationOptions</c-s>, reactive monitoring via <c-s>FileSystemWatcher</c-s>,
+        drive inventory with <c-s>DriveInfo</c-s>, and file attributes. The next chapter
+        covers <c-s>System.Threading</c-s>.
+      </t-b>
+      <a id="refs"></a>
+      <h3>12.8  References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.io.fileinfo">FileInfo &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.io.directoryinfo">DirectoryInfo &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.io.filesystemwatcher">FileSystemWatcher &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/api/system.io.enumerationoptions">EnumerationOptions &mdash; Microsoft docs</a><br />
+        <a target="_blank" href="https://learn.microsoft.com/en-us/dotnet/standard/io/file-system-overview">File system overview &mdash; Microsoft docs</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#fileinfo">FileInfo</a></menu-elem>
+        <menu-elem class="secElem"><a href="#dirinfo">DirectoryInfo</a></menu-elem>
+        <menu-elem class="secElem"><a href="#enumerate">enumeration</a></menu-elem>
+        <menu-elem class="secElem"><a href="#watcher">watcher</a></menu-elem>
+        <menu-elem class="secElem"><a href="#drive">DriveInfo</a></menu-elem>
+        <menu-elem class="secElem"><a href="#attrs">attributes</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CSharpStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 12, 10);
+  </script>
+</body>
+</html>

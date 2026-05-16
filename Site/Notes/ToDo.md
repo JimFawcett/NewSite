@@ -1,5 +1,9 @@
 # ToDo
 
+- **2026-05-15** — Add more information on public interfaces for story libraries
+
+---
+
 - **2026-05-15** — Create concurrency story: Ada, Rust, C++, C#
 
 ---

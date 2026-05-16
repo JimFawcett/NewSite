@@ -20,10 +20,13 @@ function buildPages() {
       <a href='CSharpStory_Generics.html'>Chap 7 - Generics</a>\
       <a href='CSharpStory_Reflection.html'>Chap 8 - Reflection</a>\
       <a href='CSharpStory_Libraries.html'>Chap 9 - Libraries</a>\
-      <a href='CSharpStory_LibraryStreams.html'>Chap 10 - Streams</a>\
-      <a href='CSharpStory_LibraryCollections.html'>Chap 11 - Collections</a>\
-      <a href='CSharpStory_Interesting.html'>Chap 12 - Interesting</a>\
-      <a href='CSharpStory_NewThings.html'>Chap 13 - New Things</a>\
+      <a href='CSharpStory_LibraryCollections.html'>Chap 10 - Collections</a>\
+      <a href='CSharpStory_LibraryStreams.html'>Chap 11 - Streams</a>\
+      <a href='CSharpStory_LibraryFileSystem.html'>Chap 12 - FileSystem</a>\
+      <a href='CSharpStory_LibraryThreads.html'>Chap 13 - Threads</a>\
+      <a href='CSharpStory_Network.html'>Chap 14 - Network</a>\
+      <a href='CSharpStory_Interesting.html'>Chap 15 - Interesting</a>\
+      <a href='CSharpStory_NewThings.html'>Chap 16 - New Things</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
