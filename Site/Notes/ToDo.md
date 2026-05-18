@@ -1,5 +1,13 @@
 # ToDo
 
+- **2026-05-15** — Create agent to add new git log items to SiteChanges Activity table
+
+---
+
+- **2026-05-15** — Add table of resources to SiteMap, resource thread??
+
+---
+
 - **2026-05-15** — Add more information on public interfaces for story libraries
 
 ---
