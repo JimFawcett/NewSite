@@ -11,10 +11,10 @@ function buildPages() {
     "<div class='darkItem listheader' onclick='togglePages()'>WebDev Repo Pages</div>\
     <div class='menuBody'>\
       <a href='RepoWebDev_Summary.html'>Repo Summary</a>\
-      <a href='RepoWebDev_SplitterComponent.html'>Splitter</a>\
-      <a href='RepoWebDev_ImageViewerComponent.html'>ImageViewer</a>\
-      <a href='RepoWebDev_CodeViewerComponent.html'>CodeViewer</a>\
-      <a href='RepoWebDev_TextViewerComponent.html'>TextViewer</a>\
+      <a href='RepoWebDev_ViewImageComponent.html'>Image View</a>\
+      <a href='RepoWebDev_ViewCodeComponent.html'>Code View</a>\
+      <a href='RepoWebDev_ViewSplitterBarComponent.html'>Splitter View</a>\
+      <a href='RepoWebDev_ViewComparatorComponent.html'>Comparator View</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
