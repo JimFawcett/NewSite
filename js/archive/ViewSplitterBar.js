@@ -1,5 +1,5 @@
 const VSB_STYLE = /* css */ `
-  :host { display: flex; flex-direction: column; }
+  :host { display: inline-flex; flex-direction: column; }
 
   .container {
     display: flex;
@@ -218,18 +218,16 @@ class ViewSplitterBar extends HTMLElement {
   }
 
   _totalWidthPx() {
-    const r = this.getBoundingClientRect();
-    if (r.width > 0) return r.width;
     const w = this.getAttribute('width');
     if (w) {
       if (w.endsWith('rem')) {
         const rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
         return parseFloat(w) * rootFs;
       }
-      const px = parseFloat(w);
-      if (!isNaN(px)) return px;
+      return parseFloat(w) || 600;
     }
-    return 600;
+    const r = this._els.container.getBoundingClientRect();
+    return r.width > 0 ? r.width : 600;
   }
 
   // --- container height helpers ---
@@ -276,18 +274,11 @@ class ViewSplitterBar extends HTMLElement {
 
   _applyLayout() {
     const w = this.getAttribute('width');
-    if (w) this.style.width = w;
+    if (w) this._els.container.style.width = w;
     if (this.getAttribute('height') || this._heightPx != null) {
       this._els.container.style.height = `${this._getHeightPx()}px`;
     }
-    if (this._leftPx != null) {
-      this._els.panelLeft.style.width = `${this._leftPx}px`;
-    } else {
-      // defer so CSS min()/% widths resolve before we read BoundingClientRect
-      requestAnimationFrame(() => {
-        this._els.panelLeft.style.width = `${this._getLeftPx()}px`;
-      });
-    }
+    this._els.panelLeft.style.width = `${this._getLeftPx()}px`;
   }
 
   _maybePrism() {

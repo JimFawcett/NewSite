@@ -1,5 +1,5 @@
 const VSB_STYLE = /* css */ `
-  :host { display: inline-flex; flex-direction: column; }
+  :host { display: flex; flex-direction: column; }
 
   .container {
     display: flex;
@@ -100,20 +100,39 @@ class ViewSplitterBar extends HTMLElement {
 
     this._leftPx     = null;
     this._heightPx   = null;
+    this._dragging   = false;
     this._dragStartX = 0;
     this._dragStartW = 0;
     this._dragStartY = 0;
     this._dragStartH = 0;
 
-    this._onMousedown       = e  => this._startDrag(e);
-    this._onMousemove       = e  => this._onDrag(e);
-    this._onMouseup         = () => this._endDrag();
+    this._onMousedown        = e  => this._startDrag(e);
+    this._onMousemove        = e  => this._onDrag(e);
+    this._onMouseup          = () => this._endDrag();
     this._onResizerMousedown = e  => this._startHeightDrag(e);
     this._onResizerMousemove = e  => this._onHeightDrag(e);
     this._onResizerMouseup   = () => this._endHeightDrag();
-    this._onClickLeft       = () => this._bump(+1);
-    this._onClickRight      = () => this._bump(-1);
-    this._onSlotChange      = () => { this._maybePrism(); this._harmonizeSlotted(); };
+    this._onClickLeft        = () => this._bump(+1);
+    this._onClickRight       = () => this._bump(-1);
+    this._onSlotChange       = () => {
+      this._maybePrism();
+      this._harmonizeSlotted();
+      requestAnimationFrame(() => {
+        this._els.panelLeft.scrollTop  = 0;
+        this._els.panelRight.scrollTop = 0;
+        [this._els.slotLeft, this._els.slotRight].forEach(slot => {
+          slot.assignedElements({ flatten: true }).forEach(el => { el.scrollTop = 0; });
+        });
+      });
+    };
+
+    this._resizeObserver = new ResizeObserver(() => {
+      if (this._dragging) return;
+      this._leftPx = null;
+      requestAnimationFrame(() => {
+        this._els.panelLeft.style.width = `${this._getLeftPx()}px`;
+      });
+    });
   }
 
   connectedCallback() {
@@ -127,6 +146,11 @@ class ViewSplitterBar extends HTMLElement {
     this._els.panelRight.addEventListener('click',    this._onClickRight);
     this._els.slotLeft.addEventListener('slotchange', this._onSlotChange);
     this._els.slotRight.addEventListener('slotchange', this._onSlotChange);
+    this._resizeObserver.observe(this);
+    requestAnimationFrame(() => {
+      this._els.panelLeft.scrollTop  = 0;
+      this._els.panelRight.scrollTop = 0;
+    });
   }
 
   disconnectedCallback() {
@@ -140,6 +164,7 @@ class ViewSplitterBar extends HTMLElement {
     document.removeEventListener('mouseup',   this._onMouseup);
     document.removeEventListener('mousemove', this._onResizerMousemove);
     document.removeEventListener('mouseup',   this._onResizerMouseup);
+    this._resizeObserver.disconnect();
   }
 
   attributeChangedCallback() {
@@ -153,6 +178,7 @@ class ViewSplitterBar extends HTMLElement {
 
   _startDrag(e) {
     e.preventDefault();
+    this._dragging   = true;
     this._dragStartX = e.clientX;
     this._dragStartW = this._getLeftPx();
     document.addEventListener('mousemove', this._onMousemove);
@@ -164,6 +190,7 @@ class ViewSplitterBar extends HTMLElement {
   }
 
   _endDrag() {
+    this._dragging = false;
     document.removeEventListener('mousemove', this._onMousemove);
     document.removeEventListener('mouseup',   this._onMouseup);
   }
@@ -172,6 +199,7 @@ class ViewSplitterBar extends HTMLElement {
 
   _startHeightDrag(e) {
     e.preventDefault();
+    this._dragging   = true;
     this._dragStartY = e.clientY;
     this._dragStartH = this._getHeightPx();
     document.addEventListener('mousemove', this._onResizerMousemove);
@@ -183,6 +211,7 @@ class ViewSplitterBar extends HTMLElement {
   }
 
   _endHeightDrag() {
+    this._dragging = false;
     document.removeEventListener('mousemove', this._onResizerMousemove);
     document.removeEventListener('mouseup',   this._onResizerMouseup);
   }
@@ -218,16 +247,18 @@ class ViewSplitterBar extends HTMLElement {
   }
 
   _totalWidthPx() {
+    const r = this.getBoundingClientRect();
+    if (r.width > 0) return r.width;
     const w = this.getAttribute('width');
     if (w) {
       if (w.endsWith('rem')) {
         const rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
         return parseFloat(w) * rootFs;
       }
-      return parseFloat(w) || 600;
+      const px = parseFloat(w);
+      if (!isNaN(px)) return px;
     }
-    const r = this._els.container.getBoundingClientRect();
-    return r.width > 0 ? r.width : 600;
+    return 600;
   }
 
   // --- container height helpers ---
@@ -274,11 +305,18 @@ class ViewSplitterBar extends HTMLElement {
 
   _applyLayout() {
     const w = this.getAttribute('width');
-    if (w) this._els.container.style.width = w;
+    if (w) this.style.width = w;
     if (this.getAttribute('height') || this._heightPx != null) {
       this._els.container.style.height = `${this._getHeightPx()}px`;
     }
-    this._els.panelLeft.style.width = `${this._getLeftPx()}px`;
+    if (this._leftPx != null) {
+      this._els.panelLeft.style.width = `${this._leftPx}px`;
+    } else {
+      // defer so CSS min()/% widths resolve before we read BoundingClientRect
+      requestAnimationFrame(() => {
+        this._els.panelLeft.style.width = `${this._getLeftPx()}px`;
+      });
+    }
   }
 
   _maybePrism() {
