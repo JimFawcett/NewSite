@@ -39,22 +39,21 @@ customElements.define('view-comparator', ViewComparator);
 | `min-panel-px`   | number | `120`           | Minimum width in pixels for either panel              |
 | `min-height-px`  | number | `80`            | Minimum height in pixels for the component            |
 | `offset-step-px` | number | `40`            | Pixels shifted per offset button click or key nudge   |
-| `font-size`      | string | (none)          | When set, applies `font-size` to each slotted `<pre>` and its nested `<code>` elements |
 
 ---
 
 ## Shadow DOM Structure
 
 ```
-:host (flex, column)
-├── div.container               ← flex row, full width, border, box-shadow
-│   ├── div.panel.panel-left    ← flex: none, width from left-ratio, overflow-x
+:host (inline-flex, column)
+├── div.container          ← flex row, full width, border, box-shadow
+│   ├── div.panel-left     ← flex: none, width from left-ratio, overflow-x
 │   │   └── slot[name="left"]
-│   ├── div.splitter            ← fixed bar-width, cursor: col-resize
-│   └── div.panel.panel-right   ← flex: 1, overflow-x, position: relative, tabindex="-1"
-│       ├── div.offset-controls ← absolute, top-right corner; contains ▲ 0 ▼ buttons
+│   ├── div.splitter       ← fixed bar-width, cursor: col-resize
+│   └── div.panel-right    ← flex: 1, overflow-x, position: relative, tabindex="-1"
+│       ├── div.offset-controls  ← absolute, top-right corner; contains ▲ 0 ▼ buttons
 │       └── slot[name="right"]
-└── div.resizer                 ← height drag handle, cursor: ns-resize
+└── div.resizer            ← height drag handle, cursor: ns-resize
 ```
 
 `div.container` owns the total width. `div.panel-left` holds an explicit pixel width; `div.panel-right` fills the remainder via `flex: 1`. `div.resizer` sits below `div.container` and controls component height.
@@ -146,24 +145,6 @@ Set on `:host` during initialization:
 | `--panel-fg`        | `color`                |
 | `--panel-padding`   | `code-padding`         |
 | `--panel-overflow-x`| `overflow-x`           |
-
----
-
-## CSS Parts
-
-All major shadow elements expose a `part` attribute for external styling via `::part()`:
-
-| Part              | Element                   |
-|-------------------|---------------------------|
-| `container`       | `div.container`           |
-| `panel-left`      | `div.panel.panel-left`    |
-| `panel-right`     | `div.panel.panel-right`   |
-| `splitter`        | `div.splitter`            |
-| `offset-controls` | `div.offset-controls`     |
-| `offset-up`       | `button` ▲                |
-| `offset-reset`    | `button` 0                |
-| `offset-down`     | `button` ▼                |
-| `resizer`         | `div.resizer`             |
 
 ---
 

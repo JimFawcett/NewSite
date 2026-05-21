@@ -1,5 +1,5 @@
 const VC_STYLE = /* css */ `
-  :host { display: inline-flex; flex-direction: column; }
+  :host { display: flex; flex-direction: column; }
 
   .container {
     display: flex;
@@ -115,7 +115,7 @@ class ViewComparator extends HTMLElement {
     return [
       'width', 'height', 'left-ratio', 'bar-width', 'bar-color',
       'bg-color', 'color', 'overflow-x', 'code-padding',
-      'highlight', 'step-px', 'min-panel-px', 'min-height-px'
+      'highlight', 'step-px', 'min-panel-px', 'min-height-px', 'font-size'
     ];
   }
 
@@ -144,6 +144,7 @@ class ViewComparator extends HTMLElement {
     this._dragStartW    = 0;
     this._dragStartY    = 0;
     this._dragStartH    = 0;
+    this._dragging      = false;
 
     this._onMousedown        = e  => this._startDrag(e);
     this._onMousemove        = e  => this._onDrag(e);
@@ -153,11 +154,29 @@ class ViewComparator extends HTMLElement {
     this._onResizerMouseup   = () => this._endHeightDrag();
     this._onClickLeft        = () => this._bump(+1);
     this._onClickRight       = () => this._bump(-1);
-    this._onSlotChange       = () => { this._maybePrism(); this._harmonizeSlotted(); };
+    this._onSlotChange       = () => {
+      this._maybePrism();
+      this._harmonizeSlotted();
+      requestAnimationFrame(() => {
+        this._els.panelLeft.scrollTop  = 0;
+        this._els.panelRight.scrollTop = 0;
+        [this._els.slotLeft, this._els.slotRight].forEach(slot => {
+          slot.assignedElements({ flatten: true }).forEach(el => { el.scrollTop = 0; });
+        });
+      });
+    };
     this._onOffsetUp         = e  => { e.stopPropagation(); this._adjustOffset(-1); };
     this._onOffsetDown       = e  => { e.stopPropagation(); this._adjustOffset(+1); };
     this._onOffsetReset      = e  => { e.stopPropagation(); this._setRightOffset(0); };
     this._onKeydownRight     = e  => this._handleOffsetKey(e);
+
+    this._resizeObserver = new ResizeObserver(() => {
+      if (this._dragging) return;
+      this._leftPx = null;
+      requestAnimationFrame(() => {
+        this._els.panelLeft.style.width = `${this._getLeftPx()}px`;
+      });
+    });
   }
 
   connectedCallback() {
@@ -175,6 +194,11 @@ class ViewComparator extends HTMLElement {
     this._els.btnDown.addEventListener('click',        this._onOffsetDown);
     this._els.btnReset.addEventListener('click',       this._onOffsetReset);
     this._els.panelRight.addEventListener('keydown',   this._onKeydownRight);
+    this._resizeObserver.observe(this);
+    requestAnimationFrame(() => {
+      this._els.panelLeft.scrollTop  = 0;
+      this._els.panelRight.scrollTop = 0;
+    });
   }
 
   disconnectedCallback() {
@@ -192,6 +216,7 @@ class ViewComparator extends HTMLElement {
     document.removeEventListener('mouseup',   this._onMouseup);
     document.removeEventListener('mousemove', this._onResizerMousemove);
     document.removeEventListener('mouseup',   this._onResizerMouseup);
+    this._resizeObserver.disconnect();
   }
 
   attributeChangedCallback() {
@@ -205,6 +230,7 @@ class ViewComparator extends HTMLElement {
 
   _startDrag(e) {
     e.preventDefault();
+    this._dragging   = true;
     this._dragStartX = e.clientX;
     this._dragStartW = this._getLeftPx();
     document.addEventListener('mousemove', this._onMousemove);
@@ -216,6 +242,7 @@ class ViewComparator extends HTMLElement {
   }
 
   _endDrag() {
+    this._dragging = false;
     document.removeEventListener('mousemove', this._onMousemove);
     document.removeEventListener('mouseup',   this._onMouseup);
   }
@@ -224,6 +251,7 @@ class ViewComparator extends HTMLElement {
 
   _startHeightDrag(e) {
     e.preventDefault();
+    this._dragging   = true;
     this._dragStartY = e.clientY;
     this._dragStartH = this._getHeightPx();
     document.addEventListener('mousemove', this._onResizerMousemove);
@@ -235,6 +263,7 @@ class ViewComparator extends HTMLElement {
   }
 
   _endHeightDrag() {
+    this._dragging = false;
     document.removeEventListener('mousemove', this._onResizerMousemove);
     document.removeEventListener('mouseup',   this._onResizerMouseup);
   }
@@ -270,16 +299,18 @@ class ViewComparator extends HTMLElement {
   }
 
   _totalWidthPx() {
+    const r = this.getBoundingClientRect();
+    if (r.width > 0) return r.width;
     const w = this.getAttribute('width');
     if (w) {
       if (w.endsWith('rem')) {
         const rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
         return parseFloat(w) * rootFs;
       }
-      return parseFloat(w) || 600;
+      const px = parseFloat(w);
+      if (!isNaN(px)) return px;
     }
-    const r = this._els.container.getBoundingClientRect();
-    return r.width > 0 ? r.width : 600;
+    return 600;
   }
 
   // --- container height helpers ---
@@ -359,11 +390,17 @@ class ViewComparator extends HTMLElement {
 
   _applyLayout() {
     const w = this.getAttribute('width');
-    if (w) this._els.container.style.width = w;
+    if (w) this.style.width = w;
     if (this.getAttribute('height') || this._heightPx != null) {
       this._els.container.style.height = `${this._getHeightPx()}px`;
     }
-    this._els.panelLeft.style.width = `${this._getLeftPx()}px`;
+    if (this._leftPx != null) {
+      this._els.panelLeft.style.width = `${this._leftPx}px`;
+    } else {
+      requestAnimationFrame(() => {
+        this._els.panelLeft.style.width = `${this._getLeftPx()}px`;
+      });
+    }
   }
 
   _maybePrism() {
@@ -378,6 +415,7 @@ class ViewComparator extends HTMLElement {
 
   _harmonizeSlotted() {
     const pad = this.getAttribute('code-padding') || '0.75rem 1rem';
+    const fs  = this.getAttribute('font-size');
     const apply = (el) => {
       if (el.tagName !== 'PRE') return;
       el.style.margin    = '0';
@@ -385,6 +423,10 @@ class ViewComparator extends HTMLElement {
       el.style.flex      = '1';
       el.style.minHeight = '0';
       el.style.boxSizing = 'border-box';
+      if (fs) {
+        el.style.fontSize = fs;
+        el.querySelectorAll('code').forEach(c => { c.style.fontSize = fs; });
+      }
     };
     this._els.slotLeft.assignedElements({ flatten: true }).forEach(apply);
     this._els.slotRight.assignedElements({ flatten: true }).forEach(el => {

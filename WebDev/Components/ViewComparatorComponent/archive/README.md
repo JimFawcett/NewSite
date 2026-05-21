@@ -23,7 +23,7 @@ ViewComparatorComponent/
 <link rel="stylesheet" href="css/ViewComparator.css">
 <script src="js/ViewComparator.js" defer></script>
 
-<view-comparator width="min(60rem, 100%)" height="20rem" left-ratio="0.5">
+<view-comparator width="60rem" height="20rem" left-ratio="0.5">
   <pre slot="left">Left panel content.</pre>
   <pre slot="right">Right panel content.</pre>
 </view-comparator>
@@ -36,7 +36,7 @@ With Prism syntax highlighting:
 <script src="../js/prism.js" defer></script>
 <script src="js/ViewComparator.js" defer></script>
 
-<view-comparator width="min(70rem, 100%)" height="24rem" highlight="prism" left-ratio="0.5">
+<view-comparator width="70rem" height="24rem" highlight="prism" left-ratio="0.5">
   <pre slot="left"><code class="language-cpp">// C++ code</code></pre>
   <pre slot="right"><code class="language-rust">// Rust code</code></pre>
 </view-comparator>
@@ -46,7 +46,7 @@ With Prism syntax highlighting:
 
 | Attribute        | Default        | Description                                          |
 |------------------|----------------|------------------------------------------------------|
-| `width`          | auto           | Total component width; supports CSS functions, e.g. `min(70rem, 100%)` |
+| `width`          | auto           | Total component width (any CSS length)               |
 | `height`         | auto           | Panel height                                         |
 | `left-ratio`     | 0.5            | Initial fraction of width given to the left panel    |
 | `bar-width`      | 6px            | Width of the splitter bar                            |
@@ -60,12 +60,6 @@ With Prism syntax highlighting:
 | `min-panel-px`   | 120            | Minimum width in pixels for either panel             |
 | `min-height-px`  | 80             | Minimum height in pixels                             |
 | `offset-step-px` | 40             | Pixels shifted per right-panel offset action         |
-| `font-size`      | 0.9rem         | Font size for code in both panels                    |
-
-## Behavior
-
-- Both panels scroll to the top when the component connects to the page.
-- The initial split ratio is reapplied automatically when the browser window is resized.
 
 ## Interactions
 
