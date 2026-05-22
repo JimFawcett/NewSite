@@ -1,6 +1,6 @@
 # Project Status
 
-_Last updated: 2026-05-15 10:29_
+_Last updated: 2026-05-21 19:21_
 
 ## Site Overview
 
@@ -32,6 +32,19 @@ Static educational web platform documenting multiple programming languages and s
 
 | Date / Time       | Activity |
 |-------------------|----------|
+| 2026-05-21 19:21  | Finished all current WebDev component docs pages |
+| 2026-05-21 11:21  | Fixed several bugs and added feature to ViewComparatorComponent |
+| 2026-05-20 18:30  | Replaced images with active components in RepoWebDev_ViewSplitterBarComponent.html |
+| 2026-05-19 10:54  | Added working examples for ViewXXComponent docs |
+| 2026-05-18 22:59  | Updated activity list in SiteChanges |
+| 2026-05-18 22:47  | Converted to new WebDev ViewComponents |
+| 2026-05-18 19:06  | Added ViewImageComponent, ViewCodeComponent, ViewSplitterComponent, and ViewComparatorComponent |
+| 2026-05-18 16:17  | Added new view-code component, updated ToDo.md |
+| 2026-05-15 22:34  | Changed link targets in SiteChanges.html Activity table |
+| 2026-05-15 22:15  | Added PythonStory page for 3rd-party libraries |
+| 2026-05-15 20:44  | Added new story library chapters for CSharp Story |
+| 2026-05-15 20:07  | Added CppStory pages for FileSystem, Threads, and Sockets |
+| 2026-05-15 11:41  | Updated status and notes |
 | 2026-05-15 10:29  | Added Hardware, CPUs, and GPUs chapters to Basics Story; renumbered all chapters |
 | 2026-05-14 22:05  | Fixed bug in extracting page address in PageHost |
 | 2026-05-14 21:30  | Added many new C++ Bites; C++ track now rivals Rust track in coverage |
@@ -39,19 +52,6 @@ Static educational web platform documenting multiple programming languages and s
 | 2026-05-14 10:17  | Added new entries to WebDev, Basics, and Python glossaries |
 | 2026-05-14 09:10  | Added new entries to C# Glossary |
 | 2026-05-14 08:36  | Added new entries to C++ Glossary |
-| 2026-05-14 08:30  | Added new entries to Rust Glossary |
-| 2026-05-13 22:47  | Added glossary links to Rust Bites pages and Site Glossary |
-| 2026-05-13 20:36  | Fixed link in SitePages.js |
-| 2026-05-13 20:14  | Added Basics_Threads.html; clarifying text in Basics_IO.html |
-| 2026-05-13 13:40  | Text fixes and clarification in SiteDesign and SiteDemo pages |
-| 2026-05-13 12:06  | Added more information to Basics Story and Code AI Story |
-| 2026-05-11 10:38  | Added BasicsCodeStory and BasicsDecCodeStory pages |
-| 2026-05-10 22:08  | Fixed Basics Repo Explorer and several links |
-| 2026-05-10 20:29  | Added new WebDev Repo docs |
-| 2026-05-10 14:10  | Added AI Story (12-chapter sequence in Code track) |
-| 2026-05-08 22:20  | Added notes ideas |
-| 2026-05-08 18:45  | Minor text corrections |
-| 2026-05-08 15:19  | Added bookmarks; moved Notes from NewSite to NewSite/Site |
 
 ## Conventions (reminders)
 
