@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  WebDevBites_CompViewCodeDesign.html
+-->
+<head>
+  <title>ViewCode Component Design</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeWebDev.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script src="../js/TwoPanelComponentRefactored.js" defer></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if (loc === window.top.location) {
+        window.location = "ExploreWebDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      postHostMsg(makeMsg('url', location.href));
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader { padding:0.0rem 0.5rem 0.25rem 0.5rem; }
+    code { padding: 0 3px; border-radius: 3px; }
+  </style>
+  <style>
+    :root { --two-gap: .75rem; --two-panel-border: 1px solid #d0d0d7; --two-panel-pad: .5rem; }
+    .toolbar { display:flex; gap:.5rem; flex-wrap:wrap; margin:.5rem 0 .75rem; }
+    .toolbar button { padding:.3rem .75rem; border:1px solid #c8c8d0; border-radius:8px; background:#fff; }
+    .toolbar button:disabled { opacity:.55; border-color:#bbb; cursor:not-allowed; }
+    .left-item { padding-right: 0.5rem; }
+    .left-item h3 { margin:.1rem 0 .25rem; font-size:1rem; }
+    .code-card { background:#2d2d2d; color:#eee; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,.08); }
+    .code-card pre { margin:0; padding:.75rem 1rem; overflow:auto; font:0.95rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  </style>
+  <script>
+    if (Prism.plugins.NormalizeWhitespace) {
+      Prism.plugins.NormalizeWhitespace.setDefaults({
+        'remove-trailing': false,
+        'remove-indent':   false,
+        'left-trim':       true,
+        'right-trim':      true
+      });
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    WebDevBites_CompViewCodeDesign.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/21/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">WebDev Bites: ViewCode Component Design</h2>
+        <h4 id="subtitle" class="indent">W3C web component</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--light); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <!-- <a class="repoLinks" target="_self" href="WebDevBites_WebComponents.html" style="color:var(--atten); margin-left:1rem;">Components</a> -->
+        <a class="repoLinks" target="_self" href="WebDevBites_Components.html" style="color:var(--light); margin-left:1.5em;">Introduction</a>
+        <a class="repoLinks" target="_self" href="WebDevBites_CompViewCode.html" style="color:var(--light); margin-left:1.5em;">Demo</a>
+        <a class="repoLinks" target="_self" href="WebDevBites_CompViewCodeDesign.html" style="color:var(--light); margin-left:1.5em;">Design</a>
+        <a class="repoLinks" target="_self" href="WebDevBites_CompViewCodeInterface.html" style="color:var(--light); margin-left:1.5em;">Interface</a>
+      </div>
+    </header>
+
+    <div style="height:1rem;"></div>
+
+    <div class="toolbar">
+      <button data-two="narrow"      data-two-for="#design-panel" data-step="6rem">Narrow</button>
+      <button data-two="reset"       data-two-for="#design-panel">Reset</button>
+      <button data-two="widen"       data-two-for="#design-panel" data-step="6rem">Widen</button>
+      <button data-two="toggle-left" data-two-for="#design-panel">Toggle Left</button>
+      <button id="prevBtn" data-two="prev" data-two-for="#design-panel">Prev</button>
+      <button id="nextBtn" data-two="next" data-two-for="#design-panel">Next</button>
+    </div>
+
+    <x-two-panel id="design-panel" class="with-buttons" left="20rem" height="calc(100dvh - 13.25rem)" data-left-fixed>
+      <div slot="left" class="left-slot">
+
+        <div class="left-item">
+          <h3>Template Strings</h3>
+          <t-b>
+            ViewCode defines two module-level constants before the class: <c-s>VC_STYLE</c-s>
+            holds the shadow DOM CSS and <c-s>VC_TEMPLATE</c-s> holds the HTML structure.
+          </t-b>
+          <t-b>
+            Separating layout from class logic keeps the constructor free of markup noise
+            and makes each part independently readable.
+          </t-b>
+          <t-b>
+            <c-s>VC_STYLE</c-s> uses CSS custom properties (<c-s>--view-bg</c-s>,
+            <c-s>--title-bg</c-s>, <c-s>--code-bg</c-s>, <c-s>--code-fg</c-s>,
+            <c-s>--code-padding</c-s>, <c-s>--code-overflow-x</c-s>, <c-s>--code-height</c-s>)
+            so the class can update colors and sizing via
+            <c-s>this.style.setProperty()</c-s> without touching the shadow stylesheet.
+          </t-b>
+          <t-b>
+            CSS attribute selectors on <c-s>:host([highlight="prism"])</c-s> toggle display
+            between the internal <c-s>#pre-internal</c-s> (default path) and the named slot
+            (Prism path) purely with CSS — no JavaScript needed to swap visibility.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Shadow DOM Template</h3>
+          <t-b>
+            <c-s>VC_TEMPLATE</c-s> embeds <c-s>VC_STYLE</c-s> directly, then defines a
+            two-level wrapper: an outer <c-s>.wrapper</c-s> that provides padding so the
+            component can be floated without text colliding with the border, and an inner
+            <c-s>.view</c-s> that carries the visible border, shadow, and flex column layout.
+          </t-b>
+          <t-b>
+            Inside <c-s>.view</c-s>, the <c-s>&lt;slot&gt;</c-s> in the title div lets
+            the host page supply caption text as element content.
+          </t-b>
+          <t-b>
+            The <c-s>.code</c-s> wrapper holds two children: <c-s>#pre-internal</c-s> with
+            an inner <c-s>#code-internal</c-s> for the plain-text path, and
+            <c-s>&lt;slot name="code"&gt;</c-s> for the Prism path. CSS selectors on
+            <c-s>:host([highlight="prism"])</c-s> toggle which one is visible.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Class and Attributes</h3>
+          <t-b>
+            <c-s>observedAttributes</c-s> declares 16 attributes covering colors, sizing,
+            typography, Prism integration, text transforms, and resize behavior.
+          </t-b>
+          <t-b>
+            The constructor caches shadow DOM element references in <c-s>this._els</c-s>,
+            initializes resize state (<c-s>_originWidthPx</c-s>, <c-s>_stepsFromOrigin</c-s>),
+            sets <c-s>_displayEl</c-s> to the internal <c-s>#pre-internal</c-s> element, and
+            builds three bound handlers: <c-s>_onBodyClick</c-s>, <c-s>_onTitleClick</c-s>,
+            and <c-s>_onSlotChange</c-s>.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Lifecycle Callbacks</h3>
+          <t-b>
+            <c-s>connectedCallback</c-s> calls <c-s>_updateAll()</c-s> to apply all current
+            attributes, attaches the <c-s>slotchange</c-s> listener, and binds click listeners
+            to the display element and title bar.
+          </t-b>
+          <t-b>
+            <c-s>disconnectedCallback</c-s> removes all listeners to prevent leaks.
+          </t-b>
+          <t-b>
+            <c-s>attributeChangedCallback</c-s> calls <c-s>_updateAll()</c-s> so the view
+            stays in sync whenever an attribute changes after initial render.
+          </t-b>
+          <t-b>
+            <c-s>_updateAll()</c-s> is the single orchestration point: calls each helper in
+            order and conditionally resets the width origin when the rendering path changes.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Rendering Paths</h3>
+          <t-b>
+            <c-s>_renderDefault()</c-s> handles the plain-text path: gathers slotted nodes
+            as raw text or serialized HTML, applies optional <c-s>trim</c-s> and
+            <c-s>normalize-indent</c-s>, then writes the result into <c-s>#code-internal</c-s>
+            as <c-s>textContent</c-s>.
+          </t-b>
+          <t-b>
+            <c-s>_maybeSetupPrism()</c-s> handles the Prism path: ensures slotted content
+            has proper <c-s>&lt;pre&gt;&lt;code&gt;</c-s> structure, applies
+            <c-s>trim</c-s>/<c-s>normalize-indent</c-s>, adds language classes to both
+            elements, and calls <c-s>Prism.highlightElement()</c-s>.
+          </t-b>
+          <t-b>
+            <c-s>_resolveDisplayEl()</c-s> selects which element receives click listeners
+            and sizing: the internal <c-s>#pre-internal</c-s> for the default path, or
+            the slotted <c-s>&lt;pre&gt;</c-s> for the Prism path.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Helper Functions</h3>
+          <t-b>
+            <c-s>_bumpWidth()</c-s> records the rendered width of <c-s>.view</c-s> as origin
+            on first click, then steps from that origin by <c-s>step-px</c-s> increments,
+            clamped at <c-s>min-width</c-s> (default 240&nbsp;px).
+          </t-b>
+          <t-b>
+            <c-s>_applyBoxColors()</c-s> reads the four color attributes and writes them as
+            CSS custom properties on the host element, plus <c-s>--code-padding</c-s>.
+          </t-b>
+          <t-b>
+            <c-s>_applySizing()</c-s> syncs <c-s>width</c-s>, <c-s>height</c-s>, and
+            <c-s>overflow-x</c-s> to both CSS vars and the <c-s>.view</c-s> inline style.
+            <c-s>_applyTypography()</c-s> applies <c-s>font-family</c-s> and
+            <c-s>font-size</c-s> to the display element, its parent <c-s>&lt;pre&gt;</c-s>,
+            and any inner <c-s>&lt;code&gt;</c-s>.
+          </t-b>
+          <t-b>
+            <c-s>_harmonizeBox()</c-s> normalizes the visible element's padding, margins,
+            and box-sizing after slot assignment or a path switch.
+            <c-s>_stripCommonIndent()</c-s> finds the minimum leading whitespace across
+            non-empty lines and strips it uniformly.
+          </t-b>
+        </div>
+
+      </div>
+
+      <div slot="right" class="right-slot">
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+ 1  const VC_STYLE = /* css */ `
+ 2    :host { display: inline-block; }
+ 3
+ 4    .wrapper {
+ 5      padding: 1rem;
+ 6      box-sizing: border-box;
+ 7    }
+ 8
+ 9    .view {
+10      border: 2px solid var(--dark, #333);
+11      padding: 0.5rem;
+12      display: flex;
+13      flex-direction: column;
+14      user-select: none;
+15      width: max-content;
+16      box-shadow: 5px 5px 5px #999;
+17      background-color: var(--view-bg, #f8f8f8);
+18    }
+19
+20    .title {
+21      font-size: var(--title-font-size, 1rem);
+22      font-weight: bold;
+23      cursor: pointer;
+24      background-color: var(--title-bg, transparent);
+25      color: var(--dark, #333);
+         ....
+34    }
+35
+36    .code { display: block; flex: 0 0 auto; }
+37
+38    #pre-internal { display: block; }
+39    slot[name="code"]::slotted(*) { display: none !important; }
+40
+41    :host([highlight="prism"]) #pre-internal { display: none; }
+42    :host([highlight="prism"]) slot[name="code"]::slotted(pre),
+43    :host([highlight="prism"]) slot[name="code"]::slotted(code) {
+44      display: block !important;
+45      cursor: pointer;
+46    }
+47
+48    #pre-internal {
+49      padding: var(--code-padding, 0.75rem 1rem);
+50      background-color: var(--code-bg, #f8f8f8);
+51      color: var(--code-fg, #333);
+52      overflow-x: var(--code-overflow-x, auto);
+53      height: var(--code-height, auto);
+54      cursor: pointer;
+         ....
+63    }
+64
+65    #code-internal {
+66      display: block;
+67      font-family: inherit;
+68      font-size: inherit;
+69    }
+70  `;
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+75  const VC_TEMPLATE = /* html */ `
+76    &lt;style&gt;${VC_STYLE}&lt;/style&gt;
+77    &lt;div class="wrapper"&gt;
+78      &lt;div class="view" part="view"&gt;
+79        &lt;div class="title" part="title"&gt;&lt;slot&gt;&lt;/slot&gt;&lt;/div&gt;
+80        &lt;div class="code"&gt;
+81          &lt;pre id="pre-internal"&gt;
+82            &lt;code id="code-internal"&gt;&lt;/code&gt;
+83          &lt;/pre&gt;
+84          &lt;slot name="code" id="code-slot"&gt;&lt;/slot&gt;
+85        &lt;/div&gt;
+86      &lt;/div&gt;
+87    &lt;/div&gt;
+88  `;
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+ 88  class ViewCode extends HTMLElement {
+ 89    static get observedAttributes() {
+ 90      return [
+ 91        'bg-color', 'title-bg-color', 'background-color', 'color',
+ 92        'width', 'height', 'overflow-x',
+ 93        'font-family', 'font-size', 'code-padding',
+ 94        'highlight', 'language',
+ 95        'trim', 'normalize-indent',
+ 96        'step-px', 'min-width'
+ 97      ];
+ 98    }
+ 99
+100    constructor() {
+101      super();
+102      this.attachShadow({ mode: 'open' });
+103      this.shadowRoot.innerHTML = VC_TEMPLATE;
+104
+105      this._els = {
+106        title: this.shadowRoot.querySelector('.title'),
+107        view:  this.shadowRoot.querySelector('.view'),
+108        pre:   this.shadowRoot.querySelector('#pre-internal'),
+109        code:  this.shadowRoot.querySelector('#code-internal'),
+110        slot:  this.shadowRoot.querySelector('#code-slot'),
+111      };
+112
+113      this._originWidthPx   = null;
+114      this._stepsFromOrigin = 0;
+115      this._displayEl       = this._els.pre;
+116
+117      this._onBodyClick  = () =&gt; this._bumpWidth(+1);
+118      this._onTitleClick = () =&gt; this._bumpWidth(-1);
+119      this._onSlotChange = () =&gt; this._updateAll({
+120                             maybeResetWidth: true, normalizeBox: true });
+121    }
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+123    connectedCallback() {
+124      this._updateAll({ resetWidth: true, normalizeBox: true });
+125      this._els.slot.addEventListener('slotchange', this._onSlotChange);
+126      this._bindDisplayListeners();
+127      this._els.title.addEventListener('click', this._onTitleClick);
+128    }
+129
+130    disconnectedCallback() {
+131      this._unbindDisplayListeners();
+132      this._els.title.removeEventListener('click', this._onTitleClick);
+133      this._els.slot.removeEventListener('slotchange', this._onSlotChange);
+134    }
+135
+136    attributeChangedCallback() {
+137      this._updateAll({ maybeResetWidth: true, normalizeBox: true });
+138    }
+139
+140    _updateAll({ resetWidth = false, maybeResetWidth = false,
+141                 normalizeBox = false } = {}) {
+142      this._applyBoxColors();
+143      this._renderDefault();
+144      this._maybeSetupPrism();
+145      const changed = this._resolveDisplayEl(normalizeBox);
+146      if (resetWidth || (maybeResetWidth &amp;&amp; changed)) this._resetWidth();
+147      this._applySizing();
+148      this._applyTypography();
+149    }
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+185    _renderDefault() {
+186      if (this.getAttribute('highlight') === 'prism') return;
+187      const nodes = this._els.slot.assignedNodes({ flatten: true });
+188      let raw = '';
+189      for (const n of nodes) {
+190        if (n.nodeType === Node.ELEMENT_NODE &amp;&amp;
+191            n.tagName === 'TEMPLATE') raw += n.innerHTML ?? '';
+192        else if (n.nodeType === Node.ELEMENT_NODE) raw += n.outerHTML ?? '';
+193        else raw += n.textContent ?? '';
+194      }
+195      if (this.hasAttribute('trim'))
+196        raw = raw.replace(/^\s*\n/, '').replace(/\n\s*$/, '');
+197      if (this.hasAttribute('normalize-indent'))
+198        raw = this._stripCommonIndent(raw);
+199      this._els.code.textContent = raw;
+200    }
+201
+202    _maybeSetupPrism() {
+203      if (this.getAttribute('highlight') !== 'prism') return;
+204      const lang = (this.getAttribute('language') || '').trim();
+205      const assigned = this._els.slot.assignedElements({ flatten: true });
+206      if (!assigned.length) return;
+          ....  // ensure &lt;pre&gt;&lt;code&gt; structure; wrap if only &lt;code&gt; is present
+          ....  // apply trim / normalize-indent to codeEl.textContent
+          ....  // add language-* class to both &lt;pre&gt; and &lt;code&gt;
+          ....  // call Prism.highlightElement() on each &lt;code&gt; in assigned
+243    }
+244
+245    _resolveDisplayEl(normalize = false) {
+246      let next = this._els.pre;
+247      if (this.getAttribute('highlight') === 'prism') {
+248        const assigned = this._els.slot.assignedElements({ flatten: true });
+249        const pre = assigned.find(n =&gt; n.tagName === 'PRE');
+250        next = pre || assigned[0] || this._els.pre;
+251      }
+252      const changed = next !== this._displayEl;
+253      this._swapBodyListener(next);
+254      if (normalize) this._harmonizeBox(next);
+255      return changed;
+256    }
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+168    _bumpWidth(dir) {
+169      if (this._originWidthPx == null) {
+170        const rect = this._els.view.getBoundingClientRect();
+171        this._originWidthPx   = rect.width &gt; 0 ? rect.width : 480;
+172        this._stepsFromOrigin = 0;
+173      }
+174      const stepPx = parseFloat(this.getAttribute('step-px')) || 40;
+175      const minPx  = parseFloat(this.getAttribute('min-width')) || 240;
+176      let steps  = this._stepsFromOrigin + dir;
+177      let target = this._originWidthPx + steps * stepPx;
+178      if (target &lt; minPx) {
+179        target = minPx;
+180        steps = Math.ceil((target - this._originWidthPx) / stepPx);
+181      }
+182      this._stepsFromOrigin = steps;
+183      this._els.view.style.width = `${Math.round(target)}px`;
+184    }
+185
+186    _applyBoxColors() {
+187      this.style.setProperty('--view-bg',
+188        this.getAttribute('bg-color') || 'var(--light, #f8f8f8)');
+189      this.style.setProperty('--title-bg',
+190        this.getAttribute('title-bg-color') || '#aaa');
+191      this.style.setProperty('--code-bg',
+192        this.getAttribute('background-color') || 'var(--light, #f8f8f8)');
+193      this.style.setProperty('--code-fg',
+194        this.getAttribute('color') || 'var(--dark, #333)');
+195      this.style.setProperty('--code-padding',
+196        this.getAttribute('code-padding') || '0.75rem 1rem');
+197    }
+198
+199    _stripCommonIndent(text) {
+200      const lines    = text.split('\n');
+201      const nonEmpty = lines.filter(l =&gt; l.trim().length &gt; 0);
+202      if (!nonEmpty.length) return text;
+203      const minIndent = Math.min(
+204        ...nonEmpty.map(l =&gt; l.match(/^[ \t]*/)[0].length));
+205      if (minIndent === 0) return text;
+206      const re = new RegExp(`^[ \\t]{0,${minIndent}}`);
+207      return lines.map(l =&gt; l.replace(re, '')).join('\n');
+208    }
+209  }
+210
+211  customElements.define('view-code', ViewCode);
+          </code></pre>
+        </section>
+
+      </div>
+    </x-two-panel>
+
+  </content-block>
+
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/WebDevCompPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>

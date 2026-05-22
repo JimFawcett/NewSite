@@ -6,21 +6,44 @@
 <head>
   <title>Explore WebDev</title>
   <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
-  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
   <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/explorer-links.css" />
+  <link rel="stylesheet" href="../css/gridExplorer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
   <link rel="stylesheet" href="../css/Explorer.css" />
   <link rel="stylesheet" href="../css/ThemeWebDev.css" />
+  <!-- <link rel="stylesheet" href="css/bite-index-grid.css" /> -->
   <script src="../js/Content.js"></script>
   <script src="../js/ContentMenus.js"></script>
   <script src="../js/Explorer.js"></script>
   <script src="../js/BlogsAndHelp.js"></script>
+  <script src="../js/panel.js"></script>
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/exploreMessages.js"></script>
+  <script src="../js/link-nav.js" defer></script>
   <script>
     function loadInDataManager() {
       const loc = window.location;
       const top = window.top.location;
       if(loc === top) {
-        window.location = "../DataMgr2.html?src=" + loc;
+        window.location = "../PageHost.html?src=" + loc;
       }
+      window.parent.postMessage(makeMsg('loading'), '*');
+    }
+    function doView() {
+      window.location.href='../Viewer/Viewer.html';
+      // post msg to close panel for each view panel
+      // setCookie('rpanel', false, 1);
+    }
+    function doCode() {
+      window.location.href='../GridExplorer/GridExplorer.html';
+      // window.location.href='../Code/ExploreCode.html';
+    }
+    function loadPanel(url) {
+      const panel = document.getElementById('pgframe');
+      panel.src = url;
     }
     function load() {
       loadInDataManager();
@@ -29,6 +52,8 @@
       buildHelp();
       buildRes();
       setPersistantElements();
+      panel.setPanel();
+      showPanel();  // left panel
     }
     window.addEventListener('pageshow', (event) => {
       initBlogs();
@@ -36,10 +61,87 @@
       initRes();
     });
   </script>
+  <script>
+    function showTopMenuInfo() {
+      let info = document.getElementById('top-menu-info');
+      if(isDefined(info)) {
+        toggleElement('top-menu-info');
+      }
+    }
+    function showBottomMenuInfo() {
+      let info = document.getElementById('bottom-menu-info');
+      if(isDefined(info)) {
+        toggleElement('bottom-menu-info');
+      }
+    }
+  </script>
+  <script>
+    function showBiteList(elem) {
+      hideElement('picklist');
+      hideElement('complist');
+      toggleElement('bitelist');
+      setbg(elem);
+    }
+    function showCompList(elem) {
+      hideElement('picklist');
+      hideElement('bitelist');
+      toggleElement('complist');
+      setbg(elem);
+    }
+    function showPickList(elem) {
+      hideElement('bitelist');
+      hideElement('complist');
+      toggleElement('picklist');
+      setbg(elem);
+    }
+  </script>
+  <style>
+    #github #frame a.clickable {
+      color:var(--atten);
+    }
+    #github #picklist a {
+      display: block;
+    }
+    #github #complist a {
+      display: block;
+    }
+  </style>
+  <style>
+    /* Reliable overlay behavior for the bite list */
+    #github #bitelist {
+      position: fixed; 
+      top: 11rem;  
+      left: 12rem;
+      max-height: calc(100vh - var(--topmenuh) - var(--bottommenuh) - 2rem);
+      overflow-y: auto; 
+      z-index: 2000 !important; 
+      display: block; 
+      background-color: var(--light);
+      color: var(--dark);
+      font-size: 0.9rem;
+      border:2px solid var(--dark);
+      padding:0rem 0.25rem 0.5rem 0.25rem;
+      line-height: 1.25rem;
+      line-height: 1.35rem;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    #github #bitelist.hidden { display: none !important; }
+    #github #bitelist a {
+      display: block;
+    }
+  </style>
+  <style>
+    #github .loadButton:hover {
+      background-color: var(--darkHover);
+      transition: background 0.3s;
+    }
+  </style>
 </head>
-<body onload="load()">
+<body id="github" onload="load()">
   <div id="topMenu">
-    <div style="width:10rem; padding:0.15rem 1rem 0.5rem 1rem; font-size:1.1 rem"><strong style="white-space: nowrap;">WebDev Explorer</strong></div>
+    <div><strong>&nbsp;WebDev Explorer</strong></div>
+    <button id="info" class="topMenuButton" onclick="showTopMenuInfo()">?</button>
     <button class="topMenuButton" onclick="window.location.href='../Site/Explore.html?src=SiteHome.html'">Site</button>
     <button class="topMenuButton" onclick="window.location.href='../Rust/ExploreRust.html?src=RustHome.html'">Rust</button>
     <button class="topMenuButton" onclick="window.location.href='../Cpp/ExploreCpp.html?src=CppHome.html'">C++</button>
@@ -49,90 +151,189 @@
     <button class="topMenuButton" onclick="window.location.href='../SWDev/ExploreSWDev.html?src=SWDevHome.html'">SWDev</button>
     <button class="topMenuButton" onclick="window.location.href='../Basics/ExploreBasics.html?src=BasicsHome.html'">Basics</button>
     <button class="topMenuButton" onclick="window.location.href='../Code/ExploreCode.html?src=CodeHome.html'">Code</button>
-    <button id="mblogs" class="topMenuButton" onclick="toggleBlogs()">Blogs</button>
-    <button id="mhelp" class="topMenuButton" onclick="toggleHelp()">Help</button>
-    <button id="mres" class="topMenuButton" onclick="toggleRes()">Resrcs</button>
+    <!-- <button class="topMenuButton" onclick="doCode()">Viewer</button> -->
+    <button id="mblogs" class="topMenuButton" onclick="toggleBlogs()">Blogs &#9662;</button>
+    <button id="mhelp" class="topMenuButton" onclick="toggleHelp()">Help &#9662;</button>
+    <button id="mres" class="topMenuButton" onclick="toggleRes()">Resrcs &#9662;</button>
   </div>
   
   <div id="blogs" class="hidden"></div>
   <div id="help" class="hidden"></div>
   <div id="res" class="hidden"></div>
 
+  <div id="bitelist" class="hidden" onmouseleave="hideElement('bitelist')">
+    <div class="pickheader" onclick="hideElement('bitelist')">Select to View</div>
+    <!-- <div onclick="loadPanel('../WebDev/WebDevHome.html')">WebDev Track Summary</div> -->
+    <a target="rpanel" href='WebDevBites_Html.html'>HTML</a>
+    <a target="rpanel" href='WebDevBites_HtmlModels.html'>HTML Models</a>
+    <a target="rpanel" href='WebDevBites_HtmlDom.html'>HTML DOM</a>
+    <a target="rpanel" href='WebDevBites_Css.html'>CSS</a>
+    <a target="rpanel" href='WebDevBites_JavaScript.html'>JavaScript</a>
+    <a target="rpanel" href='WebDevBites_WebComponents.html'>Web Components</a>
+    <a target="rpanel" href='WebDevBites_Glossary.html'>Glossary</a>
+  </div>
+
+  <div id="complist" class="hidden" onmouseleave="hideElement('complist')">
+    <div class="pickheader" onclick="hideElement('complist')">Select to View</div>
+    <!-- <div onclick="loadPanel('../WebDev/WebDevHome.html')">WebDev Track Summary</div> -->
+    <a target="rpanel" href='WebDevBites_Components.html?=Components/ComponentIntro.html'>Introduction</a>
+    <a target="rpanel" href='WebDevBites_CompImageViewer.html'>Image Viewer</a>
+    <a target="rpanel" href='WebDevBites_CompSpacer.html'>Spacer</a>
+    <a target="rpanel" href='WebDevBites_CompCodeViewer.html'>Code Viewer</a>
+    <a target="rpanel" href='Components/SplitterComponent/SplitterComponent.html'>Splitter</a>
+    <a target="rpanel" href='Components/TwoPanelComponentWithMarkersAndClick/TwoPanelComponentWithMarkersAndClick.html'>Two Panel Viewer</a>
+  </div>
+
+  <div id="picklist" class="hidden" onmouseleave="hideElement('picklist')">
+    <div class="pickheader" onclick="hideElement('picklist')">Select to View</div>
+    <!-- <div onclick="loadPanel('../WebDev/WebDevHome.html')">WebDev Track Summary</div> -->
+    <a target="rpanel" href='WebDevBites_Tests.html?src=../Tests/TestIntro.html'>Introduction</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=../Tests/DropDownList/DropDownList.html'>DropDown List</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=../Tests/BookMarks/BookMarks.html'>BookMarks</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=../Tests/link-navigator/LinkNavigator.html'>Link Navigator</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=Examples/PageModel/QuadView.html'>Page Model Example</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=Examples/FlowModel/QuadView.html'>Flow Model Example</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=Examples/BoxModel/QuadView.html'>Box Model Example</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=Components/CodeViewerComponent/CodeViewerComponent.html'>Code Viewer Component</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=Components/ImageViewerComponent/ImageViewerComponent.html'>Image Viewer Component</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=../Tests/TextViewerComponent/TextViewerComponent.html'>Text Viewer Component</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=../Tests/PassingObjectMsgs/ObjectMessages.html'>Message Passing</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=../Tests/QueryString/QueryString.html'>Parsing Query Strings</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=../Tests/urlCookie/urlToCookie.html'>url to / from cookie</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=../Tests/SplitterComponent/SplitterComponent.html'>Splitter Component</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=../Tests/StackedContent/StackedContent.html'>Stacked Content</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=../Tests/ExampleLayout/ExampleLayout.html'>Example Page Layout</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=Components/TwoPanelComponentWithMarkersAndClick/TwoPanelComponentWithMarkersAndClick.html'>Two Panel w markers</a>
+    <a target="rpanel" href='WebDevBites_Tests.html?src=Components/TwoPanelComponentRefactored/TwoPanelComponentRefactored.html'>Two Panel Refactored</a>
+  </div>
+
+  <a id="control-elements"></a>
+  <div id="controls" class="controller">
+    <div class="label" style="background-color:var(--dark);">Page Controls</div>
+    <div class="up-down control">
+      <button id="up-button" onclick="postMsg(makeMsg('up'))">Prev Sect</button>
+      <button id="down-button" onclick="postMsg(makeMsg('down'))">Next Sect</button>
+    </div>
+    <div class="next-prev control">
+      <button id="prev-button" onclick="postMsg(makeMsg('prev'))">Prev Page</button>       
+      <button id="next-button" onclick="postMsg(makeMsg('next'))">Next Page</button>
+    </div>
+    <div class="sections-pages control">
+      <button id="sections-button" onclick="postMsg(makeMsg('sections'))">sect list</button>
+      <button id="pages-button" onclick="postMsg(makeMsg('pages'))">pages list</button>
+    </div>
+    <div style="height:0.25rem; background-color: var(--dark); opacity: 0.5;"></div>
+    <div class="url-goto control">
+      <button id="sections-button" onclick="doUrl()">Copy Url</button>
+      <button id="pages-button" onclick="postMsg(makeMsg('goto'))">GoTo</button>
+    </div>
+  </div>
+
+  <div id="top-menu-info" class="hidden" onmouseleave="hideInfoMsgs()" onclick="hideElement('top-menu-info')">
+    Top menu buttons, Site ... Code, each load an<br>Explorer for the selected button topic.<br>
+    <hr style="margin:0.25rem 0rem;">
+    For example, Basics button loads Basics Explorer<br>with its Track Summary page.
+  </div>
+
+  <div id="bottom-menu-info" class="hidden" onmouseleave="hideInfoMsgs()" onclick="hideElement('bottom-menu-info')">
+    Bottom menu buttons, except for &quot;Controls&quot; each send messages<br>
+    requesting the hosted page to take some action.
+    <hr style="margin:0.25rem 0rem;">
+    For example, &quot;Sections&quot; button requests page to show list of Page Sections.
+    <hr style="margin:0.25rem 0rem;">
+    &quot;Controls&quot; button toggles visibility of control block at bottom<br>
+    left of Explorer view.
+  </div>
+
   <div id="frame">
     <div id="lpanel">
       <div id="nav">
-        <div style="height:1.25rem;"></div>
+        <div style="height:0.15rem;"></div>
         <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="WebDevHome.html">WebDev Home</a></clkwrap>
-        <a class="unclickable undef" target="_self" href="javascript:;">Story</a>
-        <a class="unclickable undef" target="_self" href="javascript:;">Bites</a>
-        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="WebDevRepos.html">Repositories</a></clkwrap>
+        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="WebDevStory_Prologue.html">Story</a></clkwrap>
+        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="WebDevBites_Html.html">Bites</a></clkwrap>
+        <!-- <div style="height:1.5rem;"></div> -->
+        <!-- <clkwrap><button class="clickable loadButton darkItem" style="font-size: 1rem; border:2px solid var(--light); cursor:pointer" onclick="showBiteList(this)">Bites</button></clkwrap> -->
+
+        <clkwrap><a class="clickable" onclick="setbg(this)" target="_self" href="ExploreReposWebDev.html">Repositories</a></clkwrap>
+        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="WebDevBites_Glossary.html">Glossary</a></clkwrap>
         <a class="unclickable undef" target="_self" href="javascript:;">References</a>
-        <a class="unclickable undef" target="_self" href="javascript:;">Recent Changes</a>
-        <!-- <details id="explorers">
-          <summary>Explorers&nbsp;</summary>
-          <div style="margin-left:1.0em;">
-            <a class="clicked" onclick="postMsg('Explore'); setbg(this)" target="_self" hrefd="Explore.html">Site</a>
-            <a class="clicked" onclick="postMsg('ExploreCode'); setbg(this)" target="_self" hrefd="ExploreCode.html">Code</a>
-            <a class="clicked" onclick="postMsg('ExploreRust'); setbg(this)" target="_self" hrefd="ExploreCode.html">Rust</a>
-            <a class="clicked" onclick="postMsg('ExploreCpp'); setbg(this)" target="_self" hrefd="ExploreCode.html">C++</a>
-            <a class="clicked" onclick="postMsg('ExploreCSharp'); setbg(this)" target="_self" hrefd="ExploreCode.html">C#</a>
-            <a class="clicked" onclick="postMsg('ExplorePython'); setbg(this)" target="_self" hrefd="ExploreCode.html">Python</a>
-            <a class="clicked" onclick="postMsg('ExploreSWDev'); setbg(this)" target="_self" hrefd="ExploreCode.html">SWDev</a>
-            <a class="clicked" onclick="postMsg('ExploreWebDev'); setbg(this)" target="_self" hrefd="ExploreCode.html">WebDev</a>
-            <a class="clicked" onclick="postMsg('ExploreBasics'); setbg(this)" target="_self" hrefd="ExploreCode.html">Basics</a>
-            <div style="height:0.75rem;"></div>
-          </div>
-          <div  class="popup" onclick="closeExps()">
-            move content to new explorer
-          </div>
-        </details>
-        <div style="height:1.0em;"></div>
-        <a class="clicked" onclick="setbg(this)" target="_parent" href="../../JimFawcett.github.io/index.html">Old Site</a>
-        <a class="clicked" onclick="setbg(this)" target="_blank" href="https://ecs.syr.edu/faculty/fawcett">SU Site</a> -->
+        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="WebDevBites_Components.html">Components</a></clkwrap>
+        <!-- <clkwrap><button class="clickable loadButton darkItem" onclick="showCompList(this)">Components</button></clkwrap> -->
+        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="WebDevBites_Tests_Intro.html">Tests</a></clkwrap>
+        <!-- <clkwrap><button class="clickable loadButton darkItem" onclick="showPickList(this)">Tests</button></clkwrap> -->
       </div>
+      <div style="height:0.75rem;"></div>
+      <clkwrap><a class="clickable" onclick="setbg(this)" target="_blank" href="https://onlinejsplayground.com/">JS Playground</a></clkwrap>
+      <clkwrap><a class="clickable" onclick="setbg(this)" target="_blank" href="https://html-css-js.com/">Web Editor</a></clkwrap>
     </div>
     <div id="rpanel">
       <iframe id="pgframe" style="height:100%; width:100%; border:1px solid var(--dark);" src="WebDevHome.html" name="rpanel"></iframe>
     </div>
   </div>
   <div id="bottomMenu">
-    <button class="bottomMenuButton" style="margin-left:0.0em; width:10rem;" onclick="toggleLeftPanel()">
-      Toggle explorer panel
+    <button id="lpanelbutton" class="bottomMenuButton visible" style="margin-left:0.0rem; width:10rem;" onclick="togglePanel()">
+      Toggle ctrl pane
     </button>
     <div class="rightGroup">
-      <div id="filename" style="border:none;"></div>
-      <button class="bottomMenuButton" onclick="closeMenues()">
+      <div class="buttonSpacer"></div>
+      <button id="bottom-info" class="bottomMenuButton visible" onclick="showBottomMenuInfo()">
+        ?
+      </button>
+      <button class="bottomMenuButton" onclick="clearMenus()">
         clear
       </button>
-      <button class="bottomMenuButton" onclick="toggleAbout()">
+      <button class="bottomMenuButton" onclick="toggleElement('controls')">
+        Controls
+      </button>
+      <button class="bottomMenuButton" onclick="postMsg(makeMsg('about', null))">
         About
       </button>
-      <button class="bottomMenuButton" onclick="toggleKeys()">
+      <button class="bottomMenuButton" onclick="postMsg(makeMsg('keys', null))">
         Keys
       </button>
-      <button class="bottomMenuButton" onclick="toggleSections()">
+      <button class="bottomMenuButton" onclick="postMsg(makeMsg('sections', null))">
         Sections
       </button>
-      <button class="bottomMenuButton" onclick="togglePages()">
+      <button class="bottomMenuButton" onclick="postMsg(makeMsg('pages', null))">
         Pages
       </button>
-      <button class="bottomMenuButton" onclick="goPrev()">
+      <button class="bottomMenuButton" onclick="postMsg(makeMsg('prev', null))">
         Prev
       </button>
-      <button class="bottomMenuButton" onclick="goNext()">
+      <button class="bottomMenuButton" onclick="postMsg(makeMsg('next', null))">
         Next
       </button>
       <div class="buttonSpacer"></div>
-      <div class="buttonSpacer"></div>
-      </div>
+      <div id="filename" style="border:none;"></div>
+    </div>
   </div>
   <script>
     /* this call has to be here, not in onload processing */
     handleIframeTransition();
   </script>
   <script>
-    /* this call has to be here, not in onload processing */
-    handleIframeTransition();
+    panel.rpanel = document.getElementById("rpanel");
   </script>
+  <!-- <script>
+    function showBiteList(elem) {
+      hideElement('picklist');
+      hideElement('complist');
+      toggleElement('bitelist');
+      setbg(elem);
+    }
+    function showCompList(elem) {
+      hideElement('picklist');
+      hideElement('bitelist');
+      toggleElement('complist');
+      setbg(elem);
+    }
+    function showPickList(elem) {
+      hideElement('bitelist');
+      hideElement('complist');
+      toggleElement('picklist');
+      setbg(elem);
+    }
+  </script> -->
 </body>
 </html>

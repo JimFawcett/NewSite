@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  WebDevBites_CompViewCode.html
+-->
+<head>
+  <title>ViewCode Component Demo</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeWebDev.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script src="Components/ViewCodeComponent/js/ViewCode.js" defer></script>
+  <link rel="stylesheet" href="Components/ViewCodeComponent/css/ViewCode.css">
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreWebDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      postHostMsg(makeMsg('url', location.href));
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader { padding:0.0rem 0.5rem 0.25rem 0.5rem; }
+    code { background: #eef; padding: 0 3px; border-radius: 3px; }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    WebDevBites_CompViewCode.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/21/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">WebDev Bites: ViewCode Component Demo</h2>
+        <h4 id="subtitle" class="indent">
+          resizable code viewer with shadow DOM encapsulation
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--light); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <!-- <a class="repoLinks" target="_self" href="WebDevBites_WebComponents.html" style="color:var(--atten); margin-left:1rem;">Components</a> -->
+        <a class="repoLinks" target="_self" href="WebDevBites_Components.html" style="color:var(--light); margin-left:1.5em;">Introduction</a>
+        <a class="repoLinks" target="_self" href="WebDevBites_CompViewCode.html" style="color:var(--light); margin-left:1.5em;">Demo</a>
+        <a class="repoLinks" target="_self" href="WebDevBites_CompViewCodeDesign.html" style="color:var(--light); margin-left:1.5em;">Design</a>
+        <a class="repoLinks" target="_self" href="WebDevBites_CompViewCodeInterface.html" style="color:var(--light); margin-left:1.5em;">Interface</a>
+      </div>
+    </header>
+  <div style="height:0.75rem;"></div>
+
+  <view-code width="40ch" font-size="1.0rem" highlight="prism" language="css"
+    bg-color="var(--light)" title-bg-color="#ccc" style="float:right; margin-right:-1rem;">
+    Figure 1. CSS Example
+    <pre slot="code"><code class="language-css">:root {
+  --dark:  #333;
+  --light: #f8f8f8;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  padding: 1rem 2rem;
+  margin: 0;
+}
+
+t-b {
+  display: block;
+  margin: 0.75rem 0;
+  max-width: 50em;
+}</code></pre>
+  </view-code>
+
+  <tm-b>
+    This is a <code>view-code</code> component. Clicking on the code body makes it wider.
+    Clicking on the title makes it narrower.
+  </tm-b>
+  <t-b>
+    ViewCode supports two rendering modes: a plain text path and a Prism syntax-highlighting
+    path. The <code>highlight="prism"</code> attribute switches to Prism mode, which expects
+    a <code>&lt;pre slot="code"&gt;&lt;code&gt;</code> structure in the light DOM.
+  </t-b>
+  <hr>
+  <tm-b>
+    This is the first in a sequence of pages that explore the design of a W3C web component
+    for displaying code with optional syntax highlighting.
+  </tm-b>
+  <t-b>
+    The next page explains the design of the component.
+  </t-b>
+  <t-b>
+    The final page shows how an application uses the viewer and lists its public interface.
+  </t-b>
+  <h3 id="parts">Component Parts</h3>
+  <t-b>
+    The primary parts of a web component are:
+    <ol>
+      <li>
+        <strong>Class derived from HTMLElement</strong>
+        <hr>
+        Each application of the component&apos;s tag creates an instance of this class when
+        the code is parsed at load time.
+      </li>
+      <li>
+        <strong>Shadow DOM</strong>, a tree of encapsulated HTML elements
+        <hr>
+        ViewCode separates its shadow DOM into two module-level template strings:
+        <code>VC_STYLE</code> for the CSS and <code>VC_TEMPLATE</code> for the HTML structure.
+        <hr>
+        The shadow DOM contains an internal <code>&lt;pre&gt;&lt;code&gt;</code> pair for the
+        plain-text path and a named slot (<code>slot="code"</code>) for the Prism path.
+        CSS attribute selectors on <code>:host([highlight="prism"])</code> toggle which one
+        is visible.
+      </li>
+      <li>
+        <strong>Event listeners</strong>
+        <hr>
+        Associates user events with parts of the component. ViewCode listens for clicks on
+        the code body (widen) and title (narrow), plus <code>slotchange</code> to react when
+        slotted content is assigned or replaced.
+      </li>
+      <li>
+        <strong>Helper functions</strong>
+        <hr>
+        ViewCode uses <code>_renderDefault()</code>, <code>_maybeSetupPrism()</code>,
+        <code>_resolveDisplayEl()</code>, <code>_harmonizeBox()</code>,
+        <code>_applyBoxColors()</code>, <code>_applySizing()</code>,
+        <code>_applyTypography()</code>, and <code>_stripCommonIndent()</code>.
+      </li>
+      <li>
+        Hyphenated <strong>tag name</strong> associated with the component class.
+        <hr>
+        The tag name <c-s>view-code</c-s> is associated with the class <c-s>ViewCode</c-s>.
+      </li>
+    </ol>
+  </t-b>
+  <div style="height:5em;"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#parts">parts</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/WebDevCompPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>

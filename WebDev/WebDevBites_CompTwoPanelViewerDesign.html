@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  WebDevBites_CompTwoPanelViewerDesign.html
+-->
+<head>
+  <title>TwoPanelViewer Component Design</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeWebDev.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script src="../js/ViewTwoPanelComponent.js" defer></script>
+  <link rel="stylesheet" href="../css/ViewTwoPanelComponent.css">
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if (loc === window.top.location) {
+        window.location = "ExploreWebDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      postHostMsg(makeMsg('url', location.href));
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader { padding:0.0rem 0.5rem 0.25rem 0.5rem; }
+    code { padding: 0 3px; border-radius: 3px; }
+  </style>
+  <style>
+    :root { --two-gap: .75rem; --two-panel-border: 1px solid #d0d0d7; --two-panel-pad: .5rem; }
+    .toolbar { display:flex; gap:.5rem; flex-wrap:wrap; margin:.5rem 0 .75rem; }
+    .toolbar button { padding:.3rem .75rem; border:1px solid #c8c8d0; border-radius:8px; background:#fff; }
+    .toolbar button:disabled { opacity:.55; border-color:#bbb; cursor:not-allowed; }
+    .left-item { padding-right: 0.5rem; }
+    .left-item h3 { margin:.1rem 0 .25rem; font-size:1rem; }
+    .code-card { background:#2d2d2d; color:#eee; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,.08); }
+    .code-card pre { margin:0; padding:.75rem 1rem; overflow:auto; font:0.95rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  </style>
+  <script>
+    if (Prism.plugins.NormalizeWhitespace) {
+      Prism.plugins.NormalizeWhitespace.setDefaults({
+        'remove-trailing': false,
+        'remove-indent':   false,
+        'left-trim':       true,
+        'right-trim':      true
+      });
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    WebDevBites_CompTwoPanelViewerDesign.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/21/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">WebDev Bites: TwoPanelViewer Component Design</h2>
+        <h4 id="subtitle" class="indent">W3C web component</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--light); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <!-- <a class="repoLinks" target="_self" href="WebDevBites_WebComponents.html" style="color:var(--atten); margin-left:1rem;">Components</a> -->
+        <a class="repoLinks" target="_self" href="WebDevBites_Components.html" style="color:var(--light); margin-left:1.5em;">Introduction</a>
+        <a class="repoLinks" target="_self" href="WebDevBites_CompTwoPanelViewer.html" style="color:var(--light); margin-left:1.5em;">Demo</a>
+        <a class="repoLinks" target="_self" href="WebDevBites_CompTwoPanelViewerDesign.html" style="color:var(--light); margin-left:1.5em;">Design</a>
+        <a class="repoLinks" target="_self" href="WebDevBites_CompTwoPanelViewerInterface.html" style="color:var(--light); margin-left:1.5em;">Interface</a>
+      </div>
+    </header>
+
+    <div style="height:1rem;"></div>
+
+    <div class="toolbar">
+      <button data-two="narrow"      data-two-for="#design-panel" data-step="6rem">Narrow</button>
+      <button data-two="reset"       data-two-for="#design-panel">Reset</button>
+      <button data-two="widen"       data-two-for="#design-panel" data-step="6rem">Widen</button>
+      <button data-two="toggle-left" data-two-for="#design-panel">Toggle Left</button>
+      <button id="prevBtn" data-two="prev" data-two-for="#design-panel">Prev</button>
+      <button id="nextBtn" data-two="next" data-two-for="#design-panel">Next</button>
+    </div>
+
+    <x-two-panel id="design-panel" class="with-buttons" left="20rem" height="calc(100dvh - 13.25rem)" data-left-fixed
+      data-desc-selector=".left-item"
+      data-right-selector=".right-item">
+      <div slot="left" class="left-slot">
+
+        <div class="left-item">
+          <h3>Shadow DOM CSS</h3>
+          <t-b>
+            The shadow DOM CSS is inlined as the string <c-s>CSS_TEXT</c-s> and injected
+            via a <c-s>&lt;style&gt;</c-s> element appended to the shadow root.
+          </t-b>
+          <t-b>
+            <c-s>.wrap</c-s> is a CSS grid with two equal <c-s>minmax(0, 1fr)</c-s>
+            columns by default. When the host carries <c-s>data-left-fixed</c-s>, the
+            grid switches to a fixed-left-plus-fill layout driven by the
+            <c-s>--two-left</c-s> custom property.
+          </t-b>
+          <t-b>
+            Height is controlled by <c-s>--two-height</c-s>; the default value
+            <c-s>max-content</c-s> lets the grid grow to fit its content.
+            The <c-s>collapsed-left</c-s> attribute hides the left column and collapses
+            the grid to a single column.
+          </t-b>
+          <t-b>
+            Each <c-s>.panel</c-s> is a flex column. Its <c-s>.scroller</c-s> child
+            expands (<c-s>flex: 1 1 auto</c-s>) and scrolls independently.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Shadow DOM Template</h3>
+          <t-b>
+            The shadow DOM is constructed programmatically in the constructor function
+            rather than from a template string.
+          </t-b>
+          <t-b>
+            A <c-s>&lt;style&gt;</c-s> element carries <c-s>CSS_TEXT</c-s>. A
+            <c-s>.wrap</c-s> div holds two <c-s>&lt;section&gt;</c-s> elements:
+            <c-s>.panel.left</c-s> and <c-s>.panel.right</c-s>. Each section contains
+            a <c-s>.scroller</c-s> div that wraps the named slot
+            (<c-s>slot="left"</c-s> or <c-s>slot="right"</c-s>).
+          </t-b>
+          <t-b>
+            All five structural elements expose CSS <c-s>part</c-s> names
+            (<c-s>wrap</c-s>, <c-s>left-panel</c-s>, <c-s>right-panel</c-s>,
+            <c-s>left-scroller</c-s>, <c-s>right-scroller</c-s>) for external
+            <c-s>::part()</c-s> styling.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Constructor Pattern</h3>
+          <t-b>
+            <c-s>XTwoPanel</c-s> is defined using a constructor function and
+            <c-s>Reflect.construct(HTMLElement, [], new.target)</c-s> to extend the
+            built-in element. This classic-script pattern avoids ES module requirements
+            and works with a plain <c-s>&lt;script&gt;</c-s> tag.
+          </t-b>
+          <t-b>
+            The constructor initializes four instance fields: <c-s>_left</c-s> and
+            <c-s>_right</c-s> arrays (the collected item pairs), <c-s>_i</c-s> (the
+            current index, initialized to -1), and <c-s>_init</c-s> (a record of the
+            original <c-s>left</c-s> and <c-s>gap</c-s> attribute values saved for
+            <c-s>reset()</c-s>).
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>connectedCallback</h3>
+          <t-b>
+            On first connect, <c-s>_init.left</c-s> and <c-s>_init.gap</c-s> capture
+            the original attribute values. <c-s>_applyAll()</c-s> transfers all layout
+            attributes to CSS custom properties on the host.
+          </t-b>
+          <t-b>
+            If the <c-s>click-controls</c-s> attribute is present,
+            <c-s>_wireClickControls()</c-s> attaches single-click (step) and double-click
+            (reset / toggle) handlers directly to the shadow panel elements.
+          </t-b>
+          <t-b>
+            <c-s>_recollect()</c-s> queries both slots for matching elements using the
+            configured selectors, hides all of them, then sets <c-s>_i = 0</c-s> and
+            calls <c-s>_renderState()</c-s> to show the first pair.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Array Collection &amp; Render</h3>
+          <t-b>
+            <c-s>_collectLeft()</c-s> walks each element assigned to the left slot
+            and collects nodes matching <c-s>data-desc-selector</c-s> (default
+            <c-s>.marked-box, .left-item</c-s>). <c-s>_collectRight()</c-s> does
+            the same for <c-s>data-right-selector</c-s> (default <c-s>.right-item</c-s>).
+          </t-b>
+          <t-b>
+            <c-s>_count()</c-s> returns the minimum of the two array lengths, ensuring
+            only complete pairs are navigable.
+          </t-b>
+          <t-b>
+            <c-s>_renderState()</c-s> sets <c-s>display</c-s>, <c-s>aria-hidden</c-s>,
+            and the <c-s>active</c-s> class for every collected element, showing only the
+            current index pair. It then dispatches the <c-s>two:nav</c-s> custom event
+            with <c-s>{ index, count }</c-s> so external listeners (including the
+            Prev/Next button disabler) can react.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>External Controls</h3>
+          <t-b>
+            A global click listener (installed once via
+            <c-s>window.__X_TWO_PANEL_EXTERNAL_WIRED__REFAC2__</c-s>) intercepts clicks
+            on any element with a <c-s>data-two</c-s> attribute.
+          </t-b>
+          <t-b>
+            <c-s>findScopedPanel(ctrl, sel)</c-s> resolves the target panel: first by
+            the explicit <c-s>data-two-for</c-s> selector, then by walking ancestors for
+            an <c-s>x-two-panel.with-buttons</c-s>, and finally by falling back to the
+            first panel on the page.
+          </t-b>
+          <t-b>
+            Actions dispatch to the component&apos;s public API:
+            <c-s>narrow</c-s>/<c-s>widen</c-s> call <c-s>step()</c-s>;
+            <c-s>next</c-s>/<c-s>prev</c-s> call <c-s>next()</c-s>/<c-s>prev()</c-s>;
+            <c-s>toggle-left</c-s>, <c-s>reset</c-s>, <c-s>collapse-left</c-s>,
+            <c-s>expand-left</c-s>, <c-s>set-left</c-s>, and <c-s>set-gap</c-s> map
+            directly to the corresponding public methods.
+          </t-b>
+          <t-b>
+            A second IIFE attaches a <c-s>two:nav</c-s> listener to each panel on
+            <c-s>DOMContentLoaded</c-s>, automatically setting <c-s>disabled</c-s> on
+            Prev/Next buttons when the index is at the first or last pair.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Step &amp; Width Helpers</h3>
+          <t-b>
+            <c-s>step(sign, stepOverride)</c-s> reads the current left width, resolves
+            the step amount from <c-s>stepOverride</c-s>, the <c-s>--two-step</c-s> CSS
+            variable, the <c-s>step</c-s> attribute, or a default of 6 rem, then clamps
+            the result between <c-s>min-left</c-s> and <c-s>max-left</c-s> before writing
+            back to the <c-s>left</c-s> attribute.
+          </t-b>
+          <t-b>
+            <c-s>parseLen()</c-s> and <c-s>convert()</c-s> handle unit conversion between
+            <c-s>px</c-s>, <c-s>rem</c-s>, and <c-s>%</c-s>.
+            <c-s>availablePx()</c-s> subtracts the current gap from the host width to
+            give the total usable space for both panels.
+          </t-b>
+          <t-b>
+            <c-s>max-left="auto"</c-s> computes the maximum left width as
+            <c-s>available - min-right</c-s>, keeping the right panel at least
+            <c-s>min-right</c-s> wide regardless of how much the user widens.
+          </t-b>
+        </div>
+
+      </div>
+
+      <div slot="right" class="right-slot">
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+var CSS_TEXT = `
+:host { display: block }
+
+.wrap {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  column-gap: var(--two-gap, 0.50rem);
+  height: var(--two-height, max-content);
+  width: 100%; box-sizing: border-box;
+}
+:host([data-left-fixed]) .wrap {
+  grid-template-columns:
+    minmax(0, var(--two-left, calc(50% - var(--two-gap,0.50rem)/2)))
+    minmax(0, 1fr);
+}
+.panel {
+  min-width: 0; box-sizing: border-box;
+  background: var(--two-panel-bg, transparent);
+  border: var(--two-panel-border, 1px solid #ececf2);
+  border-radius: 10px;
+  display: flex; flex-direction: column; min-height: 0;
+}
+.scroller {
+  min-width: 0; min-height: 0; height: auto;
+  flex: 1 1 auto; overflow: auto;
+  padding: var(--two-panel-pad, 0.5rem 0rem);
+  box-sizing: border-box;
+}
+:host([collapsed-left]) .wrap {
+  grid-template-columns: 1fr;
+}
+:host([collapsed-left]) .left { display: none !important }
+`;
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+// shadow DOM construction (inside XTwoPanel constructor)
+var shadow = self.attachShadow({ mode: 'open' });
+
+var style = document.createElement('style');
+style.textContent = CSS_TEXT;
+shadow.appendChild(style);
+
+var wrap = document.createElement('div');
+wrap.className = 'wrap';
+wrap.setAttribute('part', 'wrap');
+wrap.innerHTML = (
+  '&lt;section class="panel left" part="left-panel"&gt;' +
+    '&lt;div class="scroller" part="left-scroller"&gt;' +
+      '&lt;slot name="left"&gt;&lt;/slot&gt;' +
+    '&lt;/div&gt;' +
+  '&lt;/section&gt;' +
+  '&lt;section class="panel right" part="right-panel"&gt;' +
+    '&lt;div class="scroller" part="right-scroller"&gt;' +
+      '&lt;slot name="right"&gt;&lt;/slot&gt;' +
+    '&lt;/div&gt;' +
+  '&lt;/section&gt;'
+);
+shadow.appendChild(wrap);
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+// constructor function (extends HTMLElement without class syntax)
+function XTwoPanel() {
+  var self = Reflect.construct(HTMLElement, [], new.target);
+  var shadow = self.attachShadow({ mode: 'open' });
+  // ... build shadow DOM ...
+
+  self._left  = [];   // description nodes
+  self._right = [];   // code/content nodes
+  self._i     = -1;   // current index (-1 = not yet set)
+  self._init  = { left: null, gap: null }; // for reset()
+
+  return self;
+}
+XTwoPanel.prototype = Object.create(HTMLElement.prototype);
+XTwoPanel.prototype.constructor = XTwoPanel;
+
+Object.defineProperty(XTwoPanel, 'observedAttributes', {
+  get: function() {
+    return [
+      'left', 'gap', 'height', 'step',
+      'min-left', 'max-left', 'min-right',
+      'click-controls',
+      'data-desc-selector', 'data-right-selector'
+    ];
+  }
+});
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+XTwoPanel.prototype.connectedCallback = function() {
+  if (!this._connectedOnce) {
+    // save originals for reset()
+    this._init.left = this.hasAttribute('left') ? this.getAttribute('left') : null;
+    this._init.gap  = this.hasAttribute('gap')  ? this.getAttribute('gap')  : null;
+    this._connectedOnce = true;
+  }
+  this._applyAll();
+
+  if (this.hasAttribute('click-controls') ||
+      this.dataset.clickControls !== undefined) {
+    this._wireClickControls();
+  }
+
+  this._recollect();
+  var count = this._count();
+  if (count > 0) { this._i = 0; this._renderState(); }
+
+  this.scrollRightToTop();
+};
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+XTwoPanel.prototype._recollect = function() {
+  this._left  = this._collectLeft();
+  this._right = this._collectRight();
+  // hide all items; _renderState() reveals the active pair
+  for (var i = 0; i &lt; this._left.length; i++) {
+    var L = this._left[i];
+    L.style.display = 'none';
+    L.setAttribute('aria-hidden', 'true');
+    L.classList.remove('active');
+  }
+  for (var k = 0; k &lt; this._right.length; k++) {
+    var R = this._right[k];
+    R.style.display = 'none';
+    R.setAttribute('aria-hidden', 'true');
+    R.classList.remove('active');
+  }
+};
+
+XTwoPanel.prototype._renderState = function() {
+  var count = this._count(); if (count === 0) return;
+  var i = Math.max(0, Math.min(count - 1, this._i &lt; 0 ? 0 : this._i));
+  for (var a = 0; a &lt; this._left.length; a++) {
+    var show = (a === i);
+    this._left[a].style.display = show ? '' : 'none';
+    this._left[a].setAttribute('aria-hidden', show ? 'false' : 'true');
+    this._left[a].classList.toggle('active', show);
+  }
+  for (var b = 0; b &lt; this._right.length; b++) {
+    var showR = (b === i);
+    this._right[b].style.display = showR ? '' : 'none';
+    this._right[b].setAttribute('aria-hidden', showR ? 'false' : 'true');
+    this._right[b].classList.toggle('active', showR);
+  }
+  this.dispatchEvent(new CustomEvent('two:nav',
+    { detail: { index: i, count: count } }));
+};
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+// global click delegation — installed once per page load
+if (!window.__X_TWO_PANEL_EXTERNAL_WIRED__REFAC2__) {
+  document.addEventListener('click', function(ev) {
+    var ctrl = ev.target.closest('[data-two]');
+    if (!ctrl) return;
+    var sel  = ctrl.getAttribute('data-two-for') ||
+               ctrl.getAttribute('aria-controls');
+    var host = findScopedPanel(ctrl, sel);
+    if (!host || host.tagName.toLowerCase() !== 'x-two-panel') return;
+
+    switch ((ctrl.dataset.two || '').toLowerCase()) {
+      case 'narrow':        host.step(-1, ctrl.dataset.step); break;
+      case 'widen':         host.step(+1, ctrl.dataset.step); break;
+      case 'toggle-left':   host.toggleLeft();  break;
+      case 'reset':         host.reset();       break;
+      case 'collapse-left': host.setAttribute('collapsed-left', ''); break;
+      case 'expand-left':   host.removeAttribute('collapsed-left'); break;
+      case 'next':
+      case 'next-mark':     host.next({ wrap: false }); break;
+      case 'prev':
+      case 'prev-mark':     host.prev({ wrap: false }); break;
+    }
+  }, true);
+  window.__X_TWO_PANEL_EXTERNAL_WIRED__REFAC2__ = true;
+}
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+XTwoPanel.prototype.step = function(sign, stepOverride) {
+  var cur = this.getAttribute('left');
+  if (!cur) {
+    var pxNow = this._leftPanel.getBoundingClientRect().width;
+    cur = (pxNow / rootFontSize(this)).toFixed(3) + 'rem';
+    this.setAttribute('left', cur);
+  }
+  var parsed = parseLen(cur);
+  var leftPx = convert(parsed.n, parsed.unit, 'px', this);
+
+  var deltaPx;
+  if (stepOverride) {
+    var so = parseLen(stepOverride);
+    deltaPx = convert(so.n, so.unit, 'px', this);
+  } else {
+    var cssStepPx = readVarPx(this, '--two-step');
+    deltaPx = cssStepPx ?? (this.hasAttribute('step')
+      ? convert(parseLen(this.getAttribute('step')).n,
+                parseLen(this.getAttribute('step')).unit, 'px', this)
+      : convert(6, 'rem', 'px', this));
+  }
+
+  var minLeftPx  = /* min-left attr or CSS var */ ...;
+  var minRightPx = /* min-right attr or CSS var */ ...;
+  var maxLeftPx  = Math.min(availablePx(this) - minRightPx, userMaxPx);
+
+  var nextPx = Math.max(minLeftPx, Math.min(maxLeftPx, leftPx + sign * deltaPx));
+  this.setAttribute('left',
+    convert(nextPx, 'px', parsed.unit, this).toFixed(3) + parsed.unit);
+  this.removeAttribute('collapsed-left');
+};
+          </code></pre>
+        </section>
+
+      </div>
+    </x-two-panel>
+
+  </content-block>
+
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/WebDevCompPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  WebDevBites_CompViewSplitterBarDesign.html
+-->
+<head>
+  <title>ViewSplitterBar Component Design</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeWebDev.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script src="../js/TwoPanelComponentRefactored.js" defer></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if (loc === window.top.location) {
+        window.location = "ExploreWebDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      postHostMsg(makeMsg('url', location.href));
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader { padding:0.0rem 0.5rem 0.25rem 0.5rem; }
+    code { padding: 0 3px; border-radius: 3px; }
+  </style>
+  <style>
+    :root { --two-gap: .75rem; --two-panel-border: 1px solid #d0d0d7; --two-panel-pad: .5rem; }
+    .toolbar { display:flex; gap:.5rem; flex-wrap:wrap; margin:.5rem 0 .75rem; }
+    .toolbar button { padding:.3rem .75rem; border:1px solid #c8c8d0; border-radius:8px; background:#fff; }
+    .toolbar button:disabled { opacity:.55; border-color:#bbb; cursor:not-allowed; }
+    .left-item { padding-right: 0.5rem; }
+    .left-item h3 { margin:.1rem 0 .25rem; font-size:1rem; }
+    .code-card { background:#2d2d2d; color:#eee; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,.08); }
+    .code-card pre { margin:0; padding:.75rem 1rem; overflow:auto; font:0.95rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  </style>
+  <script>
+    if (Prism.plugins.NormalizeWhitespace) {
+      Prism.plugins.NormalizeWhitespace.setDefaults({
+        'remove-trailing': false,
+        'remove-indent':   false,
+        'left-trim':       true,
+        'right-trim':      true
+      });
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    WebDevBites_CompViewSplitterBarDesign.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/21/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">WebDev Bites: ViewSplitterBar Component Design</h2>
+        <h4 id="subtitle" class="indent">W3C web component</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--light); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <!-- <a class="repoLinks" target="_self" href="WebDevBites_WebComponents.html" style="color:var(--atten); margin-left:1rem;">Components</a> -->
+        <a class="repoLinks" target="_self" href="WebDevBites_Components.html" style="color:var(--light); margin-left:1.5em;">Introduction</a>
+        <a class="repoLinks" target="_self" href="WebDevBites_CompViewSplitterBar.html" style="color:var(--light); margin-left:1.5em;">Demo</a>
+        <a class="repoLinks" target="_self" href="WebDevBites_CompViewSplitterBarDesign.html" style="color:var(--light); margin-left:1.5em;">Design</a>
+        <a class="repoLinks" target="_self" href="WebDevBites_CompViewSplitterBarInterface.html" style="color:var(--light); margin-left:1.5em;">Interface</a>
+      </div>
+    </header>
+
+    <div style="height:1rem;"></div>
+
+    <div class="toolbar">
+      <button data-two="narrow"      data-two-for="#design-panel" data-step="6rem">Narrow</button>
+      <button data-two="reset"       data-two-for="#design-panel">Reset</button>
+      <button data-two="widen"       data-two-for="#design-panel" data-step="6rem">Widen</button>
+      <button data-two="toggle-left" data-two-for="#design-panel">Toggle Left</button>
+      <button id="prevBtn" data-two="prev" data-two-for="#design-panel">Prev</button>
+      <button id="nextBtn" data-two="next" data-two-for="#design-panel">Next</button>
+    </div>
+
+    <x-two-panel id="design-panel" class="with-buttons" left="20rem" height="calc(100dvh - 13.25rem)" data-left-fixed>
+      <div slot="left" class="left-slot">
+
+        <div class="left-item">
+          <h3>Template Strings</h3>
+          <t-b>
+            ViewSplitterBar defines two module-level constants before the class:
+            <c-s>VSB_STYLE</c-s> holds the shadow DOM CSS and <c-s>VSB_TEMPLATE</c-s>
+            holds the HTML structure.
+          </t-b>
+          <t-b>
+            <c-s>VSB_STYLE</c-s> uses CSS custom properties (<c-s>--panel-bg</c-s>,
+            <c-s>--panel-fg</c-s>, <c-s>--panel-padding</c-s>,
+            <c-s>--panel-overflow-x</c-s>, <c-s>--bar-width</c-s>, <c-s>--bar-color</c-s>)
+            so <c-s>_applyStyles()</c-s> can update appearance without touching the
+            shadow stylesheet directly.
+          </t-b>
+          <t-b>
+            The <c-s>::slotted(pre)</c-s> rule in <c-s>VSB_STYLE</c-s> provides baseline
+            styling for slotted <c-s>&lt;pre&gt;</c-s> elements. The
+            <c-s>_harmonizeSlotted()</c-s> helper overrides these with inline styles after
+            slot assignment to apply the current <c-s>code-padding</c-s> attribute.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Shadow DOM Template</h3>
+          <t-b>
+            <c-s>VSB_TEMPLATE</c-s> embeds <c-s>VSB_STYLE</c-s> then defines two top-level
+            elements: a <c-s>.container</c-s> flex row and a <c-s>.resizer</c-s> strip.
+          </t-b>
+          <t-b>
+            Inside <c-s>.container</c-s>: <c-s>.panel-left</c-s> (fixed width via
+            <c-s>flex: none</c-s>) holds <c-s>&lt;slot name="left"&gt;</c-s>,
+            <c-s>.splitter</c-s> provides the drag handle, and <c-s>.panel-right</c-s>
+            (<c-s>flex: 1</c-s>) holds <c-s>&lt;slot name="right"&gt;</c-s> and expands
+            to fill remaining width.
+          </t-b>
+          <t-b>
+            The <c-s>.resizer</c-s> strip sits below the container and handles vertical
+            drag to change component height. Both bars use the same
+            <c-s>--bar-width</c-s> and <c-s>--bar-color</c-s> variables.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Class and Constructor</h3>
+          <t-b>
+            <c-s>observedAttributes</c-s> declares 13 attributes covering dimensions,
+            split ratio, bar appearance, panel colors, overflow, Prism, and resize steps.
+          </t-b>
+          <t-b>
+            The constructor caches 7 shadow DOM references in <c-s>this._els</c-s>,
+            initializes drag state variables (<c-s>_leftPx</c-s>, <c-s>_heightPx</c-s>,
+            <c-s>_dragging</c-s>, and four drag-start coordinates), and builds all
+            event handler closures as instance properties.
+          </t-b>
+          <t-b>
+            The <c-s>_onSlotChange</c-s> closure calls <c-s>_maybePrism()</c-s> and
+            <c-s>_harmonizeSlotted()</c-s>, then resets scroll position in both panels
+            via <c-s>requestAnimationFrame</c-s>.
+          </t-b>
+          <t-b>
+            A <c-s>ResizeObserver</c-s> on the host element clears <c-s>_leftPx</c-s>
+            and schedules a re-application of the left panel width on the next frame
+            whenever the component width changes, unless a drag is in progress.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Lifecycle Callbacks</h3>
+          <t-b>
+            <c-s>connectedCallback</c-s> applies styles and layout, runs the initial
+            Prism pass and slot harmonization, attaches all event listeners, starts
+            the <c-s>ResizeObserver</c-s>, and resets panel scroll positions.
+          </t-b>
+          <t-b>
+            <c-s>disconnectedCallback</c-s> removes every listener added in
+            <c-s>connectedCallback</c-s>, including the document-level mousemove/mouseup
+            pairs for both drag operations, and disconnects the <c-s>ResizeObserver</c-s>.
+          </t-b>
+          <t-b>
+            <c-s>attributeChangedCallback</c-s> clears <c-s>_leftPx</c-s> and
+            <c-s>_heightPx</c-s> so the next layout pass recomputes both from the
+            current attributes, then re-applies styles and layout.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Drag Mechanics</h3>
+          <t-b>
+            Horizontal drag: <c-s>_startDrag</c-s> records the start X and left-panel
+            width, attaches document mousemove/mouseup. <c-s>_onDrag</c-s> calls
+            <c-s>_setLeftPx</c-s> with the start width plus the cursor delta.
+            <c-s>_endDrag</c-s> clears the <c-s>_dragging</c-s> flag and removes
+            the document listeners.
+          </t-b>
+          <t-b>
+            Vertical drag mirrors the pattern: <c-s>_startHeightDrag</c-s>,
+            <c-s>_onHeightDrag</c-s>, and <c-s>_endHeightDrag</c-s> operate on
+            container height instead of panel width.
+          </t-b>
+          <t-b>
+            <c-s>_bump(dir)</c-s> handles panel clicks: adds or subtracts one
+            <c-s>step-px</c-s> increment via <c-s>_setLeftPx</c-s>.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Layout &amp; Prism Helpers</h3>
+          <t-b>
+            <c-s>_getLeftPx()</c-s> computes the initial left width from
+            <c-s>left-ratio</c-s> times available width and caches the result.
+            <c-s>_setLeftPx()</c-s> clamps the value to <c-s>[min-panel-px,
+            available - min-panel-px]</c-s> and applies it directly.
+          </t-b>
+          <t-b>
+            <c-s>_totalWidthPx()</c-s> reads the actual rendered width first;
+            if the element is not yet laid out, it falls back to parsing the
+            <c-s>width</c-s> attribute (handling <c-s>rem</c-s>, plain <c-s>px</c-s>,
+            and <c-s>min()</c-s> expressions that resolve once the element has width).
+          </t-b>
+          <t-b>
+            <c-s>_applyStyles()</c-s> sets six CSS custom properties on the host.
+            <c-s>_applyLayout()</c-s> applies the <c-s>width</c-s> attribute to the
+            host, the computed height to the container, and defers the initial panel
+            width via <c-s>requestAnimationFrame</c-s> so <c-s>min()/100%</c-s>
+            expressions have resolved.
+          </t-b>
+          <t-b>
+            <c-s>_maybePrism()</c-s> highlights all <c-s>&lt;code&gt;</c-s> elements
+            in both slots when <c-s>highlight="prism"</c-s> is set.
+            <c-s>_harmonizeSlotted()</c-s> applies flex and padding to every slotted
+            <c-s>&lt;pre&gt;</c-s> so it fills its panel correctly.
+          </t-b>
+        </div>
+
+      </div>
+
+      <div slot="right" class="right-slot">
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+ 1  const VSB_STYLE = /* css */ `
+ 2    :host { display: flex; flex-direction: column; }
+ 3
+ 4    .container {
+ 5      display: flex;
+ 6      flex-direction: row;
+ 7      border: 2px solid var(--dark, #333);
+ 8      box-shadow: 5px 5px 5px #999;
+ 9      box-sizing: border-box;
+10      overflow: hidden;
+11    }
+12
+13    .panel {
+14      display: flex;
+15      flex-direction: column;
+16      overflow-x: var(--panel-overflow-x, auto);
+17      overflow-y: auto;
+18      background-color: var(--panel-bg, #f8f8f8);
+19      color: var(--panel-fg, #333);
+20      cursor: pointer;
+21      user-select: none;
+22    }
+23
+24    .panel-left  { flex: none; }
+25    .panel-right { flex: 1; min-width: 0; }
+26
+27    .splitter {
+28      flex: none;
+29      width: var(--bar-width, 6px);
+30      background-color: var(--bar-color, #888);
+31      cursor: col-resize;
+32    }
+33
+34    .resizer {
+35      flex: none;
+36      height: var(--bar-width, 6px);
+37      background-color: var(--bar-color, #888);
+38      cursor: ns-resize;
+39    }
+40
+41    ::slotted(pre) {
+42      flex: 1;
+43      min-height: 0;
+44      margin: 0 !important;
+45      padding: var(--panel-padding, 0.75rem 1rem);
+46      white-space: pre;
+47    }
+48  `;
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+63  const VSB_TEMPLATE = /* html */ `
+64    &lt;style&gt;${VSB_STYLE}&lt;/style&gt;
+65    &lt;div class="container" part="container"&gt;
+66      &lt;div class="panel panel-left" part="panel-left"&gt;
+67        &lt;slot name="left"&gt;&lt;/slot&gt;
+68      &lt;/div&gt;
+69      &lt;div class="splitter" part="splitter"&gt;&lt;/div&gt;
+70      &lt;div class="panel panel-right" part="panel-right"&gt;
+71        &lt;slot name="right"&gt;&lt;/slot&gt;
+72      &lt;/div&gt;
+73    &lt;/div&gt;
+74    &lt;div class="resizer" part="resizer"&gt;&lt;/div&gt;
+75  `;
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+77  class ViewSplitterBar extends HTMLElement {
+78    static get observedAttributes() {
+79      return [
+80        'width', 'height', 'left-ratio', 'bar-width', 'bar-color',
+81        'bg-color', 'color', 'overflow-x', 'code-padding',
+82        'highlight', 'step-px', 'min-panel-px', 'min-height-px'
+83      ];
+84    }
+85
+86    constructor() {
+87      super();
+88      this.attachShadow({ mode: 'open' });
+89      this.shadowRoot.innerHTML = VSB_TEMPLATE;
+90
+91      this._els = {
+92        container:  this.shadowRoot.querySelector('.container'),
+93        panelLeft:  this.shadowRoot.querySelector('.panel-left'),
+94        splitter:   this.shadowRoot.querySelector('.splitter'),
+95        panelRight: this.shadowRoot.querySelector('.panel-right'),
+96        resizer:    this.shadowRoot.querySelector('.resizer'),
+97        slotLeft:   this.shadowRoot.querySelector('slot[name="left"]'),
+98        slotRight:  this.shadowRoot.querySelector('slot[name="right"]'),
+99      };
+100
+101     this._leftPx     = null;    this._heightPx   = null;
+102     this._dragging   = false;   this._dragStartX = 0;
+103     this._dragStartW = 0;       this._dragStartY = 0;
+104     this._dragStartH = 0;
+105
+106     this._onMousedown        = e  =&gt; this._startDrag(e);
+107     this._onMousemove        = e  =&gt; this._onDrag(e);
+108     this._onMouseup          = () =&gt; this._endDrag();
+109     this._onResizerMousedown = e  =&gt; this._startHeightDrag(e);
+110     this._onResizerMousemove = e  =&gt; this._onHeightDrag(e);
+111     this._onResizerMouseup   = () =&gt; this._endHeightDrag();
+112     this._onClickLeft        = () =&gt; this._bump(+1);
+113     this._onClickRight       = () =&gt; this._bump(-1);
+114     this._onSlotChange       = () =&gt; {
+115       this._maybePrism();
+116       this._harmonizeSlotted();
+117       requestAnimationFrame(() =&gt; {
+118         this._els.panelLeft.scrollTop  = 0;
+119         this._els.panelRight.scrollTop = 0;
+120         [this._els.slotLeft, this._els.slotRight].forEach(slot =&gt; {
+121           slot.assignedElements({ flatten: true })
+122               .forEach(el =&gt; { el.scrollTop = 0; });
+123         });
+124       });
+125     };
+126
+127     this._resizeObserver = new ResizeObserver(() =&gt; {
+128       if (this._dragging) return;
+129       this._leftPx = null;
+130       requestAnimationFrame(() =&gt; {
+131         this._els.panelLeft.style.width = `${this._getLeftPx()}px`;
+132       });
+133     });
+134   }
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+138   connectedCallback() {
+139     this._applyStyles();
+140     this._applyLayout();
+141     this._maybePrism();
+142     this._harmonizeSlotted();
+143     this._els.splitter.addEventListener('mousedown',   this._onMousedown);
+144     this._els.resizer.addEventListener('mousedown',    this._onResizerMousedown);
+145     this._els.panelLeft.addEventListener('click',      this._onClickLeft);
+146     this._els.panelRight.addEventListener('click',     this._onClickRight);
+147     this._els.slotLeft.addEventListener('slotchange',  this._onSlotChange);
+148     this._els.slotRight.addEventListener('slotchange', this._onSlotChange);
+149     this._resizeObserver.observe(this);
+150     requestAnimationFrame(() =&gt; {
+151       this._els.panelLeft.scrollTop  = 0;
+152       this._els.panelRight.scrollTop = 0;
+153     });
+154   }
+155
+156   disconnectedCallback() {
+157     this._els.splitter.removeEventListener('mousedown',   this._onMousedown);
+158     this._els.resizer.removeEventListener('mousedown',    this._onResizerMousedown);
+159     this._els.panelLeft.removeEventListener('click',      this._onClickLeft);
+160     this._els.panelRight.removeEventListener('click',     this._onClickRight);
+161     this._els.slotLeft.removeEventListener('slotchange',  this._onSlotChange);
+162     this._els.slotRight.removeEventListener('slotchange', this._onSlotChange);
+163     document.removeEventListener('mousemove', this._onMousemove);
+164     document.removeEventListener('mouseup',   this._onMouseup);
+165     document.removeEventListener('mousemove', this._onResizerMousemove);
+166     document.removeEventListener('mouseup',   this._onResizerMouseup);
+167     this._resizeObserver.disconnect();
+168   }
+169
+170   attributeChangedCallback() {
+171     this._leftPx   = null;
+172     this._heightPx = null;
+173     this._applyStyles();
+174     this._applyLayout();
+175   }
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+179   _startDrag(e) {
+180     e.preventDefault();
+181     this._dragging   = true;
+182     this._dragStartX = e.clientX;
+183     this._dragStartW = this._getLeftPx();
+184     document.addEventListener('mousemove', this._onMousemove);
+185     document.addEventListener('mouseup',   this._onMouseup);
+186   }
+187
+188   _onDrag(e) {
+189     this._setLeftPx(this._dragStartW + (e.clientX - this._dragStartX));
+190   }
+191
+192   _endDrag() {
+193     this._dragging = false;
+194     document.removeEventListener('mousemove', this._onMousemove);
+195     document.removeEventListener('mouseup',   this._onMouseup);
+196   }
+197
+198   _startHeightDrag(e) {
+199     e.preventDefault();
+200     this._dragging   = true;
+201     this._dragStartY = e.clientY;
+202     this._dragStartH = this._getHeightPx();
+203     document.addEventListener('mousemove', this._onResizerMousemove);
+204     document.addEventListener('mouseup',   this._onResizerMouseup);
+205   }
+206
+207   _onHeightDrag(e) {
+208     this._setHeightPx(this._dragStartH + (e.clientY - this._dragStartY));
+209   }
+210
+211   _endHeightDrag() {
+212     this._dragging = false;
+213     document.removeEventListener('mousemove', this._onResizerMousemove);
+214     document.removeEventListener('mouseup',   this._onResizerMouseup);
+215   }
+216
+217   _bump(dir) {
+218     const step = parseFloat(this.getAttribute('step-px')) || 40;
+219     this._setLeftPx(this._getLeftPx() + dir * step);
+220   }
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+222   _getLeftPx() {
+223     if (this._leftPx != null) return this._leftPx;
+224     const ratio  = parseFloat(this.getAttribute('left-ratio')) || 0.5;
+225     this._leftPx = Math.round(ratio * this._availableWidth());
+226     return this._leftPx;
+227   }
+228
+229   _setLeftPx(px) {
+230     const minPx     = parseFloat(this.getAttribute('min-panel-px')) || 120;
+231     const available = this._availableWidth();
+232     this._leftPx    = Math.min(Math.max(Math.round(px), minPx), available - minPx);
+233     this._els.panelLeft.style.width = `${this._leftPx}px`;
+234   }
+235
+236   _totalWidthPx() {
+237     const r = this.getBoundingClientRect();
+238     if (r.width &gt; 0) return r.width;
+239     const w = this.getAttribute('width');
+240     if (w) {
+241       if (w.endsWith('rem')) {
+242         const fs = parseFloat(
+243           getComputedStyle(document.documentElement).fontSize) || 16;
+244         return parseFloat(w) * fs;
+245       }
+246       const px = parseFloat(w);
+247       if (!isNaN(px)) return px;
+248     }
+249     return 600;
+250   }
+251
+252   _applyStyles() {
+253     this.style.setProperty('--panel-bg',         this.getAttribute('bg-color')     || 'var(--light, #f8f8f8)');
+254     this.style.setProperty('--panel-fg',         this.getAttribute('color')        || 'var(--dark, #333)');
+255     this.style.setProperty('--panel-padding',    this.getAttribute('code-padding') || '0.75rem 1rem');
+256     this.style.setProperty('--panel-overflow-x', this.getAttribute('overflow-x')   || 'auto');
+257     this.style.setProperty('--bar-width',        this.getAttribute('bar-width')    || '6px');
+258     this.style.setProperty('--bar-color',        this.getAttribute('bar-color')    || '#888');
+259   }
+260
+261   _applyLayout() {
+262     const w = this.getAttribute('width');
+263     if (w) this.style.width = w;
+264     if (this.getAttribute('height') || this._heightPx != null)
+265       this._els.container.style.height = `${this._getHeightPx()}px`;
+266     if (this._leftPx != null) {
+267       this._els.panelLeft.style.width = `${this._leftPx}px`;
+268     } else {
+269       requestAnimationFrame(() =&gt; {
+270         this._els.panelLeft.style.width = `${this._getLeftPx()}px`;
+271       });
+272     }
+273   }
+274
+275   _maybePrism() {
+276     if (this.getAttribute('highlight') !== 'prism' || !window.Prism) return;
+277     [this._els.slotLeft, this._els.slotRight].forEach(slot =&gt; {
+278       slot.assignedElements({ flatten: true }).forEach(el =&gt; {
+279         const codes = el.tagName === 'CODE'
+280           ? [el] : [...el.querySelectorAll('code')];
+281         codes.forEach(c =&gt; window.Prism.highlightElement(c));
+282       });
+283     });
+284   }
+285
+286   _harmonizeSlotted() {
+287     const pad = this.getAttribute('code-padding') || '0.75rem 1rem';
+288     [this._els.slotLeft, this._els.slotRight].forEach(slot =&gt; {
+289       slot.assignedElements({ flatten: true }).forEach(el =&gt; {
+290         if (el.tagName !== 'PRE') return;
+291         el.style.margin    = '0';
+292         el.style.padding   = pad;
+293         el.style.flex      = '1';
+294         el.style.minHeight = '0';
+295         el.style.boxSizing = 'border-box';
+296       });
+297     });
+298   }
+299 }
+300
+301 customElements.define('view-splitter-bar', ViewSplitterBar);
+          </code></pre>
+        </section>
+
+      </div>
+    </x-two-panel>
+
+  </content-block>
+
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/WebDevCompPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+</body>
+</html>

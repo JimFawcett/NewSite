@@ -11,11 +11,11 @@ function buildPages() {
     "<div class='darkItem listheader' onclick='togglePages()'>WebDev Comp Pages</div>\
     <div class='menuBody'>\
       <a href='WebDevBites_Components.html'>Introduction</a>\
-      <a href='WebDevBites_CompImageViewer.html'>Image Viewer</a>\
-      <a href='WebDevBites_CompSpacer.html'>Spacer</a>\
-      <a href='WebDevBites_CompCodeViewer.html'>Code Viewer</a>\
-      <a class='undef' href='javascript:;'>Splitter</a>\
-      <a class='undef' href='javascript:;'>Two Panel Viewer</a>\
+      <a href='WebDevBites_CompViewImage.html'>Image Viewer</a>\
+      <a href='WebDevBites_CompViewCode.html'>Code Viewer</a>\
+      <a href='WebDevBites_CompViewSplitterBar.html'>SplitterBar Viewer</a>\
+      <a href='WebDevBites_CompViewComparator.html'>Comparator</a>\
+      <a href='WebDevBites_CompTwoPanelViewer.html'>Two Panel Viewer</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }

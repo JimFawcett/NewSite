@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  WebDevBites_CompViewImageDesign.html
+-->
+<head>
+  <title>ViewImage Component Design</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeWebDev.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script src="../js/TwoPanelComponentRefactored.js" defer></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if (loc === window.top.location) {
+        window.location = "ExploreWebDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      postHostMsg(makeMsg('url', location.href));
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .menuHeader { padding:0.0rem 0.5rem 0.25rem 0.5rem; }
+    code { padding: 0 3px; border-radius: 3px; }
+  </style>
+  <style>
+    :root { --two-gap: .75rem; --two-panel-border: 1px solid #d0d0d7; --two-panel-pad: .5rem; }
+    .page { max-width:1100px; margin:2rem auto; padding:0 1rem; }
+    .toolbar { display:flex; gap:.5rem; flex-wrap:wrap; margin:.5rem 0 .75rem; }
+    .toolbar button { padding:.3rem .75rem; border:1px solid #c8c8d0; border-radius:8px; background:#fff; }
+    .toolbar button:disabled { opacity:.55; border-color:#bbb; cursor:not-allowed; }
+    .left-item { padding-right: 0.5rem; }
+    .left-item h3 { margin:.1rem 0 .25rem; font-size:1rem; }
+    .code-card { background:#2d2d2d; color:#eee; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,.08); }
+    .code-card pre { margin:0; padding:.75rem 1rem; overflow:auto; font:0.95rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  </style>
+  <script>
+    if (Prism.plugins.NormalizeWhitespace) {
+      Prism.plugins.NormalizeWhitespace.setDefaults({
+        'remove-trailing': false,
+        'remove-indent':   false,
+        'left-trim':       true,
+        'right-trim':      true
+      });
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    WebDevBites_CompViewImageDesign.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 05/21/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">WebDev Bites: ViewImage Component Design</h2>
+        <h4 id="subtitle" class="indent">W3C web component</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--light); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <!-- <a class="repoLinks" target="_self" href="WebDevBites_WebComponents.html" style="color:var(--atten); margin-left:1rem;">Components</a> -->
+        <a class="repoLinks" target="_self" href="WebDevBites_Components.html" style="color:var(--light); margin-left:1.5em;">Introduction</a>
+        <a class="repoLinks" target="_self" href="WebDevBites_CompViewImage.html" style="color:var(--light); margin-left:1.5em;">Demo</a>
+        <a class="repoLinks" target="_self" href="WebDevBites_CompViewImageDesign.html" style="color:var(--light); margin-left:1.5em;">Design</a>
+        <a class="repoLinks" target="_self" href="WebDevBites_CompViewImageInterface.html" style="color:var(--light); margin-left:1.5em;">Interface</a>
+      </div>
+    </header>
+
+    <div style="height:1rem;"></div>
+
+    <div class="toolbar">
+      <button data-two="narrow"      data-two-for="#design-panel" data-step="6rem">Narrow</button>
+      <button data-two="reset"       data-two-for="#design-panel">Reset</button>
+      <button data-two="widen"       data-two-for="#design-panel" data-step="6rem">Widen</button>
+      <button data-two="toggle-left" data-two-for="#design-panel">Toggle Left</button>
+      <button id="prevBtn" data-two="prev" data-two-for="#design-panel">Prev</button>
+      <button id="nextBtn" data-two="next" data-two-for="#design-panel">Next</button>
+    </div>
+
+    <x-two-panel id="design-panel" class="with-buttons" left="20rem" height="calc(100dvh - 13.25rem)" data-left-fixed>
+      <div slot="left" class="left-slot">
+
+        <div class="left-item">
+          <h3>Template Strings</h3>
+          <t-b>
+            ViewImage defines two module-level constants before the class: <c-s>VI_STYLE</c-s>
+            holds the shadow DOM CSS and <c-s>VI_TEMPLATE</c-s> holds the HTML structure.
+          </t-b>
+          <t-b>
+            Separating layout from class logic makes each part independently readable and keeps
+            the constructor free of markup noise.
+          </t-b>
+          <t-b>
+            <c-s>VI_STYLE</c-s> uses CSS custom properties (<c-s>--view-bg</c-s>,
+            <c-s>--title-bg</c-s>, <c-s>--title-font-size</c-s>) so the host page can
+            override colors via <c-s>this.style.setProperty()</c-s> without touching
+            the shadow stylesheet.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Shadow DOM Template</h3>
+          <t-b>
+            <c-s>VI_TEMPLATE</c-s> embeds <c-s>VI_STYLE</c-s> directly, then defines a
+            two-level wrapper: an outer <c-s>.wrapper</c-s> that provides padding so the
+            component can be floated without text colliding with the border, and an inner
+            <c-s>.view</c-s> that carries the visible border, shadow, and flex column layout.
+          </t-b>
+          <t-b>
+            The <c-s>&lt;slot&gt;</c-s> in the title div lets the host page supply caption text
+            as element content: <c-s>&lt;view-image&gt;Figure 1&lt;/view-image&gt;</c-s>.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Class and Attributes</h3>
+          <t-b>
+            <c-s>observedAttributes</c-s> declares seven attributes:
+            <c-s>src</c-s>, <c-s>alt</c-s>, <c-s>width</c-s>, <c-s>bg-color</c-s>,
+            <c-s>title-bg-color</c-s>, <c-s>step-px</c-s>, and <c-s>min-width</c-s>.
+          </t-b>
+          <t-b>
+            The constructor caches shadow DOM element references in <c-s>this._els</c-s>,
+            initializes resize state (<c-s>_originWidthPx</c-s>, <c-s>_stepsFromOrigin</c-s>),
+            and builds bound click handlers.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Lifecycle Callbacks</h3>
+          <t-b>
+            <c-s>connectedCallback</c-s> calls <c-s>_updateAll()</c-s> to apply all current
+            attributes, then attaches click listeners to the image panel and title.
+          </t-b>
+          <t-b>
+            <c-s>disconnectedCallback</c-s> removes those same listeners to prevent leaks.
+          </t-b>
+          <t-b>
+            <c-s>attributeChangedCallback</c-s> calls <c-s>_updateAll()</c-s> so the view
+            stays in sync whenever an attribute changes after initial render.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>Update Helpers</h3>
+          <t-b>
+            <c-s>_updateAll()</c-s> delegates to three focused helpers so each concern
+            can be maintained or extended independently.
+          </t-b>
+          <t-b>
+            <c-s>_applyBoxColors()</c-s> sets the <c-s>--view-bg</c-s> and
+            <c-s>--title-bg</c-s> CSS custom properties on the host element. This
+            propagates into the shadow DOM without requiring direct shadow stylesheet access.
+          </t-b>
+          <t-b>
+            <c-s>_applyImage()</c-s> syncs <c-s>src</c-s> and <c-s>alt</c-s> on the
+            internal <c-s>&lt;img&gt;</c-s>. <c-s>_applySizing()</c-s> applies the
+            <c-s>width</c-s> attribute to the <c-s>.view</c-s> div.
+          </t-b>
+        </div>
+
+        <div class="left-item">
+          <h3>_bumpWidth</h3>
+          <t-b>
+            Handles click-to-resize. On the first click it records the current rendered
+            width as <c-s>_originWidthPx</c-s> and resets the step counter to zero.
+          </t-b>
+          <t-b>
+            Each subsequent click adds or subtracts one <c-s>step-px</c-s> increment
+            from the origin. The step count is preserved between grow and shrink directions
+            so the image returns to exact widths it has been at before, rather than drifting.
+          </t-b>
+          <t-b>
+            Width is clamped to <c-s>min-width</c-s> (default 120&nbsp;px) to prevent
+            the component from collapsing to zero.
+          </t-b>
+        </div>
+
+      </div>
+
+      <div slot="right" class="right-slot">
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+ 1  const VI_STYLE = /* css */ `
+ 2    :host { display: inline-block; }
+ 3
+ 4    .wrapper {
+ 5      padding: 1rem;
+ 6      box-sizing: border-box;
+ 7    }
+ 8
+ 9    .view {
+10      border: 2px solid var(--dark, #333);
+11      padding: 0.5rem;
+12      display: flex;
+13      flex-direction: column;
+14      user-select: none;
+15      width: max-content;
+16      box-shadow: 5px 5px 5px #999;
+17      box-sizing: border-box;
+18      background-color: var(--view-bg, #f8f8f8);
+19    }
+20
+21    .title {
+22      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+23      font-size: var(--title-font-size, 1rem);
+24      font-weight: bold;
+25      cursor: pointer;
+26      max-width: 100%;
+27      margin-bottom: 8px;
+28      line-height: 1.2;
+29      overflow-wrap: break-word;
+30      white-space: normal;
+31      color: var(--dark, #333);
+32      background-color: var(--title-bg, transparent);
+33      padding: 0.125rem 0.5rem;
+34    }
+35
+36    .image-panel {
+37      display: block;
+38      cursor: pointer;
+39    }
+40
+41    #img-internal {
+42      display: block;
+43      width: 100%;
+44      height: auto;
+45    }
+46  `;
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+48  const VI_TEMPLATE = /* html */ `
+49    &lt;style&gt;${VI_STYLE}&lt;/style&gt;
+50    &lt;div class="wrapper"&gt;
+51      &lt;div class="view" part="view"&gt;
+52        &lt;div class="title" part="title"&gt;&lt;slot&gt;&lt;/slot&gt;&lt;/div&gt;
+53        &lt;div class="image-panel"&gt;
+54          &lt;img id="img-internal" alt=""&gt;
+55        &lt;/div&gt;
+56      &lt;/div&gt;
+57    &lt;/div&gt;
+58  `;
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+60  class ViewImage extends HTMLElement {
+61    static get observedAttributes() {
+62      return ['src', 'alt', 'width', 'bg-color',
+63              'title-bg-color', 'step-px', 'min-width'];
+64    }
+65
+66    constructor() {
+67      super();
+68      this.attachShadow({ mode: 'open' });
+69      this.shadowRoot.innerHTML = VI_TEMPLATE;
+70
+71      this._els = {
+72        title: this.shadowRoot.querySelector('.title'),
+73        view:  this.shadowRoot.querySelector('.view'),
+74        panel: this.shadowRoot.querySelector('.image-panel'),
+75        img:   this.shadowRoot.querySelector('#img-internal'),
+76      };
+77
+78      this._originWidthPx   = null;
+79      this._stepsFromOrigin = 0;
+80
+81      this._onBodyClick  = () =&gt; this._bumpWidth(+1);
+82      this._onTitleClick = () =&gt; this._bumpWidth(-1);
+83    }
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+85    connectedCallback() {
+86      this._updateAll();
+87      this._els.panel.addEventListener('click', this._onBodyClick);
+88      this._els.title.addEventListener('click', this._onTitleClick);
+89    }
+90
+91    disconnectedCallback() {
+92      this._els.panel.removeEventListener('click', this._onBodyClick);
+93      this._els.title.removeEventListener('click', this._onTitleClick);
+94    }
+95
+96    attributeChangedCallback() {
+97      this._updateAll();
+98    }
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+100   _updateAll() {
+101     this._applyBoxColors();
+102     this._applyImage();
+103     this._applySizing();
+104   }
+105
+106   _applyBoxColors() {
+107     const viewBg  = this.getAttribute('bg-color')       || 'var(--light, #f8f8f8)';
+108     const titleBg = this.getAttribute('title-bg-color') || '#aaa';
+109     this.style.setProperty('--view-bg',  viewBg);
+110     this.style.setProperty('--title-bg', titleBg);
+111   }
+112
+113   _applyImage() {
+114     this._els.img.src = this.getAttribute('src') || '';
+115     this._els.img.alt = this.getAttribute('alt') || '';
+116   }
+117
+118   _applySizing() {
+119     const width = this.getAttribute('width');
+120     if (width) this._els.view.style.width = width;
+121   }
+          </code></pre>
+        </section>
+
+        <section class="right-item code-card">
+          <pre><code class="language-javascript">
+123   _bumpWidth(dir) {
+124     if (this._originWidthPx == null) {
+125       const rect = this._els.view.getBoundingClientRect();
+126       this._originWidthPx   = rect.width &gt; 0 ? rect.width : 320;
+127       this._stepsFromOrigin = 0;
+128     }
+129     const stepPx = parseFloat(this.getAttribute('step-px')) || 40;
+130     const minPx  = parseFloat(this.getAttribute('min-width')) || 120;
+131     let steps  = this._stepsFromOrigin + dir;
+132     let target = this._originWidthPx + steps * stepPx;
+133     if (target &lt; minPx) {
+134       target = minPx;
+135       steps = Math.ceil((target - this._originWidthPx) / stepPx);
+136     }
+137     this._stepsFromOrigin = steps;
+138     this._els.view.style.width = `${Math.round(target)}px`;
+139   }
+140 }
+141
+142 customElements.define('view-image', ViewImage);
+          </code></pre>
+        </section>
+
+      </div>
+    </x-two-panel>
+
+  </content-block>
+
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/WebDevCompPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 1, 10);
+  </script>
+</body>
+</html>
