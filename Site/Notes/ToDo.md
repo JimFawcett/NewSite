@@ -1,5 +1,19 @@
 # ToDo
 
+- **2026-05-23** — Add QuadView to components demos
+
+---
+
+- **2026-05-23** — Fix flashcards for non-Rust languages
+
+---
+
+- **2026-05-23** — Reorganize WebDev content
+    - content now scattered among story, bites, components
+    - restore quadviews for models
+
+---
+
 - **2026-05-15** — Create agent to add new git log items to SiteChanges Activity table
 
 ---
