@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  CSSStory_StyleManagement.html
+-->
+<head>
+  <meta charset="UTF-8" />
+  <title>CSS Story Style Management</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeWebDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github table.reftable {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #github table.reftable th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+      padding: 0.25rem 0.5rem;
+    }
+    #github table.reftable td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+    #github table.reftable code {
+      font-family: monospace;
+      background: #eef;
+      border-radius: 3px;
+      padding: 0 2px;
+      font-size: 0.875rem;
+    }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreWebDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CSSStory_StyleManagement.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 06/03/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" rel="noopener" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">CSS Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">CSS Story: Style Management</h2>
+        <h4 class="indent" id="subtitle">specificity, @layer, naming, tokens, !important</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="overview"></a>
+      <h3>5.0  Overview</h3>
+      <t-b>
+        The cascade is powerful but becomes unpredictable as a project grows. Multiple
+        stylesheets, third-party libraries, and component styles compete for the same elements,
+        and the rule with the highest specificity wins regardless of where it appears in source
+        order. The strategies in this chapter keep specificity predictable and source order
+        explicit - four complementary tools: specificity discipline, cascade layers, naming
+        conventions, and design tokens.
+      </t-b>
+
+      <a id="specificity"></a>
+      <h3>5.1  Specificity Discipline</h3>
+      <t-b>
+        The cascade computes a three-part score for every selector:
+        <strong>(ID count, class/attribute/pseudo-class count, element/pseudo-element count)</strong>.
+        The selector with the higher score wins, regardless of source order. Conflicts become
+        hard to reason about when selectors mix IDs, deep nesting, and element qualifiers,
+        because the winning rule is no longer obvious.
+      </t-b>
+      <t-b>
+        The practical rule: keep every styling selector at exactly one class - specificity
+        (0,1,0). Deviating upward creates debt that has to be paid by more deviation later.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Table 1. - Selector specificity scores</summary>
+          <table class="reftable" style="margin-top:0.5rem; font-size:0.875rem;">
+            <colgroup>
+              <col style="width:35%">
+              <col style="width:15%">
+              <col style="width:50%">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Selector</th>
+                <th>Score (I, C, E)</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>*</code></td>
+                <td>(0, 0, 0)</td>
+                <td>Universal selector; no contribution.</td>
+              </tr>
+              <tr>
+                <td><code>p</code>, <code>div</code>, <code>::before</code></td>
+                <td>(0, 0, 1)</td>
+                <td>Element and pseudo-element selectors.</td>
+              </tr>
+              <tr>
+                <td><code>.card</code>, <code>[type="text"]</code>, <code>:hover</code></td>
+                <td>(0, 1, 0)</td>
+                <td>Class, attribute, and pseudo-class selectors.</td>
+              </tr>
+              <tr>
+                <td><code>#nav</code></td>
+                <td>(1, 0, 0)</td>
+                <td>ID selector; beats any number of classes.</td>
+              </tr>
+              <tr>
+                <td><code>:where(...)</code></td>
+                <td>(0, 0, 0)</td>
+                <td>Argument list is evaluated but contributes zero specificity.</td>
+              </tr>
+              <tr>
+                <td><code>:is(...)</code>, <code>:not(...)</code></td>
+                <td>Inherited</td>
+                <td>Takes the specificity of the most specific selector in its argument list.</td>
+              </tr>
+              <tr>
+                <td>Inline <code>style=""</code></td>
+                <td>(1, 0, 0, 0)</td>
+                <td>Above the three-part score; beaten only by <code>!important</code>.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+      <t-b>
+        Three patterns that keep specificity low:
+      </t-b>
+      <pre><code class="language-css">/* instead of: nav > ul > li > a { color: steelblue; }   (0,0,3) */
+.nav-link { color: steelblue; }                          /* (0,1,0) */
+
+/* :where() - zero specificity, safe for resets and base styles */
+:where(h1, h2, h3) { line-height: 1.2; }
+
+/* :is() - grouping convenience; inherits specificity of its most-specific arg */
+:is(.card, .panel) > p { margin-bottom: 0.75rem; }</code></pre>
+
+      <a id="layers"></a>
+      <h3>5.2  Cascade Layers (<c-s>@layer</c-s>)</h3>
+      <t-b>
+        <c-s>@layer</c-s> assigns rules to named layers whose win order is declared once,
+        independently of specificity. A rule in a later layer always beats a same-specificity
+        rule in an earlier layer. Rules outside any layer sit above all layers and win
+        unconditionally - useful for keeping third-party imports from overriding your styles.
+      </t-b>
+      <pre><code class="language-css">/* declare order once at the top of the root stylesheet */
+@layer base, theme, components, utilities;
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; font-family: sans-serif; }
+}
+
+@layer theme {
+  :root {
+    --color-text:   #1a1a2e;
+    --color-accent: steelblue;
+    --color-bg:     #ffffff;
+  }
+}
+
+@layer components {
+  .btn  { padding: 0.4rem 1rem; border-radius: 4px; }
+  .card { padding: 1rem; border: 1px solid var(--color-accent); }
+}
+
+@layer utilities {
+  .hidden  { display: none; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; }
+}</code></pre>
+      <t-b>
+        Importing a third-party stylesheet into a layer contains it below your own unlayered
+        rules:
+      </t-b>
+      <pre><code class="language-css">/* bootstrap stays inside "vendor" - your unlayered rules win */
+@layer vendor {
+  @import url("bootstrap.min.css");
+}</code></pre>
+      <t-b>
+        Within a layer, normal specificity and source order still apply. Across layers, layer
+        order decides everything.
+      </t-b>
+
+      <a id="naming"></a>
+      <h3>5.3  Naming Conventions</h3>
+      <t-b>
+        A consistent naming convention enforces uniform specificity and makes component
+        boundaries visible in markup. <strong>BEM</strong> (Block-Element-Modifier) is the
+        most widely adopted scheme:
+      </t-b>
+      <t-b class="indent">
+        <ul class="tight">
+          <li><c-s>.block</c-s> - a standalone component (<c-s>.card</c-s>, <c-s>.nav</c-s>)</li>
+          <li><c-s>.block__element</c-s> - a child part of that component (<c-s>.card__title</c-s>)</li>
+          <li><c-s>.block--modifier</c-s> - a variant or state (<c-s>.card--featured</c-s>, <c-s>.btn--danger</c-s>)</li>
+        </ul>
+      </t-b>
+      <pre><code class="language-css">/* every selector is a single class: specificity (0,1,0) throughout */
+.card           { background: var(--color-bg); border-radius: 4px; padding: 1rem; }
+.card__title    { font-size: 1.1rem; font-weight: bold; margin-bottom: 0.5rem; }
+.card__body     { color: var(--color-text); }
+.card--featured { border: 2px solid var(--color-accent); }</code></pre>
+      <pre><code class="language-html">&lt;div class="card card--featured"&gt;
+  &lt;h2 class="card__title"&gt;Title&lt;/h2&gt;
+  &lt;p  class="card__body"&gt;Content&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+      <t-b>
+        Because every selector is one class, there are no specificity wars. A modifier class
+        is added alongside the block class rather than overriding it, so both sets of rules
+        apply cleanly.
+      </t-b>
+
+      <a id="tokens"></a>
+      <h3>5.4  Design Tokens with Custom Properties</h3>
+      <t-b>
+        Custom properties separate design decisions (color, spacing, radius) from layout
+        rules. Define a named palette at <c-s>:root</c-s>; switch an entire theme by
+        overriding a handful of properties in one place. Components reference tokens, never
+        raw values, so a single change propagates everywhere.
+      </t-b>
+      <pre><code class="language-css">/* token definitions */
+:root {
+  --color-text:       #1a1a2e;
+  --color-bg:         #ffffff;
+  --color-accent:     steelblue;
+  --color-accent-dim: #b0c8e0;
+  --space-sm:  0.5rem;
+  --space-md:  1.0rem;
+  --space-lg:  2.0rem;
+  --radius:    4px;
+  --shadow:    0 2px 8px rgb(0 0 0 / 12%);
+}
+
+/* dark theme - just override the tokens */
+.theme-dark {
+  --color-text: #e8e8f0;
+  --color-bg:   #1a1a2e;
+  --color-accent: #7eb8d8;
+}</code></pre>
+      <pre><code class="language-css">/* component uses only tokens, never raw values */
+.card {
+  background:    var(--color-bg);
+  color:         var(--color-text);
+  border-radius: var(--radius);
+  padding:       var(--space-md);
+  box-shadow:    var(--shadow);
+}</code></pre>
+      <t-b>
+        Custom properties are inherited like any other CSS property. A token set on a
+        container applies to all descendants, making scoped overrides straightforward:
+      </t-b>
+      <pre><code class="language-css">/* invert accent inside a hero section without touching component rules */
+.hero { --color-accent: #fce8c8; }</code></pre>
+
+      <a id="important"></a>
+      <h3>5.5  Controlling <c-s>!important</c-s></h3>
+      <t-b>
+        <c-s>!important</c-s> overrides all normal specificity, including inline styles.
+        That power makes it destructive when used to patch a specificity conflict - the next
+        developer adds another <c-s>!important</c-s> and the arms race begins, eventually
+        making styles impossible to reason about.
+      </t-b>
+      <t-b>
+        Three legitimate uses:
+      </t-b>
+      <t-b class="indent">
+        <ul class="tight">
+          <li>
+            <strong>Utility classes</strong> that must never be overridden by component styles:
+          </li>
+        </ul>
+      </t-b>
+      <pre><code class="language-css">.hidden  { display: none !important; }
+.visible { display: block !important; }</code></pre>
+      <t-b class="indent">
+        <ul class="tight">
+          <li>
+            <strong>Accessibility overrides</strong> - forced contrast, reduced motion:
+          </li>
+        </ul>
+      </t-b>
+      <pre><code class="language-css">@media (forced-colors: active) {
+  .btn { border: 2px solid ButtonText !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; }
+}</code></pre>
+      <t-b class="indent">
+        <ul class="tight">
+          <li>
+            <strong>Temporary debugging</strong> - always removed before committing.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        When you find yourself reaching for <c-s>!important</c-s> to fix a specificity
+        conflict, the right fix is almost always to reduce the specificity of the
+        conflicting rule, restructure the selector, or use <c-s>@layer</c-s> to establish
+        explicit win order.
+      </t-b>
+
+      <a id="summary-table"></a>
+      <h3>5.6  Strategy Summary</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Table 2. - Style management strategies</summary>
+          <table class="reftable" style="margin-top:0.5rem; font-size:0.875rem;">
+            <colgroup>
+              <col style="width:20%">
+              <col style="width:35%">
+              <col style="width:45%">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Strategy</th>
+                <th>What it controls</th>
+                <th>Key rule</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Specificity discipline</strong></td>
+                <td>Which rule wins when two selectors match the same element</td>
+                <td>Keep all styling selectors at one class (0,1,0). Use <code>:where()</code> for zero-cost grouping.</td>
+              </tr>
+              <tr>
+                <td><strong><code>@layer</code></strong></td>
+                <td>Source-order priority across stylesheets and libraries</td>
+                <td>Later layers beat earlier layers regardless of specificity. Unlayered rules beat all layers.</td>
+              </tr>
+              <tr>
+                <td><strong>Naming (BEM)</strong></td>
+                <td>Enforces single-class selectors; encodes component structure</td>
+                <td><code>.block__element--modifier</code> - every selector is one class, self-documenting.</td>
+              </tr>
+              <tr>
+                <td><strong>Design tokens</strong></td>
+                <td>Centralizes design values; enables theming without touching component rules</td>
+                <td>Define at <code>:root</code>, override in a scoped context. Components reference only tokens.</td>
+              </tr>
+              <tr>
+                <td><strong><code>!important</code></strong></td>
+                <td>Last-resort override; legitimate only for utilities and accessibility</td>
+                <td>Never use to fix a specificity conflict - fix the selector instead.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#overview">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#specificity">specificity</a></menu-elem>
+        <menu-elem class="secElem"><a href="#layers">@layer</a></menu-elem>
+        <menu-elem class="secElem"><a href="#naming">naming</a></menu-elem>
+        <menu-elem class="secElem"><a href="#tokens">tokens</a></menu-elem>
+        <menu-elem class="secElem"><a href="#important">!important</a></menu-elem>
+        <menu-elem class="secElem"><a href="#summary-table">summary</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CssStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+</body>
+</html>

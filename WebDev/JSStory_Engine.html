@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  JSStory_Engine.html
+-->
+<head>
+  <meta charset="UTF-8" />
+  <title>JS Story Execution Engine</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="Components/ViewImageComponent/css/ViewImage.css" />
+  <script src="Components/ViewImageComponent/js/ViewImage.js" defer></script>
+  <link rel="stylesheet" href="../css/ThemeWebDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreWebDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    JSStory_Engine.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 06/03/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" rel="noopener" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">JS Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">JS Story: Execution Engine</h2>
+        <h4 class="indent" id="subtitle">call stack, heap, task queue, microtasks, event loop, workers</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="overview"></a>
+      <h3>2.0  Overview</h3>
+      <t-b>
+        JavaScript in the browser runs on a single thread. The engine consists of several
+        coordinating parts: a <strong>call stack</strong> that tracks active function frames,
+        a <strong>heap</strong> where objects are allocated, a <strong>task queue</strong>
+        that holds callbacks from I/O and timers, and a <strong>microtask queue</strong>
+        that drains between tasks. The <strong>event loop</strong> coordinates them all.
+      </t-b>
+      <t-b>
+        The diagram below shows how these parts relate. Click the image to enlarge it;
+        click the title bar to reduce it.
+      </t-b>
+
+      <view-image
+        src="pictures/JavaScriptExecution.png"
+        alt="JavaScript execution engine diagram showing call stack, heap, task queue, microtask queue, and event loop"
+        width="32rem"
+        step-px="60">
+        Fig 2.0 - JavaScript Execution Engine
+      </view-image>
+
+      <a id="callstack"></a>
+      <h3>2.1  Call Stack</h3>
+      <t-b>
+        When a function is called, the engine creates an <strong>execution context</strong>
+        and pushes it onto the call stack. The context holds the function's local variables,
+        its <c-s>this</c-s> binding, and a reference to the outer lexical environment (scope
+        chain). When the function returns the context is popped off.
+      </t-b>
+      <pre><code class="language-javascript">function outer() {
+  console.log('outer start');
+  inner();
+  console.log('outer end');
+}
+function inner() {
+  console.trace();   // call stack: inner → outer → (anonymous)
+}
+outer();
+// call stack at console.trace():
+//   inner           &larr; top
+//   outer
+//   (anonymous)     &larr; script root</code></pre>
+      <t-b>
+        Each frame on the stack is independent. Variables in one frame are not visible to
+        callers. Closures capture a reference to the outer lexical environment, not a copy
+        of its values, so they see mutations:
+      </t-b>
+      <pre><code class="language-javascript">function makeCounter() {
+  let n = 0;
+  return () => ++n;   // closure captures `n` by reference
+}
+const inc = makeCounter();
+console.log(inc()); // 1
+console.log(inc()); // 2</code></pre>
+      <t-b>
+        If the call stack grows too deep - typically from unbounded recursion - the engine
+        throws a <c-s>RangeError: Maximum call stack size exceeded</c-s>.
+      </t-b>
+
+      <a id="heap"></a>
+      <h3>2.2  Heap</h3>
+      <t-b>
+        Objects, arrays, functions, and closures are allocated in an unstructured region of
+        memory called the <strong>heap</strong>. Stack variables hold references (pointers)
+        into the heap, not the values themselves.
+      </t-b>
+      <pre><code class="language-javascript">const a = { x: 1 };   // object allocated on heap; `a` is a reference
+const b = a;          // b points to the same object
+b.x = 99;
+console.log(a.x);     // 99 - same heap object
+
+// primitives are values, not references
+let p = 42;
+let q = p;
+q = 0;
+console.log(p);       // 42 - unaffected</code></pre>
+      <t-b>
+        The garbage collector reclaims heap memory when objects are no longer reachable from
+        any live root (call stack, global, or active closure). V8 uses a <strong>generational
+        collector</strong>: short-lived objects are collected frequently from "young space";
+        survivors are promoted to "old space" and swept less often. Most code never needs to
+        manage memory manually.
+      </t-b>
+
+      <a id="taskqueue"></a>
+      <h3>2.3  Task Queue</h3>
+      <t-b>
+        When an asynchronous operation completes - a timer fires, a fetch response arrives,
+        a user clicks a button - the browser places its callback on the <strong>task
+        queue</strong> (also called the event queue or message queue). The event loop picks
+        one task from the front of the queue only when the call stack is empty. Tasks run to
+        completion; no two tasks interleave.
+      </t-b>
+      <pre><code class="language-javascript">console.log('start');
+setTimeout(() => console.log('timer fires'), 0);   // callback queued as a task
+console.log('end');
+// output: start  end  timer fires
+// setTimeout callback runs only after the current synchronous script finishes</code></pre>
+      <t-b>
+        Sources of tasks: <c-s>setTimeout</c-s>, <c-s>setInterval</c-s>, I/O callbacks,
+        UI events (click, keydown, …), <c-s>postMessage</c-s>, and <c-s>MessageChannel</c-s>.
+      </t-b>
+
+      <a id="microtasks"></a>
+      <h3>2.4  Microtask Queue</h3>
+      <t-b>
+        Promise callbacks (<c-s>.then</c-s>, <c-s>.catch</c-s>, <c-s>.finally</c-s>) and
+        <c-s>queueMicrotask()</c-s> callbacks go into the <strong>microtask queue</strong>,
+        which has higher priority than the task queue. After every task - including the
+        initial script evaluation - the engine drains the <em>entire</em> microtask queue
+        before picking the next task.
+      </t-b>
+      <pre><code class="language-javascript">console.log('1 - sync');
+Promise.resolve().then(() => console.log('3 - microtask'));
+setTimeout(()         => console.log('4 - task'), 0);
+console.log('2 - sync');
+// output: 1 - sync   2 - sync   3 - microtask   4 - task</code></pre>
+      <t-b>
+        Microtasks queued inside a microtask handler run in the same drain pass - before any
+        pending task. A loop that enqueues microtasks indefinitely will starve the task queue
+        and freeze the UI.
+      </t-b>
+      <pre><code class="language-javascript">// execution order with nested microtasks
+Promise.resolve()
+  .then(() => {
+    console.log('A');
+    return Promise.resolve('B');   // adds another microtask
+  })
+  .then(v => console.log(v));      // B runs before any task
+setTimeout(() => console.log('C'), 0);
+// output: A  B  C</code></pre>
+
+      <a id="eventloop"></a>
+      <h3>2.5  The Event Loop</h3>
+      <t-b>
+        The event loop algorithm runs continuously:
+      </t-b>
+      <t-b class="indent">
+        <ol class="tight">
+          <li>Run the current task to completion (call stack empties).</li>
+          <li>Drain the microtask queue - run all microtasks, including any enqueued during this step.</li>
+          <li>Render - the browser may update the display here (paint, layout).</li>
+          <li>Pick the next task from the task queue and go to step 1.</li>
+        </ol>
+      </t-b>
+      <pre><code class="language-javascript">// complete ordering example
+console.log('1');                          // sync - runs in current task
+
+queueMicrotask(() => console.log('3'));    // microtask queue
+
+Promise.resolve()
+  .then(() => console.log('4'))            // microtask queue
+  .then(() => console.log('5'));           // queued during drain
+
+setTimeout(() => console.log('6'), 0);    // task queue
+
+console.log('2');                          // sync - still in current task
+
+// output: 1  2  3  4  5  6</code></pre>
+      <t-b>
+        The practical implication: keep synchronous event handlers short. Any long-running
+        synchronous computation blocks steps 2-4 - no microtasks drain, no render occurs,
+        no other events fire - until it finishes.
+      </t-b>
+
+      <a id="workers"></a>
+      <h3>2.6  Web Workers</h3>
+      <t-b>
+        A <strong>Web Worker</strong> runs JavaScript on a separate OS thread with its own
+        call stack, heap, task queue, and event loop. Workers cannot access the DOM or
+        <c-s>window</c-s>. Communication with the main thread uses <c-s>postMessage</c-s>,
+        which places a task on the receiver's queue.
+      </t-b>
+      <pre><code class="language-javascript">// main.js
+const worker = new Worker('worker.js');
+
+worker.postMessage({ kind: 'sum', data: [1, 2, 3, 4, 5] });
+
+worker.addEventListener('message', e => {
+  console.log('result:', e.data);   // result: 15
+});</code></pre>
+      <pre><code class="language-javascript">// worker.js
+self.addEventListener('message', e => {
+  if (e.data.kind === 'sum') {
+    const result = e.data.data.reduce((a, b) => a + b, 0);
+    self.postMessage(result);
+  }
+});</code></pre>
+      <t-b>
+        Worker types:
+      </t-b>
+      <t-b class="indent">
+        <ul class="tight">
+          <li>
+            <strong>Worker</strong> (dedicated) - one worker, one owner page.
+          </li>
+          <li>
+            <strong>SharedWorker</strong> - shared across tabs and pages from the same origin.
+          </li>
+          <li>
+            <strong>ServiceWorker</strong> - intercepts network requests, enables offline
+            caching and push notifications. Registered once, survives page reload.
+          </li>
+        </ul>
+      </t-b>
+      <pre><code class="language-javascript">// registering a service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js')
+    .then(reg => console.log('SW registered:', reg.scope))
+    .catch(err => console.error('SW registration failed:', err));
+}</code></pre>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#overview">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#callstack">call stack</a></menu-elem>
+        <menu-elem class="secElem"><a href="#heap">heap</a></menu-elem>
+        <menu-elem class="secElem"><a href="#taskqueue">task queue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#microtasks">microtasks</a></menu-elem>
+        <menu-elem class="secElem"><a href="#eventloop">event loop</a></menu-elem>
+        <menu-elem class="secElem"><a href="#workers">workers</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/JsStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>
