@@ -89,12 +89,12 @@
     <div class="indent">
       <a id="proto"></a>
       <h3>3.0  The Prototype Model</h3>
-      <t-b>
+      <tm-b>
         Every JavaScript object has an internal link to another object called its
         <strong>prototype</strong>. When you access a property that doesn't exist on the
         object itself, the engine walks up the prototype chain until it finds the property
         or reaches <c-s>null</c-s>.
-      </t-b>
+      </tm-b>
       <pre><code class="language-javascript">const animal = {
   speak() { return `${this.name} makes a noise.`; }
 };
@@ -104,11 +104,11 @@ dog.name = 'Rex';
 
 console.log(dog.speak());            // Rex makes a noise.
 console.log(Object.getPrototypeOf(dog) === animal);   // true</code></pre>
-      <t-b>
+      <tm-b>
         ES2015 class syntax wraps the same mechanism. A class definition creates a constructor
         function and attaches methods to its <c-s>prototype</c-s> object. The <c-s>extends</c-s>
         keyword sets up the prototype chain between two constructor functions.
-      </t-b>
+      </tm-b>
       <pre><code class="language-javascript">class Animal {
   constructor(name) { this.name = name; }
   speak() { return `${this.name} makes a noise.`; }
@@ -122,6 +122,67 @@ const d = new Dog('Rex');
 console.log(d.speak());                      // Rex makes a noise. Woof!
 console.log(d instanceof Dog);               // true
 console.log(d instanceof Animal);            // true - chain includes Animal</code></pre>
+      <tm-b>
+        The same chain structure applies to browser built-ins. A DOM element's prototype chain
+        runs through five levels before reaching <c-s>Object.prototype</c-s>:
+      </tm-b>
+      <pre><code class="language-javascript">const btn = document.querySelector('button');
+
+// walk the prototype chain manually
+let proto = Object.getPrototypeOf(btn);
+while (proto) {
+  console.log(proto.constructor.name);
+  proto = Object.getPrototypeOf(proto);
+}
+// HTMLButtonElement
+// HTMLElement
+// Element
+// Node
+// EventTarget
+// Object
+
+// instanceof confirms every level
+console.log(btn instanceof HTMLButtonElement);  // true
+console.log(btn instanceof HTMLElement);        // true
+console.log(btn instanceof Element);            // true
+console.log(btn instanceof Node);              // true
+console.log(btn instanceof EventTarget);        // true</code></pre>
+      <tm-b>
+        The equivalent class hierarchy in JavaScript - this is how the browser engine defines
+        these built-in types internally:
+      </tm-b>
+      <pre><code class="language-javascript">class EventTarget {
+  addEventListener(type, fn, opts) { /* ... */ }
+  removeEventListener(type, fn)    { /* ... */ }
+  dispatchEvent(event)             { /* ... */ }
+}
+
+class Node extends EventTarget {
+  // parentNode, childNodes, textContent, cloneNode, ...
+}
+
+class Element extends Node {
+  // querySelector, setAttribute, classList, innerHTML, ...
+}
+
+class HTMLElement extends Element {
+  // style, dataset, offsetWidth, focus, click, ...
+}
+
+// Each HTML tag has its own subclass adding tag-specific members:
+class HTMLButtonElement extends HTMLElement {
+  // type, disabled, form, value, ...
+}
+
+class HTMLInputElement extends HTMLElement {
+  // type, value, checked, validity, ...
+}
+
+// Custom elements follow exactly the same pattern:
+class MyWidget extends HTMLElement {
+  connectedCallback()    { /* runs when added to DOM */ }
+  disconnectedCallback() { /* runs when removed from DOM */ }
+}</code></pre>
 
       <a id="object-api"></a>
       <h3>3.1  JavaScript Object API</h3>
