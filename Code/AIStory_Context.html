@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  AIStory_Context.html - AI Story Chapter 12
+-->
+<head>
+  <title>AI Story: Context</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    AIStory_Context.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 06/05/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">AI Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Story: Context</h2>
+        <h4 class="indent" id="subtitle">context levels, instruction files, commands, settings, output steering</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="context"></a>
+      <h3>12. &nbsp;Context</h3>
+      <t-b>
+        Claude Code reads context from multiple sources before responding to any request.
+        Understanding which files it reads, what it writes, how to control scope, and how
+        to phrase requests lets you get precise, reliable output without repeated correction.
+        This chapter covers the full context and configuration system.
+      </t-b>
+
+      <a id="levels"></a>
+      <h4>12.1 &nbsp;Context Levels</h4>
+      <t-b>
+        Claude Code loads instructions from up to four levels, applied in order of
+        increasing specificity. More specific always wins.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <b>User (global)</b> - <code>~/.claude/CLAUDE.md</code>.
+            Loaded once at startup, applies to every project. Put response style, code
+            conventions, and git rules here - anything that should be consistent across
+            all work.
+          </li>
+          <li>
+            <b>Project</b> - <code>&lt;repo-root&gt;/CLAUDE.md</code>.
+            Loaded when Claude Code opens a git repository. Covers architecture, tech stack,
+            build commands, key conventions, and entry points for that codebase. Applies to
+            all files unless a subfolder overrides it.
+          </li>
+          <li>
+            <b>Folder</b> - <code>&lt;subdirectory&gt;/CLAUDE.md</code>.
+            Loaded when work enters that directory. Narrows or overrides the project-level
+            instructions for a subtree - useful when a subproject has distinct conventions
+            (for example, a Python agent directory with different run commands or style rules).
+          </li>
+          <li>
+            <b>File</b> - active file contents or IDE selection.
+            Read per-request. The most specific context; drives the immediate task.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        <b>Precedence:</b> file &gt; folder &gt; project &gt; user.
+      </t-b>
+      <t-b>
+        Memory (<code>~/.claude/projects/&lt;slug&gt;/memory/</code>) is separate from
+        CLAUDE.md. It persists facts Claude learns across conversations.
+        <code>settings.json</code> is separate still - it configures harness behavior
+        (permissions, plugins), not instruction context.
+      </t-b>
+
+      <a id="files"></a>
+      <h4>12.2 &nbsp;Local Files Claude Writes</h4>
+      <t-b>
+        All context management is local. Your prompt and code are sent to Anthropic
+        servers for inference, but settings, memory, and CLAUDE.md never leave your machine.
+      </t-b>
+      <t-b>
+        <table>
+          <tr><th class="darkItem">File</th><th class="darkItem">Who writes it</th><th class="darkItem">Where</th></tr>
+          <tr>
+            <td class="lightItem"><code>settings.json</code></td>
+            <td class="lightItem">User / harness</td>
+            <td class="lightItem"><code>~/.claude/</code> or <code>.claude/</code></td>
+          </tr>
+          <tr>
+            <td class="lightItem"><code>CLAUDE.md</code></td>
+            <td class="lightItem">You</td>
+            <td class="lightItem"><code>~/.claude/</code>, repo root, or subdirs</td>
+          </tr>
+          <tr>
+            <td class="lightItem"><code>CLAUDE.local.md</code></td>
+            <td class="lightItem">You</td>
+            <td class="lightItem">Project root (gitignored, personal)</td>
+          </tr>
+          <tr>
+            <td class="lightItem"><code>MEMORY.md</code></td>
+            <td class="lightItem"><b>Claude</b></td>
+            <td class="lightItem"><code>~/.claude/projects/&lt;slug&gt;/memory/</code></td>
+          </tr>
+          <tr>
+            <td class="lightItem"><code>.claude.json</code></td>
+            <td class="lightItem">Harness</td>
+            <td class="lightItem"><code>~/</code> (OAuth, MCP configs, caches)</td>
+          </tr>
+        </table>
+      </t-b>
+      <t-b>
+        MEMORY.md is written by Claude during sessions as it learns preferences, not
+        by the harness. Only the first 200 lines load at session start; Claude creates
+        additional topic files in the same folder as needed.
+      </t-b>
+
+      <a id="instructions"></a>
+      <h4>12.3 &nbsp;Instruction Files</h4>
+      <t-b>
+        Only <code>CLAUDE.md</code> is formally recognized - loaded automatically at startup.
+        Everything else is user-created convention, read on request rather than automatically.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <b><code>CLAUDE.md</code></b> - the one file Claude Code reads at startup.
+            Put build commands, architecture notes, and conventions here.
+          </li>
+          <li>
+            <b><code>CLAUDE.local.md</code></b> - project-local personal notes (gitignored);
+            for things you don&rsquo;t want committed.
+          </li>
+          <li>
+            <b><code>AGENTS.md</code></b> - if your repo already has this for other AI tools,
+            reference it inside CLAUDE.md with <code>@AGENTS.md</code> so both tools share the
+            same instructions.
+          </li>
+          <li>
+            <b><code>Constitution.md</code></b> - a user convention (not recognized by Claude Code)
+            for capturing values, constraints, or principles; ask Claude to read it explicitly when needed.
+          </li>
+          <li>
+            <b><code>Spec.md</code>, <code>CONVENTIONS.md</code>, <code>Notes.md</code></b> - plain
+            docs Claude won&rsquo;t load automatically but can read on request.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        The practical pattern: put anything you want Claude to always know in CLAUDE.md. Put
+        reference material Claude should read on demand in separate files and ask it to read
+        them when relevant.
+      </t-b>
+      <t-b>
+        The three CLAUDE.md levels map directly to content scope:
+        <ul class="tight">
+          <li><b>User</b> <code>~/.claude/CLAUDE.md</code> - universal content: response style, code conventions, git rules that apply everywhere.</li>
+          <li><b>Project</b> <code>&lt;repo-root&gt;/CLAUDE.md</code> - project content: architecture, tech stack, build commands, entry points.</li>
+          <li><b>Folder</b> <code>&lt;subdir&gt;/CLAUDE.md</code> - folder content: overrides for a subtree with distinct conventions.</li>
+        </ul>
+      </t-b>
+
+      <a id="controlling"></a>
+      <h4>12.4 &nbsp;Controlling What Claude Sees</h4>
+      <t-b>
+        Claude accesses your full project directory, git state, terminal environment, and
+        CLAUDE.md instructions. Control scope with:
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><code>@filename</code> - mention a file to add it to context.</li>
+          <li><code>/add-dir</code> - give Claude permanent access to additional directories.</li>
+          <li><b>IDE selection</b> - highlight code and Claude reads it.</li>
+          <li><b>CLAUDE.md</b> - persistent instructions load at every session start (first 25 KB / 200 lines).</li>
+          <li><b>Auto memory</b> - Claude saves learnings to <code>~/.claude/projects/.../MEMORY.md</code>, loaded each session.</li>
+          <li><code>/context</code> - shows what is consuming context window space.</li>
+          <li><code>/compact</code> - summarizes conversation to free context when it fills.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Use plan mode (<code>Shift+Tab</code>) for read-only context gathering before edits.
+      </t-b>
+
+      <a id="models"></a>
+      <h4>12.5 &nbsp;Models and Effort</h4>
+      <t-b>
+        Switch models during a session with <code>/model</code> (opens a picker) or
+        <code>/model &lt;name&gt;</code> (direct). At startup use <code>claude --model opus</code>,
+        or set <code>ANTHROPIC_MODEL=opus</code> as an environment variable, or add
+        <code>"model": "opus"</code> to <code>~/.claude/settings.json</code>.
+      </t-b>
+      <t-b>
+        Available aliases (resolve to latest versions):
+        <ul class="tight">
+          <li><code>sonnet</code>, <code>opus</code>, <code>haiku</code> - latest stable releases.</li>
+          <li><code>opus[1m]</code>, <code>sonnet[1m]</code> - 1M token context windows.</li>
+          <li>Default varies by plan: Opus on Max/Team/Enterprise, Sonnet on Pro.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Effort levels control reasoning depth. Set with <code>/effort</code> or the environment
+        variable <code>CLAUDE_CODE_EFFORT_LEVEL</code>. Levels: <code>low</code>,
+        <code>medium</code>, <code>high</code> (default), <code>xhigh</code>, <code>max</code>.
+      </t-b>
+
+      <a id="customize"></a>
+      <h4>12.6 &nbsp;Customization</h4>
+      <t-b>
+        Settings files use a hierarchical priority (lowest to highest):
+        <ol class="tight">
+          <li>User global: <code>~/.claude/settings.json</code></li>
+          <li>Team/project: <code>.claude/settings.json</code> (committed)</li>
+          <li>Local project: <code>.claude/settings.local.json</code> (gitignored)</li>
+          <li>Managed/MDM policies (enforced by IT)</li>
+        </ol>
+      </t-b>
+      <t-b>
+        Key customization points:
+        <ul class="tight">
+          <li><code>/config</code> - interactive UI for settings.</li>
+          <li><code>/keybindings</code> - edit <code>~/.claude/keybindings.json</code> to rebind keys.</li>
+          <li><code>/theme</code> - pick light/dark or create custom CSS overrides.</li>
+          <li><code>/memory</code> - refine CLAUDE.md instructions.</li>
+          <li><code>hooks</code> in settings - lifecycle scripts (pre/post command, on error, on complete).</li>
+          <li><code>permissions</code> - allow/ask/deny lists for tools and commands.</li>
+        </ul>
+      </t-b>
+
+      <a id="commands"></a>
+      <h4>12.7 &nbsp;Slash Commands</h4>
+      <t-b>
+        Only <code>CLAUDE.md</code> is formally recognized at startup. Slash commands control
+        session behavior interactively.
+      </t-b>
+      <t-b>
+        <table>
+          <tr><th class="darkItem">Command</th><th class="darkItem">Purpose</th></tr>
+          <tr><td class="lightItem"><code>/init</code></td><td class="lightItem">Generate a starter CLAUDE.md.</td></tr>
+          <tr><td class="lightItem"><code>/model</code></td><td class="lightItem">Switch models or open the picker.</td></tr>
+          <tr><td class="lightItem"><code>/effort</code></td><td class="lightItem">Adjust reasoning depth.</td></tr>
+          <tr><td class="lightItem"><code>/memory</code></td><td class="lightItem">Refine CLAUDE.md instructions.</td></tr>
+          <tr><td class="lightItem"><code>/context</code></td><td class="lightItem">Show context window usage.</td></tr>
+          <tr><td class="lightItem"><code>/compact</code></td><td class="lightItem">Summarize conversation to free context.</td></tr>
+          <tr><td class="lightItem"><code>/clear</code></td><td class="lightItem">Start a fresh session.</td></tr>
+          <tr><td class="lightItem"><code>/resume</code></td><td class="lightItem">Open session picker.</td></tr>
+          <tr><td class="lightItem"><code>/permissions</code></td><td class="lightItem">Adjust approval rules.</td></tr>
+          <tr><td class="lightItem"><code>/mcp</code></td><td class="lightItem">Configure MCP servers.</td></tr>
+          <tr><td class="lightItem"><code>/doctor</code></td><td class="lightItem">Diagnose configuration issues.</td></tr>
+          <tr><td class="lightItem"><code>/btw</code></td><td class="lightItem">Quick side question without bloating history.</td></tr>
+        </table>
+      </t-b>
+      <t-b>
+        Custom commands come from skills (<code>.claude/skills/</code>), MCP servers
+        (<code>.mcp.json</code>), and plugins installed via <code>/plugins</code>.
+        Type <code>/</code> to see the full filtered list.
+      </t-b>
+
+      <a id="settings"></a>
+      <h4>12.8 &nbsp;Settings Structure</h4>
+      <t-b>
+        A representative <code>settings.json</code>:
+      </t-b>
+      <pre><code class="language-json">{
+  "permissions": {
+    "allow": ["Bash(npm run *)", "Read(./src/**)"],
+    "ask":   ["Bash(git push)"],
+    "deny":  ["Bash(rm -rf *)", "Read(./.env)"]
+  },
+  "env":   { "NODE_ENV": "development" },
+  "model": "opus",
+  "hooks": {
+    "onPreCommand": "echo 'Starting...'",
+    "onComplete":   "echo 'Done'"
+  },
+  "autoMemoryEnabled": true,
+  "editorMode": "vim"
+}</code></pre>
+      <t-b>
+        Scope precedence (highest to lowest): managed policies, CLI flags, local project,
+        team/project, user global. Permissions merge across scopes rather than override -
+        managed policies can tighten but not loosen lower-level rules. Use glob patterns
+        for specificity: <code>Bash(curl *)</code>, <code>Read(~/.env)</code>.
+      </t-b>
+      <t-b>
+        Changes to <code>permissions</code>, <code>hooks</code>, <code>env</code>, and
+        <code>theme</code> reload immediately. Changes to <code>model</code> and
+        <code>outputStyle</code> require a restart.
+      </t-b>
+
+      <a id="steering"></a>
+      <h4>12.9 &nbsp;Phrases to Steer Output</h4>
+      <t-b>
+        Prompt phrasing directly shapes the form and quality of Claude&rsquo;s response.
+        Specificity beats vagueness: "Return only the function signature, no body, no
+        explanation" outperforms "be brief." Combining a scope phrase with a format phrase
+        gives the tightest control.
+      </t-b>
+      <t-b>
+        <b>Reasoning depth</b>
+        <ul class="tight">
+          <li>"Think carefully before answering"</li>
+          <li>"Think step by step" / "Work through this methodically"</li>
+          <li>"Reason through this out loud"</li>
+          <li>"Show your reasoning"</li>
+        </ul>
+      </t-b>
+      <t-b>
+        <b>Confidence and speculation</b>
+        <ul class="tight">
+          <li>"Do not speculate - return only what you know"</li>
+          <li>"If you&rsquo;re uncertain, say so explicitly"</li>
+          <li>"Flag any assumptions you&rsquo;re making"</li>
+          <li>"If you don&rsquo;t know, say &lsquo;I don&rsquo;t know&rsquo; rather than guessing"</li>
+          <li>"Return facts, not opinions"</li>
+          <li>"Do not infer - report only what is stated"</li>
+        </ul>
+      </t-b>
+      <t-b>
+        <b>Scope and completeness</b>
+        <ul class="tight">
+          <li>"Be exhaustive" / "Cover all cases"</li>
+          <li>"Answer only the question asked - nothing more"</li>
+          <li>"Do not omit edge cases"</li>
+          <li>"Include everything relevant, leave out everything that isn&rsquo;t"</li>
+        </ul>
+      </t-b>
+      <t-b>
+        <b>Format and length</b>
+        <ul class="tight">
+          <li>"Be concise" / "Be brief" / "In one sentence"</li>
+          <li>"Use bullet points" / "Use a table" / "Use numbered steps"</li>
+          <li>"No preamble - start with the answer"</li>
+          <li>"No trailing summary"</li>
+          <li>"Return only the code, no explanation"</li>
+          <li>"Follow this format exactly: ..."</li>
+        </ul>
+      </t-b>
+      <t-b>
+        <b>Directness and hedging</b>
+        <ul class="tight">
+          <li>"Give a single recommendation, not options"</li>
+          <li>"No caveats unless they materially change the answer"</li>
+          <li>"Don&rsquo;t hedge - commit to an answer"</li>
+          <li>"Skip the pleasantries"</li>
+        </ul>
+      </t-b>
+      <t-b>
+        <b>Tone and audience</b>
+        <ul class="tight">
+          <li>"Write for an expert audience" / "Write for a beginner"</li>
+          <li>"Use active voice"</li>
+          <li>"No jargon" / "Use technical terminology"</li>
+          <li>"Write in my voice" (after showing examples)</li>
+        </ul>
+      </t-b>
+      <t-b>
+        <b>Role and perspective</b>
+        <ul class="tight">
+          <li>"Act as a senior software engineer"</li>
+          <li>"You are an expert in X"</li>
+          <li>"From the perspective of a security auditor..."</li>
+          <li>"As a skeptic, identify weaknesses in..."</li>
+        </ul>
+      </t-b>
+      <t-b>
+        <b>Verification</b>
+        <ul class="tight">
+          <li>"Double-check your answer before responding"</li>
+          <li>"Check for edge cases"</li>
+          <li>"Are there any counterexamples?"</li>
+          <li>"What might be wrong with that answer?"</li>
+          <li>"Play devil&rsquo;s advocate"</li>
+        </ul>
+      </t-b>
+      <t-b>
+        <b>Constraint on approach</b>
+        <ul class="tight">
+          <li>"Without using X"</li>
+          <li>"Using only standard library"</li>
+          <li>"Without modifying Y"</li>
+          <li>"Preserve existing behavior"</li>
+        </ul>
+      </t-b>
+
+      <a id="refs"></a>
+      <h4>12.10 &nbsp;References</h4>
+      <table>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/claude-code/overview">Claude Code Docs</a>
+          </td>
+          <td class="lightItem">Official Claude Code documentation covering all features.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/claude-code/settings">Settings Reference</a>
+          </td>
+          <td class="lightItem">Full settings.json schema, scope rules, and permission patterns.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.anthropic.com/en/docs/claude-code/memory">Memory and CLAUDE.md</a>
+          </td>
+          <td class="lightItem">How auto memory works and how to structure CLAUDE.md files.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><a href="AIStory_Prologue.html">Back to Prologue</a></td>
+          <td class="lightItem">Return to the chapter index.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#context">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#levels">context levels</a></menu-elem>
+        <menu-elem class="secElem"><a href="#files">local files</a></menu-elem>
+        <menu-elem class="secElem"><a href="#instructions">instruction files</a></menu-elem>
+        <menu-elem class="secElem"><a href="#controlling">controlling context</a></menu-elem>
+        <menu-elem class="secElem"><a href="#models">models and effort</a></menu-elem>
+        <menu-elem class="secElem"><a href="#customize">customization</a></menu-elem>
+        <menu-elem class="secElem"><a href="#commands">slash commands</a></menu-elem>
+        <menu-elem class="secElem"><a href="#settings">settings</a></menu-elem>
+        <menu-elem class="secElem"><a href="#steering">steering output</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/AIStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 12, 10);
+  </script>
+</body>
+</html>

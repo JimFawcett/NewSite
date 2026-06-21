@@ -22,6 +22,7 @@ function buildPages() {
       <a href='AIStory_Tools.html'>Chap 9 - Tool Use</a>\
       <a href='AIStory_Agents.html'>Chap 10 - Agents</a>\
       <a href='AIStory_Reliability.html'>Chap 11 - Reliability</a>\
+      <a href='AIStory_Context.html'>Chap 12 - Context</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
