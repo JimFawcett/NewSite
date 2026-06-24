@@ -21,6 +21,8 @@ function buildPages() {
         <a href='CodeBites_AI_Links.html'>AI Links</a>\
         <a href='CodeBites_LLM_API.html'>LLM API</a>\
         <a href='CodeBites_AgenticAI.html'>agentic AI</a>\
+        <a href='CodeBites_ChatBotPrototype.html'>chat bot prototype</a>\
+        <a href='CodeBites_AgentAIPrototype.html'>agent AI prototype</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }

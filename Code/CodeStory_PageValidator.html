@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  CodeStory_PageValidator.html - Code Story Chapter 11
+-->
+<head>
+  <title>Code Story: PageValidator Project</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CodeStory_PageValidator.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 06/24/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Code Story: PageValidator Project</h2>
+        <h4 class="indent" id="subtitle">architecture, CLI, four-language comparison, eight rules</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="pagevalidator"></a>
+      <h3>11. &nbsp;PageValidator Project</h3>
+      <t-b>
+        PageValidator checks HTML files for structural correctness.  Four implementations &mdash;
+        Rust, C++, C#, and Python &mdash; share the same four-component pipeline architecture,
+        identical validation rules, and a uniform command-line interface, making the project a
+        controlled cross-language comparison.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Why PageValidator is useful for language comparison</summary>
+          <t-b class="indent">
+            <ol class="tight">
+              <li>
+                The workload is CPU-bound character parsing, not I/O-bound regex scanning.
+                That reverses the language-ranking from TextFinder and makes the performance
+                story interesting in a different way.
+              </li>
+              <li>
+                All four variants produce identical pass/fail reports, so correctness is easy
+                to verify by diffing output against a reference run.
+              </li>
+              <li>
+                The four-stage pipeline (Tokenizer &rarr; Lexer &rarr; Validator &rarr; EntryPoint)
+                maps cleanly onto different language idioms &mdash; <code>enum</code> /
+                <code>std::variant</code> / <code>abstract record</code> / base-class hierarchy
+                &mdash; for the same logical type.
+              </li>
+              <li>
+                The spec-driven workflow (Constitution.md, Structure.md, Spec.md) was used
+                to build each variant, so you can compare how the same spec translates
+                into different language idioms.
+              </li>
+            </ol>
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <a id="architecture"></a>
+      <h4>11.1 &nbsp;Architecture</h4>
+      <t-b>
+        Each implementation is a four-component pipeline with a strictly linear dependency chain.
+        No component depends on anything to its right; the three library components use only
+        the language's standard library.
+      </t-b>
+<pre><code class="language-text">Tokenizer &lt;-- Lexer &lt;-- Validator &lt;-- EntryPoint
+</code></pre>
+      <t-b>
+        <ul class="tight">
+          <li><strong>Tokenizer</strong> &mdash; reads raw HTML source and emits a flat stream of coarse tokens.  Knows only <code>&lt;</code>, <code>&gt;</code>, <code>=</code>, <code>"</code>, <code>'</code>, <code>!</code>, <code>/</code>, <code>-</code>.  No HTML grammar.</li>
+          <li><strong>Lexer</strong> &mdash; consumes the token stream and groups tokens into structured lexemes (open tags, close tags, attributes, text, comments, doctype) with source positions.  Lowercases all tag names.</li>
+          <li><strong>Validator</strong> &mdash; drives the lexer, maintains an open-tag stack, applies the eight structural rules, and returns a report containing every error found.  Never short-circuits.</li>
+          <li><strong>EntryPoint</strong> &mdash; parses command-line flags, iterates HTML files, calls the Validator, and prints a human-readable pass/fail report.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        The Rust variant expresses each pipeline stage as a public struct behind a thin
+        <code>lib.rs</code> facade.  The Validator's core loop is a single match over
+        incoming Lexemes:
+      </t-b>
+<pre><code class="language-rust">pub struct ValidationError {
+    pub rule: &'static str,
+    pub message: String,
+    pub line: usize,
+    pub col: usize,
+}
+
+pub struct Report {
+    pub file: PathBuf,
+    pub errors: Vec&lt;ValidationError&gt;,
+}
+
+impl Report {
+    pub fn is_valid(&self) -> bool { self.errors.is_empty() }
+}</code></pre>
+
+      <a id="cli"></a>
+      <h4>11.2 &nbsp;Command-Line Interface</h4>
+      <t-b>
+        All four implementations share the same flags and output format.
+        The tool accepts one or more paths; directories are walked recursively
+        only when <code>-r</code> is supplied.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:14rem;" />
+          <col style="width:34rem;" />
+          <col style="width:6rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Option</th>
+          <th class="darkItem">Meaning</th>
+          <th class="darkItem">Default</th>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>&lt;path&gt;...</code></td>
+          <td class="lightItem">One or more HTML files or directories to validate</td>
+          <td class="lightItem"><em>(required)</em></td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>-r, --recursive</code></td>
+          <td class="lightItem">Descend into subdirectories</td>
+          <td class="lightItem">off</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>-q, --quiet</code></td>
+          <td class="lightItem">Print only files with errors; suppress PASS lines</td>
+          <td class="lightItem">off</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>-s, --summary</code></td>
+          <td class="lightItem">Append a pass/fail count after all files are processed</td>
+          <td class="lightItem">off</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>-h, --help</code></td>
+          <td class="lightItem">Print help and exit</td>
+          <td class="lightItem">off</td>
+        </tr>
+      </table>
+      <t-b>
+        Example &mdash; validate an entire site tree, suppress PASS lines, print a count:
+      </t-b>
+<pre><code class="language-bash">rs_page_validator -r -q -s ./site</code></pre>
+      <t-b>
+        Output format &mdash; each file is reported as <code>PASS</code> or <code>FAIL</code>;
+        failing files list every violation with rule name, line, and column:
+      </t-b>
+<pre><code class="language-text">PASS  site/index.html
+FAIL  site/about.html
+      [tag-nesting] 14:3 -- &lt;/div&gt; does not match open &lt;p&gt;
+      [attr-quotes] 22:9 -- attribute 'class' value 'hero' is not quoted
+PASS  site/contact.html
+
+2 passed, 1 failed</code></pre>
+
+      <a id="skiplists"></a>
+      <h4>11.3 &nbsp;Skip Lists</h4>
+      <t-b>
+        EntryPoint in every variant skips a hard-coded set of directory names during recursive
+        traversal.  Entries are matched against the bare directory name, so a <code>target</code>
+        folder at any depth is skipped regardless of where it appears.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:11rem;" />
+          <col style="width:42rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Category</th>
+          <th class="darkItem">Skipped directory names</th>
+        </tr>
+        <tr>
+          <td class="lightItem">Build artifacts</td>
+          <td class="lightItem"><code>bin</code>, <code>obj</code> (C#); <code>target</code> (Rust); <code>build</code>, <code>out</code> (C++)</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Python</td>
+          <td class="lightItem"><code>__pycache__</code>, <code>.venv</code>, <code>venv</code>, <code>dist</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">VCS / IDE</td>
+          <td class="lightItem"><code>.git</code>, <code>.vs</code>, <code>.idea</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">Archives</td>
+          <td class="lightItem"><code>archive</code></td>
+        </tr>
+      </table>
+
+      <a id="rules"></a>
+      <h4>11.4 &nbsp;Validation Rules</h4>
+      <t-b>
+        The Validator applies eight rules in a single pass over the lexeme stream.
+        All violations are collected before the report is returned &mdash; the
+        Validator never aborts early on the first error.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:14rem;" />
+          <col style="width:42rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Rule</th>
+          <th class="darkItem">What is checked</th>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>doctype</code></td>
+          <td class="lightItem">Document begins with <code>&lt;!DOCTYPE html&gt;</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>root-element</code></td>
+          <td class="lightItem">Exactly one <code>&lt;html&gt;</code> element wraps the entire document</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>head-required</code></td>
+          <td class="lightItem"><code>&lt;head&gt;</code> is present and contains at least one <code>&lt;title&gt;</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>body-required</code></td>
+          <td class="lightItem"><code>&lt;body&gt;</code> element is present</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>tag-nesting</code></td>
+          <td class="lightItem">Every open tag has a matching close tag in the correct stack order</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>void-elements</code></td>
+          <td class="lightItem">Void elements (<code>br</code>, <code>hr</code>, <code>img</code>, <code>input</code>, <code>link</code>, <code>meta</code>, &hellip;) carry no close tag</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>attr-quotes</code></td>
+          <td class="lightItem">All attribute values are enclosed in single or double quotes</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>duplicate-id</code></td>
+          <td class="lightItem">The <code>id</code> attribute value is unique within the document</td>
+        </tr>
+      </table>
+
+      <a id="implementations"></a>
+      <h4>11.5 &nbsp;Language Implementations</h4>
+      <table>
+        <colgroup>
+          <col style="width:13rem;" />
+          <col style="width:14rem;" />
+          <col style="width:16rem;" />
+          <col style="width:22rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Project</th>
+          <th class="darkItem">Language</th>
+          <th class="darkItem">Build tool</th>
+          <th class="darkItem">Entry point</th>
+        </tr>
+        <tr>
+          <td class="lightItem">CppPageValidator</td>
+          <td class="lightItem">C++23 (named modules)</td>
+          <td class="lightItem">CMake 3.28+ / MSVC or Clang</td>
+          <td class="lightItem"><code>build\entry_point\Release\page_validator</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">CsPageValidator</td>
+          <td class="lightItem">C# 12 / .NET 10</td>
+          <td class="lightItem">dotnet SDK</td>
+          <td class="lightItem"><code>dotnet run --project EntryPoint --</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">PyPageValidator</td>
+          <td class="lightItem">Python 3.10+</td>
+          <td class="lightItem">none (run directly)</td>
+          <td class="lightItem"><code>python EntryPoint/page_validator.py</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">rs_page_validator</td>
+          <td class="lightItem">Rust 2021 (Cargo workspace)</td>
+          <td class="lightItem">cargo</td>
+          <td class="lightItem"><code>cargo run --</code> from <code>rs_page_validator/</code></td>
+        </tr>
+      </table>
+      <t-b>
+        Each project also carries a <code>generate_part.py</code> script that calls the
+        Claude API to regenerate any component from its <code>Spec.md</code>:
+      </t-b>
+<pre><code class="language-bash">python generate_part.py Tokenizer
+python generate_part.py Lexer
+python generate_part.py Validator
+python generate_part.py EntryPoint</code></pre>
+
+      <a id="performance"></a>
+      <h4>11.6 &nbsp;Performance</h4>
+      <t-b>
+        Timings from <code>pa_timer.py</code> against the full NewSite HTML tree.
+        20 timed runs per validator; first run discarded as warm-up.
+        Median = average of the 10th and 11th sorted values.
+        664 files visited; 425 fail at least one rule.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:14rem;" />
+          <col style="width:7rem;" />
+          <col style="width:7rem;" />
+          <col style="width:7rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Validator</th>
+          <th class="darkItem">Min (s)</th>
+          <th class="darkItem">Median (s)</th>
+          <th class="darkItem">Max (s)</th>
+        </tr>
+        <tr>
+          <td class="lightItem">CppPageValidator</td>
+          <td class="lightItem">0.521</td>
+          <td class="lightItem">0.645</td>
+          <td class="lightItem">2.729</td>
+        </tr>
+        <tr>
+          <td class="lightItem">rs_page_validator</td>
+          <td class="lightItem">0.901</td>
+          <td class="lightItem">0.936</td>
+          <td class="lightItem">1.972</td>
+        </tr>
+        <tr>
+          <td class="lightItem">CsPageValidator</td>
+          <td class="lightItem">1.127</td>
+          <td class="lightItem">1.290</td>
+          <td class="lightItem">1.538</td>
+        </tr>
+        <tr>
+          <td class="lightItem">PyPageValidator</td>
+          <td class="lightItem">2.766</td>
+          <td class="lightItem">2.846</td>
+          <td class="lightItem">3.029</td>
+        </tr>
+      </table>
+      <t-b>
+        All four agree on 664 files and 425 failures, confirming behavioral equivalence.
+        The C++ max outlier (2.729&nbsp;s) reflects an OS scheduling interrupt during that
+        run; the median is representative of steady-state cost.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Why the ranking reverses from TextFinder</summary>
+          <t-b class="indent">
+            <ul class="tight">
+              <li>
+                <strong>The workload is CPU-bound, not I/O-bound.</strong>
+                TextFinder reads large source files and runs a regex engine; most time is
+                spent in OS calls.  PageValidator reads small HTML files and runs a
+                character-by-character tokenizer; most time is spent executing the
+                parser logic itself.  That shifts the bottleneck from the kernel to
+                the language runtime.
+              </li>
+              <li>
+                <strong>C++ wins because there is no regex tax.</strong>
+                The tokenizer scans one character at a time with no regular expressions,
+                so the NFA penalty that hurt C++ in TextFinder does not apply here.
+                MSVC's optimizer inlines the four pipeline stages aggressively, and
+                <code>std::variant</code> dispatch is resolved at compile time.
+              </li>
+              <li>
+                <strong>Rust is close but slightly behind C++.</strong>
+                The four-crate compilation boundary limits cross-crate inlining compared
+                to C++'s single-TU build.  The Rust validator is otherwise equivalent
+                in algorithm to the C++ version.
+              </li>
+              <li>
+                <strong>C# pays .NET startup cost.</strong>
+                The runtime and JIT spin up before the first file is touched, consuming
+                a large fraction of elapsed time for this short-running tool.
+                Steady-state throughput after warmup is comparable to Rust.
+              </li>
+              <li>
+                <strong>Python is slowest because the hot path is pure Python.</strong>
+                TextFinder's hot path was C extension calls (<code>os.scandir</code>,
+                <code>re.search</code>).  Here the hot path is the character-by-character
+                tokenizer loop, which executes entirely in the Python interpreter.
+              </li>
+            </ul>
+          </t-b>
+        </details>
+      </indent-blocks>
+
+      <a id="langcomp"></a>
+      <h4>11.7 &nbsp;Language Comparison</h4>
+      <t-b>
+        The same logical types appear in all four variants.  The table shows how each
+        language expresses the key abstractions.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:12rem;" />
+          <col style="width:11rem;" />
+          <col style="width:12rem;" />
+          <col style="width:12rem;" />
+          <col style="width:14rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Aspect</th>
+          <th class="darkItem">Rust</th>
+          <th class="darkItem">C++</th>
+          <th class="darkItem">C#</th>
+          <th class="darkItem">Python</th>
+        </tr>
+        <tr>
+          <td class="lightItem">Token type</td>
+          <td class="lightItem"><code>enum Token</code></td>
+          <td class="lightItem"><code>std::variant</code></td>
+          <td class="lightItem"><code>abstract record</code></td>
+          <td class="lightItem">base class + <code>@dataclass</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">Lexeme type</td>
+          <td class="lightItem"><code>enum Lexeme</code></td>
+          <td class="lightItem"><code>std::variant</code></td>
+          <td class="lightItem"><code>abstract record</code></td>
+          <td class="lightItem">base class + <code>@dataclass</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">Null / absence</td>
+          <td class="lightItem"><code>Option&lt;Lexeme&gt;</code></td>
+          <td class="lightItem"><code>std::optional&lt;Lexeme&gt;</code></td>
+          <td class="lightItem"><code>Lexeme?</code></td>
+          <td class="lightItem"><code>Lexeme | None</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">Test runner</td>
+          <td class="lightItem"><code>cargo test</code></td>
+          <td class="lightItem">custom <code>test.cpp</code></td>
+          <td class="lightItem">custom <code>Exe</code> runner</td>
+          <td class="lightItem"><code>unittest</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">External deps</td>
+          <td class="lightItem">none (std only)</td>
+          <td class="lightItem">none (std only)</td>
+          <td class="lightItem">none (BCL only)</td>
+          <td class="lightItem">none (stdlib only)</td>
+        </tr>
+      </table>
+
+      <a id="metrics"></a>
+      <h4>11.8 &nbsp;Code Metrics</h4>
+      <t-b>
+        Generated by <code>code_metrics.py</code> from the Projects directory.
+        <strong>Lines</strong> = total line count (code + comments + blanks).
+        <strong>Scopes</strong> = scope-opening tokens: <code>{</code> count for brace
+        languages; lines ending with <code>:</code> for Python.
+      </t-b>
+
+      <h5 class="indent">rs_page_validator (Rust)</h5>
+      <table>
+        <colgroup>
+          <col style="width:20rem;" />
+          <col style="width:5rem;" />
+          <col style="width:5rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">File</th>
+          <th class="darkItem">Lines</th>
+          <th class="darkItem">Scopes</th>
+        </tr>
+        <tr><td class="lightItem">entry_point/src/main.rs</td><td class="lightItem">135</td><td class="lightItem">42</td></tr>
+        <tr><td class="lightItem">lexer/src/lib.rs</td><td class="lightItem">185</td><td class="lightItem">62</td></tr>
+        <tr><td class="lightItem">tokenizer/src/lib.rs</td><td class="lightItem">312</td><td class="lightItem">65</td></tr>
+        <tr><td class="lightItem">validator/src/lib.rs</td><td class="lightItem">270</td><td class="lightItem">64</td></tr>
+        <tr><td class="darkItem"><strong>TOTAL</strong></td><td class="darkItem"><strong>902</strong></td><td class="darkItem"><strong>233</strong></td></tr>
+      </table>
+
+      <h5 class="indent">CppPageValidator (C++)</h5>
+      <table>
+        <colgroup>
+          <col style="width:20rem;" />
+          <col style="width:5rem;" />
+          <col style="width:5rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">File</th>
+          <th class="darkItem">Lines</th>
+          <th class="darkItem">Scopes</th>
+        </tr>
+        <tr><td class="lightItem">entry_point/src/main.cpp</td><td class="lightItem">161</td><td class="lightItem">20</td></tr>
+        <tr><td class="lightItem">lexer/src/Lexer.ixx</td><td class="lightItem">144</td><td class="lightItem">41</td></tr>
+        <tr><td class="lightItem">lexer/src/test.cpp</td><td class="lightItem">138</td><td class="lightItem">29</td></tr>
+        <tr><td class="lightItem">tokenizer/src/test.cpp</td><td class="lightItem">157</td><td class="lightItem">28</td></tr>
+        <tr><td class="lightItem">tokenizer/src/Tokenizer.ixx</td><td class="lightItem">185</td><td class="lightItem">58</td></tr>
+        <tr><td class="lightItem">validator/src/test.cpp</td><td class="lightItem">137</td><td class="lightItem">29</td></tr>
+        <tr><td class="lightItem">validator/src/Validator.ixx</td><td class="lightItem">176</td><td class="lightItem">30</td></tr>
+        <tr><td class="darkItem"><strong>TOTAL</strong></td><td class="darkItem"><strong>1098</strong></td><td class="darkItem"><strong>235</strong></td></tr>
+      </table>
+
+      <h5 class="indent">CsPageValidator (C#)</h5>
+      <table>
+        <colgroup>
+          <col style="width:20rem;" />
+          <col style="width:5rem;" />
+          <col style="width:5rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">File</th>
+          <th class="darkItem">Lines</th>
+          <th class="darkItem">Scopes</th>
+        </tr>
+        <tr><td class="lightItem">EntryPoint/Program.cs</td><td class="lightItem">170</td><td class="lightItem">31</td></tr>
+        <tr><td class="lightItem">Lexer/Lexer.cs</td><td class="lightItem">129</td><td class="lightItem">12</td></tr>
+        <tr><td class="lightItem">Lexer.Tests/Tests.cs</td><td class="lightItem">115</td><td class="lightItem">29</td></tr>
+        <tr><td class="lightItem">Tokenizer/Tokenizer.cs</td><td class="lightItem">195</td><td class="lightItem">25</td></tr>
+        <tr><td class="lightItem">Tokenizer.Tests/Tests.cs</td><td class="lightItem">133</td><td class="lightItem">32</td></tr>
+        <tr><td class="lightItem">Validator/Validator.cs</td><td class="lightItem">151</td><td class="lightItem">23</td></tr>
+        <tr><td class="lightItem">Validator.Tests/Tests.cs</td><td class="lightItem">129</td><td class="lightItem">18</td></tr>
+        <tr><td class="darkItem"><strong>TOTAL</strong></td><td class="darkItem"><strong>1022</strong></td><td class="darkItem"><strong>170</strong></td></tr>
+      </table>
+
+      <h5 class="indent">PyPageValidator (Python)</h5>
+      <table>
+        <colgroup>
+          <col style="width:20rem;" />
+          <col style="width:5rem;" />
+          <col style="width:5rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">File</th>
+          <th class="darkItem">Lines</th>
+          <th class="darkItem">Scopes</th>
+        </tr>
+        <tr><td class="lightItem">EntryPoint/page_validator.py</td><td class="lightItem">155</td><td class="lightItem">39</td></tr>
+        <tr><td class="lightItem">Lexer/lexer.py</td><td class="lightItem">126</td><td class="lightItem">32</td></tr>
+        <tr><td class="lightItem">Lexer/test_lexer.py</td><td class="lightItem">83</td><td class="lightItem">13</td></tr>
+        <tr><td class="lightItem">Tokenizer/tokenizer.py</td><td class="lightItem">197</td><td class="lightItem">52</td></tr>
+        <tr><td class="lightItem">Tokenizer/test_tokenizer.py</td><td class="lightItem">108</td><td class="lightItem">15</td></tr>
+        <tr><td class="lightItem">Validator/validator.py</td><td class="lightItem">159</td><td class="lightItem">34</td></tr>
+        <tr><td class="lightItem">Validator/test_validator.py</td><td class="lightItem">91</td><td class="lightItem">15</td></tr>
+        <tr><td class="darkItem"><strong>TOTAL</strong></td><td class="darkItem"><strong>919</strong></td><td class="darkItem"><strong>200</strong></td></tr>
+      </table>
+
+      <a id="refs"></a>
+      <h4>11.9 &nbsp;References</h4>
+      <table>
+        <colgroup>
+          <col style="width:22rem;" />
+          <col style="width:34rem;" />
+        </colgroup>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="CodeStory_SpecDev.html">Code Story: Spec-Driven Development</a>
+          </td>
+          <td class="lightItem">The workflow used to generate each component from its Spec.md.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="CodeStory_ExperimentArena.html">Code Story: Experiment Arena</a>
+          </td>
+          <td class="lightItem">Timing tools and how to interpret the performance numbers.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="CodeStory_TextFinder.html">Code Story: TextFinder</a>
+          </td>
+          <td class="lightItem">A companion project; compare the performance ranking reversal between the two projects.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#pagevalidator">overview</a></menu-elem>
+        <menu-elem class="secElem"><a href="#architecture">architecture</a></menu-elem>
+        <menu-elem class="secElem"><a href="#cli">CLI</a></menu-elem>
+        <menu-elem class="secElem"><a href="#skiplists">skip lists</a></menu-elem>
+        <menu-elem class="secElem"><a href="#rules">rules</a></menu-elem>
+        <menu-elem class="secElem"><a href="#implementations">implementations</a></menu-elem>
+        <menu-elem class="secElem"><a href="#performance">performance</a></menu-elem>
+        <menu-elem class="secElem"><a href="#langcomp">lang comparison</a></menu-elem>
+        <menu-elem class="secElem"><a href="#metrics">metrics</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 11, 10);
+  </script>
+</body>
+</html>

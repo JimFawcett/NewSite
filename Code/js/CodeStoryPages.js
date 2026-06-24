@@ -20,6 +20,8 @@ function buildPages() {
       <a href='CodeStory_SkillsAI.html'>Chap 7 - Skills AI</a>\
       <a href='CodeStory_SpecDev.html'>Chap 8 - Spec-Driven Dev</a>\
       <a href='CodeStory_ExperimentArena.html'>Chap 9 - Experiment Arena</a>\
+      <a href='CodeStory_TextFinder.html'>Chap 10 - TextFinder</a>\
+      <a href='CodeStory_PageValidator.html'>Chap 11 - PageValidator</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
