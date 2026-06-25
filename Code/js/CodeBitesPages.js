@@ -23,6 +23,7 @@ function buildPages() {
         <a href='CodeBites_AgenticAI.html'>agentic AI</a>\
         <a href='CodeBites_CodeAIPrototype.html'>AI CLI prototype</a>\
         <a href='CodeBites_SpecDevPrototype.html'>spec-driven dev prototype</a>\
+        <a href='CodeBites_SkillsAIPrototype.html'>AI Skills prototype</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
