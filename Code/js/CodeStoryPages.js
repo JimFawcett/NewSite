@@ -12,16 +12,9 @@ function buildPages() {
     <div class='menuBody'>\
       <a href='CodeStory_Prologue.html'>Prologue</a>\
       <a href='CodeStory_CodeTrack.html'>Chap 1 - Code Track Map</a>\
-      <a href='CodeStory_ChatBots.html'>Chap 2 - Chat Bots</a>\
-      <a href='CodeStory_CLI.html'>Chap 3 - Code AI CLI</a>\
-      <a href='CodeStory_LLM_API.html'>Chap 4 - LLM API</a>\
-      <a href='CodeStory_AgentAI.html'>Chap 5 - Agent AI</a>\
-      <a href='CodeStory_AgenticAI.html'>Chap 6 - Agentic AI</a>\
-      <a href='CodeStory_SkillsAI.html'>Chap 7 - Skills AI</a>\
-      <a href='CodeStory_SpecDev.html'>Chap 8 - Spec-Driven Dev</a>\
-      <a href='CodeStory_ExperimentArena.html'>Chap 9 - Experiment Arena</a>\
-      <a href='CodeStory_TextFinder.html'>Chap 10 - TextFinder</a>\
-      <a href='CodeStory_PageValidator.html'>Chap 11 - PageValidator</a>\
+      <a href='CodeStory_ExperimentArena.html'>Chap 2 - Experiment Arena</a>\
+      <a href='CodeStory_TextFinder.html'>Chap 3 - TextFinder</a>\
+      <a href='CodeStory_PageValidator.html'>Chap 4 - PageValidator</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
