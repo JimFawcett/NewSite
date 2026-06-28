@@ -15,13 +15,13 @@ function buildPages() {
         <a href='CodeBites_Useage_Examples.html'>example uses</a>\
         <a href='CodeBites_ChatBotAI.html'>AI chat bots</a>\
         <a href='CodeBites_CodeAI.html'>AI consoles</a>\
+        <a href='CodeBites_PromptPatterns.html'>prompt patterns</a>\
         <a href='CodeBites_AgentAI.html'>AI agents</a>\
         <a href='CodeBites_AgenticAI.html'>agentic AI</a>\
         <a href='CodeBites_SpecDev.html'>spec-driven dev</a>\
         <a href='CodeBites_SkillsAI.html'>AI Skills</a>\
         <a href='CodeBites_LLM_API.html'>LLM API</a>\
         <a href='CodeBites_AI_Links.html'>AI Links</a>\
-        <a href='CodeBites_PromptPatterns.html'>prompt patterns</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
