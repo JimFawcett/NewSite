@@ -15,6 +15,7 @@ function buildPages() {
       <a href='CodeStory_ExperimentArena.html'>Chap 2 - Experiment Arena</a>\
       <a href='CodeStory_TextFinder.html'>Chap 3 - TextFinder</a>\
       <a href='CodeStory_PageValidator.html'>Chap 4 - PageValidator</a>\
+      <a href='CodeStory_ProloguePrototype.html'>Prologue Prototype</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }

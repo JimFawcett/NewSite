@@ -21,6 +21,7 @@ function buildPages() {
         <a href='CodeBites_SkillsAI.html'>AI Skills</a>\
         <a href='CodeBites_LLM_API.html'>LLM API</a>\
         <a href='CodeBites_AI_Links.html'>AI Links</a>\
+        <a href='CodeBites_PromptPatterns.html'>prompt patterns</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  CodeBites_PromptPatterns.html
+-->
+<head>
+  <title>Prompt Patterns</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    pre[class*="language-"] {
+      margin: 0.5rem 0 0.75rem 1.5rem;
+      max-width: 48em;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    CodeBites_PromptPatterns.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 06/28/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">CodeBites: Prompt Patterns</h2>
+        <h4 id="subtitle" class="indent">
+          conversation patterns for effective AI-assisted development
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0rem 0rem 0.25rem 0rem; margin-top:0.125rem; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25rem; margin-left:1.5rem;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/NewSite/tree/main/Code" style="margin-left:1rem; color:var(--atten);">Code Repo</a>
+      </div>
+    </header>
+    <div style="height:0.5rem;"></div>
+
+    <!-- ======================================================= -->
+    <a id="summary"></a>
+    <h3>1. Summary</h3>
+    <t-b>
+      Prompt patterns are recurring conversation structures that improve the quality and predictability
+      of AI responses for code-development tasks.  Each pattern names a technique, identifies when to
+      use it, and distinguishes it from related patterns.  The examples throughout use TextFinder and
+      related projects as a common domain &dash; a regex search tool implemented across Rust, C++, C#,
+      and Python.
+    </t-b>
+    <t-b>
+      Six categories cover the main points of leverage in a development conversation:
+    </t-b>
+    <div class="indent">
+      <table class="help" style="box-shadow:3px 3px 10px #999; width:min(55em,95%);">
+        <tr>
+          <th style="width:13rem;">Category</th>
+          <th>Patterns</th>
+        </tr>
+        <tr>
+          <td><a href="#structuring">Structuring</a></td>
+          <td>Decomposition, Planning, Spec-Driven, Scaffolding</td>
+        </tr>
+        <tr>
+          <td><a href="#generating">Generating Options</a></td>
+          <td>Brainstorming, Tree of Thoughts, Analogical Reasoning</td>
+        </tr>
+        <tr>
+          <td><a href="#reasoning">Reasoning Quality</a></td>
+          <td>Chain-of-Thought, Self-Critique, Chain-of-Verification, Devil&rsquo;s Advocate</td>
+        </tr>
+        <tr>
+          <td><a href="#iterative">Iterative Loops</a></td>
+          <td>Reflexion, ReAct, Test-Driven Prompting</td>
+        </tr>
+        <tr>
+          <td><a href="#shaping">Shaping the Output</a></td>
+          <td>Few-Shot, Role/Persona Framing, Template Filling, Constraint-Based Prompting</td>
+        </tr>
+        <tr>
+          <td><a href="#review">Review/Retrospective</a></td>
+          <td>Pre-Mortem, Retrospective/Postmortem</td>
+        </tr>
+      </table>
+    </div>
+    <div style="height:0.5rem;"></div>
+
+    <!-- ======================================================= -->
+    <a id="structuring"></a>
+    <h3>2. Structuring Patterns</h3>
+    <t-b>
+      Structuring patterns control how a task is broken apart and handed to the model.
+      Each one constrains the problem differently before generation begins &dash; decomposing into subtasks,
+      requiring an explicit plan, fixing the requirements as a spec, or providing the interface skeleton
+      up front.
+    </t-b>
+
+    <h4>2.1 Decomposition</h4>
+    <t-b>
+      Split a task into ordered subtasks and present one at a time, rather than asking for the whole
+      thing in a single prompt.  Ask the model to stop at each checkpoint so you can review before
+      the next step begins.
+    </t-b>
+<pre class="language-python"><code class="language-python">"I want to build a recursive text-finder in Rust.  Let's break it into steps and tackle them
+one at a time:
+  1. Define the CLI argument structure (pattern, directory, file extensions, case sensitivity)
+  2. Implement directory traversal that yields candidate file paths
+  3. Implement line-by-line pattern matching within a single file, returning line number + matched line
+  4. Wire traversal and matching together, with one file's worth of results at a time
+  5. Format and print results (grouped by file, with line numbers)
+Start with step 1 only.  Show me the CLI struct, then stop so I can review before we move to traversal."</code></pre>
+    <t-b>
+      Each step has a checkable output &dash; compile and review step 1 before step 2 exists.  Mistakes are
+      caught early and locally instead of buried in a 200-line dump.  The subtask list also serves as an
+      explicit contract: the model cannot silently collapse two concerns into one or skip an item.
+    </t-b>
+
+    <h4>2.2 Planning</h4>
+    <t-b>
+      Have the model propose a full approach and pause for your approval before any implementation begins.
+      The emphasis is on the approval gate, not just the breakdown.
+    </t-b>
+<pre class="language-python"><code class="language-python">"I want to add a --regex flag to TextFinder1 so it supports regex patterns instead of just plain
+substrings.  Before writing any code, give me a plan covering:
+  - Which crate you'd use and why
+  - How the flag interacts with existing CLI args
+  - What changes to RustCmdLine vs the matching logic in the core crate
+  - Error handling if the user passes an invalid regex
+Don't write any code yet -- just the plan.  I'll review and tell you to proceed."</code></pre>
+    <t-b>
+      Planning is distinct from Decomposition: a plan can be perfectly decomposed into steps and still
+      be wrong &dash; wrong crate choice, wrong architectural boundary, missed edge case.  Planning catches
+      that by making the model commit to its reasoning in plain language before a single line of
+      implementation exists.
+    </t-b>
+
+    <h4>2.3 Spec-Driven</h4>
+    <t-b>
+      Lock in <em>what</em> is being built and what counts as done before any planning or implementation
+      begins.  The spec is the contract; the plan is just one way to satisfy it.
+    </t-b>
+<pre class="language-python"><code class="language-python">"Before any planning or code, let's write a spec for multi-extension search in TextFinder1.
+I want it to cover:
+  - Goal: what problem this solves
+  - Behavior: exact syntax for specifying extensions, and how it interacts with the existing flag
+  - Edge cases: no extension given, malformed extension string, extension with/without leading dot
+  - Out of scope: anything we're explicitly not doing
+  - Acceptance criteria: how we'll know it's done correctly
+Leave anything unclear as an open question instead of guessing.  Don't draft a plan yet."</code></pre>
+    <t-b>
+      A plan describes <em>how</em>; a spec describes <em>what</em> and <em>why</em>, independent of
+      implementation approach.  The same spec could be satisfied by completely different plans.
+      The model&rsquo;s open questions surface your implicit assumptions before any downstream work
+      inherits them.
+    </t-b>
+
+    <h4>2.4 Scaffolding</h4>
+    <t-b>
+      Provide the interface skeleton &dash; signatures, struct layout, empty bodies &dash; and ask the model
+      to fill in implementations only.  The public contract is fixed ahead of time, not improvised
+      during generation.
+    </t-b>
+<pre class="language-python"><code class="language-python">"Here's the skeleton for the new matcher module.  Fill in the function bodies only -- don't
+change any signatures, don't add new public items, don't reorganize anything:"</code></pre>
+<pre class="language-rust"><code class="language-rust">pub enum MatchMode {
+    Substring(String),
+    Regex(Regex),
+}
+
+pub struct MatchResult {
+    pub line_number: usize,
+    pub line_text: String,
+}
+
+impl MatchMode {
+    pub fn from_args(pattern: &str, use_regex: bool) -> Result&lt;Self, MatchError&gt; {
+        todo!()
+    }
+
+    pub fn matches(&self, line: &str) -> bool {
+        todo!()
+    }
+}
+
+pub fn find_matches(mode: &MatchMode, file_path: &Path) -> Result&lt;Vec&lt;MatchResult&gt;, MatchError&gt; {
+    todo!()
+}</code></pre>
+    <t-b>
+      Scaffolding constrains the model&rsquo;s freedom to implementation detail only.  A plan decides the
+      approach; a spec decides the requirements; scaffolding goes further and fixes the literal interface
+      shape.  It is especially useful when you already know how a piece should fit into the rest of the
+      codebase and don&rsquo;t want the model re-deciding those boundaries.
+    </t-b>
+    <div style="height:0.5rem;"></div>
+
+    <!-- ======================================================= -->
+    <a id="generating"></a>
+    <h3>3. Generating Options</h3>
+    <t-b>
+      Generating-options patterns widen the solution space before committing to one direction.
+      They differ in how options are generated: pure enumeration (Brainstorming), multi-branch
+      reasoning (Tree of Thoughts), or structural import from another domain (Analogical Reasoning).
+    </t-b>
+
+    <h4>3.1 Brainstorming</h4>
+    <t-b>
+      Ask for many candidate ideas up front, with judgment deliberately deferred.  The goal is breadth,
+      not depth on any one idea yet.
+    </t-b>
+<pre class="language-python"><code class="language-python">"I want to add a new output mode to TextFinder1 beyond plain stdout -- give me 6-8 different ideas
+for how results could be presented (formats, destinations, interactivity, whatever comes to mind).
+Don't evaluate them yet, just generate a wide list."</code></pre>
+    <t-b>
+      No structure is imposed on the ideas &dash; they don&rsquo;t need to be mutually exclusive, ranked,
+      or fully baked.  The point is surfacing options you wouldn&rsquo;t have considered before any
+      cost/benefit thinking narrows the field.
+    </t-b>
+
+    <h4>3.2 Tree of Thoughts</h4>
+    <t-b>
+      Generate multiple reasoning <em>paths</em>, explore each a few steps deep, and identify which
+      branches dead-end.  Useful when the right answer depends on reasoning that could go several
+      plausible directions.
+    </t-b>
+<pre class="language-python"><code class="language-python">"TextFinder1 is slow on a 50,000-file repo.  Explore three different optimization branches in
+parallel: (1) parallelizing file reads across threads, (2) skipping files via a fast pre-filter
+before full scanning, (3) memory-mapping files instead of buffered reads.  For each branch,
+reason two steps ahead -- what's the next bottleneck after this fix -- and tell me which branch
+hits a dead end soonest."</code></pre>
+    <t-b>
+      Each branch is a reasoning chain followed forward to see where it leads.  Branches are eliminated
+      not because they are bad ideas but because tracing them reveals a ceiling or contradiction &dash;
+      a distinction Brainstorming never makes.
+    </t-b>
+
+    <h4>3.3 Analogical Reasoning</h4>
+    <t-b>
+      Map the current problem onto a structurally similar one the model or you already understands well,
+      and borrow its solution shape.
+    </t-b>
+<pre class="language-python"><code class="language-python">"TextFinder1 needs to support multiple simultaneous search patterns with different match rules per
+pattern -- similar to how a build system runs multiple independent rules against a file set.
+How would a build system's rule-dispatch model translate to a multi-pattern matcher?"</code></pre>
+    <t-b>
+      This pattern generates one option by importing the shape of a ready-made solution from a familiar
+      domain, then checking which parts of the analogy hold and which break down.  The non-transferable
+      parts identify where the real design work lives.
+    </t-b>
+    <div style="height:0.5rem;"></div>
+
+    <!-- ======================================================= -->
+    <a id="reasoning"></a>
+    <h3>4. Reasoning Quality</h3>
+    <t-b>
+      Reasoning-quality patterns check or improve the soundness of the model&rsquo;s output.
+      Chain-of-Thought makes the reasoning visible; Self-Critique and Chain-of-Verification
+      check that reasoning&rsquo;s output for quality and facts; Devil&rsquo;s Advocate stress-tests
+      the conclusion by deliberately arguing against it.
+    </t-b>
+
+    <h4>4.1 Chain-of-Thought</h4>
+    <t-b>
+      Ask the model to reason step-by-step before giving a final answer.  Useful whenever the answer
+      depends on several dependent considerations that a one-shot response would elide.
+    </t-b>
+<pre class="language-python"><code class="language-python">"TextFinder1 currently buffers entire files into memory before scanning for matches.  Should I
+switch to streaming line-by-line reads instead?  Think through the tradeoffs step by step
+before giving a recommendation."</code></pre>
+    <t-b>
+      The reasoning is visible, so if the model weighted something wrong you can correct that specific
+      input rather than rejecting an unexplained answer.  The chain often surfaces considerations you
+      hadn&rsquo;t named yet.
+    </t-b>
+
+    <h4>4.2 Self-Critique</h4>
+    <t-b>
+      Have the model produce an answer, then separately critique that answer against explicit criteria,
+      then revise based on its own critique &dash; two passes with different postures.
+    </t-b>
+<pre class="language-python"><code class="language-python">"Draft the constitution.md naming conventions section for TextFinder2.  Then, separately,
+critique your own draft: are any conventions ambiguous, contradictory, or missing a case a
+developer would actually hit?  Revise based on what you find."</code></pre>
+    <t-b>
+      Chain-of-Thought reasons toward an answer; Self-Critique treats the finished answer as a separate
+      object to be judged.  The second pass adopts a skeptical reviewer posture instead of a drafter
+      posture &dash; catching what the first pass produced without questioning.
+    </t-b>
+
+    <h4>4.3 Chain-of-Verification</h4>
+    <t-b>
+      After producing an answer, have the model generate specific verification questions about its own
+      claims and answer each one honestly.  This catches errors that survive a single pass because
+      nothing forced a second look at any individual claim.
+    </t-b>
+<pre class="language-python"><code class="language-python">"You just told me Rust's regex crate compiles patterns lazily by default.  Before I rely on that,
+generate 2-3 verification questions about that claim and answer each one honestly -- don't just
+restate the original claim."</code></pre>
+    <t-b>
+      Self-Critique judges the answer holistically; Chain-of-Verification breaks it into discrete,
+      checkable factual claims and interrogates each one.  It is better suited to catching specific
+      wrong facts than structural or stylistic problems.
+    </t-b>
+
+    <h4>4.4 Devil&rsquo;s Advocate</h4>
+    <t-b>
+      Prompt explicitly for the strongest case <em>against</em> the current direction before finalizing.
+      The goal is a real counterargument, not a token one.
+    </t-b>
+<pre class="language-python"><code class="language-python">"I've decided to use OCaml for TextFinder2 over Haskell and Clojure.  Before I commit, argue
+the strongest case against that choice -- not a weak strawman, the actual best argument someone
+who disagreed would make."</code></pre>
+    <t-b>
+      Chain-of-Verification checks factual claims; Self-Critique reviews the artifact you produced;
+      Devil&rsquo;s Advocate argues against the <em>decision itself</em>, deliberately adopting an opposing
+      stance.  It is useful specifically for catching motivated reasoning or a choice you talked
+      yourself into too quickly.
+    </t-b>
+    <div style="height:0.5rem;"></div>
+
+    <!-- ======================================================= -->
+    <a id="iterative"></a>
+    <h3>5. Iterative Loops</h3>
+    <t-b>
+      Iterative-loop patterns turn a single best-effort generation into a loop anchored to something
+      checkable &dash; a test result, a real tool observation, or a pre-agreed pass/fail criterion.
+      Correctness is verified during the process rather than assumed at the end.
+    </t-b>
+
+    <h4>5.1 Reflexion</h4>
+    <t-b>
+      Generate an attempt, evaluate it against an observable result, feed the failure back in explicitly,
+      and retry &dash; continuing until the evaluation passes, rather than stopping after one shot.
+    </t-b>
+<pre class="language-python"><code class="language-python">"Write a function in TextFinder1's core crate that strips ANSI color codes from a line before
+writing match output to a log file.  Run it against this test line with embedded color codes,
+show me the actual output, and if it still contains escape sequences, fix it and try again --
+repeat until the test line comes out clean."</code></pre>
+    <t-b>
+      The loop is anchored to an observable result, not the model&rsquo;s confidence in its own code.
+      It keeps correcting until reality confirms it, not until the explanation sounds plausible.
+    </t-b>
+
+    <h4>5.2 ReAct (Reason + Act)</h4>
+    <t-b>
+      Interleave reasoning with actual tool calls or actions, observing the real result of each step
+      before reasoning about the next one.  The next action is determined by the actual output of the
+      prior step, not a plan made blind at the start.
+    </t-b>
+<pre class="language-python"><code class="language-python">"Find out why TextFinder1's build is failing on Windows.  Don't guess at the whole fix up front --
+run the build, look at the actual error, reason about what it means, then take the next action
+based on that, and keep going until it builds clean."</code></pre>
+    <t-b>
+      Reflexion loops on a single artifact (write code, test it, fix it); ReAct interleaves reasoning
+      with arbitrary actions as it goes.  The next action might be entirely different in kind from the
+      last &dash; read a file, run a command, edit a different file &dash; not a revision of the same artifact.
+    </t-b>
+
+    <h4>5.3 Test-Driven Prompting</h4>
+    <t-b>
+      Write the tests or acceptance criteria first, then prompt for an implementation that must satisfy
+      them.  &ldquo;Done&rdquo; is defined before any code exists, rather than checked afterward.
+    </t-b>
+<pre class="language-python"><code class="language-python">"Before writing the multi-extension matching logic for TextFinder1, write 4-5 test cases covering:
+single extension, comma-separated list, extension with/without leading dot, and an empty extension
+string.  Show me the tests first.  Only after I approve them, write the implementation that passes
+all of them."</code></pre>
+    <t-b>
+      Reflexion and ReAct both react to outcomes <em>after</em> an attempt.  Test-Driven Prompting
+      front-loads the definition of success so the very first implementation attempt is aimed at a
+      fixed target &dash; and writing the tests often surfaces unresolved design questions before any
+      implementation inherits them.
+    </t-b>
+    <div style="height:0.5rem;"></div>
+
+    <!-- ======================================================= -->
+    <a id="shaping"></a>
+    <h3>6. Shaping the Output</h3>
+    <t-b>
+      Shaping-the-output patterns constrain the form or content of what the model produces.
+      Few-Shot and Template Filling fix shape &dash; by example and by explicit skeleton respectively.
+      Role Framing and Constraint-Based Prompting fix substance &dash; by evaluative lens and by
+      hard boundaries.
+    </t-b>
+
+    <h4>6.1 Few-Shot / Worked Examples</h4>
+    <t-b>
+      Show 1&ndash;3 concrete input&rarr;output examples before the real request, letting the model
+      pattern-match to a definite shape rather than interpret an abstract description.
+    </t-b>
+<pre class="language-python"><code class="language-python">"I want function doc comments in this exact style for TextFinder1's core crate.
+Here are two examples:"</code></pre>
+<pre class="language-rust"><code class="language-rust">/// Parses a comma-separated extension list into normalized form.
+/// Returns Err if the input is empty or contains only whitespace.
+pub fn parse_extensions(input: &str) -> Result&lt;Vec&lt;String&gt;, MatchError&gt;
+
+/// Checks whether a line contains the configured pattern.
+/// Empty lines never match, regardless of pattern.
+pub fn matches(&self, line: &str) -> bool</code></pre>
+<pre class="language-python"><code class="language-python">"Now write doc comments in this same style for find_matches and from_args."</code></pre>
+    <t-b>
+      A description like "write good doc comments" leaves "good" open to interpretation.  Two concrete
+      examples remove that ambiguity entirely.  The model mirrors structure, tone, and coverage, not
+      just format.
+    </t-b>
+
+    <h4>6.2 Role / Persona Framing</h4>
+    <t-b>
+      Assign an expert persona to bias the model&rsquo;s vocabulary, rigor, and priorities.  Useful when
+      you want a specific lens applied, not just a generic answer.
+    </t-b>
+<pre class="language-python"><code class="language-python">"Review this TextFinder1 directory-traversal function as a security auditor would -- focus
+specifically on path handling, symlink behavior, and anything that could let traversal escape
+the intended root directory."</code></pre>
+    <t-b>
+      Few-Shot fixes the output format with concrete examples; Role Framing fixes the evaluative lens
+      the model reasons through, without specifying what the output should literally look like.
+      The same code yields a different review depending on whether the assigned role is
+      "security auditor," "maintainability reviewer," or "performance engineer."
+    </t-b>
+
+    <h4>6.3 Template Filling</h4>
+    <t-b>
+      Give a fixed output structure with named sections and have the model populate it, rather than
+      free-form generate.  Anything uncertain is expressed as an explicit open question, not a
+      silent guess.
+    </t-b>
+<pre class="language-python"><code class="language-python">"Fill in this exact template for the new --regex feature spec -- don't add sections, don't remove
+any, leave anything you're unsure about as &lt;!-- open question --&gt; rather than guessing:"</code></pre>
+<pre><code>## Goal
+## Behavior
+## Edge Cases
+## Out of Scope
+## Acceptance Criteria</code></pre>
+    <t-b>
+      Few-Shot shows what a filled example looks like; Template Filling gives the empty skeleton itself
+      and constrains the model to that exact structure.  The explicit open-question placeholder forces
+      uncertainty to the surface rather than letting the model silently pick an answer you never approved.
+    </t-b>
+
+    <h4>6.4 Constraint-Based Prompting</h4>
+    <t-b>
+      State hard constraints &dash; version limits, forbidden APIs, required error patterns &dash; up front
+      so the model self-filters during generation, rather than producing something you then have to
+      catch and correct.
+    </t-b>
+<pre class="language-python"><code class="language-python">"Write the new matcher logic for TextFinder1's core crate.  Hard constraints: must compile on
+Rust 1.70 (no newer edition features), no unsafe blocks anywhere, no new dependencies beyond
+what's already in Cargo.toml, and follow the existing Result&lt;T, MatchError&gt; error pattern
+rather than panicking."</code></pre>
+    <t-b>
+      With boundaries stated before generation, the model avoids reaching for a newer stdlib API,
+      introducing an unnecessary unsafe block, or pulling in a convenience crate.  Template Filling
+      constrains the document structure; Constraint-Based Prompting constrains the content and
+      implementation choices within whatever structure is being produced.
+    </t-b>
+    <div style="height:0.5rem;"></div>
+
+    <!-- ======================================================= -->
+    <a id="review"></a>
+    <h3>7. Review / Retrospective</h3>
+    <t-b>
+      Review patterns bookend the same work from opposite ends.  Pre-Mortem tries to buy down risk
+      before it is incurred; Retrospective makes sure whatever risk <em>did</em> materialize gets
+      converted into a lesson rather than just fixed and forgotten.
+    </t-b>
+
+    <h4>7.1 Pre-Mortem</h4>
+    <t-b>
+      Before starting work, ask "assume this fails &dash; why?" to surface risks while there is still
+      time to change course.
+    </t-b>
+<pre class="language-python"><code class="language-python">"I'm about to approve the plan for adding --regex support to TextFinder1.  Before I approve it,
+do a pre-mortem: assume we implemented this exactly as planned and it caused problems three months
+from now.  What's the most likely reason, and what in the current plan should change to prevent it?"</code></pre>
+    <t-b>
+      Pre-mortems surface process and scope risks that a code review or test suite would never catch,
+      because nothing is broken yet &dash; the plan is just incomplete in a way that won&rsquo;t bite until
+      later.  The failure mode is often not a coding mistake at all.
+    </t-b>
+
+    <h4>7.2 Retrospective / Postmortem</h4>
+    <t-b>
+      After the work is done, review what actually happened against what was planned &dash; not to assign
+      blame, but to extract a concrete change for next time.
+    </t-b>
+<pre class="language-python"><code class="language-python">"We just finished implementing --regex for TextFinder1.  Do a retrospective: where did the actual
+implementation deviate from the original plan, what caused each deviation, and what should change
+in how we plan features like this going forward?"</code></pre>
+    <t-b>
+      Pre-Mortem reasons about a hypothetical failure before anything exists; Retrospective reasons
+      about what actually happened, using real deviations as evidence.  It is strictly more reliable
+      than Pre-Mortem, but only available after any mistakes have already been paid for.
+    </t-b>
+
+    <div style="height:10rem;"></div>
+  </content-block>
+
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#summary">summary</a>
+        <a href="#structuring">structuring</a>
+        <a href="#generating">generating options</a>
+        <a href="#reasoning">reasoning quality</a>
+        <a href="#iterative">iterative loops</a>
+        <a href="#shaping">shaping output</a>
+        <a href="#review">review/retrospective</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+
+  <a id="bottom"></a>
+  <script src="js/CodeBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 0, 10);
+  </script>
+</body>
+</html>
