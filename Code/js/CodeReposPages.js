@@ -12,7 +12,9 @@ function buildPages() {
       <div class='menuBody'>\
         <a href='RepoCode_ReadmeAgent.html'>Readme Agent</a>\
         <a href='RepoCode_Webifier.html'>CodeWebifier</a>\
-        <a href='RepoCode_Projects.html'>Language Comparison Projects</a>\
+        <a href='RepoCode_TextFinder.html'>TextFinder Comparison</a>\
+        <a href='RepoCode_PageValidator.html'>PageValidator Comparison</a>\
+        <a href='RepoCode_CommCompare.html'>Comm Comparison</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }

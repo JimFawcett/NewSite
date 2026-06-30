@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  RepoWebDev_TwoPanelViewerComponent.html
+-->
+<head>
+  <title>WebDev TwoPanelViewerComponent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeWebDev.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <link rel="stylesheet" href="css/RepoWebDev_Styles.css" />
+  <link rel="stylesheet" href="../css/Spaces.css" />
+  <script src="../js/TwoPanelComponentRefactored.js" defer></script>
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    .demo-toolbar { display:flex; gap:.5rem; flex-wrap:wrap; margin:.5rem 0 .75rem; }
+    .demo-toolbar button {
+      padding:.3rem .75rem; border:1px solid #c8c8d0; border-radius:8px;
+      background:var(--light,#f0f0f0); cursor:pointer; font-size:0.9rem;
+    }
+    .demo-toolbar button:disabled { opacity:.5; cursor:not-allowed; }
+    .demo-left-item h4 { margin:.1rem 0 .25rem; font-size:1rem; }
+    .demo-left-item p  { margin:.25rem 0; font-size:0.9rem; }
+    .demo-code-card {
+      background:#2d2d2d; color:#eee; border-radius:8px;
+      padding:.75rem 1rem; overflow:auto;
+      font:0.9rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+    .demo-code-card pre { margin:0; white-space:pre; }
+    x-two-panel#demo-panel::part(left-panel),
+    x-two-panel#demo-panel::part(right-panel) {
+      border:2px solid #ccc; border-radius:8px; background:var(--light,#f8f8f8); padding:0.25rem 0.5rem;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreReposWebDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <!-- show-hide with 'about' message -->
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    RepoWebDev_TwoPanelViewerComponent.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 06/20/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle">
+        <h2 id="title">WebDev TwoPanelViewer Component</h2>
+        <h4 id="subtitle" class="indent">
+          paired left/right panels with index-based navigation and resizable left column
+        </h4>
+      </div>
+      <div class="repo-header-links">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/TwoPanelViewComponent">TwoPanel Repo</a>
+      </div>
+    </header>
+    <div class="spacer-1rem"></div>
+    <t-b>
+      <h3 id="contents">1.0 Contents</h3>
+      <t-b>
+        A W3C custom element (<code>&lt;x-two-panel&gt;</code>) that displays two side-by-side panels.
+        The left panel shows descriptions; the right panel shows corresponding code or content.
+        Navigation buttons step through paired left/right items by index. The left panel width is
+        adjustable via toolbar buttons or single-click on either panel.
+      </t-b>
+      <h3 id="files">2.0 Files</h3>
+      <t-b>
+        <pre class="code-examples"><code>TwoPanelComponentRefactored/
+  js/TwoPanelComponentRefactored.js   component definition
+  css/TwoPanelComponentRefactored.css  host-page placement helpers
+  TwoPanelComponentRefactored.html     demo / test page</code></pre>
+      </t-b>
+      <h3 id="setup">3.0 Setup</h3>
+      <t-b>
+        <pre class="code-examples"><code>&lt;link rel="stylesheet" href="css/TwoPanelComponentRefactored.css"&gt;
+&lt;script src="js/TwoPanelComponentRefactored.js" defer&gt;&lt;/script&gt;</code></pre>
+        <div class="spacer-075em"></div>
+        The containing page should define <code>--light</code> and <code>--dark</code> CSS custom properties
+        for the default color scheme:
+        <div class="spacer-075em"></div>
+        <pre class="code-examples"><code>:root {
+  --light: #f0f0f0;
+  --dark:  #333;
+}</code></pre>
+      </t-b>
+      <h3 id="usage">4.0 Usage</h3>
+      <t-b>
+        <div class="demo-toolbar">
+          <button data-two="narrow"      data-two-for="#demo-panel" data-step="6rem">Narrow</button>
+          <button data-two="reset"       data-two-for="#demo-panel">Reset</button>
+          <button data-two="widen"       data-two-for="#demo-panel" data-step="6rem">Widen</button>
+          <button data-two="toggle-left" data-two-for="#demo-panel">Toggle Left</button>
+          <button data-two="prev"        data-two-for="#demo-panel">Prev</button>
+          <button data-two="next"        data-two-for="#demo-panel">Next</button>
+        </div>
+
+        <x-two-panel id="demo-panel" class="with-buttons" left="18rem" height="12rem"
+          data-desc-selector=".demo-left-item"
+          data-right-selector=".demo-right-item">
+
+          <div slot="left">
+            <div class="demo-left-item">
+              <h4>1) Configuration</h4>
+              <p>Define shared settings in a config module so every part of the app reads from one source.</p>
+            </div>
+            <div class="demo-left-item">
+              <h4>2) Core Utilities</h4>
+              <p>Pure functions for summing and clamping values - no side effects, easy to test.</p>
+            </div>
+            <div class="demo-left-item">
+              <h4>3) Event Wiring</h4>
+              <p>Wire DOM events after the page loads; keep handler logic out of HTML markup.</p>
+            </div>
+          </div>
+
+          <div slot="right">
+            <div class="demo-right-item demo-code-card">
+<pre><code>// config.js
+export const config = {
+  appName: "TwoPanel Demo",
+  version: "1.0.0"
+};</code></pre>
+            </div>
+            <div class="demo-right-item demo-code-card">
+<pre><code>// utils.js
+export const sum   = (...xs) => xs.reduce((a,x) => a + Number(x||0), 0);
+export const clamp = (x,lo,hi) => Math.max(lo, Math.min(hi, x));</code></pre>
+            </div>
+            <div class="demo-right-item demo-code-card">
+<pre><code>// wire.js
+const btn = document.getElementById("run-btn");
+const out = document.getElementById("run-out");
+btn?.addEventListener("click", () => out.textContent = "clicked!");</code></pre>
+            </div>
+          </div>
+        </x-two-panel>
+
+        <div class="spacer-075em"></div>
+        <h3>Place in host page header:</h3>
+        <pre class="code-examples"><code>&lt;link rel="stylesheet" href="css/TwoPanelComponentRefactored.css"&gt;
+&lt;script src="js/TwoPanelComponentRefactored.js" defer&gt;&lt;/script&gt;</code></pre>
+
+        <h3>Place in body:</h3>
+        <pre class="code-examples"><code>&lt;div class="toolbar"&gt;
+  &lt;button data-two="narrow"      data-two-for="#panel" data-step="6rem"&gt;Narrow&lt;/button&gt;
+  &lt;button data-two="reset"       data-two-for="#panel"&gt;Reset&lt;/button&gt;
+  &lt;button data-two="widen"       data-two-for="#panel" data-step="6rem"&gt;Widen&lt;/button&gt;
+  &lt;button data-two="toggle-left" data-two-for="#panel"&gt;Toggle Left&lt;/button&gt;
+  &lt;button data-two="prev"        data-two-for="#panel"&gt;Prev&lt;/button&gt;
+  &lt;button data-two="next"        data-two-for="#panel"&gt;Next&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;x-two-panel id="panel" class="with-buttons" left="18rem" height="70vh"
+  data-desc-selector=".left-item"
+  data-right-selector=".right-item"&gt;
+
+  &lt;div slot="left"&gt;
+    &lt;div class="left-item"&gt;&lt;h3&gt;1) Topic&lt;/h3&gt;&lt;p&gt;Description text.&lt;/p&gt;&lt;/div&gt;
+    &lt;div class="left-item"&gt;&lt;h3&gt;2) Topic&lt;/h3&gt;&lt;p&gt;Description text.&lt;/p&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div slot="right"&gt;
+    &lt;section class="right-item"&gt;&lt;pre&gt;&lt;code&gt;// code block 1&lt;/code&gt;&lt;/pre&gt;&lt;/section&gt;
+    &lt;section class="right-item"&gt;&lt;pre&gt;&lt;code&gt;// code block 2&lt;/code&gt;&lt;/pre&gt;&lt;/section&gt;
+  &lt;/div&gt;
+&lt;/x-two-panel&gt;</code></pre>
+        <div class="spacer-075em"></div>
+        The component pairs items by index: the <em>n</em>th left-slot child matching
+        <code>data-desc-selector</code> pairs with the <em>n</em>th right-slot child matching
+        <code>data-right-selector</code>.
+      </t-b>
+      <h3 id="attributes">5.0 Attributes</h3>
+      <t-b>
+        <table>
+          <tr><th>Attribute</th><th>Default</th><th>Description</th></tr>
+          <tr>
+            <td><code>left</code></td><td>(none)</td>
+            <td>Fixed width of the left panel; any CSS length (<code>18rem</code>, <code>40%</code>, <code>300px</code>)</td>
+          </tr>
+          <tr>
+            <td><code>gap</code></td><td><code>0.5rem</code></td>
+            <td>Column gap between the two panels</td>
+          </tr>
+          <tr>
+            <td><code>height</code></td><td><code>max-content</code></td>
+            <td>Overall component height; any CSS length or keyword</td>
+          </tr>
+          <tr>
+            <td><code>step</code></td><td><code>6rem</code></td>
+            <td>Default width delta per narrow/widen action</td>
+          </tr>
+          <tr>
+            <td><code>min-left</code></td><td><code>8rem</code></td>
+            <td>Minimum left-panel width</td>
+          </tr>
+          <tr>
+            <td><code>max-left</code></td><td>auto</td>
+            <td>Maximum left-panel width; <code>auto</code> reserves <code>min-right</code> for the right panel</td>
+          </tr>
+          <tr>
+            <td><code>min-right</code></td><td><code>8rem</code></td>
+            <td>Minimum right-panel width; used when <code>max-left="auto"</code></td>
+          </tr>
+          <tr>
+            <td><code>click-controls</code></td><td>(absent)</td>
+            <td>Enables panel-click resizing: single-click widens left or narrows left; double-click resets or toggles</td>
+          </tr>
+          <tr>
+            <td><code>data-desc-selector</code></td><td><code>.marked-box, .left-item</code></td>
+            <td>CSS selector for left-panel navigation items</td>
+          </tr>
+          <tr>
+            <td><code>data-right-selector</code></td><td><code>.right-item</code></td>
+            <td>CSS selector for right-panel navigation items</td>
+          </tr>
+        </table>
+      </t-b>
+      <h3 id="controls">6.0 External Controls</h3>
+      <t-b>
+        Any element with <code>data-two="&lt;action&gt;"</code> and <code>data-two-for="#id"</code>
+        drives the panel. No JavaScript event wiring is required in the host page.
+        <div class="spacer-075em"></div>
+        <table>
+          <tr><th>Action</th><th>Extra data attribute</th><th>Effect</th></tr>
+          <tr><td><code>narrow</code></td><td><code>data-step</code> (optional)</td><td>Reduce left-panel width by step</td></tr>
+          <tr><td><code>widen</code></td><td><code>data-step</code> (optional)</td><td>Increase left-panel width by step</td></tr>
+          <tr><td><code>toggle-left</code></td><td>-</td><td>Show or hide the left panel</td></tr>
+          <tr><td><code>collapse-left</code></td><td>-</td><td>Hide the left panel</td></tr>
+          <tr><td><code>expand-left</code></td><td>-</td><td>Show the left panel</td></tr>
+          <tr><td><code>reset</code></td><td>-</td><td>Restore initial <code>left</code> and <code>gap</code> values</td></tr>
+          <tr><td><code>set-left</code></td><td><code>data-left</code> or <code>data-value</code></td><td>Set left-panel width to an explicit value</td></tr>
+          <tr><td><code>set-gap</code></td><td><code>data-gap</code></td><td>Set column gap to an explicit value</td></tr>
+          <tr><td><code>prev</code> / <code>prev-mark</code></td><td>-</td><td>Navigate to previous pair</td></tr>
+          <tr><td><code>next</code> / <code>next-mark</code></td><td>-</td><td>Navigate to next pair</td></tr>
+        </table>
+        <div class="spacer-075em"></div>
+        Add <code>class="with-buttons"</code> to <code>&lt;x-two-panel&gt;</code> when toolbar buttons are
+        present. This enables automatic Prev/Next button disable at the ends of the list.
+      </t-b>
+      <h3 id="api">7.0 JavaScript API</h3>
+      <t-b>
+        <table>
+          <tr><th>Method</th><th>Description</th></tr>
+          <tr><td><code>setLeft(value)</code></td><td>Set left-panel width; shows panel if collapsed</td></tr>
+          <tr><td><code>setGap(value)</code></td><td>Set column gap</td></tr>
+          <tr><td><code>toggleLeft()</code></td><td>Toggle left panel visibility</td></tr>
+          <tr><td><code>reset()</code></td><td>Restore initial <code>left</code> and <code>gap</code> attribute values</td></tr>
+          <tr><td><code>step(sign[, stepOverride])</code></td><td>Change left-panel width; <code>sign</code> is +1 or -1</td></tr>
+          <tr><td><code>currentIndex()</code></td><td>Return the current pair index (0-based)</td></tr>
+          <tr><td><code>setIndex(i)</code></td><td>Navigate to pair at index <code>i</code></td></tr>
+          <tr><td><code>next({wrap})</code></td><td>Advance one pair; wraps if <code>wrap:true</code></td></tr>
+          <tr><td><code>prev({wrap})</code></td><td>Go back one pair; wraps if <code>wrap:true</code></td></tr>
+          <tr><td><code>scrollRightToTop()</code></td><td>Scroll the right panel to its top</td></tr>
+        </table>
+      </t-b>
+      <h3 id="events">8.0 Events</h3>
+      <t-b>
+        The component fires a <code>CustomEvent</code> named <code>'two:nav'</code> on each index change.
+        <div class="spacer-075em"></div>
+        <pre class="code-examples"><code>panel.addEventListener('two:nav', e => {
+  const { index, count } = e.detail;
+  console.log(`pair ${index + 1} of ${count}`);
+});</code></pre>
+      </t-b>
+    </t-b>
+    <div class="spacer-15rem"></div>
+  </content-block>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#contents">contents</a>
+        <a href="#files">files</a>
+        <a href="#setup">setup</a>
+        <a href="#usage">usage</a>
+        <a href="#attributes">attributes</a>
+        <a href="#controls">controls</a>
+        <a href="#api">api</a>
+        <a href="#events">events</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/WebDevRepoPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+</body>
+</html>
