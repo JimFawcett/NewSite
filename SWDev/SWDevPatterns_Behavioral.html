@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  SWDevPatterns_Behavioral.html
+-->
+<head>
+  <title>SWDev Patterns Behavioral</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table.reftable {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #github table.reftable th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+      padding: 0.25rem 0.5rem;
+    }
+    #github table.reftable td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDevPatterns_Behavioral.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 06/29/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+         href="https://github.com/JimFawcett">SWDev Patterns</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">SWDev Patterns: Behavioral</h2>
+        <h4 class="indent" id="subtitle">strategy, observer, command</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="intro"></a>
+      <h3>1.0  Behavioral Patterns</h3>
+      <t-b>
+        Behavioral patterns address how objects communicate, distribute responsibility,
+        and coordinate action. They answer the question: <em>who does what, and how
+        does the caller know what happened?</em>
+      </t-b>
+      <t-b>
+        The three patterns in this chapter - Strategy, Observer, and Command - are the
+        most widely encountered in application design. Strategy decouples an algorithm from
+        the object that invokes it. Observer decouples event producers from consumers.
+        Command decouples a request from the code that executes it.
+      </t-b>
+
+      <a id="strategy"></a>
+      <h3>1.1  Strategy</h3>
+      <t-b>
+        <strong>Intent:</strong> define a family of interchangeable algorithms, encapsulate
+        each one, and make them substitutable without changing the context that uses them.
+      </t-b>
+      <t-b>
+        The Context holds a reference to a Strategy. It delegates algorithm execution to
+        the strategy, knowing only the strategy's interface - not its implementation.
+        Strategies can be swapped at construction time or at runtime.
+      </t-b>
+      <pre><code class="language-text">interface Matcher {
+    fn matches(line: &amp;str, query: &amp;str) -&gt; bool
+}
+
+struct TextSearch {
+    matcher: Box&lt;dyn Matcher&gt;
+}
+
+impl TextSearch {
+    fn search(&amp;self, file: &amp;Path, query: &amp;str) -&gt; Vec&lt;String&gt; {
+        read_lines(file)
+            .filter(|line| self.matcher.matches(line, query))
+            .collect()
+    }
+}
+
+// Concrete strategies:
+struct ExactMatcher;
+struct RegexMatcher { compiled: Regex }
+struct CaseFoldMatcher;</code></pre>
+      <t-b>
+        Swapping from exact matching to regex matching requires only constructing
+        TextSearch with a different strategy. No change to the search loop itself.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Strategy - Language Idioms</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Rust</td>
+                <td>
+                  <c-s>Box&lt;dyn Trait&gt;</c-s> for owned strategies; closures
+                  (<c-s>Box&lt;dyn Fn(...)&gt;</c-s>) when the strategy is a single operation
+                  with no state.
+                </td>
+              </tr>
+              <tr>
+                <td>C++</td>
+                <td>
+                  Abstract base class with pure virtual <c-s>execute()</c-s> and
+                  <c-s>std::unique_ptr&lt;Strategy&gt;</c-s> in the context; or a template
+                  parameter for compile-time strategy selection with zero overhead.
+                </td>
+              </tr>
+              <tr>
+                <td>C#</td>
+                <td>
+                  Interface or delegate; <c-s>Func&lt;T, TResult&gt;</c-s> replaces a
+                  single-method interface in most cases. LINQ is built on the strategy pattern.
+                </td>
+              </tr>
+              <tr>
+                <td>Python</td>
+                <td>
+                  Pass a plain function as the strategy - no wrapper class needed. Duck typing
+                  means any callable with the right signature qualifies.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+        <details>
+          <summary class="darkItem">Strategy - Pros and Cons</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Pros</strong></td><td>
+                Context is closed to modification when new algorithms are added; each strategy
+                is independently testable; strategies are composable.
+              </td></tr>
+              <tr><td><strong>Cons</strong></td><td>
+                Client must know which strategy to select; slight indirection overhead on
+                each call; proliferates types when strategies are numerous and stateless.
+              </td></tr>
+              <tr><td><strong>Best for</strong></td><td>
+                Any context where the algorithm varies independently from the data it operates
+                on - sorting comparators, serialization formats, search matching rules.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="observer"></a>
+      <h3>1.2  Observer</h3>
+      <t-b>
+        <strong>Intent:</strong> define a one-to-many dependency so that when a subject
+        changes state, all registered observers are notified and updated automatically.
+      </t-b>
+      <t-b>
+        The Subject maintains a list of Observer references. When state changes, it iterates
+        the list and calls each observer's update method. Observers subscribe and unsubscribe
+        at runtime. The subject has no knowledge of what observers do with the notification.
+      </t-b>
+      <pre><code class="language-text">interface Observer {
+    fn on_event(&amp;self, event: Event)
+}
+
+struct FileWatcher {
+    path: Path,
+    observers: Vec&lt;Box&lt;dyn Observer&gt;&gt;
+}
+
+impl FileWatcher {
+    fn subscribe(&amp;mut self, obs: Box&lt;dyn Observer&gt;)
+    fn unsubscribe(&amp;mut self, id: ObserverId)
+    fn poll(&amp;self) {
+        if file_changed(self.path) {
+            let event = Event::new(self.path);
+            for obs in &amp;self.observers {
+                obs.on_event(&amp;event);
+            }
+        }
+    }
+}</code></pre>
+      <t-b>
+        Each observer reacts independently: one may log the change, another may reload a
+        cache, a third may send a notification. None of them know about each other.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Observer - Language Idioms</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Rust</td>
+                <td>
+                  Channels (<c-s>std::sync::mpsc</c-s>) for decoupled single-consumer
+                  notification; <c-s>Arc&lt;Mutex&lt;Vec&lt;Box&lt;dyn Fn(...)&gt;&gt;&gt;&gt;</c-s>
+                  for multi-observer callback lists. Ownership rules prevent dangling observers.
+                </td>
+              </tr>
+              <tr>
+                <td>C++</td>
+                <td>
+                  <c-s>std::vector&lt;std::function&lt;void(Event)&gt;&gt;</c-s> as the
+                  subscriber list; use <c-s>std::weak_ptr</c-s> for observer references to
+                  avoid lifetime issues when observers are destroyed before the subject.
+                </td>
+              </tr>
+              <tr>
+                <td>C#</td>
+                <td>
+                  Events and delegates are the native language form. Declare
+                  <c-s>event EventHandler&lt;T&gt; Changed</c-s>; subscribers use
+                  <c-s>+=</c-s> and <c-s>-=</c-s>. The runtime manages the invocation list.
+                </td>
+              </tr>
+              <tr>
+                <td>Python</td>
+                <td>
+                  A list of callables; <c-s>blinker</c-s> or <c-s>PyDispatcher</c-s> libraries
+                  provide signal/slot infrastructure. Django signals are an application of this pattern.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+        <details>
+          <summary class="darkItem">Observer - Pros and Cons</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Pros</strong></td><td>
+                Subject and observers are loosely coupled; observers can be added and removed
+                at runtime without changing the subject; supports broadcast notification
+                to an arbitrary number of consumers.
+              </td></tr>
+              <tr><td><strong>Cons</strong></td><td>
+                Notification order is not guaranteed; a misbehaving observer can stall the
+                subject; cascading updates are possible when observers themselves notify
+                other subjects; object lifetime management requires care in C++ and Rust.
+              </td></tr>
+              <tr><td><strong>Best for</strong></td><td>
+                UI event handling, model-view synchronization, pub/sub messaging within a
+                process, and any situation where one state change drives multiple reactions.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="command"></a>
+      <h3>1.3  Command</h3>
+      <t-b>
+        <strong>Intent:</strong> encapsulate a request as an object so that requests can
+        be parameterized, queued, logged, and undone.
+      </t-b>
+      <t-b>
+        A Command object bundles the action and its parameters. An Invoker queues and
+        executes commands without knowing what they do. The Receiver carries out the
+        actual work. Storing executed commands in a history stack enables undo.
+      </t-b>
+      <pre><code class="language-text">interface Command {
+    fn execute(&amp;mut self)
+    fn undo(&amp;mut self)
+}
+
+struct InsertText { pos: usize, text: String, buffer: Rc&lt;RefCell&lt;Buffer&gt;&gt; }
+struct DeleteText { pos: usize, len: usize, deleted: String, buffer: Rc&lt;RefCell&lt;Buffer&gt;&gt; }
+
+impl Command for InsertText {
+    fn execute(&amp;mut self) { self.buffer.borrow_mut().insert(self.pos, &amp;self.text) }
+    fn undo(&amp;mut self)    { self.buffer.borrow_mut().delete(self.pos, self.text.len()) }
+}
+
+struct Editor {
+    history: Vec&lt;Box&lt;dyn Command&gt;&gt;
+}
+impl Editor {
+    fn do_command(&amp;mut self, mut cmd: Box&lt;dyn Command&gt;) {
+        cmd.execute();
+        self.history.push(cmd);
+    }
+    fn undo(&amp;mut self) {
+        if let Some(mut cmd) = self.history.pop() { cmd.undo(); }
+    }
+}</code></pre>
+      <t-b>
+        The Editor does not know whether it is inserting, deleting, or moving text. It only
+        knows how to execute and undo. Adding a new operation means adding a new Command
+        type - no changes to Editor.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Command - Language Idioms</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Rust</td>
+                <td>
+                  An enum whose variants carry their parameters is the most idiomatic form;
+                  match on the variant in <c-s>execute()</c-s> and <c-s>undo()</c-s>. Trait
+                  objects work when commands come from external sources or plugins.
+                </td>
+              </tr>
+              <tr>
+                <td>C++</td>
+                <td>
+                  Abstract base class with virtual <c-s>execute()</c-s> and <c-s>undo()</c-s>;
+                  store <c-s>std::unique_ptr&lt;Command&gt;</c-s> in the history stack.
+                  Lambdas with captures work for commands that need no undo.
+                </td>
+              </tr>
+              <tr>
+                <td>C#</td>
+                <td>
+                  <c-s>ICommand</c-s> interface with <c-s>Execute()</c-s> and <c-s>CanExecute()</c-s>
+                  is used directly by WPF/MVVM infrastructure. Implementing undo requires a
+                  separate history stack not provided by the framework.
+                </td>
+              </tr>
+              <tr>
+                <td>Python</td>
+                <td>
+                  A callable object or a namedtuple carrying parameters; the history list
+                  stores them. For simple command queues without undo, a list of lambdas suffices.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+        <details>
+          <summary class="darkItem">Command - Pros and Cons</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Pros</strong></td><td>
+                Decouples the caller from the action; undo/redo via history stack; commands
+                are composable into macros; the queue is serializable for logging or remote
+                execution.
+              </td></tr>
+              <tr><td><strong>Cons</strong></td><td>
+                One type per command grows the codebase; capturing enough state for undo can
+                be expensive; serializing commands for persistence requires additional effort.
+              </td></tr>
+              <tr><td><strong>Best for</strong></td><td>
+                Text and graphics editors, transactional systems requiring rollback, task
+                queues, and any system where user actions must be reversible.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="refs"></a>
+      <h3>1.4  References</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Behavioral Patterns References</summary>
+          <table class="reftable" style="margin-top:0.5rem; width:90%;">
+            <colgroup><col style="width:16rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Resource</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://refactoring.guru/design-patterns/strategy">
+                    Refactoring Guru - Strategy
+                  </a>
+                </td>
+                <td>Strategy pattern with diagrams and examples in multiple languages.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://refactoring.guru/design-patterns/observer">
+                    Refactoring Guru - Observer
+                  </a>
+                </td>
+                <td>Observer pattern with subscribe/unsubscribe examples.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://refactoring.guru/design-patterns/command">
+                    Refactoring Guru - Command
+                  </a>
+                </td>
+                <td>Command pattern with undo history and macro recording examples.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://doc.rust-lang.org/book/ch17-02-trait-objects.html">
+                    Rust Book - Trait Objects
+                  </a>
+                </td>
+                <td>Dynamic dispatch in Rust - the foundation for trait-based behavioral patterns.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#intro">behavioral patterns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#strategy">strategy</a></menu-elem>
+        <menu-elem class="secElem"><a href="#observer">observer</a></menu-elem>
+        <menu-elem class="secElem"><a href="#command">command</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevPatternsPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 1, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  SWDevPatterns_Structural.html
+-->
+<head>
+  <title>SWDev Patterns Structural</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table.reftable {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #github table.reftable th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+      padding: 0.25rem 0.5rem;
+    }
+    #github table.reftable td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDevPatterns_Structural.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 06/29/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+         href="https://github.com/JimFawcett">SWDev Patterns</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">SWDev Patterns: Structural</h2>
+        <h4 class="indent" id="subtitle">decorator, adapter, composite</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="intro"></a>
+      <h3>3.0  Design-Level Structural Patterns</h3>
+      <t-b>
+        Design-level structural patterns address how objects are composed to form larger,
+        more capable objects. The three patterns here - Decorator, Adapter, and Composite -
+        each handle a distinct composition problem:
+        <ul class="tight">
+          <li>Decorator adds behavior without subclassing.</li>
+          <li>Adapter bridges two incompatible interfaces.</li>
+          <li>Composite lets a tree of objects be treated as a single object.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        These are design-level patterns, operating on individual objects and classes.
+        They are distinct from the architectural structural patterns - monolithic, data flow,
+        factored - covered in <a href="SWDevStory_Patterns.html">SWDevStory: Structural Patterns</a>.
+      </t-b>
+
+      <a id="decorator"></a>
+      <h3>3.1  Decorator</h3>
+      <t-b>
+        <strong>Intent:</strong> attach additional behavior to an object dynamically, without
+        modifying its class and without using subclassing. Decorators are stackable and
+        composable.
+      </t-b>
+      <t-b>
+        A Decorator wraps a Component and implements the same interface. Its operation
+        method adds behavior before or after delegating to the wrapped component.
+        Multiple decorators can be stacked, each extending the behavior of the one beneath it.
+      </t-b>
+      <pre><code class="language-text">interface Writer {
+    fn write(&amp;mut self, data: &amp;[u8]) -&gt; Result
+}
+
+struct FileWriter    { file: File }
+struct BufferedWriter { inner: Box&lt;dyn Writer&gt;, buf: Vec&lt;u8&gt; }
+struct GzipWriter    { inner: Box&lt;dyn Writer&gt;, encoder: GzEncoder }
+struct CrcWriter     { inner: Box&lt;dyn Writer&gt;, crc: u32 }
+
+impl Writer for BufferedWriter {
+    fn write(&amp;mut self, data: &amp;[u8]) -&gt; Result {
+        self.buf.extend_from_slice(data);
+        if self.buf.len() &gt;= FLUSH_SIZE { self.flush() }
+        Ok(())
+    }
+}
+
+// stack decorators at construction:
+let w = CrcWriter::new(GzipWriter::new(BufferedWriter::new(FileWriter::new(path))));</code></pre>
+      <t-b>
+        The caller writes to <c-s>w</c-s> and gets CRC verification, gzip compression,
+        and buffering transparently. To add encryption, wrap with another decorator -
+        no existing code changes.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Decorator - Language Idioms</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Rust</td>
+                <td>
+                  Wrapper structs implementing the same trait; generic wrappers using
+                  <c-s>impl&lt;W: Writer&gt; Writer for Buffered&lt;W&gt;</c-s> enable
+                  zero-cost decoration with static dispatch.
+                </td>
+              </tr>
+              <tr>
+                <td>C++</td>
+                <td>
+                  Wrapper class holding <c-s>std::unique_ptr&lt;Component&gt;</c-s>;
+                  template-based CRTP decoration for compile-time stacking without virtual
+                  dispatch.
+                </td>
+              </tr>
+              <tr>
+                <td>C#</td>
+                <td>
+                  Wrapper class implementing the interface; extension methods add decoration
+                  at the call site without wrapping objects; <c-s>Stream</c-s> in the BCL
+                  is the canonical Decorator example.
+                </td>
+              </tr>
+              <tr>
+                <td>Python</td>
+                <td>
+                  The <c-s>@decorator</c-s> function syntax is a direct language feature.
+                  <c-s>functools.wraps</c-s> preserves the wrapped function's metadata.
+                  Class decorators wrap entire classes.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+        <details>
+          <summary class="darkItem">Decorator - Pros and Cons</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Pros</strong></td><td>
+                Behavior is added without modifying existing classes; decorators are
+                independently composable; each decorator has a single responsibility;
+                the set of features can be varied at construction time.
+              </td></tr>
+              <tr><td><strong>Cons</strong></td><td>
+                Deeply nested wrappers are harder to debug; the order of stacking matters
+                and is the caller's responsibility; identity checks (is-a) fail when a
+                concrete type is wrapped.
+              </td></tr>
+              <tr><td><strong>Best for</strong></td><td>
+                I/O streams, middleware pipelines, cross-cutting concerns like logging and
+                metrics, and any situation where a single base behavior needs to be extended
+                in multiple optional and combinable ways.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="adapter"></a>
+      <h3>3.2  Adapter</h3>
+      <t-b>
+        <strong>Intent:</strong> convert the interface of an existing class into the interface
+        that the client expects. An adapter bridges two incompatible interfaces without
+        modifying either.
+      </t-b>
+      <t-b>
+        The client calls the Target interface. The Adapter implements Target by translating
+        each Target method call into one or more calls on the Adaptee. Neither the client
+        nor the adaptee changes.
+      </t-b>
+      <pre><code class="language-text">// Client expects this interface:
+interface Logger {
+    fn log(&amp;self, level: Level, msg: &amp;str)
+}
+
+// Existing third-party library provides:
+struct SyslogWriter {
+    fn write_entry(&amp;self, priority: u8, text: &amp;str)
+}
+
+// Adapter:
+struct SyslogAdapter { inner: SyslogWriter }
+
+impl Logger for SyslogAdapter {
+    fn log(&amp;self, level: Level, msg: &amp;str) {
+        let priority = match level {
+            Level::Error =&gt; 3,
+            Level::Warn  =&gt; 4,
+            Level::Info  =&gt; 6,
+            Level::Debug =&gt; 7,
+        };
+        self.inner.write_entry(priority, msg);
+    }
+}</code></pre>
+      <t-b>
+        The rest of the application works with <c-s>Logger</c-s> and never imports
+        <c-s>SyslogWriter</c-s>. Replacing the logging backend means replacing the adapter,
+        not touching application code.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Adapter - Language Idioms</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Rust</td>
+                <td>
+                  The newtype pattern: a tuple struct wrapping the adaptee, implementing
+                  the target trait. The orphan rule sometimes forces the newtype when
+                  implementing a foreign trait for a foreign type.
+                </td>
+              </tr>
+              <tr>
+                <td>C++</td>
+                <td>
+                  Wrapper class (object adapter) or multiple inheritance (class adapter).
+                  Object adapter is preferred - it works when the adaptee class is not
+                  available for subclassing.
+                </td>
+              </tr>
+              <tr>
+                <td>C#</td>
+                <td>
+                  Wrapper class implementing the target interface, delegating to the adaptee
+                  held as a field. Extension methods can add the target interface to a
+                  third-party type without a wrapper class in simple cases.
+                </td>
+              </tr>
+              <tr>
+                <td>Python</td>
+                <td>
+                  A wrapper class or a thin function that calls the adaptee with translated
+                  parameters. Duck typing reduces the need for formal adapters when the
+                  signature difference is minor.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+        <details>
+          <summary class="darkItem">Adapter - Pros and Cons</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Pros</strong></td><td>
+                Integrates legacy or third-party code without modifying it; isolates the
+                incompatibility in one place; the client and adaptee remain decoupled.
+              </td></tr>
+              <tr><td><strong>Cons</strong></td><td>
+                The adapter is additional code to maintain; when both interfaces change
+                frequently the adapter requires corresponding updates; deep translation
+                (semantic mismatch, not just naming) is harder to hide cleanly.
+              </td></tr>
+              <tr><td><strong>Best for</strong></td><td>
+                Wrapping third-party libraries to match your internal interfaces, migrating
+                from one library to another incrementally, and test doubles that adapt a
+                mock to a production interface.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="composite"></a>
+      <h3>3.3  Composite</h3>
+      <t-b>
+        <strong>Intent:</strong> compose objects into tree structures and treat individual
+        objects (leaves) and compositions (composites) uniformly through a common interface.
+        Recursive operations on a composite tree work without the caller knowing whether
+        it holds a leaf or a subtree.
+      </t-b>
+      <pre><code class="language-text">interface FsEntry {
+    fn name(&amp;self) -&gt; &amp;str
+    fn size(&amp;self) -&gt; u64
+    fn print(&amp;self, indent: usize)
+}
+
+struct File {
+    name: String,
+    size_bytes: u64,
+}
+struct Directory {
+    name: String,
+    children: Vec&lt;Box&lt;dyn FsEntry&gt;&gt;,
+}
+
+impl FsEntry for File {
+    fn size(&amp;self) -&gt; u64 { self.size_bytes }
+    fn print(&amp;self, indent: usize) { println!("{:&gt;indent$}{}", "", self.name) }
+}
+impl FsEntry for Directory {
+    fn size(&amp;self) -&gt; u64 { self.children.iter().map(|c| c.size()).sum() }
+    fn print(&amp;self, indent: usize) {
+        println!("{:&gt;indent$}{}/", "", self.name);
+        for child in &amp;self.children { child.print(indent + 2); }
+    }
+}</code></pre>
+      <t-b>
+        Calling <c-s>root.size()</c-s> recurses the entire tree without any explicit
+        traversal code in the caller. Adding a new kind of entry - a symbolic link, a
+        compressed archive - requires only a new type implementing <c-s>FsEntry</c-s>.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Composite - Language Idioms</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Rust</td>
+                <td>
+                  Recursive enum: <c-s>enum Node { Leaf(Data), Branch(Vec&lt;Node&gt;) }</c-s>
+                  for closed trees where all variants are known at compile time.
+                  <c-s>Box&lt;dyn Trait&gt;</c-s> for open trees where new leaf types are
+                  added independently.
+                </td>
+              </tr>
+              <tr>
+                <td>C++</td>
+                <td>
+                  Abstract base class with <c-s>virtual size()</c-s> and virtual child
+                  operations; <c-s>std::unique_ptr&lt;Component&gt;</c-s> in the children
+                  vector. Define child operations only on Composite, not on the base class,
+                  to keep the leaf interface minimal.
+                </td>
+              </tr>
+              <tr>
+                <td>C#</td>
+                <td>
+                  Interface with default method implementations (C# 8+) or abstract base
+                  class; <c-s>IEnumerable&lt;IComponent&gt;</c-s> on the composite. The
+                  TreeView control in WinForms/WPF is a direct application of this pattern.
+                </td>
+              </tr>
+              <tr>
+                <td>Python</td>
+                <td>
+                  A base class with <c-s>__iter__</c-s> returning children; duck typing
+                  means any object with the right methods qualifies. The built-in
+                  <c-s>pathlib.Path</c-s> walks a composite tree without formalizing the pattern.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+        <details>
+          <summary class="darkItem">Composite - Pros and Cons</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Pros</strong></td><td>
+                Recursive operations on trees require no traversal code in callers; new leaf
+                types integrate without changing existing code; the interface is uniform -
+                callers need not distinguish leaves from composites.
+              </td></tr>
+              <tr><td><strong>Cons</strong></td><td>
+                Placing child-management methods on the component interface makes them
+                meaningless for leaves; enforcing restrictions (only certain types as
+                children) is harder when the interface is fully uniform.
+              </td></tr>
+              <tr><td><strong>Best for</strong></td><td>
+                File system traversal, UI widget hierarchies, parse trees, scene graphs,
+                and any domain where part-whole hierarchies occur and uniform treatment
+                of leaves and subtrees simplifies the calling code.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="refs"></a>
+      <h3>3.4  References</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Structural Patterns References</summary>
+          <table class="reftable" style="margin-top:0.5rem; width:90%;">
+            <colgroup><col style="width:16rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Resource</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://refactoring.guru/design-patterns/decorator">
+                    Refactoring Guru - Decorator
+                  </a>
+                </td>
+                <td>Decorator pattern with stream wrapping examples and diagrams.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://refactoring.guru/design-patterns/adapter">
+                    Refactoring Guru - Adapter
+                  </a>
+                </td>
+                <td>Object and class adapter variants with cross-language examples.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://refactoring.guru/design-patterns/composite">
+                    Refactoring Guru - Composite
+                  </a>
+                </td>
+                <td>Composite pattern with tree traversal examples.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="SWDevStory_Patterns.html">
+                    SWDevStory: Structural Patterns
+                  </a>
+                </td>
+                <td>Architectural structural patterns - monolithic, data flow, factored.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#intro">structural patterns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#decorator">decorator</a></menu-elem>
+        <menu-elem class="secElem"><a href="#adapter">adapter</a></menu-elem>
+        <menu-elem class="secElem"><a href="#composite">composite</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevPatternsPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+</body>
+</html>

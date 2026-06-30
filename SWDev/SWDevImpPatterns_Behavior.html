@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  SWDevImpPatterns_Behavior.html
+-->
+<head>
+  <title>SWDev Impl Patterns Behavior</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table.reftable {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #github table.reftable th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+      padding: 0.25rem 0.5rem;
+    }
+    #github table.reftable td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDevImpPatterns_Behavior.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 06/29/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+         href="https://github.com/JimFawcett">SWDev Impl Patterns</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">SWDev Impl Patterns: Behavior and Dispatch</h2>
+        <h4 class="indent" id="subtitle">command-query separation, polymorphism, delegation, template method</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="intro"></a>
+      <h3>3.0  Behavior and Dispatch</h3>
+      <t-b>
+        The four patterns in this chapter address how methods communicate their intent,
+        how conditional logic is eliminated through types, and how behavior is varied
+        without subclassing. They operate at the boundary between individual method
+        contracts and class design.
+      </t-b>
+
+      <a id="cqs"></a>
+      <h3>3.1  Command-Query Separation</h3>
+      <t-b>
+        <strong>Problem:</strong> a method both changes state and returns a value.
+        Callers cannot reason about which calls are safe to repeat, reorder, or skip.
+        Reading code that queries state through calls with side effects requires tracking
+        implicit mutations.
+      </t-b>
+      <t-b>
+        <strong>Solution:</strong> separate every method into one of two kinds. A
+        <em>command</em> changes state and returns nothing (or only a status). A
+        <em>query</em> returns a value and causes no observable side effects. Meyer:
+        <em>asking a question should not change the answer.</em> Beck applies this at
+        the implementation level: name commands as imperatives
+        (<c-s>add_item</c-s>, <c-s>reset</c-s>), name queries as nouns or predicates
+        (<c-s>count</c-s>, <c-s>is_empty</c-s>).
+      </t-b>
+      <pre><code class="language-text">// Violation: pop() both removes an item and returns it
+fn pop(&amp;mut self) -&gt; Option&lt;T&gt;
+
+// CQS-compliant separation
+fn peek(&amp;self) -&gt; Option&lt;&amp;T&gt;    // query:   returns top item, no mutation
+fn remove_top(&amp;mut self)         // command: removes top item, returns nothing
+
+// In Rust, the standard library violates CQS intentionally for ergonomics:
+// Vec::pop() is a well-known, documented exception.
+// The principle guides new API design; it does not forbid pragmatic exceptions.</code></pre>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Command-Query Separation - Notes</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Benefit</strong></td><td>
+                Queries are referentially transparent - their result depends only on state,
+                not on how many times they are called. This makes code easier to test,
+                reason about, and optimize (queries can be cached or reordered).
+              </td></tr>
+              <tr><td><strong>Pragmatic exceptions</strong></td><td>
+                Some operations are inherently atomic (dequeue an item from a concurrent
+                queue). CQS may be violated where the alternative requires holding a lock
+                across two calls. Document the exception; do not make it a habit.
+              </td></tr>
+              <tr><td><strong>Naming signal</strong></td><td>
+                If a method name contains a verb <em>and</em> returns a value, it is
+                probably violating CQS. <c-s>get_and_clear()</c-s>, <c-s>fetch_next()</c-s>,
+                <c-s>update_and_return()</c-s> are signals to review.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="polymorphism"></a>
+      <h3>3.2  Replace Conditional with Polymorphism</h3>
+      <t-b>
+        <strong>Problem:</strong> the same type-checking conditional - <c-s>if type == A
+        ... else if type == B ...</c-s> or a <c-s>switch</c-s> on a type tag - appears
+        in multiple methods. Adding a new type requires finding and updating every copy.
+      </t-b>
+      <t-b>
+        <strong>Solution:</strong> define a method on a shared interface and implement it
+        differently for each type. The caller dispatches through the interface; the
+        conditional disappears into the dispatch mechanism. Fowler:
+        <em>move each leg of the conditional into an overriding method in a subclass
+        (or trait implementor). Make the original method abstract.</em>
+      </t-b>
+      <pre><code class="language-text">// Before: type-dispatching conditional repeated in every rendering method
+fn render_shape(shape: &amp;Shape, canvas: &amp;mut Canvas) {
+    match shape.kind {
+        ShapeKind::Circle    =&gt; render_circle(shape, canvas),
+        ShapeKind::Rectangle =&gt; render_rectangle(shape, canvas),
+        ShapeKind::Triangle  =&gt; render_triangle(shape, canvas),
+    }
+}
+fn bounding_box(shape: &amp;Shape) -&gt; Rect {
+    match shape.kind { ... }  // same match, again
+}
+
+// After: each type carries its own behavior
+trait Shape {
+    fn render(&amp;self, canvas: &amp;mut Canvas);
+    fn bounding_box(&amp;self) -&gt; Rect;
+}
+
+struct Circle    { center: Point, radius: f64 }
+struct Rectangle { origin: Point, size: Size }
+struct Triangle  { vertices: [Point; 3] }
+
+impl Shape for Circle    { fn render(..) { .. } fn bounding_box(..) { .. } }
+impl Shape for Rectangle { fn render(..) { .. } fn bounding_box(..) { .. } }
+impl Shape for Triangle  { fn render(..) { .. } fn bounding_box(..) { .. } }</code></pre>
+      <t-b>
+        Adding a <c-s>Polygon</c-s> type now requires only a new <c-s>impl Shape for Polygon</c-s>.
+        No existing code changes. The match statements that scattered logic across the codebase
+        are gone.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Replace Conditional - Notes</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>When to apply</strong></td><td>
+                When the same conditional on a type tag or enum appears in three or more
+                methods. A single conditional on an enum is normal; the same conditional
+                in many places is a sign that behavior belongs on the type.
+              </td></tr>
+              <tr><td><strong>Rust enums</strong></td><td>
+                Rust enums with <c-s>match</c-s> are often the right choice when the
+                set of variants is closed and all variants are known at compile time.
+                The compiler enforces exhaustive matching. Use trait objects when
+                new types must be added without recompilation.
+              </td></tr>
+              <tr><td><strong>Limit</strong></td><td>
+                Not every conditional needs polymorphism. A single boolean flag that
+                changes one behavior in one method does not justify an interface split.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="delegation"></a>
+      <h3>3.3  Delegation over Inheritance</h3>
+      <t-b>
+        <strong>Problem:</strong> a subclass inherits a large interface from a parent but
+        only needs a small part of it. The subclass overrides most inherited behavior to
+        no-ops or errors. Changes to the parent break subclasses that depend on inherited
+        methods. Testing the subclass requires instantiating the parent.
+      </t-b>
+      <t-b>
+        <strong>Solution:</strong> hold a reference to a collaborator and delegate the
+        needed operations to it. The class exposes only the methods it actually needs;
+        it is not bound to the parent's full interface. The GoF principle: <em>favor
+        object composition over class inheritance.</em>
+      </t-b>
+      <pre><code class="language-text">// Inheritance: Stack inherits from List and inherits all list operations
+// - includes remove_at(), insert_at(), etc. that violate stack semantics
+class Stack : public List { ... }
+
+// Delegation: Stack holds a List and exposes only push/pop/peek
+struct Stack&lt;T&gt; {
+    storage: Vec&lt;T&gt;     // holds a Vec but does not inherit from it
+}
+impl&lt;T&gt; Stack&lt;T&gt; {
+    fn push(&amp;mut self, item: T)  { self.storage.push(item) }
+    fn pop(&amp;mut self) -&gt; Option&lt;T&gt; { self.storage.pop() }
+    fn peek(&amp;self) -&gt; Option&lt;&amp;T&gt;   { self.storage.last() }
+    fn is_empty(&amp;self) -&gt; bool      { self.storage.is_empty() }
+}</code></pre>
+      <t-b>
+        The delegation version exposes exactly the stack interface. Callers cannot call
+        list operations on a stack. Changing the internal storage to a <c-s>LinkedList</c-s>
+        requires one field change - no interface impact.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Delegation - Notes</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>When inheritance is right</strong></td><td>
+                True is-a relationships where the subtype genuinely satisfies the Liskov
+                Substitution Principle - it can be used wherever the base type is used
+                without surprising the caller. If you would have to override methods to
+                prevent their use, delegation is better.
+              </td></tr>
+              <tr><td><strong>Rust</strong></td><td>
+                Rust has no class inheritance. Delegation through held fields is the only
+                option; the language enforces the pattern by design. Trait implementations
+                on wrapper types provide the needed interface.
+              </td></tr>
+              <tr><td><strong>C# / Python</strong></td><td>
+                Forwarding properties or <c-s>__getattr__</c-s> reduce the boilerplate of
+                delegation when many methods need to be forwarded unchanged.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="template"></a>
+      <h3>3.4  Template Method</h3>
+      <t-b>
+        <strong>Problem:</strong> several procedures share the same overall structure but
+        differ in specific steps. Duplicating the skeleton in each procedure means that
+        changes to the overall flow must be made in every copy.
+      </t-b>
+      <t-b>
+        <strong>Solution:</strong> define the skeleton once in a template method that calls
+        abstract or overridable steps. Each variant implements only the steps that differ.
+        Beck applies this at the implementation level: the steps can be virtual methods,
+        injected callables, or trait implementations - the key is that the skeleton
+        is written once.
+      </t-b>
+      <pre><code class="language-text">// Template method using injected steps (functional style)
+struct ReportPipeline {
+    fetch:    Box&lt;dyn Fn() -&gt; Vec&lt;Row&gt;&gt;,
+    filter:   Box&lt;dyn Fn(Vec&lt;Row&gt;) -&gt; Vec&lt;Row&gt;&gt;,
+    render:   Box&lt;dyn Fn(Vec&lt;Row&gt;) -&gt; String&gt;,
+}
+
+impl ReportPipeline {
+    fn run(&amp;self) -&gt; String {
+        let data     = (self.fetch)();
+        let filtered = (self.filter)(data);
+        (self.render)(filtered)
+    }
+}
+
+// Variant A: CSV output
+ReportPipeline { fetch: db_fetch, filter: active_only, render: csv_render }
+
+// Variant B: HTML output
+ReportPipeline { fetch: db_fetch, filter: active_only, render: html_render }</code></pre>
+      <t-b>
+        The pipeline structure - fetch, filter, render - is written once. Variants differ
+        only in the step implementations they supply. Adding an HTML variant requires no
+        changes to the skeleton.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Template Method - Notes</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Inheritance vs. injection</strong></td><td>
+                The classic GoF form uses virtual method overrides in subclasses.
+                The modern idiomatic form injects step implementations as closures,
+                callbacks, or trait implementations - avoiding a subclass hierarchy
+                for what is essentially a parameterization.
+              </td></tr>
+              <tr><td><strong>vs. Strategy</strong></td><td>
+                Strategy replaces the entire algorithm; Template Method replaces individual
+                steps within a fixed skeleton. Use Template Method when the skeleton is
+                stable and only specific steps vary; use Strategy when the algorithm as a
+                whole is interchangeable.
+              </td></tr>
+              <tr><td><strong>Invariants</strong></td><td>
+                The template method can enforce invariants around the injected steps - for
+                example, always logging before and after each step, or wrapping the
+                computation in a transaction - regardless of what the steps do.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="refs"></a>
+      <h3>3.5  References</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Behavior and Dispatch References</summary>
+          <table class="reftable" style="margin-top:0.5rem; width:90%;">
+            <colgroup><col style="width:16rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Resource</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://www.martinfowler.com/bliki/CommandQuerySeparation.html">
+                    Fowler - Command Query Separation
+                  </a>
+                </td>
+                <td>Fowler's summary of Meyer's CQS principle with notes on when to violate it.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://refactoring.guru/replace-conditional-with-polymorphism">
+                    Refactoring Guru - Replace Conditional with Polymorphism
+                  </a>
+                </td>
+                <td>Step-by-step transformation from type-switching conditional to polymorphic dispatch.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://refactoring.guru/design-patterns/template-method">
+                    Refactoring Guru - Template Method
+                  </a>
+                </td>
+                <td>Template Method pattern with skeleton/step examples and language variants.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://www.martinfowler.com/bliki/ComposedMethod.html">
+                    Fowler - Composed Method
+                  </a>
+                </td>
+                <td>Fowler's discussion of Beck's Composed Method and function length guidance.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#intro">behavior and dispatch</a></menu-elem>
+        <menu-elem class="secElem"><a href="#cqs">command-query separation</a></menu-elem>
+        <menu-elem class="secElem"><a href="#polymorphism">replace conditional</a></menu-elem>
+        <menu-elem class="secElem"><a href="#delegation">delegation over inheritance</a></menu-elem>
+        <menu-elem class="secElem"><a href="#template">template method</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevImpPatternsPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+Read Code/AI/documents/WritingTone_Prototype.html and use its tone and writing style, but not its contents, when creating or editing text.  The audience is experienced software developers.
+Do not use emdashes. Use dashes instead.

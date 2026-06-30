@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  SWDevImpPatterns_Clarity.html
+-->
+<head>
+  <title>SWDev Impl Patterns Clarity</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table.reftable {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #github table.reftable th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+      padding: 0.25rem 0.5rem;
+    }
+    #github table.reftable td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDevImpPatterns_Clarity.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 06/29/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+         href="https://github.com/JimFawcett">SWDev Impl Patterns</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">SWDev Impl Patterns: Clarity and Structure</h2>
+        <h4 class="indent" id="subtitle">composed method, intention-revealing name, explaining variable, guard clause</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="intro"></a>
+      <h3>1.0  Clarity and Structure</h3>
+      <t-b>
+        The four patterns in this chapter operate at the level of individual methods and
+        expressions. They share a single goal: a reader encountering a method for the first
+        time should understand its intent immediately, without tracing execution or consulting
+        comments.
+      </t-b>
+      <t-b>
+        Beck's central observation is that code is read far more often than it is written.
+        Methods that communicate clearly reduce the cost of every future change: the reader
+        quickly understands what exists before deciding what to add or modify.
+      </t-b>
+
+      <a id="composed"></a>
+      <h3>1.1  Composed Method</h3>
+      <t-b>
+        <strong>Problem:</strong> a method grows to dozens of lines, mixing high-level
+        coordination with low-level detail. Understanding it requires reading the whole thing.
+      </t-b>
+      <t-b>
+        <strong>Solution:</strong> decompose the method into a small number of helper calls,
+        each at the same level of abstraction. The top-level method reads like a prose
+        description of the algorithm; the helpers contain the detail. Beck: <em>divide a
+        program into methods that perform one identifiable task. Keep all of the operations
+        in a method at the same level of abstraction.</em>
+      </t-b>
+      <pre><code class="language-text">// Before: one method at many levels of abstraction
+fn process_order(order: &amp;Order) {
+    // validate
+    if order.items.is_empty() { return Err("empty"); }
+    if order.customer.credit_limit &lt; order.total() { return Err("credit"); }
+    // reserve inventory
+    for item in &amp;order.items {
+        inventory.decrement(item.sku, item.qty);
+    }
+    // write to database
+    db.insert("orders", order.to_row());
+    for item in &amp;order.items {
+        db.insert("order_items", item.to_row());
+    }
+    // notify
+    email.send(order.customer.email, confirmation_text(order));
+}
+
+// After: each helper is one level of abstraction
+fn process_order(order: &amp;Order) -&gt; Result {
+    validate_order(order)?;
+    reserve_inventory(order)?;
+    persist_order(order)?;
+    notify_customer(order)?;
+    Ok(())
+}</code></pre>
+      <t-b>
+        The composed version answers "what does this method do?" in four words per line.
+        A reader interested in how inventory is reserved reads only <c-s>reserve_inventory</c-s>.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Composed Method - Notes</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Rule of thumb</strong></td><td>
+                If you can describe the method in a single sentence without "and" or "then",
+                it is probably composed correctly. If you need "first... then... then...", it
+                needs decomposition.
+              </td></tr>
+              <tr><td><strong>Size</strong></td><td>
+                Beck recommends five to ten lines per method. The goal is not brevity for its
+                own sake but ensuring the method is comprehensible at a single level of detail.
+              </td></tr>
+              <tr><td><strong>Fowler equivalent</strong></td><td>
+                <em>Extract Method</em> - the primary refactoring that produces composed methods.
+                Name the extracted method for what it does, not how.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="naming"></a>
+      <h3>1.2  Intention-Revealing Name</h3>
+      <t-b>
+        <strong>Problem:</strong> names describe how something is implemented rather than
+        what it means. A reader must trace the implementation to understand the purpose.
+      </t-b>
+      <t-b>
+        <strong>Solution:</strong> name methods, variables, and types for their purpose and
+        role, not their mechanism. The name should make the implementation detail irrelevant
+        to a reader of the calling code. Beck: <em>name methods after what they do, not
+        how they do it.</em>
+      </t-b>
+      <pre><code class="language-text">// Mechanistic names: reader must infer purpose
+fn iterate_and_compare(list: &amp;[Item]) -&gt; Vec&lt;Item&gt;
+fn check_flag(x: bool) -&gt; bool
+let temp2 = result * 0.0875;
+
+// Intention-revealing names: purpose is explicit
+fn find_duplicates(list: &amp;[Item]) -&gt; Vec&lt;Item&gt;
+fn is_eligible_for_discount(member: &amp;Member) -&gt; bool
+let sales_tax = subtotal * TAX_RATE;</code></pre>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Naming - Notes by Language</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Language</th><th>Conventions that support intention-revealing names</th></tr></thead>
+            <tbody>
+              <tr><td>Rust</td><td>
+                Predicate methods use <c-s>is_</c-s> or <c-s>has_</c-s> prefix. Consuming
+                transformations use verb form (<c-s>into_string()</c-s>). Iterators use
+                <c-s>iter()</c-s> / <c-s>iter_mut()</c-s> / <c-s>into_iter()</c-s> to
+                express borrowing intent.
+              </td></tr>
+              <tr><td>C++</td><td>
+                Boolean getters conventionally use <c-s>is_</c-s> or <c-s>has_</c-s>.
+                Const member functions signal query intent. Prefer <c-s>reserve()</c-s>
+                over <c-s>set_capacity()</c-s> when the name matches domain vocabulary.
+              </td></tr>
+              <tr><td>C#</td><td>
+                Properties named as nouns; methods named as verb phrases. Boolean properties
+                use <c-s>Is</c-s>, <c-s>Has</c-s>, <c-s>Can</c-s> prefix.
+                LINQ method names (<c-s>Where</c-s>, <c-s>Select</c-s>, <c-s>GroupBy</c-s>)
+                are a model of intention-revealing naming.
+              </td></tr>
+              <tr><td>Python</td><td>
+                PEP 8 names methods as <c-s>verb_noun</c-s>; predicates as
+                <c-s>is_condition</c-s>. Avoid abbreviation. Single-letter variables are
+                acceptable only in short mathematical expressions where the variable is
+                conventional (e.g., <c-s>i</c-s> in a loop, <c-s>x</c-s> in a coordinate).
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="explaining"></a>
+      <h3>1.3  Explaining Variable</h3>
+      <t-b>
+        <strong>Problem:</strong> a complex boolean condition, arithmetic expression, or
+        nested function call appears inline. Its meaning is not recoverable without stepping
+        through each term.
+      </t-b>
+      <t-b>
+        <strong>Solution:</strong> assign the expression to a local variable whose name
+        describes what it represents. The variable documents the expression for every
+        reader without requiring a comment. Fowler calls this <em>Introduce Explaining
+        Variable</em>.
+      </t-b>
+      <pre><code class="language-text">// Opaque inline condition
+if order.customer.tier == "gold" &amp;&amp; order.total() &gt; 500.0
+   &amp;&amp; !order.has_pending_returns() &amp;&amp; calendar.is_business_day(today) {
+    apply_priority_discount(order);
+}
+
+// Explained with named variables
+let is_premium_customer     = order.customer.tier == "gold";
+let qualifies_by_amount     = order.total() &gt; 500.0;
+let has_clean_account       = !order.has_pending_returns();
+let discount_period_active  = calendar.is_business_day(today);
+
+if is_premium_customer &amp;&amp; qualifies_by_amount
+   &amp;&amp; has_clean_account &amp;&amp; discount_period_active {
+    apply_priority_discount(order);
+}</code></pre>
+      <t-b>
+        The condition now reads as a policy statement, not a computation. A future maintainer
+        can change the discount eligibility rules by reading and modifying clearly labeled
+        sub-conditions.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Explaining Variable - Notes</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>When to use</strong></td><td>
+                Any expression that requires the reader to evaluate it mentally to understand
+                its meaning. Arithmetic involving named constants, multi-term booleans,
+                and index arithmetic are common candidates.
+              </td></tr>
+              <tr><td><strong>vs. comment</strong></td><td>
+                A named variable is better than a comment above the expression: the name
+                travels with the value wherever it is used; a comment does not. Comments also
+                drift out of sync with the code; names are always accurate.
+              </td></tr>
+              <tr><td><strong>vs. extract method</strong></td><td>
+                Prefer explaining variable when the expression is local to the method.
+                Extract to a method when the same expression appears in multiple places or
+                when it needs its own tests.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="guard"></a>
+      <h3>1.4  Guard Clause</h3>
+      <t-b>
+        <strong>Problem:</strong> a method handles error cases and precondition failures
+        inside nested if-else blocks. The main logic is buried at a high indentation level;
+        the reader must track multiple nesting levels to reach it.
+      </t-b>
+      <t-b>
+        <strong>Solution:</strong> test preconditions and exceptional inputs at the top of
+        the method and return (or throw) early. The remaining method body contains only
+        the normal case at a single indentation level. Beck calls these <em>guard clauses</em>;
+        Fowler calls the refactoring <em>Replace Nested Conditional with Guard Clauses</em>.
+      </t-b>
+      <pre><code class="language-text">// Before: main logic buried in nesting
+fn process_payment(payment: &amp;Payment) -&gt; Result {
+    if payment.amount &gt; 0.0 {
+        if payment.account.is_active() {
+            if !payment.is_duplicate() {
+                // ... main logic here, deeply indented
+                charge(payment.account, payment.amount);
+                Ok(())
+            } else {
+                Err("duplicate payment")
+            }
+        } else {
+            Err("account inactive")
+        }
+    } else {
+        Err("invalid amount")
+    }
+}
+
+// After: guard clauses eliminate nesting
+fn process_payment(payment: &amp;Payment) -&gt; Result {
+    if payment.amount &lt;= 0.0       { return Err("invalid amount"); }
+    if !payment.account.is_active() { return Err("account inactive"); }
+    if payment.is_duplicate()       { return Err("duplicate payment"); }
+
+    charge(payment.account, payment.amount);
+    Ok(())
+}</code></pre>
+      <t-b>
+        The guard clause version has one level of indentation for the main logic. Each
+        guard states a single rule. Adding another precondition is one line at the top,
+        not another level of nesting.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Guard Clause - Notes</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Early return</strong></td><td>
+                Guard clauses require early returns. Some style guides prohibit multiple
+                return points; Beck argues this is a misapplication - early returns for
+                guards are always clearer than deep nesting.
+              </td></tr>
+              <tr><td><strong>Rust / C#</strong></td><td>
+                The <c-s>?</c-s> operator in Rust and pattern matching naturally
+                produce guard-like code. C# <c-s>throw</c-s> expressions (C# 7+) allow
+                guards inline in null-coalescing chains.
+              </td></tr>
+              <tr><td><strong>Limit</strong></td><td>
+                Guard clauses are for genuinely exceptional or invalid input. If every
+                caller passes all guards, the guards should be assertions or debug checks,
+                not runtime guards.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="refs"></a>
+      <h3>1.5  References</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Clarity and Structure References</summary>
+          <table class="reftable" style="margin-top:0.5rem; width:90%;">
+            <colgroup><col style="width:16rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Resource</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://refactoring.guru/refactoring/techniques/composing-methods">
+                    Refactoring Guru - Composing Methods
+                  </a>
+                </td>
+                <td>Extract Method, Inline Method, Introduce Explaining Variable, and related
+                  refactorings that produce composed, clear methods.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://refactoring.guru/replace-nested-conditional-with-guard-clauses">
+                    Refactoring Guru - Guard Clauses
+                  </a>
+                </td>
+                <td>Replace Nested Conditional with Guard Clauses - step-by-step transformation.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://www.martinfowler.com/bliki/FunctionLength.html">
+                    Fowler - Function Length
+                  </a>
+                </td>
+                <td>Fowler's position on short functions and the Composed Method principle.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#intro">clarity and structure</a></menu-elem>
+        <menu-elem class="secElem"><a href="#composed">composed method</a></menu-elem>
+        <menu-elem class="secElem"><a href="#naming">intention-revealing name</a></menu-elem>
+        <menu-elem class="secElem"><a href="#explaining">explaining variable</a></menu-elem>
+        <menu-elem class="secElem"><a href="#guard">guard clause</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevImpPatternsPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 1, 10);
+  </script>
+</body>
+</html>

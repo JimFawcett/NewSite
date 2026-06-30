@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  CodeStory_Tools.html - Development Tools
+-->
+<head>
+  <title>Code Story - Dev Tools</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <link rel="stylesheet" href="../css/ViewImage.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/ViewImage.js" defer></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    CodeStory_Tools.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 06/29/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett">Code Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Code Story: Dev Tools</h2>
+        <h4 class="indent" id="subtitle">VS Code, CMake, MSBuild, Clang, dotnet CLI, Python</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="intro"></a>
+      <h3>1.0 &nbsp;Development Tools</h3>
+      <t-b>
+        Every project in Code Story uses a consistent toolchain. This chapter surveys the
+        six tools that appear most often - from editor to build system to runtime -
+        so each subsequent chapter can reference them without re-explaining the setup.
+      </t-b>
+      <t-b>
+        The tools split into three roles:
+      </t-b>
+      <t-b class="indent">
+        <ul class="tight">
+          <li><strong>Editor</strong> - VS Code, the single editor used across all languages.</li>
+          <li><strong>Build systems</strong> - CMake (C/C++), MSBuild (.NET and C++), Clang (compiler + tooling).</li>
+          <li><strong>Runtimes / package managers</strong> - dotnet CLI (.NET), Python (interpreter + pip).</li>
+        </ul>
+      </t-b>
+
+      <a id="vscode"></a>
+      <h4>1.1 &nbsp;VS Code</h4>
+      <view-image src="pictures/VscDemo.JPG" bg-color="var(--light)" title-bg-color="#ccc" width="550px" step-px="80" style="float:right; margin: 0 0 1rem 1.5rem;">
+        Figure 1. VS Code with integrated terminal
+      </view-image>
+      <t-b>
+        VS Code is a lightweight, extensible editor from Microsoft that runs on Windows, macOS,
+        and Linux. It provides language-aware editing through the Language Server Protocol, so
+        every language extension (rust-analyzer, clangd, C# Dev Kit, Pylance) shares the same
+        UI for completions, diagnostics, and go-to-definition.
+      </t-b>
+      <t-b>
+        Extensions used across Code Story projects:
+      </t-b>
+      <t-b class="indent">
+        <ul class="tight">
+          <li><strong>rust-analyzer</strong> - Rust: type inference, borrow checker feedback, inlay hints.</li>
+          <li><strong>clangd</strong> or <strong>C/C++ Extension Pack</strong> - C++ with CMake integration.</li>
+          <li><strong>C# Dev Kit</strong> - C# with .NET SDK project navigation and test runner.</li>
+          <li><strong>Pylance</strong> - Python: static type checking via Pyright, import resolution.</li>
+          <li><strong>Error Lens</strong> - Inline diagnostic messages on the offending line.</li>
+          <li><strong>GitLens</strong> - Blame annotations, branch history, commit diff in the editor.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        The integrated terminal eliminates context-switching: build, test, and run commands all
+        run in the same window. The built-in debugger connects to each language's debug adapter
+        without requiring a separate IDE.
+      </t-b>
+      <div style="clear:both;"></div>
+
+      <a id="cmake"></a>
+      <h4>1.2 &nbsp;CMake</h4>
+      <t-b>
+        CMake is a cross-platform build-system generator. It reads a <code>CMakeLists.txt</code>
+        description and generates native build files for Make, Ninja, MSBuild, or Xcode.
+        All C and C++ projects in Code Story use CMake so the same source tree builds on
+        Windows, Linux, and macOS without modification.
+      </t-b>
+      <t-b>
+        Typical workflow:
+      </t-b>
+      <defn-code>cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+./build/my_app</defn-code>
+      <t-b class="indent">
+        <ul class="tight">
+          <li><code>-S .</code> - source directory (where CMakeLists.txt lives).</li>
+          <li><code>-B build</code> - out-of-source build directory; keeps the source tree clean.</li>
+          <li><code>--build build</code> - invokes the underlying generator (Make or Ninja or MSBuild).</li>
+          <li><code>-DCMAKE_BUILD_TYPE=Release</code> - enables optimizations; use <code>Debug</code> for debug symbols.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        CMake 3.15+ supports presets (cmake-presets.json) that record compiler selection,
+        build flags, and test configuration in version-controlled JSON rather than per-developer
+        shell scripts.
+      </t-b>
+
+      <a id="msbuild"></a>
+      <h4>1.3 &nbsp;MSBuild</h4>
+      <t-b>
+        MSBuild is the build engine for Visual Studio and the .NET SDK. It reads <code>.csproj</code>,
+        <code>.vcxproj</code>, and <code>.sln</code> files. You rarely write MSBuild XML directly -
+        the .NET SDK and VS generate it - but knowing the key flags matters when scripting builds
+        or debugging build failures.
+      </t-b>
+      <defn-code>msbuild MyApp.sln /p:Configuration=Release /p:Platform=x64
+msbuild MyApp.csproj /t:Rebuild /p:Configuration=Debug</defn-code>
+      <t-b class="indent">
+        <ul class="tight">
+          <li><code>/p:Configuration=Release</code> - selects the Release configuration (optimized).</li>
+          <li><code>/p:Platform=x64</code> - targets 64-bit; omit for SDK-style projects that default to AnyCPU.</li>
+          <li><code>/t:Rebuild</code> - clean then build; <code>/t:Build</code> is incremental.</li>
+          <li><code>/m</code> - parallel build using all CPU cores.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        For .NET 5+ projects, the <code>dotnet</code> CLI (section 1.5) wraps MSBuild and is
+        the preferred command-line interface. Use MSBuild directly for legacy <code>.vcxproj</code>
+        C++ projects or when you need fine-grained control over the target graph.
+      </t-b>
+
+      <a id="clang"></a>
+      <h4>1.4 &nbsp;Clang</h4>
+      <t-b>
+        Clang is both a C/C++ compiler and a tooling platform. The compiler produces code
+        comparable to GCC and MSVC. The tooling layer - clang-tidy, clang-format, clangd,
+        and the sanitizers - makes it the most diagnostic-rich C++ toolchain available.
+      </t-b>
+      <t-b>
+        Key tools:
+      </t-b>
+      <t-b class="indent">
+        <ul class="tight">
+          <li>
+            <strong>clang / clang++</strong> - compile with
+            <code>-Wall -Wextra -std=c++20 -O2</code> as a baseline.
+          </li>
+          <li>
+            <strong>clang-tidy</strong> - static analysis; catches common bugs, enforces
+            coding guidelines. Run via CMake with <code>CMAKE_CXX_CLANG_TIDY</code>.
+          </li>
+          <li>
+            <strong>clang-format</strong> - deterministic formatting driven by
+            <code>.clang-format</code> in the project root. Integrates with VS Code's
+            "Format on Save."
+          </li>
+          <li>
+            <strong>AddressSanitizer / UBSan</strong> - compile with <code>-fsanitize=address,undefined</code>
+            to catch memory errors and undefined behavior at runtime.
+          </li>
+          <li>
+            <strong>clangd</strong> - language server; powers the VS Code C++ extension
+            with completion, diagnostics, and cross-reference based on compile_commands.json.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        Generate <code>compile_commands.json</code> from CMake with
+        <code>-DCMAKE_EXPORT_COMPILE_COMMANDS=ON</code>. Copy or symlink it to the project root
+        so clangd finds it automatically.
+      </t-b>
+
+      <a id="dotnet"></a>
+      <h4>1.5 &nbsp;dotnet CLI</h4>
+      <t-b>
+        The <code>dotnet</code> CLI is the primary interface for .NET SDK projects. It creates,
+        builds, tests, and runs C# projects without requiring Visual Studio.
+      </t-b>
+      <defn-code>dotnet new console -n MyApp       # create console project
+dotnet build -c Release              # build
+dotnet run                           # build and run
+dotnet test                          # run xUnit / NUnit tests
+dotnet publish -c Release -r win-x64 --self-contained</defn-code>
+      <t-b class="indent">
+        <ul class="tight">
+          <li><code>dotnet new</code> - scaffolds projects; <code>dotnet new list</code> shows all templates.</li>
+          <li><code>dotnet add package &lt;name&gt;</code> - adds a NuGet dependency and updates the .csproj.</li>
+          <li><code>dotnet publish --self-contained</code> - bundles the runtime into the output; no .NET install needed on the target.</li>
+          <li><code>dotnet watch run</code> - hot-reload loop; rebuilds and restarts on file save.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        SDK-style <code>.csproj</code> files are concise enough to edit by hand. The CLI
+        and MSBuild share the same project model, so a project built with
+        <code>dotnet build</code> opens without modification in Visual Studio.
+      </t-b>
+
+      <a id="python"></a>
+      <h4>1.6 &nbsp;Python</h4>
+      <t-b>
+        Python 3.10+ is the runtime for all Python implementations in Code Story. The interpreter
+        is also used for scripting build steps, running analysis tools (radon, pylint, cProfile),
+        and driving the AI agent tools in the Code/AI/ directory.
+      </t-b>
+      <t-b>
+        Project setup with a virtual environment:
+      </t-b>
+      <defn-code>python -m venv .venv          # create isolated environment
+.venv\Scripts\activate         # Windows - activate
+source .venv/bin/activate      # Linux / macOS - activate
+pip install -r requirements.txt
+python src/main.py</defn-code>
+      <t-b class="indent">
+        <ul class="tight">
+          <li>
+            <strong>venv</strong> - isolates dependencies per project; avoids version conflicts
+            between projects and the system Python.
+          </li>
+          <li>
+            <strong>pip</strong> - installs packages from PyPI; <code>pip freeze &gt; requirements.txt</code>
+            records the exact versions for reproducible installs.
+          </li>
+          <li>
+            <strong>pyproject.toml</strong> - the modern project metadata file, replacing
+            <code>setup.py</code>. Build tools (flit, hatchling, setuptools) read it.
+          </li>
+          <li>
+            <strong>pylint / mypy</strong> - static analysis and type checking; integrate with
+            VS Code via the Pylance extension and the Problems panel.
+          </li>
+        </ul>
+      </t-b>
+      <t-b>
+        Python is the only interpreted language in Code Story. That matters for performance
+        comparisons: CPU-bound tasks run 10-100x slower than compiled languages, but I/O-bound
+        tasks (TextFinder, file search) close much of the gap because the hot path runs in
+        compiled C extensions inside the standard library.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#intro">intro</a></menu-elem>
+        <menu-elem class="secElem"><a href="#vscode">VS Code</a></menu-elem>
+        <menu-elem class="secElem"><a href="#cmake">CMake</a></menu-elem>
+        <menu-elem class="secElem"><a href="#msbuild">MSBuild</a></menu-elem>
+        <menu-elem class="secElem"><a href="#clang">Clang</a></menu-elem>
+        <menu-elem class="secElem"><a href="#dotnet">dotnet CLI</a></menu-elem>
+        <menu-elem class="secElem"><a href="#python">Python</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CodeStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 1, 10);
+  </script>
+</body>
+</html>

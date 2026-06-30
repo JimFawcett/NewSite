@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  SWDevPatterns_Creational.html
+-->
+<head>
+  <title>SWDev Patterns Creational</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table.reftable {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #github table.reftable th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+      padding: 0.25rem 0.5rem;
+    }
+    #github table.reftable td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDevPatterns_Creational.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 06/29/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+         href="https://github.com/JimFawcett">SWDev Patterns</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">SWDev Patterns: Creational</h2>
+        <h4 class="indent" id="subtitle">factory method, builder, singleton</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="intro"></a>
+      <h3>2.0  Creational Patterns</h3>
+      <t-b>
+        Creational patterns address object construction. They decouple the code that
+        uses an object from the code that creates it, keeping clients ignorant of
+        which concrete type they hold and how it was built.
+      </t-b>
+      <t-b>
+        This separation matters when the concrete type varies by configuration, when
+        construction is complex, or when only one instance should exist. The three
+        patterns here cover those three cases: Factory Method for type selection,
+        Builder for step-by-step construction, and Singleton for single-instance control.
+      </t-b>
+
+      <a id="factory"></a>
+      <h3>2.1  Factory Method</h3>
+      <t-b>
+        <strong>Intent:</strong> define an interface for creating an object, but let the
+        factory function or subclass decide which concrete type to instantiate. Clients
+        work with the product interface, never with constructors directly.
+      </t-b>
+      <t-b>
+        The factory function examines a key - a string, enum, or configuration value - and
+        returns the appropriate concrete implementation. The caller receives a
+        <c-s>Box&lt;dyn Product&gt;</c-s> or interface reference and never imports the
+        concrete type.
+      </t-b>
+      <pre><code class="language-text">interface Connection {
+    fn send(&amp;self, data: &amp;[u8]) -&gt; Result
+    fn recv(&amp;mut self) -&gt; Result&lt;Vec&lt;u8&gt;&gt;
+    fn close(&amp;mut self)
+}
+
+struct TcpConnection  { ... }
+struct UnixConnection { ... }
+struct MockConnection { ... }
+
+impl Connection for TcpConnection  { ... }
+impl Connection for UnixConnection { ... }
+impl Connection for MockConnection { ... }
+
+fn make_connection(kind: &amp;str, addr: &amp;str) -&gt; Box&lt;dyn Connection&gt; {
+    match kind {
+        "tcp"  =&gt; Box::new(TcpConnection::new(addr)),
+        "unix" =&gt; Box::new(UnixConnection::new(addr)),
+        "mock" =&gt; Box::new(MockConnection::new()),
+        _      =&gt; panic!("unknown connection kind"),
+    }
+}</code></pre>
+      <t-b>
+        The caller passes <c-s>"tcp"</c-s> in production and <c-s>"mock"</c-s> in tests.
+        Neither the caller's code nor its tests import the concrete connection types.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Factory Method - Language Idioms</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Rust</td>
+                <td>
+                  A free function or associated function returning <c-s>Box&lt;dyn Trait&gt;</c-s>.
+                  An enum works when the set of concrete types is closed and all variants are
+                  compiled in.
+                </td>
+              </tr>
+              <tr>
+                <td>C++</td>
+                <td>
+                  Static factory function returning <c-s>std::unique_ptr&lt;Base&gt;</c-s>.
+                  Template factories are possible when the type is a compile-time parameter.
+                </td>
+              </tr>
+              <tr>
+                <td>C#</td>
+                <td>
+                  Static method on the interface or a registry class; generics with
+                  <c-s>new()</c-s> constraint for compile-time factories.
+                  <c-s>Activator.CreateInstance()</c-s> for reflection-based factories.
+                </td>
+              </tr>
+              <tr>
+                <td>Python</td>
+                <td>
+                  A plain function or a registry dict mapping keys to classes;
+                  call the class as a constructor. Module-level factory functions are idiomatic.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+        <details>
+          <summary class="darkItem">Factory Method - Pros and Cons</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Pros</strong></td><td>
+                Clients are decoupled from concrete types; swapping implementations
+                (production vs. test, platform-specific vs. generic) requires no
+                changes to calling code; the factory is the single point to update
+                when adding a new variant.
+              </td></tr>
+              <tr><td><strong>Cons</strong></td><td>
+                The factory must know all concrete types, creating a coupling point;
+                dynamically loaded types require a registration mechanism; error handling
+                for unknown keys must be decided at the factory boundary.
+              </td></tr>
+              <tr><td><strong>Best for</strong></td><td>
+                Anything where the concrete type varies by configuration, platform, or
+                environment - connection types, serialization formats, UI controls, logging
+                backends.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="builder"></a>
+      <h3>2.2  Builder</h3>
+      <t-b>
+        <strong>Intent:</strong> separate the step-by-step construction of a complex object
+        from its representation. The same build process can produce different representations
+        by supplying different parameters.
+      </t-b>
+      <t-b>
+        The Builder accumulates parts through a chain of method calls, each setting one
+        configuration value. A final <c-s>build()</c-s> call validates and returns the
+        finished product. This eliminates constructors with long parameter lists and
+        makes optional fields explicit.
+      </t-b>
+      <pre><code class="language-text">struct SearchConfig {
+    root:       PathBuf,
+    extensions: Vec&lt;String&gt;,
+    regex:      String,
+    recursive:  bool,
+    max_depth:  Option&lt;usize&gt;,
+}
+
+struct SearchConfigBuilder { config: SearchConfig }
+
+impl SearchConfigBuilder {
+    fn new(root: &amp;str, regex: &amp;str) -&gt; Self { ... }  // required fields only
+    fn extensions(mut self, exts: &amp;[&amp;str]) -&gt; Self { ... }
+    fn recursive(mut self, r: bool) -&gt; Self { ... }
+    fn max_depth(mut self, d: usize) -&gt; Self { ... }
+    fn build(self) -&gt; Result&lt;SearchConfig, String&gt; { ... }
+}
+
+// usage:
+let cfg = SearchConfigBuilder::new("./src", r"\bTODO\b")
+    .extensions(&amp;["rs", "toml"])
+    .recursive(true)
+    .max_depth(5)
+    .build()?;</code></pre>
+      <t-b>
+        Any combination of optional settings is valid. The caller only sets what it cares
+        about. <c-s>build()</c-s> validates that required fields are consistent and
+        returns an error if not.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Builder - Language Idioms</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Rust</td>
+                <td>
+                  Method chaining with consuming <c-s>self</c-s> prevents using the builder
+                  after <c-s>build()</c-s>. The <c-s>derive_builder</c-s> crate generates
+                  builder structs automatically from annotated structs.
+                </td>
+              </tr>
+              <tr>
+                <td>C++</td>
+                <td>
+                  Named parameter idiom: each setter returns <c-s>Builder&amp;</c-s>
+                  for chaining. The builder is separate from the product. Alternatively,
+                  a config struct with designated initializers (C++20) covers simple cases.
+                </td>
+              </tr>
+              <tr>
+                <td>C#</td>
+                <td>
+                  Object initializers (<c-s>new Config { Root = "...", Recursive = true }</c-s>)
+                  handle simple cases. Fluent builder classes with method chaining are used
+                  when validation at <c-s>Build()</c-s> time is needed.
+                </td>
+              </tr>
+              <tr>
+                <td>Python</td>
+                <td>
+                  Keyword arguments with defaults cover most Builder use cases directly.
+                  A dataclass with <c-s>@dataclass(frozen=True)</c-s> and a factory
+                  function handles validation cleanly.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+        <details>
+          <summary class="darkItem">Builder - Pros and Cons</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Pros</strong></td><td>
+                Eliminates telescoping constructors; optional fields are explicit and named;
+                validation is centralized in <c-s>build()</c-s>; the same builder can produce
+                variants (test config vs. production config).
+              </td></tr>
+              <tr><td><strong>Cons</strong></td><td>
+                More code than a plain constructor for simple objects; the builder and product
+                types must stay in sync when fields are added; method chaining is unfamiliar
+                to some readers.
+              </td></tr>
+              <tr><td><strong>Best for</strong></td><td>
+                Objects with many optional parameters, complex invariants to validate at
+                construction, or configuration types assembled from external input (CLI args,
+                config files, network responses).
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="singleton"></a>
+      <h3>2.3  Singleton</h3>
+      <t-b>
+        <strong>Intent:</strong> ensure a class or struct has exactly one instance and
+        provide a global access point to it.
+      </t-b>
+      <t-b>
+        The classic form hides the constructor and provides a static <c-s>instance()</c-s>
+        method that creates the instance on first call and returns the same instance
+        on every subsequent call. Thread-safe initialization requires special care.
+      </t-b>
+      <pre><code class="language-text">// Rust - thread-safe singleton with OnceLock (stable since 1.70)
+use std::sync::OnceLock;
+
+struct AppConfig { log_level: String, max_workers: usize }
+
+static CONFIG: OnceLock&lt;AppConfig&gt; = OnceLock::new();
+
+fn config() -&gt; &amp;'static AppConfig {
+    CONFIG.get_or_init(|| AppConfig {
+        log_level:   std::env::var("LOG_LEVEL").unwrap_or("info".into()),
+        max_workers: num_cpus::get(),
+    })
+}</code></pre>
+      <t-b>
+        The pattern solves a real problem - shared immutable configuration accessed from
+        many call sites - but introduces global state. Global state couples all callers
+        to a single instance, making components harder to test in isolation.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Singleton - When to Use and When to Avoid</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:12rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Appropriate uses</strong></td><td>
+                Read-only configuration loaded once at startup; a logger writing to a fixed
+                destination; a connection pool shared across a process; a registry that
+                accumulates entries during initialization.
+              </td></tr>
+              <tr><td><strong>Problematic uses</strong></td><td>
+                Mutable shared state - causes races and makes reasoning difficult; anything
+                that varies between tests - the singleton persists across test runs in the
+                same process; anything that should vary by environment (production vs. test).
+              </td></tr>
+              <tr><td><strong>Preferred alternative</strong></td><td>
+                Inject the shared instance as a parameter. The caller decides whether to
+                share one instance or create separate ones. Tests inject a mock or a
+                freshly constructed value. This is the Dependency Injection pattern applied
+                to the same problem Singleton solves.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+        <details>
+          <summary class="darkItem">Singleton - Language Idioms</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Rust</td>
+                <td>
+                  <c-s>std::sync::OnceLock&lt;T&gt;</c-s> (1.70+) or the
+                  <c-s>once_cell</c-s> crate for earlier versions. Both are thread-safe
+                  without explicit locking.
+                </td>
+              </tr>
+              <tr>
+                <td>C++</td>
+                <td>
+                  Meyers singleton: a static local variable inside <c-s>instance()</c-s>
+                  is initialized on first call and is thread-safe since C++11. Avoid
+                  <c-s>static</c-s> class members with double-checked locking.
+                </td>
+              </tr>
+              <tr>
+                <td>C#</td>
+                <td>
+                  <c-s>Lazy&lt;T&gt;</c-s> with thread-safe mode; the CLR guarantees
+                  type initializers run exactly once, so a <c-s>static readonly</c-s>
+                  field initialized inline is also safe.
+                </td>
+              </tr>
+              <tr>
+                <td>Python</td>
+                <td>
+                  Module-level instances: Python imports a module once per process, so a
+                  module-level object is effectively a singleton. Metaclass-based singletons
+                  exist but are rarely necessary.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="refs"></a>
+      <h3>2.4  References</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Creational Patterns References</summary>
+          <table class="reftable" style="margin-top:0.5rem; width:90%;">
+            <colgroup><col style="width:16rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Resource</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://refactoring.guru/design-patterns/factory-method">
+                    Refactoring Guru - Factory Method
+                  </a>
+                </td>
+                <td>Factory Method with class diagrams and cross-language examples.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://refactoring.guru/design-patterns/builder">
+                    Refactoring Guru - Builder
+                  </a>
+                </td>
+                <td>Builder with step-by-step construction examples and director pattern.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://refactoring.guru/design-patterns/singleton">
+                    Refactoring Guru - Singleton
+                  </a>
+                </td>
+                <td>Singleton pattern, thread-safety notes, and critique.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://doc.rust-lang.org/std/sync/struct.OnceLock.html">
+                    Rust std - OnceLock
+                  </a>
+                </td>
+                <td>Rust standard library documentation for the thread-safe once-initialization cell.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#intro">creational patterns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#factory">factory method</a></menu-elem>
+        <menu-elem class="secElem"><a href="#builder">builder</a></menu-elem>
+        <menu-elem class="secElem"><a href="#singleton">singleton</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevPatternsPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>

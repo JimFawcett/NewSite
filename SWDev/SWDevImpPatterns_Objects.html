@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  SWDevImpPatterns_Objects.html
+-->
+<head>
+  <title>SWDev Impl Patterns Objects</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table.reftable {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #github table.reftable th {
+      background: var(--dark);
+      color: var(--light);
+      text-align: left;
+      padding: 0.25rem 0.5rem;
+    }
+    #github table.reftable td {
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.5rem;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDevImpPatterns_Objects.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 06/29/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+         href="https://github.com/JimFawcett">SWDev Impl Patterns</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">SWDev Impl Patterns: Objects and State</h2>
+        <h4 class="indent" id="subtitle">value object, null object, collecting parameter, method object</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+      <a id="intro"></a>
+      <h3>2.0  Objects and State</h3>
+      <t-b>
+        The four patterns in this chapter address how objects hold state and how computations
+        accumulate results. They answer recurring questions: when should a simple value become
+        a type, how do you eliminate null checks at call sites, how do you pass partial results
+        through a computation, and when should a complex method become a class?
+      </t-b>
+
+      <a id="value"></a>
+      <h3>2.1  Value Object</h3>
+      <t-b>
+        <strong>Problem:</strong> primitive types - integers, strings, floats - carry no
+        domain meaning. <c-s>float</c-s> could be a price, a weight, a temperature, or
+        a probability. Passing raw primitives lets callers confuse them; adding domain
+        constraints requires guards duplicated across every call site.
+      </t-b>
+      <t-b>
+        <strong>Solution:</strong> wrap the primitive in a type that carries domain meaning.
+        The type enforces constraints at construction and makes the intent visible at every
+        call site. Equality is by value content, not by identity. Instances are usually
+        immutable - once constructed, a value object does not change. Beck:
+        <em>use a class to represent a value with no identity, only a magnitude or meaning.</em>
+      </t-b>
+      <pre><code class="language-text">// Raw primitives - caller has no guidance
+fn apply_discount(price: f64, rate: f64) -&gt; f64
+
+// Value objects - domain constraints enforced, meaning visible
+struct Price(f64);     // always &gt;= 0
+struct Rate(f64);      // 0.0 ..= 1.0
+struct Money { amount: Price, currency: Currency }
+
+impl Price {
+    fn new(v: f64) -&gt; Result&lt;Price, String&gt; {
+        if v &lt; 0.0 { Err("price cannot be negative") }
+        else { Ok(Price(v)) }
+    }
+}
+
+fn apply_discount(price: Price, rate: Rate) -&gt; Price</code></pre>
+      <t-b>
+        The signature now documents what each argument represents and prevents transposing
+        the arguments. The constructor is the single place where the invariant is enforced.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Value Object - Language Idioms</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
+            <tbody>
+              <tr><td>Rust</td><td>
+                Newtype pattern: <c-s>struct Price(f64)</c-s>. Implement <c-s>PartialEq</c-s>,
+                <c-s>PartialOrd</c-s>, and <c-s>Display</c-s> explicitly; derive <c-s>Copy</c-s>
+                for small numeric values. The newtype prevents accidental use of the inner
+                value without explicit unwrapping.
+              </td></tr>
+              <tr><td>C++</td><td>
+                A <c-s>struct</c-s> or <c-s>class</c-s> wrapping the primitive; overload
+                comparison operators; <c-s>[[nodiscard]]</c-s> on factory functions to prevent
+                discarding construction errors. <c-s>constexpr</c-s> constructors allow use
+                in compile-time contexts.
+              </td></tr>
+              <tr><td>C#</td><td>
+                A <c-s>record struct</c-s> (C# 10+) provides value equality and immutability
+                with minimal boilerplate. Earlier versions use a <c-s>struct</c-s> with
+                overridden <c-s>Equals</c-s> and <c-s>GetHashCode</c-s>.
+              </td></tr>
+              <tr><td>Python</td><td>
+                A <c-s>@dataclass(frozen=True)</c-s> with <c-s>__post_init__</c-s>
+                validation; or a <c-s>NamedTuple</c-s> subclass. Both provide value
+                equality and immutability without manual <c-s>__eq__</c-s>.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="null"></a>
+      <h3>2.2  Null Object</h3>
+      <t-b>
+        <strong>Problem:</strong> a method that may or may not return a result forces every
+        caller to check for null/nil/None before using the result. The checks are repetitive,
+        easy to forget, and obscure the main logic at each call site.
+      </t-b>
+      <t-b>
+        <strong>Solution:</strong> return a Null Object - an instance of the same type that
+        implements all methods with neutral (do-nothing or identity) behavior. The caller
+        uses the result without checking; the Null Object simply does nothing or returns
+        empty/zero values. Fowler: <em>use a Null Object when you need to distinguish the
+        absence of an object from its presence in a way that callers should not have to
+        check for.</em>
+      </t-b>
+      <pre><code class="language-text">trait Logger {
+    fn log(&amp;self, msg: &amp;str);
+    fn warn(&amp;self, msg: &amp;str);
+}
+
+struct FileLogger { file: File }
+struct NullLogger;          // does nothing
+
+impl Logger for FileLogger { fn log(..) { writeln!(..) } fn warn(..) { .. } }
+impl Logger for NullLogger  { fn log(..) {} fn warn(..) {} }
+
+// callers always hold Box&lt;dyn Logger&gt; - no null checks
+struct Server { logger: Box&lt;dyn Logger&gt; }
+
+// In tests or when logging is disabled:
+Server::new(Box::new(NullLogger))</code></pre>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Null Object - Notes</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>vs. Option</strong></td><td>
+                <c-s>Option</c-s> / <c-s>Maybe</c-s> / <c-s>nullable</c-s> forces the
+                caller to handle absence explicitly - good when absence is meaningful and
+                the caller must react differently. Null Object is better when absence should
+                be transparent - the caller does not care and should not need to check.
+              </td></tr>
+              <tr><td><strong>Testing</strong></td><td>
+                Null Object doubles as a test double. Injecting <c-s>NullLogger</c-s>
+                in a unit test silences logging output without mocking the logger interface.
+              </td></tr>
+              <tr><td><strong>Risk</strong></td><td>
+                When absence <em>should</em> cause a failure, a Null Object silently
+                swallows the error. Only apply where doing nothing is genuinely correct.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="collecting"></a>
+      <h3>2.3  Collecting Parameter</h3>
+      <t-b>
+        <strong>Problem:</strong> a recursive traversal or multi-step computation produces
+        results that must be accumulated. Returning partial results from each recursive call
+        and merging them is awkward; using a global accumulator introduces hidden state.
+      </t-b>
+      <t-b>
+        <strong>Solution:</strong> pass the result container as a parameter into the
+        computation. Each call contributes to the shared container; the caller retains
+        ownership and reads the final result after the computation completes. Beck:
+        <em>add a parameter to a method so that it can collect results across several
+        method calls.</em>
+      </t-b>
+      <pre><code class="language-text">// Without collecting parameter: awkward merge of partial results
+fn find_large_files(dir: &amp;Path, min_bytes: u64) -&gt; Vec&lt;PathBuf&gt; {
+    let mut results = vec![];
+    for entry in read_dir(dir) {
+        if entry.is_dir() {
+            results.extend(find_large_files(&amp;entry.path(), min_bytes)); // allocation per level
+        } else if entry.metadata().len() &gt;= min_bytes {
+            results.push(entry.path());
+        }
+    }
+    results
+}
+
+// With collecting parameter: no per-level allocation
+fn find_large_files(dir: &amp;Path, min_bytes: u64, results: &amp;mut Vec&lt;PathBuf&gt;) {
+    for entry in read_dir(dir) {
+        if entry.is_dir() {
+            find_large_files(&amp;entry.path(), min_bytes, results);
+        } else if entry.metadata().len() &gt;= min_bytes {
+            results.push(entry.path());
+        }
+    }
+}
+
+// caller:
+let mut large = Vec::new();
+find_large_files(root, 1_000_000, &amp;mut large);</code></pre>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Collecting Parameter - Notes</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>When to use</strong></td><td>
+                Recursive traversal, multi-phase accumulation, or any case where the result
+                is built incrementally and returning partial results per call is wasteful or
+                awkward.
+              </td></tr>
+              <tr><td><strong>Alternatives</strong></td><td>
+                Iterators and generators push collected results lazily without a collecting
+                parameter. In Rust, returning an <c-s>impl Iterator</c-s> or using channels
+                often replaces the collecting parameter pattern.
+              </td></tr>
+              <tr><td><strong>Visibility</strong></td><td>
+                If the collecting parameter version is more complex to call, provide a
+                public wrapper that creates the container and calls the private recursive
+                function.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="method-object"></a>
+      <h3>2.4  Method Object</h3>
+      <t-b>
+        <strong>Problem:</strong> a method is too complex to decompose cleanly because the
+        sub-steps share many local variables. Passing all those variables as parameters to
+        helper methods produces unreadable signatures.
+      </t-b>
+      <t-b>
+        <strong>Solution:</strong> promote the method into its own class. The original
+        parameters become constructor arguments; the shared local variables become fields;
+        the method body becomes a <c-s>compute()</c-s> or <c-s>run()</c-s> method that
+        delegates to well-named private helpers that share state through <c-s>self</c-s>.
+        Beck: <em>create a class for a method that is too complex to compose cleanly.</em>
+      </t-b>
+      <pre><code class="language-text">// Before: complex method with many shared locals
+fn generate_report(data: &amp;Dataset, opts: &amp;Options) -&gt; Report {
+    let filtered   = filter_records(data, &amp;opts.predicates);
+    let grouped    = group_by_key(filtered, &amp;opts.group_key);
+    let aggregated = aggregate(grouped, &amp;opts.agg_fns);
+    let sorted     = sort_by(aggregated, &amp;opts.sort_key);
+    let formatted  = format_rows(sorted, &amp;opts.template);
+    Report::new(formatted, opts.title.clone())
+}
+
+// After: Method Object
+struct ReportGenerator&lt;'a&gt; {
+    data:       &amp;'a Dataset,
+    opts:       &amp;'a Options,
+    filtered:   Vec&lt;Record&gt;,
+    grouped:    HashMap&lt;Key, Vec&lt;Record&gt;&gt;,
+    aggregated: Vec&lt;Row&gt;,
+}
+
+impl&lt;'a&gt; ReportGenerator&lt;'a&gt; {
+    fn new(data: &amp;'a Dataset, opts: &amp;'a Options) -&gt; Self { ... }
+    fn run(mut self) -&gt; Report {
+        self.filter();
+        self.group();
+        self.aggregate();
+        self.sort();
+        self.format()
+    }
+    fn filter(&amp;mut self)    { ... }
+    fn group(&amp;mut self)     { ... }
+    fn aggregate(&amp;mut self) { ... }
+    fn sort(&amp;mut self)      { ... }
+    fn format(self) -&gt; Report { ... }
+}</code></pre>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Method Object - Notes</summary>
+          <table class="reftable" style="margin-top:0.5rem;">
+            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th></th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><strong>When to use</strong></td><td>
+                When a method has six or more local variables that are needed by more than
+                one sub-step, making parameter passing impractical. Multi-pass computations
+                (filter, group, aggregate, format) are a common case.
+              </td></tr>
+              <tr><td><strong>Testability</strong></td><td>
+                A method object is easier to unit-test than a private method: each step can
+                be tested in isolation by constructing the object, populating fields, and
+                calling the helper directly.
+              </td></tr>
+              <tr><td><strong>Naming</strong></td><td>
+                Name the class for what it computes, not how: <c-s>ReportGenerator</c-s>,
+                not <c-s>GenerateReportHelper</c-s>. The method object is a first-class
+                participant in the design.
+              </td></tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="refs"></a>
+      <h3>2.5  References</h3>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Objects and State References</summary>
+          <table class="reftable" style="margin-top:0.5rem; width:90%;">
+            <colgroup><col style="width:16rem;"><col style="width:auto;"></colgroup>
+            <thead><tr><th>Resource</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://refactoring.guru/introduce-null-object">
+                    Refactoring Guru - Null Object
+                  </a>
+                </td>
+                <td>Null Object transformation with before/after examples.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://refactoring.guru/replace-method-with-method-object">
+                    Refactoring Guru - Method Object
+                  </a>
+                </td>
+                <td>Replace Method with Method Object refactoring steps.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://www.martinfowler.com/bliki/ValueObject.html">
+                    Fowler - Value Object
+                  </a>
+                </td>
+                <td>Fowler's definition of Value Object and how it differs from Entity.</td>
+              </tr>
+              <tr>
+                <td>
+                  <a target="_blank" href="https://doc.rust-lang.org/rust-by-example/generics/new_types.html">
+                    Rust - Newtype Pattern
+                  </a>
+                </td>
+                <td>Rust's newtype idiom - the idiomatic Value Object in Rust.</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </indent-blocks>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#intro">objects and state</a></menu-elem>
+        <menu-elem class="secElem"><a href="#value">value object</a></menu-elem>
+        <menu-elem class="secElem"><a href="#null">null object</a></menu-elem>
+        <menu-elem class="secElem"><a href="#collecting">collecting parameter</a></menu-elem>
+        <menu-elem class="secElem"><a href="#method-object">method object</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevImpPatternsPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>
