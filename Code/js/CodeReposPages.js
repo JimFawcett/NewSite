@@ -10,6 +10,7 @@ function buildPages() {
     pgs.innerHTML =
     "<div class='darkItem listheader' onclick='togglePages()'>Code Repo Pages</div>\
       <div class='menuBody'>\
+        <a href='RepoCode_DevAgent-Claude2.html'>Dev Agent</a>\
         <a href='RepoCode_ReadmeAgent.html'>Readme Agent</a>\
         <a href='RepoCode_Webifier.html'>CodeWebifier</a>\
         <a href='RepoCode_TextFinder.html'>TextFinder Comparison</a>\
