@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  Basics_Cache.html
+-->
+<head>
+  <title>Basics Cache Lines</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/StylesSplitterBar.css" />
+  <script src="../js/ScriptsSplitterBar.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+      hideInfoMsgs();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    Basics_Cache.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 07/02/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Basic Bites: Cache Lines</h2>
+        <h4 id="subtitle" class="indent">Cache hierarchy, coherence, visibility, false sharing, synchronization</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.125em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_self" href="BasicsHome.html" style="position:absolute; left:6em; color:var(--atten);">Track Summary</a>
+      </div>
+    </header>
+    <tm-b>
+      A cache line is the smallest unit of data the CPU moves between main memory and its caches.
+      On every modern x86-64 and ARM processor the cache line is 64 bytes.  When a core reads one
+      byte, the hardware loads the entire 64-byte block containing that byte.  When a core writes
+      one byte, the hardware must own the entire 64-byte block before the write completes.  This
+      block-level ownership governs both performance and correctness in multi-core programs.
+    </tm-b>
+
+    <a id="hierarchy"></a>
+    <h3>1.&nbsp; Cache Hierarchy</h3>
+    <t-b>
+      Modern processors place several levels of cache between the CPU registers and DRAM.  Each
+      level is larger, slower, and shared by progressively more cores:
+      <table>
+        <colgroup>
+          <col style="width: 5rem;" />
+          <col style="width: 10rem;" />
+          <col style="width: 12rem;" />
+          <col />
+        </colgroup>
+        <tr>
+          <th class="darkItem" style="text-align:left;">Level</th>
+          <th class="darkItem" style="text-align:left;">Typical size</th>
+          <th class="darkItem" style="text-align:left;">Typical latency</th>
+          <th class="darkItem" style="text-align:left;">Sharing scope</th>
+        </tr>
+        <tr>
+          <td>L1-I / L1-D</td>
+          <td>32&ndash;64 KB each</td>
+          <td>4&ndash;5 cycles (~1 ns)</td>
+          <td>private per core</td>
+        </tr>
+        <tr>
+          <td>L2</td>
+          <td>256 KB&ndash;2 MB</td>
+          <td>12&ndash;15 cycles (~4 ns)</td>
+          <td>private per core (or per two cores)</td>
+        </tr>
+        <tr>
+          <td>L3 (LLC)</td>
+          <td>8&ndash;96 MB</td>
+          <td>30&ndash;50 cycles (~15 ns)</td>
+          <td>shared across all cores on the die</td>
+        </tr>
+        <tr>
+          <td>DRAM</td>
+          <td>16 GB&ndash;1 TB</td>
+          <td>~200&ndash;300 cycles (~80 ns)</td>
+          <td>shared across all cores</td>
+        </tr>
+      </table>
+    </t-b>
+    <t-b>
+      A cache <em>hit</em> means the line was already present at the requested level; a cache
+      <em>miss</em> means the hardware must fetch it from the next level.  An L1 hit costs a
+      handful of cycles; a DRAM miss costs hundreds.  Programs that keep their working set in
+      L1 or L2 run an order of magnitude faster than programs that thrash DRAM.
+    </t-b>
+
+    <a id="coherence"></a>
+    <h3>2.&nbsp; Cache Coherence</h3>
+    <t-b>
+      Each core has its own private L1 and L2 caches, so the same cache line can reside
+      simultaneously in multiple caches.  When one core modifies its copy, all other copies
+      must be invalidated or updated; otherwise cores would disagree on the value of a memory
+      location.  This guarantee is called <em>cache coherence</em>, and it is enforced in
+      hardware by a protocol, not by software.
+    </t-b>
+    <t-b>
+      The dominant protocol on x86-64 is <strong>MESI</strong>, which assigns each cache-line
+      slot one of four states:
+      <table>
+        <colgroup>
+          <col style="width: 7rem;" />
+          <col />
+        </colgroup>
+        <tr>
+          <th class="darkItem" style="text-align:left;">State</th>
+          <th class="darkItem" style="text-align:left;">Meaning</th>
+        </tr>
+        <tr>
+          <td><strong>Modified</strong></td>
+          <td>This core holds the only valid copy and has written to it; DRAM is stale.</td>
+        </tr>
+        <tr>
+          <td><strong>Exclusive</strong></td>
+          <td>This core holds the only copy; it matches DRAM and no other core has it cached.</td>
+        </tr>
+        <tr>
+          <td><strong>Shared</strong></td>
+          <td>One or more cores hold clean copies; DRAM is current.</td>
+        </tr>
+        <tr>
+          <td><strong>Invalid</strong></td>
+          <td>This cache-line slot is stale and must be reloaded before use.</td>
+        </tr>
+      </table>
+    </t-b>
+    <t-b>
+      When core A writes to a line it holds in Modified or Exclusive state, the hardware issues
+      an <em>invalidation</em> on the interconnect.  Every other core holding that line in
+      Shared state transitions it to Invalid.  The next read on any of those cores triggers a
+      miss and a fetch of the updated data.  This means that a write on one core eventually
+      becomes visible to all others &mdash; but <em>eventually</em> is the key word; visibility
+      is not instantaneous.
+    </t-b>
+
+    <a id="visibility"></a>
+    <h3>3.&nbsp; Visibility</h3>
+    <t-b>
+      Coherence guarantees that caches will not permanently disagree, but it does not guarantee
+      <em>when</em> a write becomes visible to another core.  Two additional sources of reordering
+      delay visibility in software:
+    </t-b>
+    <t-b>
+      <strong>Store buffers.</strong>  Before a core commits a write to its L1 cache, the write
+      enters a hardware store buffer.  The same core may read its own buffered write (store
+      forwarding), but other cores cannot see it until it drains into L1 and the coherence
+      protocol propagates it.  The store buffer depth is not architecturally visible to software.
+    </t-b>
+    <t-b>
+      <strong>Compiler and CPU reordering.</strong>  Both the compiler and the out-of-order
+      execution engine may reorder loads and stores relative to their program-order positions,
+      provided the reordering is invisible to the executing core.  From another core&apos;s
+      perspective, writes can appear to arrive in a different order than the program performed them.
+    </t-b>
+    <t-b>
+      <strong>Memory fences (barriers).</strong>  A fence instruction &mdash; x86
+      <inline-code>MFENCE</inline-code>, ARM <inline-code>DMB</inline-code> &mdash; forces
+      the CPU to drain its store buffer and prevents reordering of loads and stores across the
+      fence point.  The compiler must also be prevented from reordering around it, typically
+      via an intrinsic that acts as a compiler barrier.  Together they establish a
+      <em>happens-before</em> edge: every write before the fence is visible to any core that
+      executes a corresponding fence before its subsequent loads.
+    </t-b>
+    <t-b>
+      In the C++ and Rust memory models, atomic operations with
+      <inline-code>Release</inline-code> and <inline-code>Acquire</inline-code> ordering map
+      directly to these fences without requiring inline assembly.  A
+      <inline-code>store(Release)</inline-code> on one thread paired with a
+      <inline-code>load(Acquire)</inline-code> on another establishes a synchronization point:
+      all writes before the store are guaranteed visible after the load.
+    </t-b>
+
+    <a id="falsesharing"></a>
+    <h3>4.&nbsp; False Sharing</h3>
+    <t-b>
+      Because coherence operates at cache-line granularity, two threads can interfere with each
+      other even when writing to <em>different</em> variables, if those variables happen to share
+      a cache line.  Core A writes to byte 0; Core B writes to byte 8.  Neither reads or writes
+      the other&apos;s variable, but the coherence protocol treats the entire 64-byte line as the
+      unit of ownership.  Each write forces the other core to re-acquire exclusive ownership of
+      the whole line before it can proceed.  This is <em>false sharing</em>: the cores appear to
+      contend on shared data, but the contention is an artifact of memory layout, not program logic.
+    </t-b>
+    <t-b>
+      <strong>Performance impact.</strong>  False sharing converts independent writes into a
+      cache-line ping-pong across the core interconnect.  Each round-trip costs 40&ndash;100 ns
+      on a typical chip; on a multi-socket NUMA system it can exceed 200 ns.  Throughput can
+      drop by an order of magnitude compared to a version where each thread writes its own
+      private line.
+    </t-b>
+    <t-b>
+      <strong>Eliminating false sharing.</strong>  Pad or align contested variables so that each
+      occupies its own cache line:
+      <ul class="tight" style="margin-left: 2em;">
+        <li>
+          <strong>C++17:</strong> <inline-code>alignas(std::hardware_destructive_interference_size)</inline-code>
+          on the struct member or type.
+        </li>
+        <li>
+          <strong>Rust:</strong> <inline-code>#[repr(align(64))]</inline-code> on a newtype
+          wrapper, or the <inline-code>crossbeam_utils::CachePadded&lt;T&gt;</inline-code> wrapper.
+        </li>
+        <li>
+          <strong>C#:</strong> explicit field offsets via
+          <inline-code>[StructLayout(LayoutKind.Explicit)]</inline-code>, or manual padding
+          fields totaling 64 bytes per slot.
+        </li>
+      </ul>
+    </t-b>
+
+    <a id="truesync"></a>
+    <h3>5.&nbsp; True Sharing and Synchronization</h3>
+    <t-b>
+      When threads intentionally share a variable &mdash; one writes, another reads &mdash;
+      cache coherence ensures the reader eventually sees the update, but without synchronization
+      primitives the compiler or CPU may reorder surrounding instructions so that the reader
+      observes a partially constructed value or an indefinitely stale one.  Two tools address this:
+    </t-b>
+    <t-b>
+      <strong>Atomic operations.</strong>  An atomic read-modify-write is a single indivisible
+      hardware operation on one naturally aligned word (up to 16 bytes on x86-64).  It eliminates
+      torn reads and torn writes and carries a memory-order parameter that constrains reordering
+      of surrounding loads and stores.  Atomics do not lock a cache line in the sense of blocking
+      other cores; instead they rely on hardware primitives such as
+      <inline-code>LOCK CMPXCHG</inline-code> (x86) or
+      <inline-code>LDXR</inline-code>/<inline-code>STXR</inline-code> (ARM), which implicitly
+      generate the coherence traffic needed to obtain exclusive ownership of the line.
+    </t-b>
+    <t-b>
+      <strong>Mutexes and memory ordering.</strong>  A mutex lock/unlock pair contains implicit
+      full memory fences.  Every write completed before <inline-code>unlock()</inline-code> is
+      guaranteed visible to the thread that next succeeds at <inline-code>lock()</inline-code>.
+      This is stronger than a plain fence: it also provides mutual exclusion so that at most one
+      thread at a time observes a consistent snapshot of the guarded data.
+    </t-b>
+    <t-b>
+      <strong>Volatile is not sufficient.</strong>  In C++, <inline-code>volatile</inline-code>
+      prevents the compiler from caching a variable in a register, but it does not emit memory
+      fences and does not prevent CPU reordering.  On x86-64 it sometimes appears to work
+      because the x86 memory model is relatively strong, but on ARM or PowerPC it provides no
+      ordering guarantee.  Use <inline-code>std::atomic</inline-code> for inter-thread
+      communication; reserve <inline-code>volatile</inline-code> for memory-mapped I/O registers.
+    </t-b>
+
+    <a id="langs"></a>
+    <h3>6.&nbsp; Language Support</h3>
+    <t-b>
+      <table>
+        <colgroup>
+          <col style="width: 7rem;" />
+          <col style="width: 16rem;" />
+          <col />
+        </colgroup>
+        <tr>
+          <th class="darkItem" style="text-align:left;">Language</th>
+          <th class="darkItem" style="text-align:left;">Atomic type</th>
+          <th class="darkItem" style="text-align:left;">Cache-line alignment</th>
+        </tr>
+        <tr>
+          <td>C++</td>
+          <td><inline-code>std::atomic&lt;T&gt;</inline-code></td>
+          <td>
+            <inline-code>alignas(std::hardware_destructive_interference_size)</inline-code>
+            (C++17; 64 on x86-64 and ARM64)
+          </td>
+        </tr>
+        <tr>
+          <td>Rust</td>
+          <td>
+            <inline-code>std::sync::atomic::AtomicUsize</inline-code>,
+            <inline-code>AtomicBool</inline-code>, etc.
+          </td>
+          <td>
+            <inline-code>#[repr(align(64))]</inline-code> on the containing struct, or
+            <inline-code>crossbeam_utils::CachePadded&lt;T&gt;</inline-code>
+          </td>
+        </tr>
+        <tr>
+          <td>C#</td>
+          <td>
+            <inline-code>Interlocked</inline-code> class methods;
+            <inline-code>volatile</inline-code> keyword (compiler fence only &mdash; not sufficient on non-x86)
+          </td>
+          <td>
+            <inline-code>[StructLayout(LayoutKind.Explicit)]</inline-code> with explicit
+            field offsets, or manual padding fields totaling 64 bytes per slot
+          </td>
+        </tr>
+        <tr>
+          <td>Python</td>
+          <td>
+            The GIL serializes CPython threads; no cache-line atomics are exposed.
+            Use <inline-code>multiprocessing</inline-code> for true parallelism &mdash;
+            separate processes have separate address spaces and no shared cache lines.
+          </td>
+          <td>Not applicable under the GIL; manual alignment possible via <inline-code>ctypes</inline-code></td>
+        </tr>
+      </table>
+    </t-b>
+
+    <a id="conseq"></a>
+    <h3>7.&nbsp; Consequences</h3>
+    <t-b>
+      Cache-line behavior has direct consequences for how concurrent code is designed and tuned:
+      <ul class="tight" style="margin-left: 2em;">
+        <li>
+          <strong>Struct layout matters.</strong>  Fields written by different threads must not
+          share a cache line.  Group read-only fields together; separate hot write fields with
+          explicit padding.
+        </li>
+        <li>
+          <strong>Contiguous data structures are cache-friendly.</strong>  Arrays keep sequential
+          elements in a small number of lines.  Linked lists, trees, and pointer-chasing graphs
+          scatter nodes across lines, producing a miss on every traversal step.
+        </li>
+        <li>
+          <strong>Read-mostly data needs no synchronization.</strong>  Multiple cores can hold
+          the same line in Shared state simultaneously without invalidating each other.
+          Immutable data avoids all coherence traffic.
+        </li>
+        <li>
+          <strong>Atomic operations are not free.</strong>  A counter incremented by every
+          thread on every iteration is a serialization bottleneck: the line must be acquired
+          exclusively on each increment.  Use per-thread counters and aggregate at the end.
+        </li>
+        <li>
+          <strong>NUMA amplifies the cost.</strong>  On multi-socket systems, accessing memory
+          attached to a remote NUMA node adds another 100&ndash;200 ns per miss.  False sharing
+          across NUMA nodes is especially expensive; keep each thread&apos;s working data on its
+          local node.
+        </li>
+      </ul>
+    </t-b>
+
+    <a id="refs"></a>
+    <h3>8.&nbsp; References</h3>
+    <ol class="indent tight" style="margin-left: 2rem;">
+      <li>
+        <a href="https://en.wikipedia.org/wiki/Cache_coherence">Cache coherence &ndash; Wikipedia</a>
+      </li>
+      <li>
+        <a href="https://en.wikipedia.org/wiki/MESI_protocol">MESI protocol &ndash; Wikipedia</a>
+      </li>
+      <li>
+        <a href="https://en.cppreference.com/w/cpp/atomic/memory_order">std::memory_order &ndash; cppreference</a>
+      </li>
+      <li>
+        <a href="https://doc.rust-lang.org/std/sync/atomic/index.html">std::sync::atomic &ndash; Rust Docs</a>
+      </li>
+      <li>
+        <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.interlocked">Interlocked &ndash; Microsoft Docs</a>
+      </li>
+    </ol>
+    <div style="height:15rem;"></div>
+  </content-block>
+
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Page Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#hierarchy">hierarchy</a></menu-elem>
+        <menu-elem class="secElem"><a href="#coherence">coherence</a></menu-elem>
+        <menu-elem class="secElem"><a href="#visibility">visibility</a></menu-elem>
+        <menu-elem class="secElem"><a href="#falsesharing">false sharing</a></menu-elem>
+        <menu-elem class="secElem"><a href="#truesync">true sharing</a></menu-elem>
+        <menu-elem class="secElem"><a href="#langs">languages</a></menu-elem>
+        <menu-elem class="secElem"><a href="#conseq">conseq</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden">
+      <div class="darkItem listheader" onclick="togglePages()">Pages</div>
+      <div class="menuBody">
+        <a href="Basics_Platform.html">Platform</a>
+        <a href="Basics_Memory.html">Virtual Memory</a>
+      </div>
+    </div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <a id="bottom"></a>
+  <script src="js/BasicsBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 11);
+  </script>
+</body>
+</html>
