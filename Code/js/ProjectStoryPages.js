@@ -14,8 +14,8 @@ function buildPages() {
       <a href='ProjectStory_Tools.html'>Chap 1 - Dev Tools</a>\
       <a href='ProjectStory_TextFinder.html'>Chap 2 - TextFinder</a>\
       <a href='ProjectStory_PageValidator.html'>Chap 3 - PageValidator</a>\
-      <a href='ProjectStory_CodeTrack.html'>Chap 4 - Code Track Map</a>\
-      <a href='ProjectStory_ExperimentArena.html'>Chap 5 - Experiment Arena</a>\
+      <a href='ProjectStory_Metrics.html'>Chap 4 - Metrics</a>\
+      <a href='ProjectStory_CodeTrack.html'>Chap 5 - Code Track Map</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
