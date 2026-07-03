@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  SWDev_UML_Package.html - Narrative: UML Package Diagrams, illustrated with TextFinder
+-->
+<head>
+  <meta charset="UTF-8" />
+  <title>UML Package Diagrams</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    .mermaid { margin: 1.5rem 0 0.5rem 1rem; }
+    .diagram-caption {
+      font-size: 0.85rem;
+      font-style: italic;
+      color: var(--dark);
+      margin: 0 0 1.5rem 1rem;
+    }
+    #github table { table-layout: fixed; }
+    #github td { vertical-align: top; }
+  </style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+  </script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if (loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDev_UML_Package.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 07/02/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">UML Package Diagrams</h2>
+        <h4 class="indent" id="subtitle">concepts and notation, illustrated with TextFinder</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" rel="noopener noreferrer"
+          href="../Code/ProjectStory_TextFinder.html"
+          style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">TextFinder Project Story</a>
+        <a class="repoLinks" target="_blank" rel="noopener noreferrer"
+          href="https://mermaid.js.org/syntax/classDiagram.html"
+          style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Mermaid Diagram Syntax</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="what"></a>
+      <h3>1. &nbsp;What a Package Diagram Shows</h3>
+      <t-b>
+        A UML package diagram answers one question: <em>which named group of code depends on
+        which other group?</em> It deliberately omits internal detail - no methods, no fields,
+        no inheritance chains. That omission is the point. When you need to communicate
+        deployment boundaries, layering rules, or allowed import directions across a team,
+        a package diagram lets a reader absorb the constraint in seconds without wading
+        through class-level noise.
+      </t-b>
+      <t-b>
+        "Package" maps naturally to a language namespace, a module, a crate, a project, or
+        an assembly - whatever unit of code your build system treats as independently
+        compilable. The diagram notation does not care which; it cares only about the
+        dependency arrows between them.
+      </t-b>
+
+      <a id="notation"></a>
+      <h3>2. &nbsp;Notation</h3>
+      <t-b>
+        The diagram uses three elements:
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:12rem;" />
+          <col style="width:42rem;" />
+        </colgroup>
+        <tr><th class="darkItem">Element</th><th class="darkItem">Meaning</th></tr>
+        <tr>
+          <td class="lightItem">Rectangle with tab</td>
+          <td class="lightItem">
+            A package. The tab at the top-left carries the package name. The body may
+            list contained classifiers or be left empty when only boundaries matter.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Dashed arrow &nbsp;&rarr;</td>
+          <td class="lightItem">
+            A dependency. The arrow points from the package that <em>depends</em> to the
+            package it <em>depends on</em>. If A imports B, the arrow goes A &rarr; B.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <code>&lt;&lt;stereotype&gt;&gt;</code>
+          </td>
+          <td class="lightItem">
+            A label that qualifies the kind of relationship. Common ones:
+            <code>&lt;&lt;use&gt;&gt;</code> (calls into), <code>&lt;&lt;import&gt;&gt;</code>
+            (brings names into scope), <code>&lt;&lt;merge&gt;&gt;</code> (extends
+            another package's contents).
+          </td>
+        </tr>
+      </table>
+      <t-b>
+        A rule worth enforcing as a team: <strong>dependency arrows must never form a
+        cycle.</strong> A cycle means two packages are mutually entangled - they cannot be
+        compiled, tested, or deployed independently. Package diagrams make cycles immediately
+        visible because you see the arrow turn back on itself.
+      </t-b>
+
+      <a id="textfinder"></a>
+      <h3>3. &nbsp;TextFinder as a Worked Example</h3>
+      <t-b>
+        TextFinder walks a directory tree and reports every file whose content matches a
+        user-supplied regular expression. Five implementations - Rust (baseline and optimized),
+        C++, C#, and Python - share the same architecture. That shared structure makes it
+        a useful worked example: the same package diagram describes all five.
+      </t-b>
+      <t-b>
+        The architecture rule for TextFinder is strict: <strong>no library package may depend
+        on another library package.</strong> All coordination flows through <em>EntryPoint</em>
+        using callbacks. The package diagram captures that rule in one picture.
+      </t-b>
+
+      <pre class="mermaid">
+graph TD
+    subgraph EP["&lt;&lt;package&gt;&gt; EntryPoint"]
+        ep["Wires the three libraries together.\nHolds no domain logic of its own."]
+    end
+    subgraph CL["&lt;&lt;package&gt;&gt; CommandLine"]
+        cl["Parses /Key [Value] tokens from argv.\nExposes typed option values to callers."]
+    end
+    subgraph DN["&lt;&lt;package&gt;&gt; DirNav"]
+        dn["Depth-first directory walk.\nFires a callback on each directory and file."]
+    end
+    subgraph OUT["&lt;&lt;package&gt;&gt; Output"]
+        out["Applies the regex to file content.\nWrites matching paths to the console."]
+    end
+    EP -->|"&lt;&lt;use&gt;&gt;"| CL
+    EP -->|"&lt;&lt;use&gt;&gt;"| DN
+    EP -->|"&lt;&lt;use&gt;&gt;"| OUT
+      </pre>
+      <p class="diagram-caption">
+        Figure 1. TextFinder package diagram.
+      </p>
+      <t-b>
+        Three arrows radiate outward from EntryPoint; none connect the library packages to
+        each other. That absence of cross-library arrows is the design constraint made visible.
+      </t-b>
+
+      <t-b>
+        Read the diagram from the arrows, not the boxes. Three <code>&lt;&lt;use&gt;&gt;</code>
+        dependencies leave EntryPoint; none exist between CommandLine, DirNav, and Output.
+        That single observation tells a new contributor everything they need to know about
+        which files they are allowed to import from which other files.
+      </t-b>
+
+      <a id="drill"></a>
+      <h3>4. &nbsp;Drilling In: What EntryPoint Actually Does</h3>
+      <t-b>
+        The package diagram defers all internal detail. Once a reader accepts the boundary
+        rule, the natural next question is: how does EntryPoint coordinate three packages
+        that cannot see each other? The answer is callbacks - EntryPoint supplies a
+        function (or object) to DirNav that DirNav calls for each directory and file it
+        visits. That function, also in EntryPoint, delegates to Output.
+      </t-b>
+      <t-b>
+        In Rust the callback contract is a trait. EntryPoint defines a concrete type
+        <code>TfAppl</code> that implements it:
+      </t-b>
+<pre><code>impl dir_nav_lib::DirEvent for TfAppl {
+    fn do_dir(&amp;mut self, d: &amp;str) {
+        self.curr_dir = d.to_string();
+    }
+    fn do_file(&amp;mut self, f: &amp;str) {
+        let fqf = format!("{}/{}", self.curr_dir, f);
+        if self.tf.find(&amp;fqf) {
+            print!("\n      {:?}", f);
+        }
+    }
+}</code></pre>
+      <t-b>
+        In C# and Python the same contract is a delegate or callable object. In C++ it is
+        a function pointer or <code>std::function</code>. The package diagram does not show
+        this distinction - it only shows that the dependency arrow from EntryPoint to DirNav
+        exists, and that no arrow goes the other direction.
+      </t-b>
+
+      <a id="sequence"></a>
+      <h3>5. &nbsp;Complementing the Package Diagram with a Sequence Diagram</h3>
+      <t-b>
+        Package diagrams show <em>structure</em>. They say nothing about <em>time</em> - which
+        component acts first, which waits, which returns a value. A sequence diagram covers
+        that gap. The two diagrams are complementary: read the package diagram to understand
+        boundaries, read the sequence diagram to understand the runtime flow.
+      </t-b>
+      <t-b>
+        For TextFinder the runtime flow is straightforward. EntryPoint parses options,
+        configures Output, then hands control to DirNav. From that point DirNav drives
+        everything by firing callbacks.
+      </t-b>
+
+      <pre class="mermaid">
+sequenceDiagram
+    participant EP as EntryPoint
+    participant CL as CommandLine
+    participant DN as DirNav
+    participant OUT as Output
+
+    EP->>CL: parse(argv)
+    CL-->>EP: options (path, regex, ext, flags)
+    EP->>OUT: set_regex(pattern)
+    EP->>DN: add_pattern(ext)
+    EP->>DN: search(root_path)
+    loop each directory
+        DN->>EP: do_dir(dir_name)
+        loop each file
+            DN->>EP: do_file(file_name)
+            EP->>OUT: find(fully_qualified_path)
+            OUT-->>EP: matched?
+        end
+    end
+      </pre>
+      <p class="diagram-caption">
+        Figure 2. Runtime sequence.
+      </p>
+      <t-b>
+        DirNav calls back into EntryPoint for every directory and file; EntryPoint delegates
+        the match decision to Output. Control never flows directly between the library packages.
+      </t-b>
+
+      <t-b>
+        The sequence diagram confirms what the package diagram asserts: the only runtime
+        calls that cross a package boundary arrive at or leave from EntryPoint. DirNav and
+        Output never exchange messages directly.
+      </t-b>
+
+      <a id="crosslang"></a>
+      <h3>6. &nbsp;The Same Diagram Across Five Implementations</h3>
+      <t-b>
+        One practical benefit of the package diagram is that it survives translation. The
+        TextFinder architecture was specified once and then implemented independently in
+        Rust, C++, C#, and Python. Each implementation uses different file names, different
+        module systems, and different callback mechanisms, yet all five satisfy the same
+        package diagram. That is the diagram doing its job: it expresses a constraint at
+        a level of abstraction that is language-independent.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:10rem;" />
+          <col style="width:14rem;" />
+          <col style="width:14rem;" />
+          <col style="width:14rem;" />
+          <col style="width:14rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Package</th>
+          <th class="darkItem">Rust</th>
+          <th class="darkItem">C++</th>
+          <th class="darkItem">C#</th>
+          <th class="darkItem">Python</th>
+        </tr>
+        <tr>
+          <td class="lightItem">CommandLine</td>
+          <td class="lightItem"><code>cmd_line_lib.rs</code></td>
+          <td class="lightItem"><code>CmdLine.ixx</code></td>
+          <td class="lightItem"><code>CmdLine.cs</code></td>
+          <td class="lightItem"><code>cmd_line.py</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">DirNav</td>
+          <td class="lightItem"><code>dir_nav_lib.rs</code></td>
+          <td class="lightItem"><code>DirNav.ixx</code></td>
+          <td class="lightItem"><code>DirNav.cs</code></td>
+          <td class="lightItem"><code>dir_nav.py</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">Output</td>
+          <td class="lightItem"><code>text_finder.rs</code></td>
+          <td class="lightItem"><code>Output.ixx</code></td>
+          <td class="lightItem"><code>Output.cs</code></td>
+          <td class="lightItem"><code>output.py</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">EntryPoint</td>
+          <td class="lightItem"><code>text_finder.rs / main</code></td>
+          <td class="lightItem"><code>main.cpp</code></td>
+          <td class="lightItem"><code>Program.cs</code></td>
+          <td class="lightItem"><code>PyTextFinder.py</code></td>
+        </tr>
+      </table>
+      <t-b>
+        The callback mechanism is the one element that varies. Rust uses a trait; C# uses
+        <code>Action</code> delegates; Python uses callable objects; C++ uses
+        <code>std::function</code>. None of that variation changes the package diagram.
+      </t-b>
+
+      <a id="when"></a>
+      <h3>7. &nbsp;When to Draw One</h3>
+      <t-b>
+        Draw a package diagram when the question you need to answer - or communicate - is
+        about <em>boundaries and allowed dependencies</em>, not about types or behavior.
+        Specific triggers:
+      </t-b>
+      <ul class="tight">
+        <li>
+          Onboarding a new contributor: one picture answers "what can import what" faster
+          than any amount of prose.
+        </li>
+        <li>
+          Architecture review: compare the intended diagram against an actual dependency
+          graph generated by your build tool. Discrepancies show where the design has drifted.
+        </li>
+        <li>
+          Specifying a multi-language project: the diagram commits all implementations to
+          the same structure before any code is written.
+        </li>
+        <li>
+          Detecting cycles: draw the current state of the codebase. Any arrow that creates
+          a loop is a violation to fix.
+        </li>
+      </ul>
+      <t-b>
+        Package diagrams are not useful when the interesting question is behavioral. For
+        that, reach for sequence or activity diagrams instead.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>8. &nbsp;References</h3>
+      <table>
+        <colgroup>
+          <col style="width:35%;" />
+          <col style="width:65%;" />
+        </colgroup>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="../Code/ProjectStory_TextFinder.html">Project Story: TextFinder</a>
+          </td>
+          <td class="lightItem">Architecture, CLI reference, performance benchmarks, and code metrics for all five implementations.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="SWDevProjects.html">SWDev Projects</a>
+          </td>
+          <td class="lightItem">Overview of TextFinder, CodeAnalyzer, and CallGraph as cross-language design exercises.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" rel="noopener noreferrer" href="https://mermaid.js.org/syntax/classDiagram.html">Mermaid diagram syntax</a>
+          </td>
+          <td class="lightItem">Reference for the Mermaid notation used to render the diagrams on this page.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" rel="noopener noreferrer" href="https://www.uml-diagrams.org/package-diagrams-overview.html">UML Package Diagrams Overview</a>
+          </td>
+          <td class="lightItem">Formal UML notation reference covering package, import, merge, and access relationships.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#what">what it shows</a></menu-elem>
+        <menu-elem class="secElem"><a href="#notation">notation</a></menu-elem>
+        <menu-elem class="secElem"><a href="#textfinder">TextFinder example</a></menu-elem>
+        <menu-elem class="secElem"><a href="#drill">EntryPoint role</a></menu-elem>
+        <menu-elem class="secElem"><a href="#sequence">sequence diagram</a></menu-elem>
+        <menu-elem class="secElem"><a href="#crosslang">cross-language</a></menu-elem>
+        <menu-elem class="secElem"><a href="#when">when to draw one</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevUMLPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 1, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  SWDev_UML_Sequence.html - Narrative: UML Sequence Diagrams, illustrated with TextFinder
+-->
+<head>
+  <meta charset="UTF-8" />
+  <title>UML Sequence Diagrams</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    .mermaid { margin: 1.5rem 0 0.5rem 1rem; }
+    .diagram-caption {
+      font-size: 0.85rem;
+      font-style: italic;
+      color: var(--dark);
+      margin: 0 0 1.5rem 1rem;
+    }
+    #github table { table-layout: fixed; }
+    #github td { vertical-align: top; }
+  </style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+  </script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if (loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDev_UML_Sequence.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 07/02/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">UML Sequence Diagrams</h2>
+        <h4 class="indent" id="subtitle">runtime message flow, illustrated with TextFinder</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" rel="noopener noreferrer"
+          href="../Code/ProjectStory_TextFinder.html"
+          style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">TextFinder Project Story</a>
+        <a class="repoLinks" target="_blank" rel="noopener noreferrer"
+          href="https://mermaid.js.org/syntax/sequenceDiagram.html"
+          style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Mermaid Sequence Diagram Syntax</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="what"></a>
+      <h3>1. &nbsp;What a Sequence Diagram Shows</h3>
+      <t-b>
+        A sequence diagram shows which participants exchange messages, in what order, and
+        what each message carries or returns. Time flows downward; participants appear as
+        vertical lifelines. An arrow crossing from one lifeline to another is a message -
+        a call, a signal, or a return value.
+      </t-b>
+      <t-b>
+        Sequence diagrams answer questions that structural diagrams cannot. A package
+        diagram shows that EntryPoint depends on DirNav; a sequence diagram shows that
+        EntryPoint calls <code>search()</code> once, after which DirNav drives all
+        subsequent interaction by firing callbacks. That distinction - who calls whom,
+        and who drives the loop - is invisible in any structural view.
+      </t-b>
+      <t-b>
+        One sequence diagram captures one scenario: a single path through the system for
+        a specific set of inputs. It does not try to show all possible paths simultaneously.
+        That constraint is a feature, not a limitation - it forces you to think clearly
+        about one scenario at a time, and to name it explicitly.
+      </t-b>
+
+      <a id="notation"></a>
+      <h3>2. &nbsp;Notation</h3>
+      <t-b>
+        The core elements are participants, lifelines, messages, and activation boxes.
+        Combined fragments - <code>loop</code>, <code>alt</code>, <code>opt</code>,
+        <code>par</code> - extend the diagram to express repetition, branching, and
+        concurrency.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:14rem;" />
+          <col style="width:41rem;" />
+        </colgroup>
+        <tr><th class="darkItem">Element</th><th class="darkItem">Meaning</th></tr>
+        <tr>
+          <td class="lightItem">Participant box</td>
+          <td class="lightItem">
+            A named actor, object, or component. Appears at the top; its lifeline
+            extends downward as a dashed vertical line.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Solid arrow <code>-&gt;&gt;</code></td>
+          <td class="lightItem">
+            A synchronous message. The sender blocks until the callee returns.
+            The arrowhead points to the receiver.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Dashed arrow <code>--&gt;&gt;</code></td>
+          <td class="lightItem">
+            A return message. Carries the response back to the caller. Often
+            labeled with the value or variable name returned.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Async arrow <code>-)+</code> or <code>-)</code></td>
+          <td class="lightItem">
+            An asynchronous message. The sender does not block - it continues
+            immediately after firing the message.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Activation box</td>
+          <td class="lightItem">
+            A narrow rectangle on a lifeline marking the period during which that
+            participant is actively executing. Drawn with <code>+</code> / <code>-</code>
+            suffixes on message arrows in Mermaid.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>loop [condition]</code></td>
+          <td class="lightItem">
+            A combined fragment enclosing messages that repeat. The condition
+            describes the iteration - "each file", "until queue empty".
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>alt [condition]</code></td>
+          <td class="lightItem">
+            A combined fragment with two or more branches separated by
+            <code>else</code>. Exactly one branch executes per occurrence.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>opt [condition]</code></td>
+          <td class="lightItem">
+            A combined fragment whose body executes zero or one times,
+            depending on the condition.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>par</code></td>
+          <td class="lightItem">
+            A combined fragment whose sections execute concurrently. Used when
+            threads, tasks, or coroutines run in parallel.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>Note over A, B</code></td>
+          <td class="lightItem">
+            An annotation spanning one or more lifelines. Adds explanatory text
+            without adding a message.
+          </td>
+        </tr>
+      </table>
+
+      <a id="notation-diagram"></a>
+      <h3>3. &nbsp;Notation in Practice</h3>
+      <t-b>
+        The diagram below illustrates the core elements in isolation before applying them
+        to a real example.
+      </t-b>
+
+      <pre class="mermaid">
+sequenceDiagram
+    participant Caller
+    participant Callee
+    participant Worker
+
+    Caller->>+Callee: synchronous call (Caller blocks)
+    Callee-->>-Caller: return value
+
+    Caller-)Worker: async message (Caller does not block)
+    Note over Worker: executes independently
+
+    loop each item in collection
+        Caller->>Callee: process(item)
+        Callee-->>Caller: result
+    end
+
+    alt condition is true
+        Caller->>Callee: path A
+    else condition is false
+        Caller->>Callee: path B
+    end
+      </pre>
+      <p class="diagram-caption">
+        Figure 1. Core notation.
+      </p>
+      <t-b>
+        Synchronous call with activation box, asynchronous fire-and-forget, loop fragment,
+        and alt fragment with two branches.
+      </t-b>
+
+      <a id="textfinder"></a>
+      <h3>4. &nbsp;TextFinder as a Worked Example</h3>
+      <t-b>
+        TextFinder's runtime flow divides cleanly into two phases. In the first phase
+        EntryPoint parses options and configures the other components. In the second phase
+        EntryPoint calls <code>search()</code> and hands control to DirNav for the rest of
+        the run. DirNav drives every subsequent message; EntryPoint becomes a passive
+        callback host.
+      </t-b>
+      <t-b>
+        In the Rust implementation <code>TfAppl</code> - the type that implements the
+        <code>DirEvent</code> trait - acts as the callback receiver. DirNav calls
+        <code>do_dir</code> and <code>do_file</code> through the trait object;
+        <code>TfAppl.do_file</code> delegates the regex match to
+        <code>TextFinder</code>.
+      </t-b>
+
+      <pre class="mermaid">
+sequenceDiagram
+    participant EP as EntryPoint
+    participant CL as CommandLine
+    participant DN as DirNav
+    participant TF as TfAppl
+    participant OUT as TextFinder / Output
+
+    EP->>+CL: parse(argv)
+    CL-->>-EP: options (path, regex, ext, flags)
+
+    EP->>OUT: set_regex(pattern)
+    EP->>DN: add_pattern(ext)
+
+    EP->>+DN: search(root_path, &mut TfAppl)
+
+    loop each directory in tree
+        DN->>TF: do_dir(dir_name)
+
+        loop each file in directory
+            DN->>TF: do_file(file_name)
+            TF->>+OUT: find(fully_qualified_path)
+            OUT-->>-TF: matched: bool
+
+            alt matched == true
+                TF->>TF: print path to console
+            end
+        end
+    end
+
+    DN-->>-EP: search complete
+      </pre>
+      <p class="diagram-caption">
+        Figure 2. TextFinder runtime sequence.
+      </p>
+      <t-b>
+        After <code>search()</code> is called, DirNav drives the entire traversal loop.
+        EntryPoint never sends another message - it waits for DirNav to return.
+      </t-b>
+
+      <a id="reading"></a>
+      <h3>5. &nbsp;Reading the Diagram</h3>
+      <t-b>
+        Three observations stand out when reading Figure 2 as a design document.
+      </t-b>
+      <t-b>
+        <strong>Control inversion after search().</strong> The activation box on DN's
+        lifeline spans the entire traversal. EntryPoint is active for the initial
+        configuration phase, then suspended while DirNav runs. This is the inversion of
+        control that the callback design produces: the library (DirNav) drives the
+        application (TfAppl), not the other way around.
+      </t-b>
+      <t-b>
+        <strong>TfAppl is the integration point.</strong> All callback messages land on TF.
+        It receives directory and file notifications from DN, delegates the match decision
+        to OUT, and writes to the console. Nothing in DN knows about OUT, and nothing in
+        OUT knows about DN. TfAppl exists precisely to connect them without creating a
+        direct dependency.
+      </t-b>
+      <t-b>
+        <strong>CmdLine is consulted only once.</strong> The activation on CL's lifeline
+        is short and early. After <code>parse()</code> returns, CL is not called again.
+        This tells a reader that CL is stateless after initialization - its data is
+        consumed at startup and does not need to persist across the traversal.
+      </t-b>
+
+      <a id="fragments"></a>
+      <h3>6. &nbsp;Combined Fragments in Depth</h3>
+      <t-b>
+        The two nested <code>loop</code> fragments in Figure 2 express that directory
+        traversal is a nested iteration: for each directory, DirNav visits each file.
+        The <code>alt</code> fragment inside the file loop expresses that output is
+        conditional - it fires only when the regex matches. These three fragments together
+        describe the complete runtime behavior of the traversal in a form that is more
+        precise than prose and more readable than code.
+      </t-b>
+      <t-b>
+        A common mistake is overloading a single sequence diagram with too many fragments.
+        When a diagram has more than two levels of nesting, consider splitting it: one
+        diagram for the startup phase, a second for the traversal loop with callbacks.
+        Label each diagram with a scenario name so a reader knows which path it covers.
+      </t-b>
+      <t-b>
+        The <code>par</code> fragment appears when the design uses threads or async tasks.
+        TextFinder is single-threaded, so it does not appear here. A multi-threaded variant
+        that scanned directories concurrently would add a <code>par</code> wrapping the
+        per-directory loop body, with one branch per worker thread.
+      </t-b>
+
+      <a id="vs-structural"></a>
+      <h3>7. &nbsp;What Sequence Diagrams Reveal</h3>
+      <t-b>
+        Structural diagrams show dependencies; sequence diagrams show consequences. The
+        same package diagram is consistent with designs that differ significantly at
+        runtime. A sequence diagram forces those differences into the open.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:22rem;" />
+          <col style="width:33rem;" />
+        </colgroup>
+        <tr><th class="darkItem">Question</th><th class="darkItem">Only visible in a sequence diagram</th></tr>
+        <tr>
+          <td class="lightItem">Who calls whom first?</td>
+          <td class="lightItem">
+            The topmost message establishes the initiator. In TextFinder it is
+            always EntryPoint.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Who drives the main loop?</td>
+          <td class="lightItem">
+            The participant with the longest activation box drives. Here it is DirNav,
+            not EntryPoint - a consequence of the callback design.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Is the call synchronous or async?</td>
+          <td class="lightItem">
+            Solid vs. open arrowhead. A synchronous call blocks the caller's lifeline;
+            an async message does not.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">What is returned, and when?</td>
+          <td class="lightItem">
+            Dashed return arrows carry the value and show the moment control
+            transfers back. Structural diagrams only show that a dependency exists.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Where does branching occur?</td>
+          <td class="lightItem">
+            <code>alt</code> fragments make conditional paths explicit with their
+            guard conditions labeled.
+          </td>
+        </tr>
+      </table>
+
+      <a id="when"></a>
+      <h3>8. &nbsp;When to Draw One</h3>
+      <t-b>
+        Draw a sequence diagram when the question is about <em>runtime interaction</em>
+        between components, not about type structure or compilation boundaries. Specific
+        triggers:
+      </t-b>
+      <ul class="tight">
+        <li>
+          Designing a callback or event-driven protocol: the diagram makes the inversion
+          of control explicit before any code is written.
+        </li>
+        <li>
+          Debugging a message-ordering bug: draw the intended sequence alongside the
+          observed sequence to locate the divergence precisely.
+        </li>
+        <li>
+          Reviewing an API: a sequence diagram of the expected call sequence tells library
+          users far more than a list of method signatures.
+        </li>
+        <li>
+          Documenting concurrency: <code>par</code> fragments show which messages can
+          interleave and which must be ordered, giving a reviewer enough information to
+          reason about race conditions.
+        </li>
+      </ul>
+      <t-b>
+        Keep each diagram focused on one scenario. A sequence diagram that tries to show
+        every possible path becomes a flowchart, which is better expressed as an activity
+        diagram. When branching dominates, reach for that diagram type instead.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>9. &nbsp;References</h3>
+      <table>
+        <colgroup>
+          <col style="width:35%;" />
+          <col style="width:65%;" />
+        </colgroup>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="../Code/ProjectStory_TextFinder.html">Project Story: TextFinder</a>
+          </td>
+          <td class="lightItem">Architecture, CLI, performance, and code metrics for all five implementations.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="SWDev_UML_Package.html">UML Package Diagrams</a>
+          </td>
+          <td class="lightItem">Structural view showing the same TextFinder architecture at the compilation-boundary level.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="SWDev_UML_Class.html">UML Class Diagrams</a>
+          </td>
+          <td class="lightItem">Structural view showing the types, members, and relationships that the sequence diagram orchestrates.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" rel="noopener noreferrer" href="https://mermaid.js.org/syntax/sequenceDiagram.html">Mermaid sequence diagram syntax</a>
+          </td>
+          <td class="lightItem">Full syntax reference including autonumber, actor aliases, background highlighting, and all fragment types.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" rel="noopener noreferrer" href="https://www.uml-diagrams.org/sequence-diagrams.html">UML Sequence Diagrams Overview</a>
+          </td>
+          <td class="lightItem">Formal UML notation reference covering all message types, combined fragments, and interaction uses.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#what">what it shows</a></menu-elem>
+        <menu-elem class="secElem"><a href="#notation">notation</a></menu-elem>
+        <menu-elem class="secElem"><a href="#notation-diagram">notation in practice</a></menu-elem>
+        <menu-elem class="secElem"><a href="#textfinder">TextFinder example</a></menu-elem>
+        <menu-elem class="secElem"><a href="#reading">reading the diagram</a></menu-elem>
+        <menu-elem class="secElem"><a href="#fragments">combined fragments</a></menu-elem>
+        <menu-elem class="secElem"><a href="#vs-structural">what they reveal</a></menu-elem>
+        <menu-elem class="secElem"><a href="#when">when to draw one</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevUMLPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+</body>
+</html>

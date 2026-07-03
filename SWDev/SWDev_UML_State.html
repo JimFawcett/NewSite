@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  SWDev_UML_State.html - Narrative: UML State Diagrams, illustrated with TextFinder
+-->
+<head>
+  <meta charset="UTF-8" />
+  <title>UML State Diagrams</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    .mermaid { margin: 1.5rem 0 0.5rem 1rem; }
+    .diagram-caption {
+      font-size: 0.85rem;
+      font-style: italic;
+      color: var(--dark);
+      margin: 0 0 1.5rem 1rem;
+    }
+    #github table { table-layout: fixed; }
+    #github td { vertical-align: top; }
+  </style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+  </script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if (loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDev_UML_State.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 07/02/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">UML State Diagrams</h2>
+        <h4 class="indent" id="subtitle">object lifecycle, events, and transitions, illustrated with TextFinder</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" rel="noopener noreferrer"
+          href="../Code/ProjectStory_TextFinder.html"
+          style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">TextFinder Project Story</a>
+        <a class="repoLinks" target="_blank" rel="noopener noreferrer"
+          href="https://mermaid.js.org/syntax/stateDiagram.html"
+          style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Mermaid State Diagram Syntax</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="what"></a>
+      <h3>1. &nbsp;What a State Diagram Shows</h3>
+      <t-b>
+        A state diagram models the lifecycle of a single object or system: the distinct
+        conditions it can be in, the events that drive it from one condition to another,
+        and the actions it executes on entry, on exit, or as a transition fires. The
+        diagram answers: <em>what states does this object pass through, and what causes
+        it to change?</em>
+      </t-b>
+      <t-b>
+        State diagrams are the right tool when an object's behavior depends on its history
+        - when knowing the current inputs is not enough and you also need to know which
+        state the object is currently in. A regex engine, a network connection, a parser,
+        a UI widget, and a protocol handler all have this property. A pure function does
+        not; drawing a state diagram for a stateless computation adds no information.
+      </t-b>
+      <t-b>
+        Unlike an activity diagram, which shows the flow of control through an algorithm,
+        a state diagram is tied to one object. Every transition is triggered by an event
+        directed at that object. Every action executes on behalf of that object. This
+        focus makes state diagrams precise about lifetime and about which operations are
+        legal in which conditions - illegal operations are simply absent from the diagram.
+      </t-b>
+
+      <a id="notation"></a>
+      <h3>2. &nbsp;Notation</h3>
+      <table>
+        <colgroup>
+          <col style="width:16rem;" />
+          <col style="width:39rem;" />
+        </colgroup>
+        <tr><th class="darkItem">Element</th><th class="darkItem">Meaning</th></tr>
+        <tr>
+          <td class="lightItem">Initial pseudostate</td>
+          <td class="lightItem">
+            A filled circle with no incoming edges. Every state machine has exactly one.
+            The transition leaving it carries no event label - the machine enters its
+            first state on construction.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">State</td>
+          <td class="lightItem">
+            A rounded rectangle. The top compartment holds the state name. Optional lower
+            compartments list the internal behaviors: <code>entry /</code> action (executes
+            on every entry), <code>exit /</code> action (executes on every exit),
+            <code>do /</code> activity (executes continuously while in the state).
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Transition</td>
+          <td class="lightItem">
+            An arrow from source state to target state, labeled with the full trigger
+            syntax: <code>event [guard] / action</code>. All three parts are optional.
+            A transition with no event label fires automatically when the source state's
+            do-activity completes.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Event</td>
+          <td class="lightItem">
+            The named occurrence that can trigger the transition. A method call, a signal,
+            a timeout, or a change condition. The event name appears before the guard.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Guard</td>
+          <td class="lightItem">
+            A boolean condition in square brackets: <code>[queue empty]</code>,
+            <code>[match found]</code>. The transition fires only when the event occurs
+            <em>and</em> the guard is true. Two transitions from the same state on the
+            same event must have mutually exclusive guards.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Action</td>
+          <td class="lightItem">
+            An operation that executes atomically when the transition fires, after the
+            exit action of the source state and before the entry action of the target
+            state. Written after the slash: <code>find() / print path</code>.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Composite state</td>
+          <td class="lightItem">
+            A state that contains nested states. A transition into a composite state
+            enters its designated initial substate. A transition out of a composite state
+            can fire from any substate. Composite states reduce diagram clutter by
+            grouping related substates.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">History pseudostate</td>
+          <td class="lightItem">
+            A circle containing H (shallow) or H* (deep) inside a composite state.
+            When re-entering the composite state, the machine resumes the last active
+            substate rather than always entering the initial substate.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Final state</td>
+          <td class="lightItem">
+            A bullseye - a filled circle inside a larger ring. Entering the final state
+            signals that the object's lifecycle is complete. A composite state may have
+            its own final state, signaling completion of that region only.
+          </td>
+        </tr>
+      </table>
+
+      <a id="notation-diagram"></a>
+      <h3>3. &nbsp;Notation in Practice</h3>
+      <t-b>
+        The diagram below models a generic worker object - something any background task,
+        thread pool slot, or async job runner could be. It shows initial and final states,
+        transitions with events and guards, and an internal self-loop for progress updates.
+      </t-b>
+
+      <pre class="mermaid">
+stateDiagram-v2
+    [*] --> Idle
+
+    Idle --> Running : start(task)\n/ initialize resources
+    Running --> Idle : cancel()\n/ release resources
+    Running --> Running : progress()\n[not complete]
+    Running --> Completed : progress()\n[complete] / emit result
+    Running --> Failed : error(msg)\n/ log message
+    Completed --> Idle : reset()
+    Failed --> Idle : reset()
+
+    Completed --> [*]
+      </pre>
+      <p class="diagram-caption">
+        Figure 1. Worker state machine.
+      </p>
+      <t-b>
+        Two transitions leave Running on the same <code>progress()</code> event with
+        mutually exclusive guards. The self-loop on Running fires repeatedly until the
+        guard flips. <code>reset()</code> returns the object to Idle for reuse without
+        reconstruction.
+      </t-b>
+
+      <a id="textfinder"></a>
+      <h3>4. &nbsp;TextFinder as a Worked Example</h3>
+      <t-b>
+        Within TextFinder the most stateful component is the traversal engine. DirNav
+        transitions through a well-defined lifecycle: it is constructed idle, enters
+        active traversal when <code>search()</code> is called, processes nested directories
+        and files through a pair of composite substates, and returns to a post-search
+        condition when all entries are exhausted.
+      </t-b>
+      <t-b>
+        The Output component (TextFinder in the Rust variant) has a simpler but important
+        lifecycle of its own: it must be configured with a compiled regex before
+        <code>find()</code> is ever called. Calling <code>find()</code> in the
+        Unconfigured state is a precondition violation. The state diagram makes that
+        constraint explicit - no transition from Unconfigured leads to Scanning.
+      </t-b>
+
+      <pre class="mermaid">
+stateDiagram-v2
+    direction TB
+
+    [*] --> Startup
+
+    state Startup {
+        [*] --> ParsingArgs
+        ParsingArgs --> ConfiguringOutput : parse() completes\n/ options extracted
+        ConfiguringOutput --> ConfiguringDirNav : set_regex(pattern)\n/ regex compiled
+        ConfiguringDirNav --> [*] : add_pattern(ext)
+    }
+
+    Startup --> Traversing : search(root, callback)
+
+    state Traversing {
+        [*] --> VisitingDirectory
+        VisitingDirectory --> VisitingDirectory : [subdirectory found]\n/ fire do_dir
+        VisitingDirectory --> MatchingFile : next file entry\n/ fire do_file
+        MatchingFile --> VisitingDirectory : find() returns false
+        MatchingFile --> PrintingMatch : find() returns true
+        PrintingMatch --> VisitingDirectory : / print path
+        VisitingDirectory --> [*] : [no more entries]
+    }
+
+    Traversing --> Complete : [all directories visited]
+    Complete --> [*]
+      </pre>
+      <p class="diagram-caption">
+        Figure 2. TextFinder state machine.
+      </p>
+      <t-b>
+        Two composite states: Startup is a linear initialization sequence; Traversing
+        contains VisitingDirectory (which loops on itself for subdirectories) and
+        transitions to MatchingFile for file entries. The match guard determines whether
+        PrintingMatch fires.
+      </t-b>
+
+      <a id="reading"></a>
+      <h3>5. &nbsp;Reading the Diagram</h3>
+      <t-b>
+        Four observations follow from Figure 2.
+      </t-b>
+      <t-b>
+        <strong>Startup is a one-way chute.</strong> The Startup composite state has no
+        transitions back to itself and no transitions back from Traversing. Once
+        <code>parse()</code> completes and components are configured, the application
+        cannot re-enter startup. This is a design constraint, not just an implementation
+        detail - the diagram makes it a first-class fact.
+      </t-b>
+      <t-b>
+        <strong>The self-loop on VisitingDirectory models recursion.</strong> When DirNav
+        encounters a subdirectory it fires <code>do_dir</code> and re-enters
+        VisitingDirectory for the child. The state diagram does not model the call stack
+        - that is a sequence diagram concern - but it does show that the directory-visiting
+        behavior is re-entrant on the same state.
+      </t-b>
+      <t-b>
+        <strong>MatchingFile has two exit transitions with guards.</strong>
+        <code>[find() returns false]</code> and <code>[find() returns true]</code> are
+        mutually exclusive and collectively exhaustive - no other outcome is possible.
+        Any state with two outgoing transitions on the same implicit event must satisfy
+        this property; the diagram enforces it by requiring the guards to cover all cases.
+      </t-b>
+      <t-b>
+        <strong>Complete has no outgoing transitions to Idle.</strong> The application
+        exits after one search. A variant that looped - waiting for a new query, running
+        again, returning to Idle - would show a transition from Complete back to Startup
+        or to a new Idle state. The absence of that edge documents the single-run design.
+      </t-b>
+
+      <a id="composite"></a>
+      <h3>6. &nbsp;Composite States and History</h3>
+      <t-b>
+        Composite states are the primary tool for managing complexity in state diagrams.
+        Without them, a machine with ten substates and a cancel event would need ten
+        explicit cancel transitions - one from each substate. With a composite state,
+        a single transition from the composite captures them all.
+      </t-b>
+      <t-b>
+        In Figure 2, any error or cancellation during traversal can be expressed as a
+        single transition from the Traversing composite to a Cancelled state, rather than
+        separate transitions from VisitingDirectory, MatchingFile, and PrintingMatch.
+        The Traversing composite's exit action then handles resource cleanup regardless
+        of which substate was active when the event fired.
+      </t-b>
+      <t-b>
+        The history pseudostate (H or H*) extends this further. When a composite state
+        is exited and later re-entered - for example, because a Paused event temporarily
+        suspends traversal - the history pseudostate resumes the last active substate
+        rather than restarting from the composite's initial pseudostate. TextFinder has
+        no pause-and-resume feature, so history is not needed here, but it is essential
+        in any stateful UI or interruptible protocol handler.
+      </t-b>
+
+      <a id="vs-activity"></a>
+      <h3>7. &nbsp;State vs. Activity Diagrams</h3>
+      <t-b>
+        Both diagram types are behavioral, and both show transitions driven by conditions.
+        The distinction is focus: state diagrams focus on a single object's lifecycle;
+        activity diagrams focus on the flow of control through a process that may involve
+        multiple participants.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:18rem;" />
+          <col style="width:18rem;" />
+          <col style="width:19rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Concern</th>
+          <th class="darkItem">State diagram</th>
+          <th class="darkItem">Activity diagram</th>
+        </tr>
+        <tr>
+          <td class="lightItem">Subject</td>
+          <td class="lightItem">One object and its lifecycle.</td>
+          <td class="lightItem">A process, workflow, or algorithm - often spanning multiple objects.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Transition trigger</td>
+          <td class="lightItem">An event directed at the object: a method call, signal, or timeout.</td>
+          <td class="lightItem">Completion of an action, or a guard becoming true.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Illegal operations</td>
+          <td class="lightItem">Visible as absent transitions - if no edge leaves a state on event E, E is illegal in that state.</td>
+          <td class="lightItem">Not expressible; activity diagrams show what happens, not what is forbidden.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Concurrency</td>
+          <td class="lightItem">Concurrent regions inside a composite state - the object is in two substates simultaneously.</td>
+          <td class="lightItem">Fork and join bars - two threads of action run in parallel.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">TextFinder fit</td>
+          <td class="lightItem">Models DirNav's traversal lifecycle and Output's configuration precondition.</td>
+          <td class="lightItem">Models the search algorithm - nested loops and the regex match decision.</td>
+        </tr>
+      </table>
+      <t-b>
+        A useful test: if you find yourself writing "while in state X" or "only valid after
+        Y has been called", you need a state diagram. If you find yourself writing "first
+        do A, then B, unless C in which case D", you need an activity diagram.
+      </t-b>
+
+      <a id="when"></a>
+      <h3>8. &nbsp;When to Draw One</h3>
+      <t-b>
+        Draw a state diagram when an object's valid operations depend on which state it
+        is currently in. Specific triggers:
+      </t-b>
+      <ul class="tight">
+        <li>
+          Designing a protocol: every protocol has mandatory sequencing - connect before
+          send, handshake before data, close before destroy. A state diagram encodes that
+          sequencing as a set of legal transitions and makes illegal sequences visually
+          absent.
+        </li>
+        <li>
+          Specifying preconditions: if a method is only legal after configuration or
+          initialization, the state diagram shows that as a missing transition from the
+          unconfigured state - clearer and more enforceable than a prose precondition note.
+        </li>
+        <li>
+          Modeling a UI component: buttons, dialogs, and form fields all cycle through
+          states (enabled, disabled, focused, error). A state diagram documents the full
+          set of valid interactions and prevents implementations that miss a transition.
+        </li>
+        <li>
+          Reviewing error handling: draw the complete state machine and verify that every
+          state has at least one transition that handles failure. Any state with no error
+          exit is a place where the object can become permanently stuck.
+        </li>
+      </ul>
+      <t-b>
+        Avoid state diagrams for objects that are purely computational with no lifecycle
+        - a math utility class, a pure data holder, a stateless service. For those, a
+        class diagram documents the interface; a state diagram would have only one state
+        and add nothing.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>9. &nbsp;References</h3>
+      <table>
+        <colgroup>
+          <col style="width:35%;" />
+          <col style="width:65%;" />
+        </colgroup>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="../Code/ProjectStory_TextFinder.html">Project Story: TextFinder</a>
+          </td>
+          <td class="lightItem">Architecture, CLI, performance, and code metrics for all five implementations.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="SWDev_UML_Activity.html">UML Activity Diagrams</a>
+          </td>
+          <td class="lightItem">The companion behavioral view showing the search algorithm as a flow of control rather than an object lifecycle.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="SWDev_UML_Sequence.html">UML Sequence Diagrams</a>
+          </td>
+          <td class="lightItem">Shows the callback message protocol - the events that drive the state transitions modeled here.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" rel="noopener noreferrer" href="https://mermaid.js.org/syntax/stateDiagram.html">Mermaid state diagram syntax</a>
+          </td>
+          <td class="lightItem">Full syntax reference for Mermaid stateDiagram-v2, including composite states, concurrent regions, and notes.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" rel="noopener noreferrer" href="https://www.uml-diagrams.org/state-machine-diagrams.html">UML State Machine Diagrams Overview</a>
+          </td>
+          <td class="lightItem">Formal UML notation reference covering all pseudostates, regions, history, and entry/exit point semantics.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#what">what it shows</a></menu-elem>
+        <menu-elem class="secElem"><a href="#notation">notation</a></menu-elem>
+        <menu-elem class="secElem"><a href="#notation-diagram">notation in practice</a></menu-elem>
+        <menu-elem class="secElem"><a href="#textfinder">TextFinder example</a></menu-elem>
+        <menu-elem class="secElem"><a href="#reading">reading the diagram</a></menu-elem>
+        <menu-elem class="secElem"><a href="#composite">composite states</a></menu-elem>
+        <menu-elem class="secElem"><a href="#vs-activity">state vs. activity</a></menu-elem>
+        <menu-elem class="secElem"><a href="#when">when to draw one</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevUMLPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 6, 10);
+  </script>
+</body>
+</html>

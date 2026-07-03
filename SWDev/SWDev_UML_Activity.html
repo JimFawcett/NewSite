@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  SWDev_UML_Activity.html - Narrative: UML Activity Diagrams, illustrated with TextFinder
+-->
+<head>
+  <meta charset="UTF-8" />
+  <title>UML Activity Diagrams</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    .mermaid { margin: 1.5rem 0 0.5rem 1rem; }
+    .diagram-caption {
+      font-size: 0.85rem;
+      font-style: italic;
+      color: var(--dark);
+      margin: 0 0 1.5rem 1rem;
+    }
+    #github table { table-layout: fixed; }
+    #github td { vertical-align: top; }
+  </style>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+  </script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if (loc === window.top.location) {
+        window.location = "ExploreSWDev.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    SWDev_UML_Activity.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 07/02/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">UML Activity Diagrams</h2>
+        <h4 class="indent" id="subtitle">control flow, decisions, and concurrency, illustrated with TextFinder</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" rel="noopener noreferrer"
+          href="../Code/ProjectStory_TextFinder.html"
+          style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">TextFinder Project Story</a>
+        <a class="repoLinks" target="_blank" rel="noopener noreferrer"
+          href="https://mermaid.js.org/syntax/flowchart.html"
+          style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Mermaid Flowchart Syntax</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="what"></a>
+      <h3>1. &nbsp;What an Activity Diagram Shows</h3>
+      <t-b>
+        An activity diagram shows the flow of control through a process. Actions execute
+        in sequence or in parallel; decisions fork the flow into alternative paths; loops
+        return control to an earlier point. The diagram answers: <em>what happens, in what
+        order, under what conditions?</em>
+      </t-b>
+      <t-b>
+        Activity diagrams are the structured descendant of the flowchart. The notation
+        adds two things a plain flowchart lacks: formal support for concurrency via fork
+        and join bars, and swimlanes that partition actions by the responsible actor or
+        component. Both additions make activity diagrams useful for documenting algorithms,
+        workflows, and use-case realizations - not just simple sequential procedures.
+      </t-b>
+      <t-b>
+        Unlike a sequence diagram, an activity diagram does not emphasize which participant
+        sends which message. It emphasizes the logic of the flow itself. When branching
+        and looping dominate the design problem, an activity diagram is the right choice;
+        when the order of messages between specific objects matters more, use a sequence
+        diagram instead.
+      </t-b>
+
+      <a id="notation"></a>
+      <h3>2. &nbsp;Notation</h3>
+      <t-b>
+        Activity diagrams use seven distinct elements. Mermaid renders them as flowcharts;
+        the UML shape names are listed alongside the Mermaid equivalents.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:14rem;" />
+          <col style="width:13rem;" />
+          <col style="width:28rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">UML Element</th>
+          <th class="darkItem">Mermaid Shape</th>
+          <th class="darkItem">Meaning</th>
+        </tr>
+        <tr>
+          <td class="lightItem">Initial node</td>
+          <td class="lightItem"><code>((&#x25CF;))</code> filled circle</td>
+          <td class="lightItem">The single entry point of the activity. Every diagram has exactly one.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Activity final node</td>
+          <td class="lightItem"><code>(((end)))</code> bullseye circle</td>
+          <td class="lightItem">Terminates the entire activity, canceling all concurrent flows.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Flow final node</td>
+          <td class="lightItem">circle with X</td>
+          <td class="lightItem">Terminates one concurrent flow without ending the activity.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Action node</td>
+          <td class="lightItem"><code>[action text]</code> rounded rectangle</td>
+          <td class="lightItem">A single step: a computation, a call, an I/O operation. Named as a verb phrase.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Decision / merge node</td>
+          <td class="lightItem"><code>{condition?}</code> diamond</td>
+          <td class="lightItem">
+            Decision: one incoming flow, two or more outgoing flows with guard labels.
+            Merge: two or more incoming flows, one outgoing flow. Same shape for both.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Fork / join bar</td>
+          <td class="lightItem">thick horizontal bar</td>
+          <td class="lightItem">
+            Fork: one incoming flow splits into concurrent flows. Join: all concurrent
+            flows must complete before the single outgoing flow continues.
+            Mermaid approximates these as unlabeled nodes with multiple edges.
+          </td>
+        </tr>
+        <tr>
+          <td class="lightItem">Swimlane</td>
+          <td class="lightItem"><code>subgraph</code> partition</td>
+          <td class="lightItem">
+            A labeled column or row that groups all actions performed by one actor
+            or component. Actions in the same swimlane share responsibility.
+          </td>
+        </tr>
+      </table>
+      <t-b>
+        Guard labels on decision outflows are written in square brackets: <code>[matched]</code>,
+        <code>[no match]</code>, <code>[queue empty]</code>. Every outgoing edge of a decision
+        node must carry a guard, and the guards must be mutually exclusive and collectively
+        exhaustive - otherwise the diagram is ambiguous.
+      </t-b>
+
+      <a id="notation-diagram"></a>
+      <h3>3. &nbsp;Notation in Practice</h3>
+      <t-b>
+        The diagram below shows the core elements in a minimal example: initial node,
+        sequential actions, decision with guarded edges, a loop back, parallel fork and
+        join, and activity final node.
+      </t-b>
+
+      <pre class="mermaid">
+flowchart TD
+    I(( )) --> parse["parse input"]
+    parse --> valid{"input valid?"}
+    valid -->|"[yes]"| process["process item"]
+    valid -->|"[no]"| err["report error"]
+    err --> done(((end)))
+    process --> more{"more items?"}
+    more -->|"[yes]"| parse
+    more -->|"[no]"| fork[ ]
+    style fork fill:#333,stroke:#333
+    fork --> t1["concurrent task A"]
+    fork --> t2["concurrent task B"]
+    t1 --> join[ ]
+    t2 --> join
+    style join fill:#333,stroke:#333
+    join --> done
+      </pre>
+      <p class="diagram-caption">
+        Figure 1. Core notation.
+      </p>
+      <t-b>
+        Sequential actions, guarded decision edges, a loop back to an earlier action,
+        parallel fork and join, and activity final node. The solid bars approximate
+        UML fork and join notation.
+      </t-b>
+
+      <a id="textfinder"></a>
+      <h3>4. &nbsp;TextFinder as a Worked Example</h3>
+      <t-b>
+        The TextFinder search algorithm is a natural activity diagram subject. It has a
+        startup phase (argument parsing and component configuration), two nested iteration
+        loops (directories and files), a conditional action (print only when the regex
+        matches), and a clean termination. There is no concurrency in the baseline
+        implementation - all traversal is single-threaded - so no fork or join bars appear.
+      </t-b>
+
+      <pre class="mermaid">
+flowchart TD
+    I(( )) --> argv["parse argv via CommandLine"]
+    argv --> cfgout["set regex on Output"]
+    cfgout --> cfgdn["set extension pattern on DirNav"]
+    cfgdn --> search["begin directory traversal"]
+    search --> hasdir{"next directory?"}
+    hasdir -->|"[yes]"| dodir["do_dir: record current directory"]
+    dodir --> hasfile{"next file?"}
+    hasfile -->|"[yes]"| dofile["do_file: build fully qualified path"]
+    dofile --> apply["apply regex to file content"]
+    apply --> hit{"regex match?"}
+    hit -->|"[yes]"| print["print directory and filename"]
+    print --> hasfile
+    hit -->|"[no]"| hasfile
+    hasfile -->|"[no]"| hasdir
+    hasdir -->|"[no]"| done(((end)))
+      </pre>
+      <p class="diagram-caption">
+        Figure 2. TextFinder activity diagram.
+      </p>
+      <t-b>
+        The outer loop iterates over directories; the inner loop iterates over files within
+        each directory. The regex decision controls whether a path is printed. Both loops
+        feed back to their respective decision nodes.
+      </t-b>
+
+      <a id="reading"></a>
+      <h3>5. &nbsp;Reading the Diagram</h3>
+      <t-b>
+        Four observations follow directly from Figure 2.
+      </t-b>
+      <t-b>
+        <strong>Two nested loops, one conditional action.</strong> The outer loop is
+        <code>hasdir</code>; the inner is <code>hasfile</code>. The conditional action
+        (print) is inside the inner loop - it fires at most once per file. A reader can
+        confirm the depth of nesting and the placement of the conditional without reading
+        any code.
+      </t-b>
+      <t-b>
+        <strong>The startup phase is linear.</strong> From the initial node to
+        <code>begin directory traversal</code>, every action has exactly one incoming and
+        one outgoing edge. There are no decisions and no loops in startup. That linearity
+        is a design property, not an accident - it means startup always succeeds or throws
+        immediately; it cannot partially configure and then stall.
+      </t-b>
+      <t-b>
+        <strong>Guards are exhaustive.</strong> Every decision node has exactly two guarded
+        edges whose conditions cover all cases: <code>[yes]</code> and <code>[no]</code>,
+        or <code>[match]</code> and <code>[no match]</code>. A diagram with an unguarded
+        edge or a gap in guards signals an incomplete or ambiguous design.
+      </t-b>
+      <t-b>
+        <strong>No error paths.</strong> The diagram shows the happy path only. TextFinder
+        skips unreadable files silently - it does not branch to an error handler. That is a
+        deliberate design choice. If error handling were added, it would appear as additional
+        decision nodes after <code>apply regex</code>, with edges to error-reporting actions.
+        The diagram makes the absence of error handling visible.
+      </t-b>
+
+      <a id="swimlanes"></a>
+      <h3>6. &nbsp;Adding Swimlanes</h3>
+      <t-b>
+        Swimlanes partition the activity by the component responsible for each action.
+        They answer: <em>who does what?</em> - a question the algorithm-only diagram
+        defers. The TextFinder diagram partitions naturally into three swimlanes:
+        EntryPoint (startup), DirNav (traversal decisions), and TfAppl / Output
+        (callback actions and regex).
+      </t-b>
+
+      <pre class="mermaid">
+flowchart TD
+    subgraph EP["EntryPoint"]
+        argv["parse argv"]
+        cfgout2["set regex on Output"]
+        cfgdn2["set extension pattern on DirNav"]
+    end
+    subgraph DN["DirNav"]
+        search2["begin traversal"]
+        hasdir2{"next directory?"}
+        hasfile2{"next file?"}
+    end
+    subgraph TF["TfAppl / Output"]
+        dodir2["do_dir: record directory"]
+        dofile2["do_file: build path"]
+        apply2["apply regex"]
+        hit2{"match?"}
+        print2["print path"]
+    end
+
+    I2(( )) --> argv
+    argv --> cfgout2
+    cfgout2 --> cfgdn2
+    cfgdn2 --> search2
+    search2 --> hasdir2
+    hasdir2 -->|"[yes]"| dodir2
+    dodir2 --> hasfile2
+    hasfile2 -->|"[yes]"| dofile2
+    dofile2 --> apply2
+    apply2 --> hit2
+    hit2 -->|"[yes]"| print2
+    print2 --> hasfile2
+    hit2 -->|"[no]"| hasfile2
+    hasfile2 -->|"[no]"| hasdir2
+    hasdir2 -->|"[no]"| done2(((end)))
+      </pre>
+      <p class="diagram-caption">
+        Figure 3. TextFinder activity diagram with swimlanes.
+      </p>
+      <t-b>
+        EntryPoint handles startup; DirNav owns the traversal decisions; TfAppl and Output
+        own the callback actions and the regex match. Edges that cross swimlane boundaries
+        represent the callback calls.
+      </t-b>
+
+      <t-b>
+        The swimlane version makes the callback pattern explicit at a glance: every edge
+        that crosses a swimlane boundary is a cross-component call. Edges within a swimlane
+        are internal actions. A reader can verify the TextFinder design rule - no direct
+        DirNav-to-Output call - by confirming that no edge connects the DN and TF
+        swimlanes without passing through EP.
+      </t-b>
+
+      <a id="vs-sequence"></a>
+      <h3>7. &nbsp;Activity vs. Sequence Diagrams</h3>
+      <t-b>
+        Both activity and sequence diagrams are behavioral. The choice between them depends
+        on what the diagram needs to communicate.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:20rem;" />
+          <col style="width:18rem;" />
+          <col style="width:18rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Concern</th>
+          <th class="darkItem">Activity diagram</th>
+          <th class="darkItem">Sequence diagram</th>
+        </tr>
+        <tr>
+          <td class="lightItem">Primary question</td>
+          <td class="lightItem">What is the flow of control?</td>
+          <td class="lightItem">Who sends what message, in what order?</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Strength</td>
+          <td class="lightItem">Decisions, loops, parallel branches, and algorithmic structure.</td>
+          <td class="lightItem">Message ordering, return values, activation lifetimes.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Weakness</td>
+          <td class="lightItem">Does not show which participant sends each message.</td>
+          <td class="lightItem">Complex branching quickly becomes unreadable.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Best fit</td>
+          <td class="lightItem">Algorithms, workflows, use-case realizations with multiple paths.</td>
+          <td class="lightItem">Protocols, API call sequences, callback chains.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">TextFinder fit</td>
+          <td class="lightItem">Shows the search algorithm: nested loops, match decision, print action.</td>
+          <td class="lightItem">Shows the callback protocol: DirNav fires do_dir and do_file on TfAppl.</td>
+        </tr>
+      </table>
+      <t-b>
+        For TextFinder both diagrams are useful and neither replaces the other. The activity
+        diagram documents the search algorithm; the sequence diagram documents the
+        interaction contract between DirNav and the callback receiver. Draw both when
+        the project is complex enough to benefit from each perspective.
+      </t-b>
+
+      <a id="when"></a>
+      <h3>8. &nbsp;When to Draw One</h3>
+      <t-b>
+        Draw an activity diagram when the question involves <em>flow of control</em> -
+        what happens, in what order, under what conditions - rather than type structure
+        or message participants. Specific triggers:
+      </t-b>
+      <ul class="tight">
+        <li>
+          Documenting an algorithm with non-trivial branching: the diagram makes
+          every path explicit and exposes missing cases that prose tends to gloss over.
+        </li>
+        <li>
+          Modeling a multi-step workflow: swimlanes show which team, service, or
+          component owns each step, making handoff points and responsibility boundaries
+          visible.
+        </li>
+        <li>
+          Designing concurrent logic: fork and join bars show exactly where threads
+          diverge and where they must synchronize before proceeding.
+        </li>
+        <li>
+          Specifying a use case at the interaction level: an activity diagram maps
+          the steps of a use case onto the components that perform them, bridging
+          requirements and design.
+        </li>
+      </ul>
+      <t-b>
+        Avoid activity diagrams for simple linear procedures - a numbered list is
+        clearer and faster to read. Reserve them for flows where the branching,
+        looping, or concurrency structure is the point of the communication.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>9. &nbsp;References</h3>
+      <table>
+        <colgroup>
+          <col style="width:35%;" />
+          <col style="width:65%;" />
+        </colgroup>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="../Code/ProjectStory_TextFinder.html">Project Story: TextFinder</a>
+          </td>
+          <td class="lightItem">Architecture, CLI, performance, and code metrics for all five implementations.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="SWDev_UML_Sequence.html">UML Sequence Diagrams</a>
+          </td>
+          <td class="lightItem">The companion behavioral view showing the callback message protocol rather than the algorithm flow.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="SWDev_UML_Class.html">UML Class Diagrams</a>
+          </td>
+          <td class="lightItem">The structural view showing the types whose methods appear as action nodes in this diagram.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" rel="noopener noreferrer" href="https://mermaid.js.org/syntax/flowchart.html">Mermaid flowchart syntax</a>
+          </td>
+          <td class="lightItem">Full syntax reference for Mermaid flowchart, the notation used to render activity diagrams on this page.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" rel="noopener noreferrer" href="https://www.uml-diagrams.org/activity-diagrams.html">UML Activity Diagrams Overview</a>
+          </td>
+          <td class="lightItem">Formal UML notation reference covering all node types, edge notation, swimlanes, and exception regions.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#what">what it shows</a></menu-elem>
+        <menu-elem class="secElem"><a href="#notation">notation</a></menu-elem>
+        <menu-elem class="secElem"><a href="#notation-diagram">notation in practice</a></menu-elem>
+        <menu-elem class="secElem"><a href="#textfinder">TextFinder example</a></menu-elem>
+        <menu-elem class="secElem"><a href="#reading">reading the diagram</a></menu-elem>
+        <menu-elem class="secElem"><a href="#swimlanes">swimlanes</a></menu-elem>
+        <menu-elem class="secElem"><a href="#vs-sequence">activity vs. sequence</a></menu-elem>
+        <menu-elem class="secElem"><a href="#when">when to draw one</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SWDevUMLPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+</body>
+</html>
