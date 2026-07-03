@@ -5,7 +5,7 @@ Source: https://www.marktechpost.com/2026/06/14/claude-code-guide-2026-25-featur
 Claude Code is Anthropic's agentic coding tool operating across terminal, desktop, and IDE
 environments. It is a layered agentic system with distinct memory, hooks, skills, and plugin
 layers that control what the model can access and execute.
-
+https://www.msn.com/en-us/news/technology/i-made-these-4-changes-to-my-claude-code-setup-and-now-it-runs-circles-around-the-defaults/ar-AA25zPB7?ocid=winp2fptaskbarhover&cvid=6a46ac18246a44279fd6798f049a06bc&ei=77
 ---
 
 ## Official Anthropic Features (1-20)
