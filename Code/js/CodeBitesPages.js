@@ -8,7 +8,7 @@ function buildPages() {
   const pgs = document.getElementById('pages');
   if(isDefined(pgs)) {
     pgs.innerHTML =
-    "<div class='darkItem listheader' onclick='togglePages()'>Code Bites Pages</div>\
+    "<div class='darkItem listheader' onclick='togglePages()'>AI Bites Pages</div>\
       <div class='menuBody'>\
         <a href='AIBites_Introduction.html'>Introduction</a>\
         <a href='AIBites_AI_Self_Assessment.html'>AI self assessment</a>\
