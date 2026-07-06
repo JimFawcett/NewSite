@@ -16,6 +16,7 @@ function buildPages() {
       <a href='WebDevBites_CompViewSplitterBar.html'>SplitterBar Viewer</a>\
       <a href='WebDevBites_CompViewComparator.html'>Comparator</a>\
       <a href='WebDevBites_CompTwoPanelViewer.html'>Two Panel Viewer</a>\
+      <a href='WebDevBites_W3CComponents.html'>W3C Tutorial</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }

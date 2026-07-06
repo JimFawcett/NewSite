@@ -25,6 +25,8 @@
   <link rel="stylesheet" href="../css/prism.css" />
   <script src="../js/prism.js"></script>
   <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'neutral' });</script>
   <style>
     #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
     #github pre { width: max-content; padding: 1rem 2rem; }
@@ -32,7 +34,9 @@
       table-layout: fixed;
       width: 100%;
       border-collapse: collapse;
+      margin-top: 0.5rem;
     }
+    #github table.reftable.refs { width: 90%; }
     #github table.reftable th {
       background: var(--dark);
       color: var(--light);
@@ -45,6 +49,10 @@
       vertical-align: top;
       word-wrap: break-word;
     }
+    #github col.col-narrow  { width: 8rem; }
+    #github col.col-wide    { width: 16rem; }
+    #github .spacer-15      { height: 15rem; }
+    #github .mermaid-diagram { max-width: 36rem; margin: 1rem 0; }
   </style>
   <script>
     function loadInExplorer() {
@@ -110,6 +118,39 @@
         method adds behavior before or after delegating to the wrapped component.
         Multiple decorators can be stacked, each extending the behavior of the one beneath it.
       </t-b>
+      <div class="mermaid mermaid-diagram">
+classDiagram
+    class Writer {
+        &lt;&lt;interface&gt;&gt;
+        +write(data)
+    }
+    class FileWriter {
+        -file : File
+        +write(data)
+    }
+    class BufferedWriter {
+        -inner : Box~dyn Writer~
+        -buf : Vec~u8~
+        +write(data)
+    }
+    class GzipWriter {
+        -inner : Box~dyn Writer~
+        -encoder : GzEncoder
+        +write(data)
+    }
+    class CrcWriter {
+        -inner : Box~dyn Writer~
+        -crc : u32
+        +write(data)
+    }
+    Writer <|.. FileWriter : implements
+    Writer <|.. BufferedWriter : implements
+    Writer <|.. GzipWriter : implements
+    Writer <|.. CrcWriter : implements
+    BufferedWriter o--> Writer : wraps
+    GzipWriter o--> Writer : wraps
+    CrcWriter o--> Writer : wraps
+      </div>
       <pre><code class="language-text">interface Writer {
     fn write(&amp;mut self, data: &amp;[u8]) -&gt; Result
 }
@@ -137,8 +178,8 @@ let w = CrcWriter::new(GzipWriter::new(BufferedWriter::new(FileWriter::new(path)
       <indent-blocks>
         <details>
           <summary class="darkItem">Decorator - Language Idioms</summary>
-          <table class="reftable" style="margin-top:0.5rem;">
-            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+          <table class="reftable">
+            <colgroup><col class="col-narrow"><col></colgroup>
             <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
             <tbody>
               <tr>
@@ -178,8 +219,8 @@ let w = CrcWriter::new(GzipWriter::new(BufferedWriter::new(FileWriter::new(path)
         </details>
         <details>
           <summary class="darkItem">Decorator - Pros and Cons</summary>
-          <table class="reftable" style="margin-top:0.5rem;">
-            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+          <table class="reftable">
+            <colgroup><col class="col-narrow"><col></colgroup>
             <thead><tr><th></th><th>Notes</th></tr></thead>
             <tbody>
               <tr><td><strong>Pros</strong></td><td>
@@ -214,6 +255,22 @@ let w = CrcWriter::new(GzipWriter::new(BufferedWriter::new(FileWriter::new(path)
         each Target method call into one or more calls on the Adaptee. Neither the client
         nor the adaptee changes.
       </t-b>
+      <div class="mermaid mermaid-diagram">
+classDiagram
+    class Logger {
+        &lt;&lt;interface&gt;&gt;
+        +log(level, msg)
+    }
+    class SyslogWriter {
+        +write_entry(priority, text)
+    }
+    class SyslogAdapter {
+        -inner : SyslogWriter
+        +log(level, msg)
+    }
+    Logger <|.. SyslogAdapter : implements
+    SyslogAdapter o--> SyslogWriter : adapts
+      </div>
       <pre><code class="language-text">// Client expects this interface:
 interface Logger {
     fn log(&amp;self, level: Level, msg: &amp;str)
@@ -246,8 +303,8 @@ impl Logger for SyslogAdapter {
       <indent-blocks>
         <details>
           <summary class="darkItem">Adapter - Language Idioms</summary>
-          <table class="reftable" style="margin-top:0.5rem;">
-            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+          <table class="reftable">
+            <colgroup><col class="col-narrow"><col></colgroup>
             <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
             <tbody>
               <tr>
@@ -287,8 +344,8 @@ impl Logger for SyslogAdapter {
         </details>
         <details>
           <summary class="darkItem">Adapter - Pros and Cons</summary>
-          <table class="reftable" style="margin-top:0.5rem;">
-            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+          <table class="reftable">
+            <colgroup><col class="col-narrow"><col></colgroup>
             <thead><tr><th></th><th>Notes</th></tr></thead>
             <tbody>
               <tr><td><strong>Pros</strong></td><td>
@@ -318,6 +375,32 @@ impl Logger for SyslogAdapter {
         Recursive operations on a composite tree work without the caller knowing whether
         it holds a leaf or a subtree.
       </t-b>
+      <div class="mermaid mermaid-diagram">
+classDiagram
+    class FsEntry {
+        &lt;&lt;interface&gt;&gt;
+        +name() str
+        +size() u64
+        +print(indent)
+    }
+    class File {
+        -name : String
+        -size_bytes : u64
+        +name() str
+        +size() u64
+        +print(indent)
+    }
+    class Directory {
+        -name : String
+        -children : Vec~Box~dyn FsEntry~~
+        +name() str
+        +size() u64
+        +print(indent)
+    }
+    FsEntry <|.. File : implements
+    FsEntry <|.. Directory : implements
+    Directory o--> "0..*" FsEntry : contains
+      </div>
       <pre><code class="language-text">interface FsEntry {
     fn name(&amp;self) -&gt; &amp;str
     fn size(&amp;self) -&gt; u64
@@ -352,8 +435,8 @@ impl FsEntry for Directory {
       <indent-blocks>
         <details>
           <summary class="darkItem">Composite - Language Idioms</summary>
-          <table class="reftable" style="margin-top:0.5rem;">
-            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+          <table class="reftable">
+            <colgroup><col class="col-narrow"><col></colgroup>
             <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
             <tbody>
               <tr>
@@ -395,8 +478,8 @@ impl FsEntry for Directory {
         </details>
         <details>
           <summary class="darkItem">Composite - Pros and Cons</summary>
-          <table class="reftable" style="margin-top:0.5rem;">
-            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+          <table class="reftable">
+            <colgroup><col class="col-narrow"><col></colgroup>
             <thead><tr><th></th><th>Notes</th></tr></thead>
             <tbody>
               <tr><td><strong>Pros</strong></td><td>
@@ -424,13 +507,13 @@ impl FsEntry for Directory {
       <indent-blocks>
         <details>
           <summary class="darkItem">Structural Patterns References</summary>
-          <table class="reftable" style="margin-top:0.5rem; width:90%;">
-            <colgroup><col style="width:16rem;"><col style="width:auto;"></colgroup>
+          <table class="reftable refs">
+            <colgroup><col class="col-wide"><col></colgroup>
             <thead><tr><th>Resource</th><th>Description</th></tr></thead>
             <tbody>
               <tr>
                 <td>
-                  <a target="_blank" href="https://refactoring.guru/design-patterns/decorator">
+                  <a target="_blank" rel="noopener noreferrer" href="https://refactoring.guru/design-patterns/decorator">
                     Refactoring Guru - Decorator
                   </a>
                 </td>
@@ -438,7 +521,7 @@ impl FsEntry for Directory {
               </tr>
               <tr>
                 <td>
-                  <a target="_blank" href="https://refactoring.guru/design-patterns/adapter">
+                  <a target="_blank" rel="noopener noreferrer" href="https://refactoring.guru/design-patterns/adapter">
                     Refactoring Guru - Adapter
                   </a>
                 </td>
@@ -446,7 +529,7 @@ impl FsEntry for Directory {
               </tr>
               <tr>
                 <td>
-                  <a target="_blank" href="https://refactoring.guru/design-patterns/composite">
+                  <a target="_blank" rel="noopener noreferrer" href="https://refactoring.guru/design-patterns/composite">
                     Refactoring Guru - Composite
                   </a>
                 </td>
@@ -467,7 +550,7 @@ impl FsEntry for Directory {
     </div>
     <spacer-25></spacer-25>
   </content-block>
-  <div style="height:15rem;"></div>
+  <div class="spacer-15"></div>
 
   <a id="bottom"></a>
   <div id="bottomMenu">

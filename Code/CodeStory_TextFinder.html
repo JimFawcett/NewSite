@@ -76,8 +76,8 @@
       <h3>10. &nbsp;TextFinder Project</h3>
       <t-b>
         TextFinder walks a directory tree and reports every file whose content matches a
-        user-supplied regular expression.  Five implementations &mdash; Rust (baseline and
-        optimized), C++, C#, and Python &mdash; share the same three-component architecture
+        user-supplied regular expression.  Five implementations - Rust (baseline and
+        optimized), C++, C#, and Python - share the same three-component architecture
         and command-line interface, making the project a controlled cross-language comparison.
       </t-b>
       <indent-blocks>
@@ -94,7 +94,7 @@
                 by diffing results against a reference run.
               </li>
               <li>
-                Performance differences are measurable and explainable &mdash; the bottleneck
+                Performance differences are measurable and explainable - the bottleneck
                 is OS I/O, the regex engine choice matters, and startup cost is visible in
                 short-running processes.
               </li>
@@ -121,10 +121,10 @@
 </code></pre>
       <t-b>
         <ul class="tight">
-          <li><strong>CommandLine</strong> &mdash; parses <code>/Key [Value]</code> tokens from <code>argv</code>; exposes typed option values to callers.</li>
-          <li><strong>DirNav</strong> &mdash; depth-first directory walk; fires callbacks on each directory and file entered.</li>
-          <li><strong>Output</strong> (also named TextFinder in the Rust variants) &mdash; performs the regex match and writes matching paths to the console.</li>
-          <li><strong>EntryPoint</strong> &mdash; wires the three components together; no direct cross-dependencies between them.</li>
+          <li><strong>CommandLine</strong> - parses <code>/Key [Value]</code> tokens from <code>argv</code>; exposes typed option values to callers.</li>
+          <li><strong>DirNav</strong> - depth-first directory walk; fires callbacks on each directory and file entered.</li>
+          <li><strong>Output</strong> (also named TextFinder in the Rust variants) - performs the regex match and writes matching paths to the console.</li>
+          <li><strong>EntryPoint</strong> - wires the three components together; no direct cross-dependencies between them.</li>
         </ul>
       </t-b>
       <t-b>
@@ -152,7 +152,7 @@
       <h4>10.2 &nbsp;Command-Line Interface</h4>
       <t-b>
         All five implementations accept the same flags.  Both <code>/</code> and <code>-</code>
-        prefixes work &mdash; use <code>-</code> in Git Bash to avoid path conversion.
+        prefixes work - use <code>-</code> in Git Bash to avoid path conversion.
       </t-b>
       <table>
         <colgroup>
@@ -193,7 +193,7 @@
         </tr>
         <tr>
           <td class="lightItem"><code>/v</code></td>
-          <td class="lightItem">Verbose &mdash; echo all options before searching</td>
+          <td class="lightItem">Verbose - echo all options before searching</td>
           <td class="lightItem">off</td>
         </tr>
         <tr>
@@ -203,7 +203,7 @@
         </tr>
       </table>
       <t-b>
-        Example &mdash; find <code>.cs</code> files containing <code>Action</code> starting
+        Example - find <code>.cs</code> files containing <code>Action</code> starting
         from the current directory:
       </t-b>
 <pre><code class="language-bash">CsTextFinder /P . /p cs /r "Action"</code></pre>
@@ -365,7 +365,7 @@ python generate_part.py EntryPoint</code></pre>
       <t-b>
         All five agree on 656 matched files, confirming behavioral equivalence.
         The elevated max values for RustTextFinderOpt, CsTextFinder, and RustTextFinder
-        reflect OS scheduling interrupts during a run, not intrinsic tool cost &mdash;
+        reflect OS scheduling interrupts during a run, not intrinsic tool cost -
         the medians are more representative of steady-state performance.
       </t-b>
       <indent-blocks>
@@ -375,8 +375,8 @@ python generate_part.py EntryPoint</code></pre>
             <ul class="tight">
               <li>
                 The workload is I/O-bound.  Every implementation spends most of its time
-                in OS calls &mdash; <code>readdir</code>, <code>open</code>,
-                <code>read</code> &mdash; which cost the same in every language because
+                in OS calls - <code>readdir</code>, <code>open</code>,
+                <code>read</code> - which cost the same in every language because
                 they all wait on the same kernel.
               </li>
               <li>
@@ -407,15 +407,15 @@ python generate_part.py EntryPoint</code></pre>
         implementation.  Only the third produced a clear gain.
       </t-b>
       <t-b>
-        <strong>Step 1 &mdash; pre-compile the regex (no gain).</strong>
+        <strong>Step 1 - pre-compile the regex (no gain).</strong>
         The baseline compiles the pattern inside <code>find()</code>, once per file.
         Storing a compiled <code>Option&lt;regex::bytes::Regex&gt;</code> and building it
         once in the <code>regex()</code> setter eliminated that work, but elapsed time was
-        unchanged &mdash; the <code>regex</code> crate&rsquo;s DFA construction is fast
+        unchanged - the <code>regex</code> crate&rsquo;s DFA construction is fast
         enough that it does not dominate per-file cost.
       </t-b>
       <t-b>
-        <strong>Step 2 &mdash; search raw bytes (minor gain).</strong>
+        <strong>Step 2 - search raw bytes (minor gain).</strong>
         The baseline uses <code>read_to_string</code> (UTF-8 validation + heap allocation)
         with a lossy-UTF-8 fallback for binary files.  Switching to
         <code>regex::bytes::Regex</code> and reading every file as raw <code>&amp;[u8]</code>
@@ -423,12 +423,12 @@ python generate_part.py EntryPoint</code></pre>
         files are valid UTF-8 on the first attempt.
       </t-b>
       <t-b>
-        <strong>Step 3 &mdash; use <code>DirEntry::file_type()</code> instead of
+        <strong>Step 3 - use <code>DirEntry::file_type()</code> instead of
         <code>Path::is_dir()</code> (dominant gain).</strong>
         The baseline calls <code>path.is_dir()</code> inside the directory scan loop,
         issuing a separate <code>stat</code> syscall per entry.
         <code>DirEntry::file_type()</code> returns the type the OS already cached as part
-        of the <code>readdir</code> response &mdash; no extra syscall.  This one change
+        of the <code>readdir</code> response - no extra syscall.  This one change
         reduced median elapsed time from ~0.91&nbsp;s to ~0.61&nbsp;s, a 33% improvement,
         and accounts for nearly all of the gain between the two Rust variants.
       </t-b>

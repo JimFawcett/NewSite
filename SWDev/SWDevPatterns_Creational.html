@@ -25,6 +25,8 @@
   <link rel="stylesheet" href="../css/prism.css" />
   <script src="../js/prism.js"></script>
   <link rel="stylesheet" href="../css/ThemeSWDev.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'neutral' });</script>
   <style>
     #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
     #github pre { width: max-content; padding: 1rem 2rem; }
@@ -32,7 +34,9 @@
       table-layout: fixed;
       width: 100%;
       border-collapse: collapse;
+      margin-top: 0.5rem;
     }
+    #github table.reftable.refs { width: 90%; }
     #github table.reftable th {
       background: var(--dark);
       color: var(--light);
@@ -45,6 +49,11 @@
       vertical-align: top;
       word-wrap: break-word;
     }
+    #github col.col-narrow  { width: 8rem; }
+    #github col.col-medium  { width: 12rem; }
+    #github col.col-wide    { width: 16rem; }
+    #github .spacer-15      { height: 15rem; }
+    #github .mermaid-diagram { max-width: 36rem; margin: 1rem 0; }
   </style>
   <script>
     function loadInExplorer() {
@@ -107,6 +116,38 @@
         <c-s>Box&lt;dyn Product&gt;</c-s> or interface reference and never imports the
         concrete type.
       </t-b>
+      <div class="mermaid mermaid-diagram">
+classDiagram
+    class make_connection {
+        &lt;&lt;factory&gt;&gt;
+        +make_connection(kind, addr) Box~dyn Connection~
+    }
+    class Connection {
+        &lt;&lt;interface&gt;&gt;
+        +send(data)
+        +recv() Vec~u8~
+        +close()
+    }
+    class TcpConnection {
+        +send(data)
+        +recv() Vec~u8~
+        +close()
+    }
+    class UnixConnection {
+        +send(data)
+        +recv() Vec~u8~
+        +close()
+    }
+    class MockConnection {
+        +send(data)
+        +recv() Vec~u8~
+        +close()
+    }
+    make_connection ..> Connection : returns
+    Connection <|.. TcpConnection : implements
+    Connection <|.. UnixConnection : implements
+    Connection <|.. MockConnection : implements
+      </div>
       <pre><code class="language-text">interface Connection {
     fn send(&amp;self, data: &amp;[u8]) -&gt; Result
     fn recv(&amp;mut self) -&gt; Result&lt;Vec&lt;u8&gt;&gt;
@@ -136,8 +177,8 @@ fn make_connection(kind: &amp;str, addr: &amp;str) -&gt; Box&lt;dyn Connection&g
       <indent-blocks>
         <details>
           <summary class="darkItem">Factory Method - Language Idioms</summary>
-          <table class="reftable" style="margin-top:0.5rem;">
-            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+          <table class="reftable">
+            <colgroup><col class="col-narrow"><col></colgroup>
             <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
             <tbody>
               <tr>
@@ -175,8 +216,8 @@ fn make_connection(kind: &amp;str, addr: &amp;str) -&gt; Box&lt;dyn Connection&g
         </details>
         <details>
           <summary class="darkItem">Factory Method - Pros and Cons</summary>
-          <table class="reftable" style="margin-top:0.5rem;">
-            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+          <table class="reftable">
+            <colgroup><col class="col-narrow"><col></colgroup>
             <thead><tr><th></th><th>Notes</th></tr></thead>
             <tbody>
               <tr><td><strong>Pros</strong></td><td>
@@ -213,6 +254,25 @@ fn make_connection(kind: &amp;str, addr: &amp;str) -&gt; Box&lt;dyn Connection&g
         finished product. This eliminates constructors with long parameter lists and
         makes optional fields explicit.
       </t-b>
+      <div class="mermaid mermaid-diagram">
+classDiagram
+    class SearchConfigBuilder {
+        -config : SearchConfig
+        +new(root, regex) SearchConfigBuilder
+        +extensions(exts) SearchConfigBuilder
+        +recursive(r) SearchConfigBuilder
+        +max_depth(d) SearchConfigBuilder
+        +build() Result~SearchConfig~
+    }
+    class SearchConfig {
+        +root : PathBuf
+        +extensions : Vec~String~
+        +regex : String
+        +recursive : bool
+        +max_depth : Option~usize~
+    }
+    SearchConfigBuilder ..> SearchConfig : builds
+      </div>
       <pre><code class="language-text">struct SearchConfig {
     root:       PathBuf,
     extensions: Vec&lt;String&gt;,
@@ -245,8 +305,8 @@ let cfg = SearchConfigBuilder::new("./src", r"\bTODO\b")
       <indent-blocks>
         <details>
           <summary class="darkItem">Builder - Language Idioms</summary>
-          <table class="reftable" style="margin-top:0.5rem;">
-            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+          <table class="reftable">
+            <colgroup><col class="col-narrow"><col></colgroup>
             <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
             <tbody>
               <tr>
@@ -286,8 +346,8 @@ let cfg = SearchConfigBuilder::new("./src", r"\bTODO\b")
         </details>
         <details>
           <summary class="darkItem">Builder - Pros and Cons</summary>
-          <table class="reftable" style="margin-top:0.5rem;">
-            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+          <table class="reftable">
+            <colgroup><col class="col-narrow"><col></colgroup>
             <thead><tr><th></th><th>Notes</th></tr></thead>
             <tbody>
               <tr><td><strong>Pros</strong></td><td>
@@ -321,6 +381,23 @@ let cfg = SearchConfigBuilder::new("./src", r"\bTODO\b")
         method that creates the instance on first call and returns the same instance
         on every subsequent call. Thread-safe initialization requires special care.
       </t-b>
+      <div class="mermaid mermaid-diagram">
+classDiagram
+    class AppConfig {
+        +log_level : String
+        +max_workers : usize
+    }
+    class CONFIG {
+        &lt;&lt;OnceLock~AppConfig~&gt;&gt;
+        +get_or_init(f) AppConfig
+    }
+    class config {
+        &lt;&lt;fn&gt;&gt;
+        +config() ~static AppConfig
+    }
+    config ..> CONFIG : reads
+    CONFIG o--> AppConfig : holds one instance
+      </div>
       <pre><code class="language-text">// Rust - thread-safe singleton with OnceLock (stable since 1.70)
 use std::sync::OnceLock;
 
@@ -342,8 +419,8 @@ fn config() -&gt; &amp;'static AppConfig {
       <indent-blocks>
         <details>
           <summary class="darkItem">Singleton - When to Use and When to Avoid</summary>
-          <table class="reftable" style="margin-top:0.5rem;">
-            <colgroup><col style="width:12rem;"><col style="width:auto;"></colgroup>
+          <table class="reftable">
+            <colgroup><col class="col-medium"><col></colgroup>
             <thead><tr><th></th><th>Notes</th></tr></thead>
             <tbody>
               <tr><td><strong>Appropriate uses</strong></td><td>
@@ -367,8 +444,8 @@ fn config() -&gt; &amp;'static AppConfig {
         </details>
         <details>
           <summary class="darkItem">Singleton - Language Idioms</summary>
-          <table class="reftable" style="margin-top:0.5rem;">
-            <colgroup><col style="width:8rem;"><col style="width:auto;"></colgroup>
+          <table class="reftable">
+            <colgroup><col class="col-narrow"><col></colgroup>
             <thead><tr><th>Language</th><th>Idiomatic form</th></tr></thead>
             <tbody>
               <tr>
@@ -413,13 +490,13 @@ fn config() -&gt; &amp;'static AppConfig {
       <indent-blocks>
         <details>
           <summary class="darkItem">Creational Patterns References</summary>
-          <table class="reftable" style="margin-top:0.5rem; width:90%;">
-            <colgroup><col style="width:16rem;"><col style="width:auto;"></colgroup>
+          <table class="reftable refs">
+            <colgroup><col class="col-wide"><col></colgroup>
             <thead><tr><th>Resource</th><th>Description</th></tr></thead>
             <tbody>
               <tr>
                 <td>
-                  <a target="_blank" href="https://refactoring.guru/design-patterns/factory-method">
+                  <a target="_blank" rel="noopener noreferrer" href="https://refactoring.guru/design-patterns/factory-method">
                     Refactoring Guru - Factory Method
                   </a>
                 </td>
@@ -427,7 +504,7 @@ fn config() -&gt; &amp;'static AppConfig {
               </tr>
               <tr>
                 <td>
-                  <a target="_blank" href="https://refactoring.guru/design-patterns/builder">
+                  <a target="_blank" rel="noopener noreferrer" href="https://refactoring.guru/design-patterns/builder">
                     Refactoring Guru - Builder
                   </a>
                 </td>
@@ -435,7 +512,7 @@ fn config() -&gt; &amp;'static AppConfig {
               </tr>
               <tr>
                 <td>
-                  <a target="_blank" href="https://refactoring.guru/design-patterns/singleton">
+                  <a target="_blank" rel="noopener noreferrer" href="https://refactoring.guru/design-patterns/singleton">
                     Refactoring Guru - Singleton
                   </a>
                 </td>
@@ -443,7 +520,7 @@ fn config() -&gt; &amp;'static AppConfig {
               </tr>
               <tr>
                 <td>
-                  <a target="_blank" href="https://doc.rust-lang.org/std/sync/struct.OnceLock.html">
+                  <a target="_blank" rel="noopener noreferrer" href="https://doc.rust-lang.org/std/sync/struct.OnceLock.html">
                     Rust std - OnceLock
                   </a>
                 </td>
@@ -456,7 +533,7 @@ fn config() -&gt; &amp;'static AppConfig {
     </div>
     <spacer-25></spacer-25>
   </content-block>
-  <div style="height:15rem;"></div>
+  <div class="spacer-15"></div>
 
   <a id="bottom"></a>
   <div id="bottomMenu">

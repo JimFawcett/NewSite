@@ -38,6 +38,12 @@
       margin: 0.25rem 0 0.75rem 0; white-space: pre;
     }
     #github div.note { border-color:red; max-width:50rem; }
+
+    #github div.details-block {
+      border:1px solid var(--dark);
+      padding:0.75rem 1rem;
+      max-width: 50rem;
+    }
   </style>
   <script>
     function loadInExplorer() {
@@ -154,6 +160,128 @@ cmake --build build
         build flags, and test configuration in version-controlled JSON rather than per-developer
         shell scripts.
       </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Common CMake options and CMakeLists.txt commands</summary>
+          <div class="details-block">
+            <t-b class="indent">
+              <strong>Configure-time variables (pass with <code>-D</code>)</strong>
+            </t-b>
+            <t-b class="indent">
+              <ul class="tight">
+                <li>
+                  <code>CMAKE_BUILD_TYPE=Release|Debug|RelWithDebInfo|MinSizeRel</code><br>
+                  Controls optimization and debug-symbol flags. <code>RelWithDebInfo</code>
+                  gives optimized code with debug symbols attached.
+                </li>
+                <li>
+                  <code>CMAKE_CXX_STANDARD=17|20|23</code> and
+                  <code>CMAKE_CXX_STANDARD_REQUIRED=ON</code><br>
+                  Set the language standard project-wide. <code>REQUIRED=ON</code> makes
+                  CMake error if the compiler cannot satisfy the version.
+                </li>
+                <li>
+                  <code>CMAKE_EXPORT_COMPILE_COMMANDS=ON</code><br>
+                  Writes <code>compile_commands.json</code> to the build directory.
+                  Copy or symlink it to the project root so clangd picks it up automatically.
+                </li>
+                <li>
+                  <code>CMAKE_CXX_COMPILER=/path/to/clang++</code><br>
+                  Selects a specific compiler. Must be set at first configure; cannot be
+                  changed without deleting the build directory.
+                </li>
+                <li>
+                  <code>CMAKE_INSTALL_PREFIX=/usr/local</code><br>
+                  Root for <code>cmake --install</code>. On Windows the default is
+                  <code>C:/Program Files/&lt;project&gt;</code>.
+                </li>
+                <li>
+                  <code>BUILD_SHARED_LIBS=ON</code><br>
+                  Makes <code>add_library</code> produce a shared library (.dll / .so)
+                  instead of static unless the call explicitly says <code>STATIC</code>.
+                </li>
+              </ul>
+            </t-b>
+            <t-b class="indent">
+              <strong>Generator selection (<code>-G</code>)</strong>
+            </t-b>
+            <defn-code>cmake -S . -B build -G Ninja                     # fast parallel builds
+  cmake -S . -B build -G "Unix Makefiles"           # default on Linux/macOS
+  cmake -S . -B build -G "Visual Studio 17 2022"    # generates .sln / .vcxproj</defn-code>
+            <t-b class="indent">
+              <strong>Key <code>CMakeLists.txt</code> commands</strong>
+            </t-b>
+            <t-b class="indent">
+              <ul class="tight">
+                <li>
+                  <code>cmake_minimum_required(VERSION 3.20)</code><br>
+                  Must be the first line. Locks policy behavior to that version.
+                </li>
+                <li>
+                  <code>project(MyApp VERSION 1.0 LANGUAGES CXX)</code><br>
+                  Names the project and declares which languages are in use. CMake
+                  only finds compilers for declared languages.
+                </li>
+                <li>
+                  <code>add_executable(target src1.cpp src2.cpp)</code><br>
+                  Defines a binary target from the listed sources.
+                </li>
+                <li>
+                  <code>add_library(lib STATIC|SHARED|INTERFACE src.cpp)</code><br>
+                  <code>STATIC</code> produces a .lib/.a; <code>SHARED</code> produces
+                  a .dll/.so; <code>INTERFACE</code> carries usage requirements only
+                  (no compiled output - useful for header-only libraries).
+                </li>
+                <li>
+                  <code>target_link_libraries(target PRIVATE|PUBLIC|INTERFACE dep)</code><br>
+                  Links <code>dep</code> to <code>target</code>. <code>PRIVATE</code>
+                  keeps the dependency internal; <code>PUBLIC</code> propagates it
+                  to anything that links against <code>target</code>.
+                </li>
+                <li>
+                  <code>target_include_directories(target PUBLIC include/)</code><br>
+                  Adds include paths. <code>PUBLIC</code> propagates the path to
+                  dependents; <code>PRIVATE</code> is target-only.
+                </li>
+                <li>
+                  <code>target_compile_options(target PRIVATE -Wall -Wextra -Wpedantic)</code><br>
+                  Appends compiler flags to a single target without polluting others.
+                </li>
+                <li>
+                  <code>target_compile_features(target PUBLIC cxx_std_20)</code><br>
+                  Per-target alternative to <code>CMAKE_CXX_STANDARD</code>; preferred
+                  in library CMakeLists.txt to avoid overriding the caller's setting.
+                </li>
+                <li>
+                  <code>option(ENABLE_TESTS "Build unit tests" ON)</code><br>
+                  Declares a user-visible boolean. Toggle with <code>-DENABLE_TESTS=OFF</code>
+                  at configure time.
+                </li>
+                <li>
+                  <code>add_subdirectory(part1)</code><br>
+                  Pulls in a subdirectory that has its own <code>CMakeLists.txt</code>.
+                  Targets defined there become visible to the parent.
+                </li>
+                <li>
+                  <code>find_package(nlohmann_json 3.11 REQUIRED)</code><br>
+                  Locates an installed library by its CMake package name. On success,
+                  imports a target (e.g. <code>nlohmann_json::nlohmann_json</code>)
+                  for use in <code>target_link_libraries</code>.
+                </li>
+                <li>
+                  <code>enable_testing() / add_test(NAME t COMMAND ./tests)</code><br>
+                  Registers tests with CTest. Run all tests with <code>ctest --test-dir build</code>.
+                </li>
+                <li>
+                  <code>message(STATUS|WARNING|FATAL_ERROR "text")</code><br>
+                  Prints a message during configure. <code>FATAL_ERROR</code> stops
+                  configuration immediately.
+                </li>
+              </ul>
+            </t-b>
+          </div>
+        </details>
+      </indent-blocks>
 
       <a id="msbuild"></a>
       <h4>1.3 &nbsp;MSBuild</h4>
@@ -178,6 +306,139 @@ msbuild MyApp.csproj /t:Rebuild /p:Configuration=Debug</defn-code>
         the preferred command-line interface. Use MSBuild directly for legacy <code>.vcxproj</code>
         C++ projects or when you need fine-grained control over the target graph.
       </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Common MSBuild options and .csproj / .vcxproj attributes</summary>
+          <div class="details-block">
+            <t-b class="indent">
+              <strong>Command-line flags</strong>
+            </t-b>
+            <t-b class="indent">
+              <ul class="tight">
+                <li>
+                  <code>/p:Property=Value</code><br>
+                  Sets any MSBuild property from the command line. Takes precedence over
+                  values in the project file.
+                </li>
+                <li>
+                  <code>/t:Target1;Target2</code><br>
+                  Runs the named targets in order. Default target is <code>Build</code>
+                  if omitted.
+                </li>
+                <li>
+                  <code>/m[:N]</code><br>
+                  Builds in parallel using N worker processes; <code>/m</code> alone
+                  uses all logical CPU cores.
+                </li>
+                <li>
+                  <code>/v:quiet|minimal|normal|detailed|diagnostic</code><br>
+                  Controls console verbosity. <code>minimal</code> shows only warnings
+                  and errors; <code>diagnostic</code> dumps every property and task.
+                </li>
+                <li>
+                  <code>/bl</code><br>
+                  Writes a binary log (<code>msbuild.binlog</code>). Open with the
+                  <a target="_blank" rel="noopener noreferrer"
+                    href="https://msbuildlog.com/">MSBuild Structured Log Viewer</a>
+                  to diagnose property evaluation and target execution order.
+                </li>
+                <li>
+                  <code>/nologo</code><br>
+                  Suppresses the version banner. Useful in CI output.
+                </li>
+              </ul>
+            </t-b>
+            <t-b class="indent">
+              <strong>Common <code>/p:</code> properties</strong>
+            </t-b>
+            <defn-code>msbuild /p:Configuration=Release /p:Platform=x64 /p:TreatWarningsAsErrors=true</defn-code>
+            <t-b class="indent">
+              <ul class="tight">
+                <li>
+                  <code>/p:Configuration=Debug|Release</code><br>
+                  Selects which PropertyGroup conditions in the project file are active.
+                </li>
+                <li>
+                  <code>/p:Platform=x86|x64|AnyCPU|ARM64</code><br>
+                  Sets the target platform. SDK-style C# projects default to
+                  <code>AnyCPU</code>; C++ projects require an explicit match.
+                </li>
+                <li>
+                  <code>/p:OutDir=path\</code><br>
+                  Overrides the final output directory for binaries. Path must end
+                  with a backslash.
+                </li>
+                <li>
+                  <code>/p:TreatWarningsAsErrors=true</code><br>
+                  Promotes all warnings to errors. Good for CI gates.
+                </li>
+                <li>
+                  <code>/p:Optimize=true|false</code><br>
+                  Enables or disables compiler optimizations independent of the
+                  Configuration selection.
+                </li>
+                <li>
+                  <code>/p:DefineConstants=TRACE;MYFEATURE</code><br>
+                  Adds preprocessor / conditional-compilation symbols (C# projects).
+                </li>
+              </ul>
+            </t-b>
+            <t-b class="indent">
+              <strong>Common <code>/t:</code> targets</strong>
+            </t-b>
+            <t-b class="indent">
+              <ul class="tight">
+                <li><code>/t:Build</code> - incremental build; skips up-to-date inputs (default).</li>
+                <li><code>/t:Rebuild</code> - deletes all outputs then builds from scratch.</li>
+                <li><code>/t:Clean</code> - removes all build outputs without rebuilding.</li>
+                <li><code>/t:Restore</code> - restores NuGet packages; runs before the first build on a fresh clone.</li>
+                <li><code>/t:Publish</code> - produces deployment-ready output; respects <code>PublishProfile</code>.</li>
+              </ul>
+            </t-b>
+            <t-b class="indent">
+              <strong>Key SDK-style <code>.csproj</code> elements</strong>
+            </t-b>
+            <t-b class="indent">
+              <ul class="tight">
+                <li>
+                  <code>&lt;OutputType&gt;Exe|Library|WinExe&lt;/OutputType&gt;</code><br>
+                  <code>Exe</code> builds a console app; <code>Library</code> a .dll;
+                  <code>WinExe</code> a Windows GUI app with no console window.
+                </li>
+                <li>
+                  <code>&lt;TargetFramework&gt;net10.0&lt;/TargetFramework&gt;</code><br>
+                  Pins the .NET version. Use <code>&lt;TargetFrameworks&gt;</code>
+                  (plural) to multi-target: <code>net8.0;net10.0</code>.
+                </li>
+                <li>
+                  <code>&lt;Nullable&gt;enable&lt;/Nullable&gt;</code><br>
+                  Turns on C# nullable reference type analysis. Strongly recommended
+                  for new projects.
+                </li>
+                <li>
+                  <code>&lt;ImplicitUsings&gt;enable&lt;/ImplicitUsings&gt;</code><br>
+                  Auto-adds common <code>using</code> directives (System, LINQ, etc.)
+                  so they don't appear in every source file.
+                </li>
+                <li>
+                  <code>&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;</code><br>
+                  Required to compile any <code>unsafe { }</code> block.
+                </li>
+                <li>
+                  <code>&lt;PackageReference Include="Pkg" Version="1.2.3" /&gt;</code><br>
+                  Declares a NuGet dependency. Run <code>dotnet restore</code> or
+                  <code>msbuild /t:Restore</code> to download it.
+                </li>
+                <li>
+                  <code>&lt;ProjectReference Include="../Lib/Lib.csproj" /&gt;</code><br>
+                  Links another project in the same solution. MSBuild builds it first
+                  and wires up the output assembly automatically.
+                </li>
+              </ul>
+            </t-b>
+          </div>
+        </details>
+      </indent-blocks>
 
       <a id="clang"></a>
       <h4>1.4 &nbsp;Clang</h4>
@@ -219,6 +480,156 @@ msbuild MyApp.csproj /t:Rebuild /p:Configuration=Debug</defn-code>
         <code>-DCMAKE_EXPORT_COMPILE_COMMANDS=ON</code>. Copy or symlink it to the project root
         so clangd finds it automatically.
       </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Common Clang compiler flags and tool options</summary>
+          <div class="details-block">
+            <t-b class="indent">
+              <strong>clang / clang++ compiler flags</strong>
+            </t-b>
+            <defn-code>clang++ -std=c++20 -Wall -Wextra -Wpedantic -O2 -o app main.cpp</defn-code>
+            <t-b class="indent">
+              <ul class="tight">
+                <li>
+                  <code>-std=c++17|c++20|c++23</code><br>
+                  Sets the language standard. Use <code>-std=c++20</code> as the
+                  baseline for new projects.
+                </li>
+                <li>
+                  <code>-Wall -Wextra -Wpedantic</code><br>
+                  <code>-Wall</code> enables the most common warnings;
+                  <code>-Wextra</code> adds a second tier; <code>-Wpedantic</code>
+                  enforces strict ISO conformance. Use all three together.
+                </li>
+                <li>
+                  <code>-Werror</code><br>
+                  Turns all warnings into errors. Use in CI; omit locally to
+                  avoid blocking exploratory builds.
+                </li>
+                <li>
+                  <code>-O0|-O1|-O2|-O3|-Os|-Og</code><br>
+                  Optimization level. <code>-O2</code> is the standard release
+                  setting. <code>-Og</code> enables optimizations that do not
+                  impair debugger output.
+                </li>
+                <li>
+                  <code>-g</code> / <code>-g3</code><br>
+                  Emits debug symbols. <code>-g3</code> includes macro definitions.
+                  Combine with <code>-O0</code> or <code>-Og</code> for debugging.
+                </li>
+                <li>
+                  <code>-fsanitize=address,undefined</code><br>
+                  Instruments the binary to detect heap overflows, use-after-free,
+                  and undefined behavior at runtime. Cannot combine with
+                  <code>-fsanitize=thread</code>.
+                </li>
+                <li>
+                  <code>-fsanitize=thread</code><br>
+                  ThreadSanitizer: detects data races in multithreaded code.
+                  Significant runtime overhead; use for dedicated race-condition testing.
+                </li>
+                <li>
+                  <code>-I include/</code><br>
+                  Adds a directory to the include search path.
+                </li>
+                <li>
+                  <code>-DNDEBUG</code> / <code>-DMY_MACRO=1</code><br>
+                  Defines a preprocessor macro. <code>-DNDEBUG</code> disables
+                  <code>assert()</code> checks.
+                </li>
+                <li>
+                  <code>-c</code><br>
+                  Compiles to object file only; skips linking. Used when building
+                  multi-file projects manually.
+                </li>
+              </ul>
+            </t-b>
+            <t-b class="indent">
+              <strong>clang-tidy</strong>
+            </t-b>
+            <defn-code>clang-tidy src/main.cpp -- -std=c++20 -I include/
+clang-tidy --fix src/main.cpp -- -std=c++20</defn-code>
+            <t-b class="indent">
+              <ul class="tight">
+                <li>
+                  <code>--checks=bugprone-*,modernize-*,readability-*</code><br>
+                  Selects check categories. Prefix a category with <code>-</code>
+                  to disable it: <code>-modernize-use-trailing-return-type</code>.
+                </li>
+                <li>
+                  <code>--fix</code><br>
+                  Applies machine-fixable suggestions in place. Review with
+                  <code>git diff</code> before committing.
+                </li>
+                <li>
+                  <code>--warnings-as-errors=*</code><br>
+                  Fails the invocation on any enabled check finding. Useful as
+                  a CI gate.
+                </li>
+                <li>
+                  CMake integration: <code>set(CMAKE_CXX_CLANG_TIDY "clang-tidy;--checks=bugprone-*")</code><br>
+                  Runs clang-tidy on every source file during the build.
+                </li>
+              </ul>
+            </t-b>
+            <t-b class="indent">
+              <strong>clang-format</strong>
+            </t-b>
+            <defn-code>clang-format --style=file -i src/*.cpp include/*.h
+clang-format --style=Microsoft --dump-config > .clang-format</defn-code>
+            <t-b class="indent">
+              <ul class="tight">
+                <li>
+                  <code>--style=file</code><br>
+                  Reads formatting rules from the nearest <code>.clang-format</code>
+                  file walking up the directory tree. Use this in projects.
+                </li>
+                <li>
+                  <code>--style=LLVM|Google|Chromium|Microsoft|Mozilla</code><br>
+                  Built-in style presets. Pass to <code>--dump-config</code> to
+                  generate a starting <code>.clang-format</code> to customize.
+                </li>
+                <li>
+                  <code>-i</code><br>
+                  Edits files in place. Without <code>-i</code>, formatted output
+                  goes to stdout for preview.
+                </li>
+                <li>
+                  <code>--dry-run --Werror</code><br>
+                  Reports files that need reformatting without changing them.
+                  Exit code 1 if any file differs; use as a CI formatting check.
+                </li>
+              </ul>
+            </t-b>
+            <t-b class="indent">
+              <strong>clangd (language server)</strong>
+            </t-b>
+            <t-b class="indent">
+              <ul class="tight">
+                <li>
+                  Requires <code>compile_commands.json</code> at the project root
+                  (or pointed to via <code>--compile-commands-dir</code>). Generate
+                  it from CMake with <code>-DCMAKE_EXPORT_COMPILE_COMMANDS=ON</code>.
+                </li>
+                <li>
+                  Per-project config: place a <code>.clangd</code> file at the root.
+                  Common uses: suppress specific diagnostics, add extra compile flags,
+                  or exclude generated files from indexing.
+                </li>
+                <li>
+                  <code>CompileFlags: { Add: [-std=c++20, -DMY_FLAG] }</code> in
+                  <code>.clangd</code> - appends flags to every translation unit
+                  without modifying CMakeLists.txt.
+                </li>
+                <li>
+                  <code>Diagnostics: { Suppress: [unused-includes] }</code> in
+                  <code>.clangd</code> - silences noisy checks project-wide.
+                </li>
+              </ul>
+            </t-b>
+          </div>
+        </details>
+      </indent-blocks>
 
       <a id="dotnet"></a>
       <h4>1.5 &nbsp;dotnet CLI</h4>
@@ -244,6 +655,98 @@ dotnet publish -c Release -r win-x64 --self-contained</defn-code>
         and MSBuild share the same project model, so a project built with
         <code>dotnet build</code> opens without modification in Visual Studio.
       </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Common dotnet CLI commands and options</summary>
+          <div class="details-block">
+            <t-b class="indent">
+              <strong>Project creation</strong>
+            </t-b>
+            <defn-code>dotnet new console -n MyApp -o MyApp/     # console app
+dotnet new classlib -n MyLib               # class library
+dotnet new xunit -n MyApp.Tests            # xUnit test project
+dotnet new sln -n MySolution               # solution file
+dotnet sln add MyApp/MyApp.csproj          # add project to solution
+dotnet new list                            # show all available templates</defn-code>
+            <t-b class="indent">
+              <strong>Build and run</strong>
+            </t-b>
+            <defn-code>dotnet build                              # incremental build, Debug
+dotnet build -c Release                    # optimized build
+dotnet build -c Release --no-restore       # skip package restore
+dotnet run                                 # build and run entry project
+dotnet run --project MyApp/MyApp.csproj    # specify project explicitly
+dotnet run -- arg1 arg2                    # pass arguments to the app
+dotnet watch run                           # hot-reload on file save</defn-code>
+            <t-b class="indent">
+              <strong>Test</strong>
+            </t-b>
+            <defn-code>dotnet test                               # run all tests
+dotnet test -c Release                     # test against Release build
+dotnet test --filter "FullyQualifiedName~MyTest"  # run matching tests
+dotnet test --logger "console;verbosity=detailed"
+dotnet test --collect:"XPlat Code Coverage"  # emit coverage data</defn-code>
+            <t-b class="indent">
+              <strong>Publish</strong>
+            </t-b>
+            <defn-code>dotnet publish -c Release -r win-x64 --self-contained   # standalone .exe
+dotnet publish -c Release -r linux-x64 --self-contained
+dotnet publish -c Release /p:PublishSingleFile=true       # single file output</defn-code>
+            <t-b class="indent">
+              <ul class="tight">
+                <li>
+                  <code>-r &lt;rid&gt;</code><br>
+                  Runtime identifier: <code>win-x64</code>, <code>linux-x64</code>,
+                  <code>osx-arm64</code>, etc. Required for self-contained publish.
+                </li>
+                <li>
+                  <code>--self-contained</code><br>
+                  Bundles the .NET runtime into the output. Target machine needs no
+                  .NET install. Increases output size significantly.
+                </li>
+                <li>
+                  <code>/p:PublishSingleFile=true</code><br>
+                  Packs the app and all dependencies into one executable.
+                </li>
+                <li>
+                  <code>/p:PublishTrimmed=true</code><br>
+                  Removes unused framework code to reduce output size. Requires
+                  testing; trim-incompatible reflection patterns fail silently at runtime.
+                </li>
+              </ul>
+            </t-b>
+            <t-b class="indent">
+              <strong>Package management</strong>
+            </t-b>
+            <defn-code>dotnet add package Newtonsoft.Json              # add latest
+dotnet add package Newtonsoft.Json --version 13.0.3
+dotnet remove package Newtonsoft.Json
+dotnet list package                                # show all dependencies
+dotnet list package --outdated                     # show available upgrades
+dotnet restore                                     # restore without building</defn-code>
+            <t-b class="indent">
+              <strong>Solution and project references</strong>
+            </t-b>
+            <defn-code>dotnet add reference ../Lib/Lib.csproj         # project reference
+dotnet sln list                                    # list projects in solution
+dotnet sln remove MyApp/MyApp.csproj              # remove from solution</defn-code>
+            <t-b class="indent">
+              <strong>Useful global options</strong>
+            </t-b>
+            <t-b class="indent">
+              <ul class="tight">
+                <li><code>-c|--configuration Debug|Release</code> - build configuration; defaults to Debug.</li>
+                <li><code>-o|--output &lt;path&gt;</code> - override the output directory.</li>
+                <li><code>--no-build</code> - skip the build step (test, run, publish).</li>
+                <li><code>--no-restore</code> - skip NuGet restore; useful when packages are already cached.</li>
+                <li><code>-v|--verbosity quiet|minimal|normal|detailed|diagnostic</code> - controls log level.</li>
+                <li><code>dotnet --info</code> - shows installed SDK versions, runtime paths, and OS details.</li>
+                <li><code>dotnet --list-sdks</code> / <code>dotnet --list-runtimes</code> - enumerate installed versions.</li>
+              </ul>
+            </t-b>
+          </div>
+        </details>
+      </indent-blocks>
 
       <a id="python"></a>
       <h4>1.6 &nbsp;Python</h4>
@@ -286,6 +789,116 @@ python src/main.py</defn-code>
         tasks (TextFinder, file search) close much of the gap because the hot path runs in
         compiled C extensions inside the standard library.
       </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Common Python commands and tool options</summary>
+          <div class="details-block">
+            <t-b class="indent">
+              <strong>Interpreter and virtual environment</strong>
+            </t-b>
+            <defn-code>python --version                          # confirm active version
+python -m venv .venv                      # create isolated environment
+.venv\Scripts\activate                    # Windows - activate
+source .venv/bin/activate                 # Linux / macOS - activate
+deactivate                                # exit the virtual environment
+python -m venv .venv --clear              # recreate from scratch</defn-code>
+            <t-b class="indent">
+              <ul class="tight">
+                <li>
+                  <code>python -m module</code><br>
+                  Runs a module as a script using the active interpreter. Preferred
+                  over bare <code>python script.py</code> for tools like
+                  <code>venv</code>, <code>pip</code>, and <code>pytest</code>
+                  because it guarantees the correct environment is used.
+                </li>
+                <li>
+                  <code>python -c "code"</code><br>
+                  Executes a one-liner directly. Useful for quick checks:
+                  <code>python -c "import sys; print(sys.path)"</code>.
+                </li>
+              </ul>
+            </t-b>
+            <t-b class="indent">
+              <strong>pip package management</strong>
+            </t-b>
+            <defn-code>pip install requests                      # install latest
+pip install requests==2.31.0              # pin a version
+pip install -r requirements.txt           # install from lock file
+pip install -e .                          # editable install (dev mode)
+pip uninstall requests
+pip list                                  # show installed packages
+pip list --outdated                       # show available upgrades
+pip show requests                         # metadata for one package
+pip freeze > requirements.txt             # snapshot current environment
+pip install --upgrade pip                 # upgrade pip itself</defn-code>
+            <t-b class="indent">
+              <strong>Running and profiling</strong>
+            </t-b>
+            <defn-code>python src/main.py arg1 arg2              # run a script
+python -m cProfile -s cumtime src/main.py # profile, sort by cumulative time
+python -m cProfile -o prof.out src/main.py
+python -m pstats prof.out                 # interactive stats browser
+python -m timeit -n 1000 "'-'.join(str(i) for i in range(100))"</defn-code>
+            <t-b class="indent">
+              <strong>Testing with pytest</strong>
+            </t-b>
+            <defn-code>pip install pytest pytest-cov
+pytest                                    # discover and run all tests
+pytest tests/test_parser.py               # run one file
+pytest -k "test_parse"                    # run tests matching name pattern
+pytest -v                                 # verbose: show each test name
+pytest -x                                 # stop on first failure
+pytest --tb=short                         # compact tracebacks
+pytest --cov=src --cov-report=term-missing  # coverage report</defn-code>
+            <t-b class="indent">
+              <strong>Static analysis and type checking</strong>
+            </t-b>
+            <defn-code>pip install pylint mypy ruff
+pylint src/                               # lint with scoring
+mypy src/ --strict                        # type check; --strict enables all checks
+ruff check src/                           # fast linter (replaces flake8 + isort)
+ruff format src/                          # opinionated formatter (like black)</defn-code>
+            <t-b class="indent">
+              <ul class="tight">
+                <li>
+                  <code>mypy --strict</code><br>
+                  Enables all optional checks including <code>--disallow-untyped-defs</code>
+                  and <code>--warn-return-any</code>. Start without <code>--strict</code>
+                  on existing code and tighten incrementally.
+                </li>
+                <li>
+                  <code>ruff</code><br>
+                  Replaces flake8, isort, and parts of pylint. Configured via
+                  <code>pyproject.toml</code> under <code>[tool.ruff]</code>.
+                  Significantly faster than pylint on large codebases.
+                </li>
+              </ul>
+            </t-b>
+            <t-b class="indent">
+              <strong>pyproject.toml key sections</strong>
+            </t-b>
+            <defn-code>[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "myapp"
+version = "1.0.0"
+requires-python = "&gt;=3.10"
+dependencies = ["requests&gt;=2.31", "anthropic"]
+
+[project.scripts]
+myapp = "myapp.main:main"       # creates a CLI entry point
+
+[tool.mypy]
+strict = true
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I"]       # pycodestyle, pyflakes, isort</defn-code>
+          </div>
+        </details>
+      </indent-blocks>
 
     </div>
     <spacer-25></spacer-25>
