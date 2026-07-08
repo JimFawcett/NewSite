@@ -17,12 +17,13 @@ function buildPages() {
       <a href='BasicsStory_Software.html'>Chap 4 - Software</a>\
       <a href='BasicsStory_Networks.html'>Chap 5 - Networks</a>\
       <a href='BasicsStory_Internet.html'>Chap 6 - Internet &amp; Wi-Fi</a>\
-      <a href='BasicsStory_DataCenters.html'>Chap 7 - Data Centers</a>\
-      <a href='BasicsStory_Languages.html'>Chap 8 - Languages</a>\
-      <a href='BasicsStory_Tooling.html'>Chap 9 - Tooling</a>\
-      <a href='BasicsStory_DataStructures.html'>Chap 10 - Data Structures</a>\
-      <a href='BasicsStory_Concurrency.html'>Chap 11 - Concurrency</a>\
-      <a href='BasicsStory_Deployment.html'>Chap 12 - Deployment</a>\
+      <a href='BasicsStory_Web.html'>Chap 7 - Web</a>\
+      <a href='BasicsStory_DataCenters.html'>Chap 8 - Data Centers</a>\
+      <a href='BasicsStory_Languages.html'>Chap 9 - Languages</a>\
+      <a href='BasicsStory_Tooling.html'>Chap 10 - Tooling</a>\
+      <a href='BasicsStory_DataStructures.html'>Chap 11 - Data Structures</a>\
+      <a href='BasicsStory_Concurrency.html'>Chap 12 - Concurrency</a>\
+      <a href='BasicsStory_Deployment.html'>Chap 13 - Deployment</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  BasicsStory_Web.html
+-->
+<head>
+  <title>Basics Story Web</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="./images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/ThemeBasics.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github defn-code {
+      display: block; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9rem; background-color: #1a1a1a; color: #d4d4d4;
+      border-radius: 0.25rem; padding: 0.5rem 1.5rem;
+      margin: 0.25rem 0 0.75rem 0; white-space: pre;
+    }
+    #github details summary { cursor: pointer; padding: 0.3rem 0.5rem; list-style: none; }
+    #github details table { margin-top: 0.5rem; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreBasics.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    BasicsStory_Web.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 07/08/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;" href="https://github.com/JimFawcett">Basics Story</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Chapter #7 &ndash; The Web</h2>
+        <h4 class="indent" id="subtitle">HTTP evolution, browser pipeline, HTML/CSS/JS, architecture, APIs, performance, security</h4>
+      </div>
+    </header>
+
+    <div>
+      <a id="prologue"></a>
+      <h3>7.0&nbsp; Prologue</h3>
+      <indent-blocks>
+        <t-b>
+          The web is an application layer built on the internet - a system of interconnected
+          resources identified by URLs and exchanged via HTTP. What started as a document-sharing
+          system at CERN in 1989 has evolved into the dominant platform for delivering interactive
+          applications indistinguishable from native software. The internet carries packets;
+          the web assigns meaning to them. Understanding how the web works - from the HTTP
+          wire protocol to the browser rendering pipeline - is foundational for writing
+          software that delivers reliable, fast, and secure user experiences.
+        </t-b>
+      </indent-blocks>
+      <indent-blocks>
+        <details>
+          <summary class="darkItem">Web Evolution Timeline</summary>
+          <table>
+            <tr>
+              <th class="darkItem">Year</th>
+              <th class="darkItem">Event</th>
+            </tr>
+            <tr><td class="lightItem">1989</td><td class="lightItem">Tim Berners-Lee proposes the World Wide Web at CERN</td></tr>
+            <tr><td class="lightItem">1991</td><td class="lightItem">First public website; HTML and HTTP/0.9 published</td></tr>
+            <tr><td class="lightItem">1993</td><td class="lightItem">Mosaic browser released - first graphical web browser</td></tr>
+            <tr><td class="lightItem">1994</td><td class="lightItem">Netscape Navigator launches; W3C founded by Berners-Lee</td></tr>
+            <tr><td class="lightItem">1995</td><td class="lightItem">JavaScript created by Brendan Eich at Netscape; Internet Explorer 1.0</td></tr>
+            <tr><td class="lightItem">1996</td><td class="lightItem">HTTP/1.0 (RFC 1945); CSS1 standardized; Flash introduced</td></tr>
+            <tr><td class="lightItem">1997</td><td class="lightItem">HTTP/1.1 (RFC 2068); HTML 4.0; Dynamic HTML (DHTML)</td></tr>
+            <tr><td class="lightItem">1998</td><td class="lightItem">Google launches; W3C publishes XML 1.0</td></tr>
+            <tr><td class="lightItem">2004</td><td class="lightItem">Gmail uses Ajax; Web 2.0 concept coined at O'Reilly; Firefox 1.0</td></tr>
+            <tr><td class="lightItem">2005</td><td class="lightItem">Ajax named by Jesse James Garrett; YouTube launches; Google Maps launches</td></tr>
+            <tr><td class="lightItem">2006</td><td class="lightItem">Twitter launches; jQuery 1.0 released</td></tr>
+            <tr><td class="lightItem">2007</td><td class="lightItem">iPhone launches; mobile web becomes mainstream</td></tr>
+            <tr><td class="lightItem">2008</td><td class="lightItem">Google Chrome and V8 engine released; HTML5 draft published</td></tr>
+            <tr><td class="lightItem">2009</td><td class="lightItem">Node.js released (server-side JS); WebSockets draft</td></tr>
+            <tr><td class="lightItem">2010</td><td class="lightItem">Responsive web design coined (Ethan Marcotte); CSS3 transitions/animations</td></tr>
+            <tr><td class="lightItem">2011</td><td class="lightItem">WebSockets standardized (RFC 6455); HTML5 and CSS3 widely adopted</td></tr>
+            <tr><td class="lightItem">2013</td><td class="lightItem">React released by Facebook; WebRTC standardized</td></tr>
+            <tr><td class="lightItem">2014</td><td class="lightItem">HTML5 officially published by W3C; Let's Encrypt announced</td></tr>
+            <tr><td class="lightItem">2015</td><td class="lightItem">HTTP/2 standardized (RFC 7540); ES2015 (ES6) major JS revision</td></tr>
+            <tr><td class="lightItem">2016</td><td class="lightItem">Progressive Web Apps coined by Google; WebAssembly announced</td></tr>
+            <tr><td class="lightItem">2017</td><td class="lightItem">WebAssembly MVP ships in all major browsers; CSS Grid available</td></tr>
+            <tr><td class="lightItem">2018</td><td class="lightItem">Service Workers broadly supported; TLS 1.3 standardized; WebAssembly standard published</td></tr>
+            <tr><td class="lightItem">2021</td><td class="lightItem">Core Web Vitals become Google ranking signals; CSS container queries draft</td></tr>
+            <tr><td class="lightItem">2022</td><td class="lightItem">HTTP/3 standardized (RFC 9114); CSS container queries ship; Interop 2022</td></tr>
+            <tr><td class="lightItem">2023</td><td class="lightItem">View Transitions API ships; Baseline browser compatibility initiative</td></tr>
+            <tr><td class="lightItem">2024</td><td class="lightItem">CSS anchor positioning; Popover API; WebAssembly WASI 0.2 standardized</td></tr>
+          </table>
+        </details>
+      </indent-blocks>
+
+      <a id="http"></a>
+      <h3>7.1&nbsp; HTTP Protocol Evolution</h3>
+      <indent-blocks>
+        <t-b>
+          HTTP has passed through five generations, each addressing limitations exposed
+          by the previous version at production scale:
+          <table>
+            <tr>
+              <th class="darkItem">Version</th>
+              <th class="darkItem">Year</th>
+              <th class="darkItem">Transport</th>
+              <th class="darkItem">Key Changes</th>
+            </tr>
+            <tr>
+              <td class="lightItem">HTTP/0.9</td>
+              <td class="lightItem">1991</td>
+              <td class="lightItem">TCP</td>
+              <td class="lightItem">Single-line GET only; HTML response; no headers or status codes.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">HTTP/1.0</td>
+              <td class="lightItem">1996</td>
+              <td class="lightItem">TCP</td>
+              <td class="lightItem">Headers, status codes, multiple content types; one TCP connection per request.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">HTTP/1.1</td>
+              <td class="lightItem">1997</td>
+              <td class="lightItem">TCP</td>
+              <td class="lightItem">Persistent connections, pipelining, chunked transfer, virtual hosting via Host header. Head-of-line blocking within a connection.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">HTTP/2</td>
+              <td class="lightItem">2015</td>
+              <td class="lightItem">TCP + TLS</td>
+              <td class="lightItem">Binary framing; multiplexed streams on one connection; HPACK header compression; server push. TCP-level head-of-line blocking remains.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">HTTP/3</td>
+              <td class="lightItem">2022</td>
+              <td class="lightItem">QUIC (UDP)</td>
+              <td class="lightItem">Built on QUIC; eliminates TCP head-of-line blocking; 0-RTT resumption; connection migration across IP changes.</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          <strong>Head-of-line blocking</strong> is the central problem HTTP/2 and HTTP/3 address
+          in different ways. In HTTP/1.1, a slow response blocks all subsequent requests on the
+          same connection. HTTP/2 multiplexes requests as independent streams on one TCP connection,
+          so a slow response does not block other streams - but a lost TCP segment stalls all streams
+          until the segment is retransmitted, because TCP guarantees ordered delivery. HTTP/3 runs
+          on QUIC, which implements independent streams inside UDP datagrams; a lost packet stalls
+          only the stream it belongs to, not all streams.
+        </t-b>
+        <t-b>
+          <strong>QUIC</strong> integrates TLS 1.3 into its handshake, reducing connection
+          setup from two round trips (TCP SYN + TLS) to one. Subsequent connections from a
+          known server can use 0-RTT resumption to send application data with the first packet,
+          eliminating handshake latency entirely. Connection migration allows a client to
+          change IP addresses - switching from Wi-Fi to cellular, for example - without
+          interrupting the session, because QUIC identifies connections by a connection ID
+          rather than the source IP and port.
+        </t-b>
+      </indent-blocks>
+
+      <a id="browsers"></a>
+      <h3>7.2&nbsp; Browsers and the Rendering Pipeline</h3>
+      <indent-blocks>
+        <t-b>
+          A browser converts bytes received over HTTP into a rendered, interactive page through
+          a fixed pipeline of stages:
+          <ol class="tight">
+            <li>
+              <strong>Navigation:</strong> DNS resolution, TCP/TLS connection, HTTP request.
+              The browser may use cached DNS results, reuse an existing connection, and send
+              conditional headers (<c-s>If-None-Match</c-s>, <c-s>If-Modified-Since</c-s>)
+              to allow 304 Not Modified responses.
+            </li>
+            <li>
+              <strong>HTML parsing and DOM construction:</strong> the HTML parser builds a
+              tree of nodes (the DOM) incrementally as bytes arrive. Parsing pauses when the
+              parser encounters a synchronous <c-s>&lt;script&gt;</c-s> tag because script can
+              call <c-s>document.write()</c-s> and alter the document structure.
+            </li>
+            <li>
+              <strong>CSS parsing and CSSOM construction:</strong> stylesheets are render-blocking.
+              The browser will not render content until all linked stylesheets are downloaded and
+              parsed into the CSS Object Model. This prevents a flash of unstyled content but
+              delays first paint when stylesheets are large or slow to arrive.
+            </li>
+            <li>
+              <strong>Render tree construction:</strong> the DOM and CSSOM are merged into a
+              render tree containing only visible nodes (elements with
+              <c-s>display: none</c-s> are excluded). Each node holds computed style information.
+            </li>
+            <li>
+              <strong>Layout (reflow):</strong> the browser computes the exact geometry - position
+              and size - of each render tree node relative to the viewport. Layout is triggered
+              again whenever DOM or styles change in a way that affects geometry.
+            </li>
+            <li>
+              <strong>Paint:</strong> the browser fills pixels into layers. Text, borders, shadows,
+              and backgrounds are drawn in a defined painting order.
+            </li>
+            <li>
+              <strong>Compositing:</strong> the GPU assembles layers into the final frame.
+              Layers promoted to the GPU (via <c-s>transform</c-s> or <c-s>will-change</c-s>)
+              can be moved or faded without triggering layout or paint, enabling smooth animations.
+            </li>
+          </ol>
+        </t-b>
+        <t-b>
+          <strong>Script loading strategies</strong> control when JavaScript runs relative to
+          HTML parsing:
+          <ul class="tight">
+            <li>
+              <strong>Default (synchronous):</strong> parser pauses, script downloads and
+              executes, then parsing resumes. Blocks first paint for scripts in <c-s>&lt;head&gt;</c-s>.
+            </li>
+            <li>
+              <strong><c-s>defer</c-s>:</strong> script downloads in parallel with parsing,
+              executes after the DOM is complete but before the <c-s>DOMContentLoaded</c-s> event.
+              Execution order among deferred scripts is preserved. Preferred for scripts that
+              need the full DOM.
+            </li>
+            <li>
+              <strong><c-s>async</c-s>:</strong> script downloads in parallel and executes
+              immediately when loaded, potentially before parsing finishes. Order is not
+              guaranteed. Suited for independent third-party scripts such as analytics.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>JavaScript engines</strong> (V8 in Chrome/Node.js, SpiderMonkey in Firefox,
+          JavaScriptCore in Safari) use just-in-time compilation. Frequently executed code is
+          recompiled from bytecode to optimized machine code based on runtime type observations.
+          If a type assumption is later invalidated, the engine deoptimizes and falls back to
+          interpreted bytecode.
+        </t-b>
+      </indent-blocks>
+
+      <a id="html-css-js"></a>
+      <h3>7.3&nbsp; HTML, CSS, and JavaScript</h3>
+      <indent-blocks>
+        <t-b>
+          <strong>HTML5</strong> introduced semantic elements that carry meaning beyond layout:
+          <c-s>&lt;header&gt;</c-s>, <c-s>&lt;nav&gt;</c-s>, <c-s>&lt;main&gt;</c-s>,
+          <c-s>&lt;article&gt;</c-s>, <c-s>&lt;section&gt;</c-s>, <c-s>&lt;aside&gt;</c-s>,
+          and <c-s>&lt;footer&gt;</c-s>. These help screen readers and search engines understand
+          page structure without relying on CSS class names. HTML5 also standardized
+          <c-s>&lt;canvas&gt;</c-s> for 2D and WebGL graphics, <c-s>&lt;audio&gt;</c-s> and
+          <c-s>&lt;video&gt;</c-s> for native media, and the <c-s>&lt;template&gt;</c-s> element
+          for inert DOM fragments used in component patterns.
+        </t-b>
+        <t-b>
+          <strong>CSS</strong> controls visual presentation through a cascade of rules applied
+          to the DOM. Key layout systems:
+          <ul class="tight">
+            <li>
+              <strong>Flexbox:</strong> one-dimensional layout; distributes space along a
+              main axis with optional wrapping. Suited for navigation bars, card rows, and
+              aligned form controls.
+            </li>
+            <li>
+              <strong>CSS Grid:</strong> two-dimensional layout; defines rows and columns
+              explicitly; items are placed into named grid areas. Suited for full-page layouts
+              and complex component grids.
+            </li>
+            <li>
+              <strong>CSS custom properties (variables):</strong> <c-s>--token: value</c-s>
+              declared in <c-s>:root</c-s> and consumed via <c-s>var(--token)</c-s>. Enables
+              theming without preprocessors.
+            </li>
+            <li>
+              <strong>Media queries:</strong> apply rule sets conditionally based on
+              viewport width, orientation, or display type; the foundation of responsive design.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>JavaScript</strong> is the only scripting language browsers execute natively.
+          Key language characteristics relevant to web development:
+          <ul class="tight">
+            <li>
+              <strong>Event loop:</strong> JavaScript is single-threaded. The event loop
+              processes a task queue; each task runs to completion before the next begins.
+              Microtasks (Promise callbacks) drain completely after each task before the
+              next macrotask (setTimeout, I/O callbacks) starts.
+            </li>
+            <li>
+              <strong>Promises and <c-s>async</c-s>/<c-s>await</c-s>:</strong> non-blocking
+              I/O is expressed as Promises. <c-s>async</c-s> functions return a Promise;
+              <c-s>await</c-s> suspends execution within the function until the Promise
+              resolves, without blocking the event loop.
+            </li>
+            <li>
+              <strong>ES Modules (ESM):</strong> <c-s>import</c-s>/<c-s>export</c-s> syntax
+              enables static analysis of dependencies. Browsers load modules with deferred
+              semantics; bundlers (Vite, esbuild, Webpack) merge modules for production.
+            </li>
+            <li>
+              <strong>WebAssembly (Wasm):</strong> a binary instruction format compiled from
+              C, C++, or Rust that runs in the same browser sandbox at near-native speed.
+              Wasm modules are imported into JavaScript and called as functions; they cannot
+              access the DOM directly but pass data through JavaScript interop.
+            </li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="architecture"></a>
+      <h3>7.4&nbsp; Web Application Architecture</h3>
+      <indent-blocks>
+        <t-b>
+          How an application divides work between server and client determines its
+          performance profile, SEO behavior, and infrastructure requirements:
+          <table>
+            <tr>
+              <th class="darkItem">Pattern</th>
+              <th class="darkItem">Rendering location</th>
+              <th class="darkItem">First paint</th>
+              <th class="darkItem">Notes</th>
+            </tr>
+            <tr>
+              <td class="lightItem">SSR (Server-Side Rendering)</td>
+              <td class="lightItem">Server, per request</td>
+              <td class="lightItem">Fast</td>
+              <td class="lightItem">Full HTML in first response; works without JS; requires a running server for every request.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">CSR (Client-Side Rendering)</td>
+              <td class="lightItem">Browser, via JS bundle</td>
+              <td class="lightItem">Slow</td>
+              <td class="lightItem">Rich interactivity; static host suffices; poor SEO without additional measures; JS bundle must load before rendering.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">SSG (Static Site Generation)</td>
+              <td class="lightItem">Build time</td>
+              <td class="lightItem">Fastest</td>
+              <td class="lightItem">Pre-rendered HTML served from CDN; no server at runtime; stale for dynamic data.</td>
+            </tr>
+            <tr>
+              <td class="lightItem">ISR / Edge rendering</td>
+              <td class="lightItem">CDN edge, on demand</td>
+              <td class="lightItem">Fast</td>
+              <td class="lightItem">Pages revalidated at intervals or on demand; combines SSG performance with fresh data.</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          <strong>Single-Page Applications (SPAs)</strong> load once and update the DOM
+          in place as the user navigates. The History API (<c-s>pushState</c-s>,
+          <c-s>replaceState</c-s>) allows URL changes without a full page reload. Frameworks
+          like React, Vue, and Svelte manage a virtual DOM or compiled reactive graph that
+          diffs desired state against the current DOM and applies minimal updates.
+        </t-b>
+        <t-b>
+          <strong>API patterns</strong> define how the browser fetches data from the server:
+          <ul class="tight">
+            <li>
+              <strong>REST:</strong> resources at stable URLs; HTTP methods convey intent;
+              stateless. Covered in Chapter&nbsp;6, section 6.3.
+            </li>
+            <li>
+              <strong>GraphQL:</strong> the client specifies exactly which fields it needs in a
+              query; the server returns only those fields. Eliminates over-fetching (too many
+              unwanted fields) and under-fetching (too few fields requiring follow-up requests).
+            </li>
+            <li>
+              <strong>WebSockets:</strong> full-duplex persistent connection over a single
+              TCP connection, initiated by an HTTP upgrade handshake. Used for real-time
+              features: chat, live dashboards, collaborative editing.
+            </li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="web-apis"></a>
+      <h3>7.5&nbsp; Web APIs and Modern Standards</h3>
+      <indent-blocks>
+        <t-b>
+          Browsers expose a large set of APIs beyond DOM manipulation. Key ones for
+          application developers:
+          <ul class="tight">
+            <li>
+              <strong>Fetch API:</strong> promise-based HTTP client built into the browser.
+              Replaces XMLHttpRequest with a cleaner interface; supports streaming response
+              bodies and <c-s>AbortController</c-s> for request cancellation.
+            </li>
+            <li>
+              <strong>Service Workers:</strong> a JavaScript file installed by the browser as
+              a proxy between the page and the network. Service workers intercept fetch events
+              and can serve cached responses, enabling offline operation. They run in a
+              separate thread with no DOM access and communicate with pages via
+              <c-s>postMessage</c-s>. They are the foundation of Progressive Web Apps (PWAs).
+            </li>
+            <li>
+              <strong>Web Workers:</strong> background computation threads that run JavaScript
+              off the main thread. They cannot access the DOM but perform CPU-intensive tasks
+              (image processing, cryptography, data parsing) without blocking the UI.
+              Data is exchanged by structured clone via <c-s>postMessage</c-s>.
+            </li>
+            <li>
+              <strong>WebRTC (Real-Time Communication):</strong> peer-to-peer audio, video,
+              and data channels between browsers without a relay server for media. ICE
+              (Interactive Connectivity Establishment) negotiates a path through NAT using
+              STUN servers; if direct connection fails, a TURN server relays traffic.
+            </li>
+            <li>
+              <strong>IndexedDB:</strong> a transactional key-value database in the browser
+              for structured data persistence across sessions. Larger storage quota than
+              <c-s>localStorage</c-s>; asynchronous; supports indexes and range cursors.
+            </li>
+            <li>
+              <strong>WebAssembly System Interface (WASI):</strong> a standardized set of
+              system call abstractions for Wasm modules running outside the browser (in
+              runtimes such as Wasmtime and WasmEdge). Enables portable server-side Wasm
+              deployable at CDN edges.
+            </li>
+          </ul>
+        </t-b>
+      </indent-blocks>
+
+      <a id="performance"></a>
+      <h3>7.6&nbsp; Web Performance</h3>
+      <indent-blocks>
+        <t-b>
+          Google's <strong>Core Web Vitals</strong> define measurable performance targets
+          that correlate with user experience and influence search rankings:
+          <table>
+            <tr>
+              <th class="darkItem">Metric</th>
+              <th class="darkItem">Measures</th>
+              <th class="darkItem">Good threshold</th>
+            </tr>
+            <tr>
+              <td class="lightItem">LCP (Largest Contentful Paint)</td>
+              <td class="lightItem">Loading - time until the largest visible content element is rendered.</td>
+              <td class="lightItem">&le; 2.5 s</td>
+            </tr>
+            <tr>
+              <td class="lightItem">INP (Interaction to Next Paint)</td>
+              <td class="lightItem">Responsiveness - time from user interaction to next frame update.</td>
+              <td class="lightItem">&le; 200 ms</td>
+            </tr>
+            <tr>
+              <td class="lightItem">CLS (Cumulative Layout Shift)</td>
+              <td class="lightItem">Visual stability - sum of unexpected layout shifts during page life.</td>
+              <td class="lightItem">&le; 0.1</td>
+            </tr>
+          </table>
+        </t-b>
+        <t-b>
+          <strong>Critical rendering path optimization:</strong>
+          <ul class="tight">
+            <li>
+              Inline the minimal CSS needed for above-the-fold content; load the rest
+              asynchronously to unblock first paint.
+            </li>
+            <li>
+              Use <c-s>defer</c-s> on non-essential scripts; move render-blocking scripts
+              to end of <c-s>&lt;body&gt;</c-s> when <c-s>defer</c-s> is not viable.
+            </li>
+            <li>
+              Preload critical assets with <c-s>&lt;link rel="preload"&gt;</c-s> so the
+              browser fetches them at highest priority before the parser discovers them.
+            </li>
+            <li>
+              Establish early connections with <c-s>&lt;link rel="preconnect"&gt;</c-s>,
+              which pays the DNS + TCP + TLS cost before the request is needed.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>Caching strategies:</strong>
+          <ul class="tight">
+            <li>
+              <strong><c-s>Cache-Control: max-age=N</c-s>:</strong> browser serves the
+              cached response for N seconds without contacting the server.
+            </li>
+            <li>
+              <strong><c-s>Cache-Control: stale-while-revalidate=N</c-s>:</strong> browser
+              serves stale content immediately while fetching a fresh copy in the background,
+              eliminating the revalidation round trip from the user's critical path.
+            </li>
+            <li>
+              <strong>Content-hashed file names:</strong> bundlers embed a hash of file
+              contents in the filename (e.g., <c-s>main.3f8a2b.js</c-s>). These files can
+              be cached forever (<c-s>max-age=31536000, immutable</c-s>); the HTML document
+              references the new hash when content changes.
+            </li>
+            <li>
+              <strong>Service worker cache:</strong> full programmatic control; implements
+              cache-first, network-first, or stale-while-revalidate strategies per resource
+              type, enabling reliable offline operation.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>Code splitting and lazy loading</strong> reduce initial bundle size.
+          A dynamic <c-s>import('./module.js')</c-s> call defers loading a module until it
+          is needed, splitting the application into chunks loaded on demand. Images with
+          <c-s>loading="lazy"</c-s> are deferred until they approach the viewport.
+        </t-b>
+      </indent-blocks>
+
+      <a id="web-security"></a>
+      <h3>7.7&nbsp; Web Security in Practice</h3>
+      <indent-blocks>
+        <t-b>
+          Chapter&nbsp;6 covers network-level threats (XSS, CSRF, injection, TLS). This section
+          focuses on the browser security model and the HTTP mechanisms that enforce it.
+        </t-b>
+        <t-b>
+          <strong>Same-Origin Policy (SOP):</strong> the browser's foundational security rule.
+          A script from origin A (scheme + host + port) cannot read resources from origin B
+          unless B explicitly grants permission. This prevents a malicious page from reading
+          a user's bank account data using an active authenticated session.
+        </t-b>
+        <t-b>
+          <strong>CORS (Cross-Origin Resource Sharing):</strong> the controlled relaxation of
+          SOP. A server opts in to cross-origin access via response headers:
+          <ul class="tight">
+            <li>
+              <c-s>Access-Control-Allow-Origin: https://app.example.com</c-s> - permits
+              requests from a specific origin.
+            </li>
+            <li>
+              <strong>Preflight:</strong> for non-simple requests (PUT, DELETE, or custom
+              headers), the browser sends an <c-s>OPTIONS</c-s> preflight to confirm the
+              server allows the actual request before sending it.
+            </li>
+          </ul>
+          CORS is enforced by the browser, not the server. A server can claim any CORS
+          headers, but the browser is the entity protecting the user's data.
+        </t-b>
+        <t-b>
+          <strong>Content Security Policy (CSP):</strong> an HTTP response header that
+          whitelists which sources the browser may load scripts, styles, images, and frames
+          from. A strict CSP eliminates most XSS attack surface by preventing inline script
+          execution and restricting external script origins:
+          <defn-code>Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.example.com</defn-code>
+        </t-b>
+        <t-b>
+          <strong>Cookie security attributes:</strong>
+          <ul class="tight">
+            <li>
+              <c-s>HttpOnly</c-s> - cookie is inaccessible to JavaScript; prevents session
+              theft via XSS.
+            </li>
+            <li>
+              <c-s>Secure</c-s> - cookie is transmitted only over HTTPS connections.
+            </li>
+            <li>
+              <c-s>SameSite=Strict</c-s> - cookie is never sent on cross-site requests,
+              blocking CSRF entirely. <c-s>Lax</c-s> allows it on top-level navigations.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>Subresource Integrity (SRI):</strong> when loading scripts or stylesheets
+          from a CDN, the <c-s>integrity</c-s> attribute carries a Base64-encoded hash of
+          the expected file contents. The browser verifies the hash before executing the
+          resource; a tampered CDN file fails the check and is blocked:
+          <defn-code>&lt;script src="https://cdn.example.com/lib.js"
+        integrity="sha384-oqVu..."
+        crossorigin="anonymous"&gt;&lt;/script&gt;</defn-code>
+        </t-b>
+        <t-b>
+          <strong>HTTPS and HSTS:</strong> TLS authenticates the server and encrypts all
+          traffic. The <c-s>Strict-Transport-Security</c-s> header instructs the browser to
+          refuse plain HTTP connections to the domain for a specified duration (typically one
+          year). Domains on the HSTS preload list are hardcoded into browsers, so a first
+          visit is already protected without an initial HTTP redirect.
+        </t-b>
+      </indent-blocks>
+
+      <a id="epilogue7"></a>
+      <h3>7.8&nbsp; Epilogue</h3>
+      <t-b>
+        The web is built from a small set of composable technologies - HTTP, HTML, CSS, and
+        JavaScript - that have been incrementally extended without breaking backward
+        compatibility. The browser security model, performance tooling, and server
+        architecture patterns all exist to manage the tension between that openness and the
+        demands of production software. The next chapter examines the data centers that host
+        the server side of these interactions.
+      </t-b>
+
+      <a id="refs"></a>
+      <h3>7.9&nbsp; References</h3>
+      <t-b class="indent">
+        <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web">MDN Web Docs &ndash; Web Technology Reference</a><br />
+        <a target="_blank" href="https://web.dev/">web.dev &ndash; Google Web Performance and Best Practices</a><br />
+        <a target="_blank" href="https://html.spec.whatwg.org/">WHATWG HTML Living Standard</a><br />
+        <a target="_blank" href="https://www.ietf.org/rfc/rfc9110.txt">RFC 9110 &ndash; HTTP Semantics</a><br />
+        <a target="_blank" href="https://www.rfc-editor.org/rfc/rfc9114">RFC 9114 &ndash; HTTP/3</a><br />
+        <a target="_blank" href="https://web.dev/articles/vitals">Core Web Vitals &ndash; web.dev</a>
+      </t-b>
+    </div>
+    <div style="height:0.75em;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#prologue">prologue</a></menu-elem>
+        <menu-elem class="secElem"><a href="#http">http</a></menu-elem>
+        <menu-elem class="secElem"><a href="#browsers">browsers</a></menu-elem>
+        <menu-elem class="secElem"><a href="#html-css-js">html/css/js</a></menu-elem>
+        <menu-elem class="secElem"><a href="#architecture">architecture</a></menu-elem>
+        <menu-elem class="secElem"><a href="#web-apis">web apis</a></menu-elem>
+        <menu-elem class="secElem"><a href="#performance">performance</a></menu-elem>
+        <menu-elem class="secElem"><a href="#web-security">web security</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">refs</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/BasicsStoryPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 7, 11);
+  </script>
+</body>
+</html>
