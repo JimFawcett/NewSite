@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Traits - Rust Shared Behavior</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">pages</button>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Traits &mdash; Rust Shared Behavior</h1>
+  <t-b>Tutorial S6.0 &nbsp;&bull;&nbsp; Rust / Learn / StdLib</t-b>
+</header>
+
+<main>
+
+  <!-- S6.0 What This Teaches -->
+  <section>
+    <h2>S6.0 What This Teaches</h2>
+    <t-b>
+      Traits are Rust's mechanism for shared behavior - similar to interfaces in other
+      languages, but more powerful. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Defining a trait with required and default methods</li>
+      <li>Implementing a trait for a struct</li>
+      <li><code>impl Trait</code> and generic <code>&lt;T: Trait&gt;</code> bounds on function parameters</li>
+      <li>Trait objects (<code>&amp;dyn Trait</code>) for heterogeneous collections</li>
+      <li>Multiple trait bounds with <code>+</code></li>
+    </ul>
+  </section>
+
+  <!-- S6.1 Defining a Trait -->
+  <section>
+    <h2>S6.1 Defining a Trait</h2>
+    <t-b>
+      A trait declares a set of method signatures. Any type that implements all required
+      methods satisfies the trait:
+    </t-b>
+    <pre><code class="language-rust">trait Area {
+    fn area(&amp;self) -> f64;  // required: every implementor must provide this
+
+    fn describe(&amp;self) -> String {  // default: implementors inherit this for free
+        format!("shape with area {:.2}", self.area())
+    }
+}</code></pre>
+    <t-b>
+      Default methods are useful for behavior naturally expressible in terms of the required
+      methods. Implementors can override defaults when they have a better version.
+    </t-b>
+  </section>
+
+  <!-- S6.2 Implementing a Trait -->
+  <section>
+    <h2>S6.2 Implementing a Trait</h2>
+    <pre><code class="language-rust">struct Circle    { radius: f64 }
+struct Rectangle { width: f64, height: f64 }
+
+impl Area for Circle {
+    fn area(&amp;self) -> f64 {
+        std::f64::consts::PI * self.radius * self.radius
+    }
+    // inherits the default describe()
+}
+
+impl Area for Rectangle {
+    fn area(&amp;self) -> f64 { self.width * self.height }
+
+    fn describe(&amp;self) -> String {   // overrides the default
+        format!("rectangle {}x{} area={:.2}", self.width, self.height, self.area())
+    }
+}</code></pre>
+  </section>
+
+  <!-- S6.3 Trait Bounds on Functions -->
+  <section>
+    <h2>S6.3 Trait Bounds on Functions</h2>
+    <t-b>
+      <strong>impl Trait syntax</strong> - concise, best for simple cases:
+    </t-b>
+    <pre><code class="language-rust">fn print_area(shape: &amp;impl Area) {
+    println!("{}", shape.describe());
+}</code></pre>
+    <t-b>
+      <strong>Generic syntax</strong> - equivalent, but required when the same type
+      parameter appears more than once or when you need a where clause:
+    </t-b>
+    <pre><code class="language-rust">fn largest_area&lt;T: Area&gt;(a: &amp;T, b: &amp;T) -> f64 {
+    a.area().max(b.area())
+}</code></pre>
+    <t-b>
+      Both tell the compiler "accept any type that implements <code>Area</code>." The
+      concrete type is resolved at compile time - no runtime overhead. Note that
+      <code>largest_area&lt;T&gt;</code> requires both arguments to be the same concrete
+      type. To mix types, use trait objects (section S6.4).
+    </t-b>
+  </section>
+
+  <!-- S6.4 Trait Objects -->
+  <section>
+    <h2>S6.4 Trait Objects - dyn Trait</h2>
+    <t-b>
+      A trait object (<code>&amp;dyn Area</code>) erases the concrete type at compile
+      time. The method call goes through a vtable at runtime. This enables heterogeneous
+      collections:
+    </t-b>
+    <pre><code class="language-rust">// trait object version: accepts two different concrete types
+fn largest_area_dyn(a: &amp;dyn Area, b: &amp;dyn Area) -> f64 {
+    a.area().max(b.area())
+}
+
+let shapes: Vec&lt;&amp;dyn Area&gt; = vec![&amp;c, &amp;r, &amp;s];
+for shape in &amp;shapes {
+    println!("{}", shape.describe());
+}</code></pre>
+    <t-b>
+      Use trait objects when you need a collection of mixed types, or when the concrete
+      type is not known until runtime. Use generics when performance matters and types
+      are known at compile time.
+    </t-b>
+  </section>
+
+  <!-- S6.5 Multiple Trait Bounds -->
+  <section>
+    <h2>S6.5 Multiple Trait Bounds</h2>
+    <t-b>
+      Combine bounds with <code>+</code>. <code>T</code> must implement both traits:
+    </t-b>
+    <pre><code class="language-rust">use std::fmt::Debug;
+
+#[derive(Debug)]
+struct Square { side: f64 }
+
+impl Area for Square {
+    fn area(&amp;self) -> f64 { self.side * self.side }
+}
+
+fn debug_area&lt;T: Area + Debug&gt;(shape: &amp;T) {
+    println!("{shape:?} => area {:.2}", shape.area());
+}</code></pre>
+    <t-b>
+      This is common when you need to both use a trait's methods and print the value
+      during development.
+    </t-b>
+  </section>
+
+  <!-- S6.6 Example -->
+  <section>
+    <h2>S6.6 Example - All Together</h2>
+    <pre><code class="language-rust">// Traits - demonstrates defining traits, implementing them, default methods, and trait bounds.
+
+use std::fmt::Debug;
+
+trait Area {
+    fn area(&amp;self) -> f64;
+
+    // default method: implementors inherit this unless they override it
+    fn describe(&amp;self) -> String {
+        format!("shape with area {:.2}", self.area())
+    }
+}
+
+struct Circle    { radius: f64 }
+struct Rectangle { width: f64, height: f64 }
+
+impl Area for Circle {
+    fn area(&amp;self) -> f64 {
+        std::f64::consts::PI * self.radius * self.radius
+    }
+}
+
+impl Area for Rectangle {
+    fn area(&amp;self) -> f64 { self.width * self.height }
+
+    fn describe(&amp;self) -> String {
+        format!("rectangle {}x{} area={:.2}", self.width, self.height, self.area())
+    }
+}
+
+// impl Trait syntax: accept any type implementing Area
+fn print_area(shape: &amp;impl Area) {
+    println!("{}", shape.describe());
+}
+
+// generic syntax: both arguments must be the same concrete type
+fn largest_area&lt;T: Area&gt;(a: &amp;T, b: &amp;T) -> f64 {
+    a.area().max(b.area())
+}
+
+// trait object version: accepts two different concrete types
+fn largest_area_dyn(a: &amp;dyn Area, b: &amp;dyn Area) -> f64 {
+    a.area().max(b.area())
+}
+
+// trait object: &amp;dyn Area hides the concrete type, enabling heterogeneous collections
+fn print_all(shapes: &amp;[&amp;dyn Area]) {
+    for s in shapes { println!("{}", s.describe()); }
+}
+
+// multiple bounds with +
+#[derive(Debug)]
+struct Square { side: f64 }
+
+impl Area for Square {
+    fn area(&amp;self) -> f64 { self.side * self.side }
+}
+
+fn debug_area&lt;T: Area + Debug&gt;(shape: &amp;T) {
+    println!("{shape:?} => area {:.2}", shape.area());
+}
+
+fn main() {
+    let c = Circle    { radius: 3.0 };
+    let r = Rectangle { width: 4.0, height: 5.0 };
+    let s = Square    { side: 6.0 };
+
+    println!("--- impl Trait ---");
+    print_area(&amp;c);
+    print_area(&amp;r);
+
+    println!("--- generic bound ---");
+    println!("largest (same type): {:.2}", largest_area(&amp;c, &amp;c));
+    println!("largest (dyn):       {:.2}", largest_area_dyn(&amp;c, &amp;r));
+
+    println!("--- dyn Trait ---");
+    let shapes: Vec&lt;&amp;dyn Area&gt; = vec![&amp;c, &amp;r, &amp;s];
+    print_all(&amp;shapes);
+
+    println!("--- multiple bounds ---");
+    debug_area(&amp;s);
+}</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">--- impl Trait ---
+shape with area 28.27
+rectangle 4x5 area=20.00
+--- generic bound ---
+largest (same type): 28.27
+largest (dyn):       28.27
+--- dyn Trait ---
+shape with area 28.27
+rectangle 4x5 area=20.00
+shape with area 36.00
+--- multiple bounds ---
+Square { side: 6.0 } => area 36.00</code></pre>
+  </section>
+
+  <!-- S6.7 Exercise -->
+  <section>
+    <h2>S6.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Define a trait <code>Perimeter</code> with method
+          <code>perimeter(&amp;self) -&gt; f64</code>. Implement it for
+          <code>Circle</code> and <code>Rectangle</code>. Write a function
+          <code>print_perimeter(shape: &amp;impl Perimeter)</code> and call it for both.</li>
+        <li>Define a trait <code>Summary</code> with a required method
+          <code>summarize(&amp;self) -&gt; String</code> and a default method
+          <code>preview(&amp;self) -&gt; String</code> that returns the first 50
+          characters of <code>summarize</code>. Implement <code>Summary</code> for a
+          <code>NewsArticle</code> struct with <code>title</code> and <code>body</code>
+          fields.</li>
+        <li>Build a <code>Vec&lt;Box&lt;dyn Area&gt;&gt;</code> containing a mix of
+          <code>Circle</code>, <code>Rectangle</code>, and <code>Square</code> values.
+          Use <code>Box</code> (instead of <code>&amp;</code>) so the vec owns them.
+          Print each area.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S6.8 Common Mistakes -->
+  <section>
+    <h2>S6.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Forgetting to implement all required methods</h3>
+      <pre><code class="language-rust">impl Area for Triangle {}   // error: not all trait items implemented</code></pre>
+      <t-b>Every method without a default body must be implemented.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Returning impl Trait from a branch with mixed types</h3>
+      <pre><code class="language-rust">fn make_shape(big: bool) -> impl Area {
+    if big { Circle { radius: 10.0 } } else { Rectangle { width: 2.0, height: 3.0 } }
+    // error: mismatched types
+}</code></pre>
+      <t-b>
+        <code>impl Trait</code> in return position means one concrete type chosen at compile
+        time. If the two branches return different types, use <code>Box&lt;dyn Area&gt;</code>
+        instead.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Calling a trait method without the trait in scope</h3>
+      <pre><code class="language-rust">// Area is defined in another module but not imported
+shape.area();   // error: no method named `area` found</code></pre>
+      <t-b>
+        Trait methods are only callable when the trait is in scope. Add
+        <code>use crate::Area;</code> (or the appropriate path) to the file that calls
+        the method.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- S6.9 Key Terms -->
+  <section>
+    <h2>S6.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>trait</td><td>A named set of method signatures; defines shared behavior</td></tr>
+        <tr><td>required method</td><td>A trait method with no default body; every implementor must provide it</td></tr>
+        <tr><td>default method</td><td>A trait method with a body; implementors may override it</td></tr>
+        <tr><td>impl Trait</td><td>Bound syntax in function parameters: "accepts any type implementing Trait"</td></tr>
+        <tr><td>&lt;T: Trait&gt;</td><td>Generic bound syntax; equivalent to <code>impl Trait</code> for single occurrences</td></tr>
+        <tr><td>&amp;dyn Trait</td><td>Trait object; erases concrete type; dispatch goes through a vtable at runtime</td></tr>
+        <tr><td>vtable</td><td>Runtime table of function pointers used for dynamic dispatch</td></tr>
+        <tr><td>+ bound</td><td>Combines multiple trait requirements: <code>T: Area + Debug</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  Rust / Learn / StdLib &nbsp;&bull;&nbsp; Tutorial S6 &nbsp;&bull;&nbsp; Traits
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/TutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

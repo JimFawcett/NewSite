@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ownership - Rust Memory Safety</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">pages</button>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Ownership &mdash; Rust Memory Safety</h1>
+  <t-b>Tutorial 6.0 &nbsp;&bull;&nbsp; Rust / Learn</t-b>
+</header>
+
+<main>
+
+  <!-- 6.0 What This Teaches -->
+  <section>
+    <h2>6.0 What This Teaches</h2>
+    <t-b>
+      Ownership is Rust's most distinctive feature. It enables memory safety without a
+      garbage collector by enforcing strict rules at compile time. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>The three ownership rules</li>
+      <li>Move semantics - what happens when you assign or pass a value</li>
+      <li><code>Clone</code> for an explicit deep copy</li>
+      <li><code>Copy</code> types that duplicate automatically</li>
+      <li>Shared references (<code>&amp;T</code>) for read-only borrowing</li>
+      <li>Mutable references (<code>&amp;mut T</code>) for exclusive borrowing</li>
+      <li>How scope controls when memory is freed</li>
+    </ul>
+  </section>
+
+  <!-- 6.1 The Three Ownership Rules -->
+  <section>
+    <h2>6.1 The Three Ownership Rules</h2>
+    <t-b>
+      Rust enforces these rules at compile time - violating any one of them is a compile
+      error, not a runtime crash:
+    </t-b>
+    <ul>
+      <li>Every value has exactly one owner.</li>
+      <li>When the owner goes out of scope, the value is dropped (memory freed).</li>
+      <li>There can only be one owner at a time.</li>
+    </ul>
+    <t-b>
+      These three rules together eliminate entire classes of bugs - use-after-free,
+      double-free, and data races - without a runtime garbage collector.
+    </t-b>
+  </section>
+
+  <!-- 6.2 Move Semantics -->
+  <section>
+    <h2>6.2 Move Semantics</h2>
+    <t-b>
+      When you assign a heap-allocated value to another binding, ownership <em>moves</em>.
+      The original binding becomes invalid. This is not a copy - no data is duplicated.
+    </t-b>
+    <pre><code class="language-rust">let a = String::from("hello");
+let b = a;            // ownership moves from a to b
+// println!("{a}");  // compile error: value moved
+println!("{b}");      // fine</code></pre>
+    <t-b>
+      <code>String</code> allocates on the heap, so assigning it moves rather than copies.
+      The compiler rejects any attempt to use <code>a</code> after the move - there is no
+      way to access freed memory.
+    </t-b>
+    <t-b>The same transfer happens when you pass a value to a function:</t-b>
+    <pre><code class="language-rust">fn take_ownership(s: String) {
+    println!("taken: {s}");
+}   // s is dropped here
+
+let u = String::from("goodbye");
+take_ownership(u);
+// println!("{u}");  // compile error: u was moved into the function</code></pre>
+  </section>
+
+  <!-- 6.3 Clone -->
+  <section>
+    <h2>6.3 Clone - Explicit Deep Copy</h2>
+    <t-b>
+      When you genuinely need two independent copies of a heap value, call
+      <code>.clone()</code>. It performs a full deep copy and both bindings remain valid:
+    </t-b>
+    <pre><code class="language-rust">let c = String::from("world");
+let d = c.clone();
+println!("c = {c}, d = {d}");  // both usable</code></pre>
+    <t-b>
+      <code>.clone()</code> is intentionally explicit. Rust does not silently copy expensive
+      heap data - you opt in so the cost is visible in the code.
+    </t-b>
+  </section>
+
+  <!-- 6.4 Copy Types -->
+  <section>
+    <h2>6.4 Copy Types</h2>
+    <t-b>
+      Types that live entirely on the stack implement the <code>Copy</code> trait. Assigning
+      or passing them duplicates the bits automatically - no move, no clone required.
+    </t-b>
+    <t-b>
+      Common <code>Copy</code> types: all integer types, <code>f32</code>, <code>f64</code>,
+      <code>bool</code>, <code>char</code>, and tuples or arrays made up of <code>Copy</code>
+      types.
+    </t-b>
+    <pre><code class="language-rust">let x = 42;
+let y = x;           // x is copied, not moved
+println!("x = {x}, y = {y}");  // both valid</code></pre>
+    <t-b>
+      <code>String</code> is not <code>Copy</code> because it owns heap memory. Copying it
+      silently would mean two owners for the same allocation - a double-free waiting to happen.
+    </t-b>
+  </section>
+
+  <!-- 6.5 Shared References -->
+  <section>
+    <h2>6.5 Shared References - Borrowing Read-Only</h2>
+    <t-b>
+      A reference lets you use a value without taking ownership. The <code>&amp;</code>
+      operator creates a shared reference. Rust guarantees the referenced value will not
+      be modified while the reference exists.
+    </t-b>
+    <pre><code class="language-rust">fn print_len(s: &String) {
+    println!("length = {}", s.len());
+}
+
+let s = String::from("Rust");
+print_len(&s);               // lend s to the function
+println!("still have s: {s}");  // s is still ours</code></pre>
+    <t-b>
+      <code>print_len</code> borrows <code>s</code> for its duration. When the function
+      returns, the borrow ends and full ownership returns to the caller. No memory is freed -
+      the caller still owns <code>s</code>.
+    </t-b>
+    <t-b>Multiple shared references to the same value are allowed simultaneously:</t-b>
+    <pre><code class="language-rust">let r1 = &s;
+let r2 = &s;
+println!("r1 = {r1}, r2 = {r2}");  // fine - both just read</code></pre>
+  </section>
+
+  <!-- 6.6 Mutable References -->
+  <section>
+    <h2>6.6 Mutable References - Borrowing for Mutation</h2>
+    <t-b>
+      A mutable reference (<code>&amp;mut T</code>) lets a borrower modify the value. The
+      rule is strict: while a mutable reference exists, no other references - shared or
+      mutable - may exist for the same value. This prevents data races at compile time.
+    </t-b>
+    <pre><code class="language-rust">fn append_bang(s: &mut String) {
+    s.push('!');
+}
+
+let mut t = String::from("hello");
+append_bang(&mut t);
+println!("{t}");   // hello!</code></pre>
+    <t-b>
+      The binding must be declared <code>mut</code> before you can take a
+      <code>&amp;mut</code> reference to it.
+    </t-b>
+    <t-b>The borrow checker enforces two rules:</t-b>
+    <ul>
+      <li>At most one <code>&amp;mut</code> reference at a time.</li>
+      <li>No <code>&amp;</code> references while a <code>&amp;mut</code> reference is active.</li>
+    </ul>
+    <pre><code class="language-rust">let mut s = String::from("hi");
+let r1 = &s;
+let r2 = &mut s;   // compile error: cannot borrow as mutable because it is also borrowed as immutable</code></pre>
+  </section>
+
+  <!-- 6.7 Scope Controls Lifetime -->
+  <section>
+    <h2>6.7 Scope Controls Lifetime</h2>
+    <t-b>
+      A value is dropped the moment its owner goes out of scope. For references, the borrow
+      ends when the reference last appears - not necessarily at the closing <code>}</code>
+      of the block.
+    </t-b>
+    <pre><code class="language-rust">{
+    let scoped = String::from("temporary");
+    println!("{scoped}");
+}   // scoped is dropped here; heap memory freed immediately
+println!("scoped is gone");</code></pre>
+    <t-b>
+      This deterministic cleanup is why Rust does not need a garbage collector. The compiler
+      knows exactly when every value dies.
+    </t-b>
+  </section>
+
+  <!-- 6.8 Example -->
+  <section>
+    <h2>6.8 Example - All Together</h2>
+    <pre><code class="language-rust">// Ownership - demonstrates move semantics, cloning, Copy types, and borrowing in Rust.
+
+fn print_len(s: &String) {
+    println!("length = {}", s.len());
+}
+
+fn append_bang(s: &mut String) {
+    s.push('!');
+}
+
+fn take_ownership(s: String) {
+    println!("taken: {s}");
+}
+
+fn main() {
+    // move
+    let a = String::from("hello");
+    let b = a;
+    println!("{b}");
+
+    // clone
+    let c = String::from("world");
+    let d = c.clone();
+    println!("c = {c}, d = {d}");
+
+    // Copy type
+    let x = 42;
+    let y = x;
+    println!("x = {x}, y = {y}");
+
+    // shared borrow
+    let s = String::from("Rust");
+    print_len(&s);
+    println!("still have s: {s}");
+
+    // mutable borrow
+    let mut t = String::from("hello");
+    append_bang(&mut t);
+    println!("{t}");
+
+    // move into function
+    let u = String::from("goodbye");
+    take_ownership(u);
+
+    // scope drop
+    {
+        let scoped = String::from("temporary");
+        println!("{scoped}");
+    }
+    println!("scoped is gone");
+}</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">hello
+c = world, d = world
+x = 42, y = 42
+length = 4
+still have s: Rust
+hello!
+taken: goodbye
+temporary
+scoped is gone</code></pre>
+  </section>
+
+  <!-- 6.9 Exercise -->
+  <section>
+    <h2>6.9 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write a function <code>first_word(s: &amp;String) -&gt; &amp;str</code> that
+          returns a reference to the first space-delimited word in <code>s</code>. Call it
+          and print the result without moving <code>s</code>. Confirm you can still use
+          <code>s</code> after the call.</li>
+        <li>Write a function <code>double_all(v: &amp;mut Vec&lt;i32&gt;)</code> that
+          multiplies every element in the vector by 2. Call it from <code>main</code> using
+          a mutable reference. Print the vector before and after.</li>
+        <li>Declare two <code>String</code> bindings. Move one into a function that prints
+          it, then confirm the compiler rejects a use of that binding after the call. Then
+          repeat using <code>.clone()</code> so both uses succeed.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6.10 Common Mistakes -->
+  <section>
+    <h2>6.10 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Using a value after moving it</h3>
+      <pre><code class="language-rust">let a = String::from("hi");
+let b = a;
+println!("{a}");  // error: value borrowed here after move</code></pre>
+      <t-b>Once moved, <code>a</code> is gone. Use <code>a.clone()</code> if you need both.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Taking a mutable and shared reference at the same time</h3>
+      <pre><code class="language-rust">let mut s = String::from("hi");
+let r = &s;
+s.push('!');       // error: cannot borrow `s` as mutable because it is also borrowed as immutable
+println!("{r}");</code></pre>
+      <t-b>
+        <code>r</code> is a shared reference still in use when <code>push</code> tries to
+        mutate <code>s</code>. Drop <code>r</code> before mutating, or restructure so the
+        borrow ends first.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Forgetting mut on the binding before taking &amp;mut</h3>
+      <pre><code class="language-rust">let s = String::from("hi");
+let r = &mut s;   // error: cannot borrow `s` as mutable, as it is not declared as mutable</code></pre>
+      <t-b>Declare <code>let mut s</code> to allow mutable borrowing.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Expecting Clone behavior from assignment</h3>
+      <t-b>
+        Rust does not silently deep-copy heap data. If you expect <code>let b = a</code> to
+        leave <code>a</code> usable, you need <code>let b = a.clone()</code>. Assignment
+        moves unless the type is <code>Copy</code>.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- 6.11 Key Terms -->
+  <section>
+    <h2>6.11 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>owner</td><td>The single binding responsible for a value; frees it when it goes out of scope</td></tr>
+        <tr><td>move</td><td>Transfer of ownership from one binding to another; original is invalidated</td></tr>
+        <tr><td>drop</td><td>Automatic freeing of a value when its owner goes out of scope</td></tr>
+        <tr><td>Clone</td><td>Trait enabling explicit deep copy via <code>.clone()</code></td></tr>
+        <tr><td>Copy</td><td>Trait marking types that duplicate automatically on assignment (stack-only)</td></tr>
+        <tr><td>borrow</td><td>Temporary access to a value via a reference, without taking ownership</td></tr>
+        <tr><td>&amp;T</td><td>Shared reference; allows reading; many can coexist</td></tr>
+        <tr><td>&amp;mut T</td><td>Mutable reference; allows reading and writing; exclusive - no other references allowed</td></tr>
+        <tr><td>borrow checker</td><td>The compiler component that enforces ownership and reference rules</td></tr>
+        <tr><td>lifetime</td><td>The span of code during which a reference is valid; enforced at compile time</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  Rust / Learn &nbsp;&bull;&nbsp; Tutorial 6 &nbsp;&bull;&nbsp; Ownership
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/TutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

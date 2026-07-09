@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Variables - Rust Bindings and Types</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">pages</button>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Variables &mdash; Rust Bindings and Types</h1>
+  <t-b>Tutorial 3.0 &nbsp;&bull;&nbsp; Rust / Learn</t-b>
+</header>
+
+<main>
+
+  <!-- 3.0 What This Teaches -->
+  <section>
+    <h2>3.0 What This Teaches</h2>
+    <t-b>This tutorial covers how Rust handles variables and the primitive types you will use
+      in almost every program:</t-b>
+    <ul>
+      <li>Immutable and mutable bindings</li>
+      <li>Type inference and explicit annotations</li>
+      <li>Primitive types: integers, floats, booleans, characters</li>
+      <li>Shadowing</li>
+    </ul>
+  </section>
+
+  <!-- 3.1 Bindings, Not Variables -->
+  <section>
+    <h2>3.1 Bindings, Not Variables</h2>
+    <t-b>
+      Rust uses the word <em>binding</em> intentionally. <code>let x = 5</code> does not
+      declare a variable in the traditional sense - it binds the name <code>x</code> to the
+      value <code>5</code>. The distinction matters because bindings are immutable by default.
+      Trying to change <code>x</code> after binding it is a compile error, not a runtime error.
+    </t-b>
+    <pre><code class="language-rust">let x = 5;
+x = 10;  // compile error: cannot assign twice to immutable variable</code></pre>
+    <t-b>
+      Immutability by default is a deliberate design choice. It makes it easier to reason about
+      where values change, which becomes critical when you add concurrency later.
+    </t-b>
+  </section>
+
+  <!-- 3.2 Mutable Bindings -->
+  <section>
+    <h2>3.2 Mutable Bindings</h2>
+    <t-b>When you do need to change a value, add <code>mut</code>:</t-b>
+    <pre><code class="language-rust">let mut count = 0;
+count += 1;
+println!("count = {count}");  // prints: count = 1</code></pre>
+    <t-b>
+      <code>mut</code> is explicit and visible at the declaration site. Any reader of the code
+      immediately knows <code>count</code> will change somewhere below.
+    </t-b>
+  </section>
+
+  <!-- 3.3 Type Inference -->
+  <section>
+    <h2>3.3 Type Inference</h2>
+    <t-b>
+      Rust infers the type of a binding from the value you assign. You rarely need to write the
+      type explicitly:
+    </t-b>
+    <pre><code class="language-rust">let x = 5;        // inferred as i32
+let ratio = 3.14; // inferred as f64
+let flag = true;  // inferred as bool</code></pre>
+    <t-b>When the inferred type is not what you want, annotate it explicitly:</t-b>
+    <pre><code class="language-rust">let ratio: f64 = 3.14;
+let small: i8  = 127;</code></pre>
+    <t-b>The annotation sits between the name and the <code>=</code>, separated by <code>:</code>.</t-b>
+  </section>
+
+  <!-- 3.4 Integer Types -->
+  <section>
+    <h2>3.4 Integer Types</h2>
+    <t-b>Rust provides signed and unsigned integers at several sizes:</t-b>
+    <table>
+      <thead>
+        <tr><th>Type</th><th>Size</th><th>Range</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>i8</td><td>8-bit</td><td>-128 to 127</td></tr>
+        <tr><td>i16</td><td>16-bit</td><td>-32,768 to 32,767</td></tr>
+        <tr><td>i32</td><td>32-bit</td><td>-2,147,483,648 to 2,147,483,647</td></tr>
+        <tr><td>i64</td><td>64-bit</td><td>&plusmn;9.2 &times; 10&sup1;&sup8;</td></tr>
+        <tr><td>i128</td><td>128-bit</td><td>very large</td></tr>
+        <tr><td>u8</td><td>8-bit</td><td>0 to 255</td></tr>
+        <tr><td>u16</td><td>16-bit</td><td>0 to 65,535</td></tr>
+        <tr><td>u32</td><td>32-bit</td><td>0 to 4,294,967,295</td></tr>
+        <tr><td>u64</td><td>64-bit</td><td>0 to 1.8 &times; 10&sup1;&sup9;</td></tr>
+        <tr><td>usize</td><td>pointer-sized</td><td>platform-dependent</td></tr>
+      </tbody>
+    </table>
+    <t-b>
+      The default integer type when Rust infers is <code>i32</code>. Use <code>usize</code>
+      for array indices and collection lengths - the standard library expects it.
+    </t-b>
+    <t-b>
+      You can use underscores in numeric literals for readability: <code>1_000_000</code>
+      is the same as <code>1000000</code>.
+    </t-b>
+  </section>
+
+  <!-- 3.5 Floating-Point Types -->
+  <section>
+    <h2>3.5 Floating-Point Types</h2>
+    <t-b>Rust has two floating-point types:</t-b>
+    <table>
+      <thead>
+        <tr><th>Type</th><th>Size</th><th>Precision</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>f32</td><td>32-bit</td><td>~7 decimal digits</td></tr>
+        <tr><td>f64</td><td>64-bit</td><td>~15 decimal digits</td></tr>
+      </tbody>
+    </table>
+    <t-b>
+      The default inferred float type is <code>f64</code>. Prefer <code>f64</code> unless
+      you have a specific reason to use <code>f32</code> (memory pressure, hardware requirements).
+    </t-b>
+  </section>
+
+  <!-- 3.6 Boolean -->
+  <section>
+    <h2>3.6 Boolean</h2>
+    <t-b>
+      <code>bool</code> holds either <code>true</code> or <code>false</code>. It is the
+      required type for <code>if</code> conditions - Rust does not coerce integers to booleans
+      the way C does.
+    </t-b>
+    <pre><code class="language-rust">let is_ready: bool = true;
+
+if is_ready {
+    println!("ready");
+}</code></pre>
+  </section>
+
+  <!-- 3.7 Character -->
+  <section>
+    <h2>3.7 Character</h2>
+    <t-b>
+      <code>char</code> holds a single Unicode scalar value and occupies 4 bytes. That is
+      broader than ASCII - a <code>char</code> can hold any character from any human language.
+    </t-b>
+    <pre><code class="language-rust">let letter: char = 'R';
+let emoji: char  = '🦀';  // the Rust mascot</code></pre>
+    <t-b>
+      Use single quotes for <code>char</code> literals. Double quotes are for string literals
+      (<code>&amp;str</code>).
+    </t-b>
+  </section>
+
+  <!-- 3.8 Shadowing -->
+  <section>
+    <h2>3.8 Shadowing</h2>
+    <t-b>
+      Shadowing rebinds a name to a new value in the same scope. The old binding is hidden
+      but not mutated:
+    </t-b>
+    <pre><code class="language-rust">let x = 5;
+let x = x * 2;  // new binding; shadows the first x
+println!("x = {x}");  // prints: x = 10</code></pre>
+    <t-b>Shadowing differs from <code>mut</code> in two ways:</t-b>
+    <ul>
+      <li>The new binding can have a different type - useful when transforming a value through
+        several steps.</li>
+      <li>Each <code>let</code> creates a fresh immutable binding; the original is gone from
+        that point forward.</li>
+    </ul>
+  </section>
+
+  <!-- 3.9 Example -->
+  <section>
+    <h2>3.9 Example - All Together</h2>
+    <pre><code class="language-rust">// Variables - demonstrates bindings, mutability, primitive types, and shadowing in Rust.
+fn main() {
+    let x = 5;
+    println!("x = {x}");
+
+    let mut count = 0;
+    count += 1;
+    println!("count = {count}");
+
+    let ratio: f64 = 3.14;
+    println!("ratio = {ratio}");
+
+    let is_ready: bool = true;
+    println!("is_ready = {is_ready}");
+
+    let letter: char = 'R';
+    println!("letter = {letter}");
+
+    let x = x * 2;
+    println!("x after shadowing = {x}");
+
+    let big: i64  = 1_000_000;
+    let small: i8 = 127;
+    println!("big = {big}, small = {small}");
+
+    let index: usize = 42;
+    println!("index = {index}");
+}</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">x = 5
+count = 1
+ratio = 3.14
+is_ready = true
+letter = R
+x after shadowing = 10
+big = 1000000, small = 127
+index = 42</code></pre>
+  </section>
+
+  <!-- 3.10 Exercise -->
+  <section>
+    <h2>3.10 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Declare an immutable binding for your age as <code>u8</code>. Print it.</li>
+        <li>Declare a mutable binding for a temperature as <code>f32</code>. Change it and
+          print both values.</li>
+        <li>Shadow a binding: first bind a name to <code>3</code> (an integer), then shadow
+          it with the string <code>"three"</code>. Print the shadowed value. Notice that
+          shadowing allows a type change.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 3.11 Common Mistakes -->
+  <section>
+    <h2>3.11 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Trying to mutate an immutable binding</h3>
+      <pre><code class="language-rust">let x = 5;
+x = 10;  // error: cannot assign twice to immutable variable `x`</code></pre>
+      <t-b>Fix: add <code>mut</code> to the declaration.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Mixing integer types without casting</h3>
+      <pre><code class="language-rust">let a: i32 = 10;
+let b: i64 = 20;
+let c = a + b;  // error: mismatched types</code></pre>
+      <t-b>
+        Rust does not silently widen integer types. Fix: cast explicitly with
+        <code>a as i64 + b</code>.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Confusing char and &amp;str literal syntax</h3>
+      <pre><code class="language-rust">let c = "R";  // this is &str, not char
+let c = 'R';  // this is char</code></pre>
+      <t-b>Single quotes for <code>char</code>, double quotes for string slices.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Assuming default integer is i64</h3>
+      <t-b>
+        The default inferred integer type is <code>i32</code>, not <code>i64</code>. Values
+        that overflow <code>i32::MAX</code> (2,147,483,647) cause a panic in debug mode.
+        Annotate explicitly when you need a larger range.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- 3.12 Key Terms -->
+  <section>
+    <h2>3.12 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>binding</td><td>A name bound to a value via <code>let</code></td></tr>
+        <tr><td>immutable</td><td>Cannot be changed after binding (the default)</td></tr>
+        <tr><td>mut</td><td>Keyword that makes a binding mutable</td></tr>
+        <tr><td>type inference</td><td>Compiler deduces the type from the assigned value</td></tr>
+        <tr><td>shadowing</td><td>Rebinding a name in the same scope with a new <code>let</code></td></tr>
+        <tr><td>i32</td><td>Default signed 32-bit integer</td></tr>
+        <tr><td>f64</td><td>Default 64-bit floating-point number</td></tr>
+        <tr><td>usize</td><td>Pointer-sized unsigned integer; used for indices and lengths</td></tr>
+        <tr><td>char</td><td>A single Unicode scalar value, 4 bytes</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  Rust / Learn &nbsp;&bull;&nbsp; Tutorial 3 &nbsp;&bull;&nbsp; Variables
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/TutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>
