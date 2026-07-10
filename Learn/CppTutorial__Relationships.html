@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relationships - Inheritance, Composition, Aggregation</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Relationships &mdash; Inheritance, Composition, Aggregation</h1>
+  <t-b>Tutorial 7.0 &nbsp;&bull;&nbsp; C++ / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- 7.0 What This Teaches -->
+  <section>
+    <h2>7.0 What This Teaches</h2>
+    <t-b>
+      Classes relate to each other in four fundamental ways. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Inheritance - <em>is-a</em>: derived class extends a base class</li>
+      <li>Virtual functions - runtime polymorphism through base-class pointers</li>
+      <li>Composition - <em>has-a (owned)</em>: member lifetime tied to owner</li>
+      <li>Aggregation - <em>has-a (non-owned)</em>: member outlives or predates owner</li>
+      <li>Using - <em>uses-a</em>: function or class depends on another type temporarily</li>
+    </ul>
+  </section>
+
+  <!-- 7.1 Inheritance -->
+  <section>
+    <h2>7.1 Inheritance</h2>
+    <pre><code class="language-cpp">class Animal {
+public:
+    std::string name;
+    explicit Animal(std::string n) : name(std::move(n)) {}
+    virtual ~Animal() = default;   // virtual destructor required for polymorphism
+};
+
+class Dog : public Animal {        // Dog is-an Animal; public makes base interface visible
+public:
+    explicit Dog(std::string n) : Animal(std::move(n)) {}
+};</code></pre>
+    <t-b>
+      Derived classes inherit all non-private members of the base class.
+      The base constructor is called explicitly in the derived member initializer list.
+      With <code>class</code>, inheritance defaults to private; always write
+      <code>: public Base</code> to preserve the base class's public interface.
+    </t-b>
+    <pre><code class="language-cpp">// access control
+class Base {
+public:    int pub   = 1;   // accessible everywhere
+protected: int prot  = 2;   // accessible inside Base and derived classes
+private:   int priv  = 3;   // accessible only inside Base
+};</code></pre>
+  </section>
+
+  <!-- 7.2 Virtual Functions -->
+  <section>
+    <h2>7.2 Virtual Functions and Polymorphism</h2>
+    <pre><code class="language-cpp">class Shape {
+public:
+    virtual double area() const { return 0.0; }
+    virtual ~Shape() = default;
+};
+
+class Circle : public Shape {
+public:
+    double radius;
+    explicit Circle(double r) : radius(r) {}
+    double area() const override { return 3.14159 * radius * radius; }
+};
+
+class Rect : public Shape {
+public:
+    double w, h;
+    Rect(double w, double h) : w(w), h(h) {}
+    double area() const override { return w * h; }
+};
+
+// polymorphism: base-class pointer dispatches to derived override at runtime
+void print_area(const Shape&amp; s) {
+    std::cout &lt;&lt; s.area() &lt;&lt; "\n";   // calls Circle::area or Rect::area
+}
+
+Circle c(3.0);
+Rect   r(4.0, 5.0);
+print_area(c);   // 28.274...
+print_area(r);   // 20</code></pre>
+    <t-b>
+      Always mark the base destructor <code>virtual</code> when the class is
+      used polymorphically. Without it, deleting a derived object through a
+      base pointer only calls the base destructor, leaking derived resources.
+      Use <code>override</code> on every derived override - it lets the
+      compiler catch typos and signature mismatches.
+    </t-b>
+  </section>
+
+  <!-- 7.3 Abstract Base Classes -->
+  <section>
+    <h2>7.3 Abstract Base Classes</h2>
+    <pre><code class="language-cpp">class Drawable {
+public:
+    virtual void draw() const = 0;   // pure virtual: must be overridden
+    virtual ~Drawable() = default;
+};
+
+// Drawable cannot be instantiated directly:
+// Drawable d;   // error: abstract class
+
+class Square : public Drawable {
+public:
+    void draw() const override { std::cout &lt;&lt; "drawing square\n"; }
+};
+
+Square sq;
+sq.draw();   // ok</code></pre>
+    <t-b>
+      A class with at least one pure virtual function is abstract and cannot
+      be instantiated. It defines an interface that all concrete subclasses
+      must fulfill. This is C++'s primary mechanism for programming to interfaces
+      rather than implementations.
+    </t-b>
+  </section>
+
+  <!-- 7.4 Composition -->
+  <section>
+    <h2>7.4 Composition</h2>
+    <pre><code class="language-cpp">class Engine {
+public:
+    int horsepower;
+    explicit Engine(int hp) : horsepower(hp) {}
+};
+
+class Car {
+public:
+    Engine engine;       // composed member: owned, lifetime tied to Car
+    std::string model;
+    Car(std::string m, int hp) : model(std::move(m)), engine(hp) {}
+};
+
+Car car("Sedan", 200);
+std::cout &lt;&lt; car.engine.horsepower &lt;&lt; "\n";   // 200
+// engine destroyed when car goes out of scope</code></pre>
+    <t-b>
+      Composition models a strong <em>has-a</em> relationship. The member is created
+      with the owner and destroyed with it. Stored by value or
+      <code>unique_ptr</code> when polymorphism is needed.
+    </t-b>
+  </section>
+
+  <!-- 7.5 Aggregation -->
+  <section>
+    <h2>7.5 Aggregation</h2>
+    <pre><code class="language-cpp">class Manager {
+public:
+    std::string name;
+    explicit Manager(std::string n) : name(std::move(n)) {}
+};
+
+class Department {
+public:
+    const Manager* head;   // non-owning: Manager exists independently
+    std::string dept;
+    Department(std::string d, const Manager* m) : dept(std::move(d)), head(m) {}
+};
+
+Manager alice("Alice");          // lifetime independent of Department
+Department eng("Engineering", &amp;alice);
+std::cout &lt;&lt; eng.head-&gt;name &lt;&lt; "\n";   // Alice</code></pre>
+    <t-b>
+      Aggregation models a weak <em>has-a</em> relationship. The referenced object
+      is created and destroyed independently of the owner. Use a raw (non-owning)
+      pointer or reference. Ensure the referenced object outlives the aggregating
+      class to avoid dangling pointers.
+    </t-b>
+  </section>
+
+  <!-- 7.6 Using Relationships -->
+  <section>
+    <h2>7.6 Using Relationships</h2>
+    <pre><code class="language-cpp">// uses-a: function depends on Logger but does not store or own it
+void process(const std::vector&lt;int&gt;&amp; data, Logger&amp; log) {
+    log.write("processing " + std::to_string(data.size()) + " items");
+    // ... use data ...
+}
+
+// uses-a: local variable used temporarily within a scope
+void run() {
+    Timer t;           // used locally; no lasting relationship
+    do_work();
+    std::cout &lt;&lt; t.elapsed() &lt;&lt; "\n";
+}</code></pre>
+    <t-b>
+      A using relationship is the weakest coupling - one type appears as a
+      parameter type, local variable, or return type. No member is stored.
+      Prefer this over stronger couplings whenever the dependency is transient.
+    </t-b>
+  </section>
+
+  <!-- 7.7 Example -->
+  <section>
+    <h2>7.7 Example - All Together</h2>
+    <pre><code class="language-cpp">// Relationships - Inheritance, Composition, Aggregation, Using.
+
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;vector&gt;
+#include &lt;memory&gt;
+
+class Shape {
+public:
+    std::string color;
+    explicit Shape(std::string c) : color(std::move(c)) {}
+    virtual double area() const { return 0.0; }
+    virtual void describe() const {
+        std::cout &lt;&lt; color &lt;&lt; " shape, area=" &lt;&lt; area() &lt;&lt; "\n";
+    }
+    virtual ~Shape() = default;
+};
+
+class Circle : public Shape {
+public:
+    double radius;
+    Circle(std::string c, double r) : Shape(std::move(c)), radius(r) {}
+    double area() const override { return 3.14159 * radius * radius; }
+};
+
+class Rect : public Shape {
+public:
+    double w, h;
+    Rect(std::string c, double w, double h) : Shape(std::move(c)), w(w), h(h) {}
+    double area() const override { return w * h; }
+};
+
+class Engine { public: int hp; explicit Engine(int h) : hp(h) {} };
+
+class Car {
+public:
+    Engine engine;
+    std::string model;
+    Car(std::string m, int hp) : model(std::move(m)), engine(hp) {}
+};
+
+class Manager { public: std::string name; explicit Manager(std::string n) : name(std::move(n)) {} };
+class Department {
+public:
+    const Manager* head;
+    std::string dept;
+    Department(std::string d, const Manager* m) : dept(std::move(d)), head(m) {}
+};
+
+void print_area(const Shape&amp; s) { std::cout &lt;&lt; s.color &lt;&lt; " area=" &lt;&lt; s.area() &lt;&lt; "\n"; }
+
+int main() {
+    std::cout &lt;&lt; "--- inheritance ---\n";
+    std::vector&lt;std::unique_ptr&lt;Shape&gt;&gt; shapes;
+    shapes.push_back(std::make_unique&lt;Circle&gt;("red", 3.0));
+    shapes.push_back(std::make_unique&lt;Rect&gt;("blue", 4.0, 5.0));
+    for (const auto&amp; s : shapes) s-&gt;describe();
+
+    std::cout &lt;&lt; "\n--- composition ---\n";
+    Car car("Sedan", 200);
+    std::cout &lt;&lt; car.model &lt;&lt; " " &lt;&lt; car.engine.hp &lt;&lt; "hp\n";
+
+    std::cout &lt;&lt; "\n--- aggregation ---\n";
+    Manager mgr("Alice");
+    Department dept("Engineering", &amp;mgr);
+    std::cout &lt;&lt; dept.dept &lt;&lt; " head: " &lt;&lt; dept.head-&gt;name &lt;&lt; "\n";
+
+    std::cout &lt;&lt; "\n--- using ---\n";
+    Circle c("green", 2.0);
+    print_area(c);
+    return 0;
+}</code></pre>
+    <pre class="output"><code class="language-terminal">--- inheritance ---
+red shape, area=28.2743
+blue shape, area=20
+
+--- composition ---
+Sedan 200hp
+
+--- aggregation ---
+Engineering head: Alice
+
+--- using ---
+green area=12.5664</code></pre>
+  </section>
+
+  <!-- 7.8 Exercise -->
+  <section>
+    <h2>7.8 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Define an abstract base class <code>Vehicle</code> with a pure virtual
+          <code>fuel_type()</code>. Derive <code>ElectricCar</code> and
+          <code>GasTruck</code> from it and store them in a
+          <code>vector&lt;unique_ptr&lt;Vehicle&gt;&gt;</code>.</li>
+        <li>Add a <code>Battery</code> class and compose it into
+          <code>ElectricCar</code> by value. Confirm its destructor runs when
+          the car is destroyed.</li>
+        <li>Create a <code>Fleet</code> class that holds a non-owning
+          <code>const Vehicle*</code> to a <em>lead vehicle</em> (aggregation).
+          Show that the Fleet can be destroyed while the vehicle lives on.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7.9 Common Mistakes -->
+  <section>
+    <h2>7.9 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Missing virtual destructor</h3>
+      <pre><code class="language-cpp">class Base { public: virtual void f() {} };   // no virtual ~Base
+class Derived : public Base { public: std::string data; };
+
+Base* p = new Derived();
+delete p;   // undefined behavior: ~Derived never called, data leaked</code></pre>
+      <t-b>Any class used as a polymorphic base must declare
+        <code>virtual ~Base() = default;</code>.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Object slicing</h3>
+      <pre><code class="language-cpp">Circle c("red", 3.0);
+Shape s = c;      // sliced: only the Shape part is copied
+s.area();         // calls Shape::area(), not Circle::area()</code></pre>
+      <t-b>Polymorphism only works through pointers or references. Assigning a
+        derived object to a base <em>value</em> slices off the derived part.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Forgetting override</h3>
+      <pre><code class="language-cpp">class Derived : public Base {
+public:
+    void f() const {}   // silently defines a new function if Base::f() is not const
+                        // add override to get a compile error instead
+};</code></pre>
+      <t-b>Always write <code>override</code>. The compiler will then reject
+        any signature mismatch rather than silently creating a new function.</t-b>
+    </div>
+  </section>
+
+  <!-- 7.10 Key Terms -->
+  <section>
+    <h2>7.10 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>inheritance (is-a)</td><td>Derived class extends base; inherits members and can override virtual functions</td></tr>
+        <tr><td>virtual</td><td>Marks a function for runtime dispatch through base-class pointer or reference</td></tr>
+        <tr><td>override</td><td>Confirms a function overrides a base virtual; compile error if signature mismatches</td></tr>
+        <tr><td>pure virtual (= 0)</td><td>Must be overridden; makes the class abstract (non-instantiable)</td></tr>
+        <tr><td>virtual destructor</td><td>Required on any polymorphic base to ensure correct cleanup of derived objects</td></tr>
+        <tr><td>composition (has-a owned)</td><td>Member stored by value or unique_ptr; lifetime tied to owner</td></tr>
+        <tr><td>aggregation (has-a non-owned)</td><td>Member stored as raw pointer/reference; lifetime independent of owner</td></tr>
+        <tr><td>using (uses-a)</td><td>Transient dependency via parameter or local variable; no stored member</td></tr>
+        <tr><td>object slicing</td><td>Copying a derived to a base value loses the derived portion; use pointer or reference</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  C++ / Learn &nbsp;&bull;&nbsp; Tutorial 7 &nbsp;&bull;&nbsp; Relationships
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CppTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Pointers - unique_ptr, shared_ptr</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Smart Pointers &mdash; unique_ptr, shared_ptr</h1>
+  <t-b>Tutorial S8.0 &nbsp;&bull;&nbsp; C++ / Learn / StdLib</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- S8.0 What This Teaches -->
+  <section>
+    <h2>S8.0 What This Teaches</h2>
+    <t-b>
+      Smart pointers automate heap memory management using RAII. This tutorial covers:
+    </t-b>
+    <ul>
+      <li><code>std::unique_ptr</code> - sole, non-shareable ownership</li>
+      <li><code>std::shared_ptr</code> - shared ownership with reference counting</li>
+      <li><code>std::weak_ptr</code> - non-owning observer for shared objects</li>
+      <li><code>make_unique</code> and <code>make_shared</code></li>
+      <li>Transferring ownership with <code>std::move</code></li>
+    </ul>
+  </section>
+
+  <!-- S8.1 unique_ptr -->
+  <section>
+    <h2>S8.1 unique_ptr</h2>
+    <pre><code class="language-cpp">#include &lt;memory&gt;
+
+auto p = std::make_unique&lt;int&gt;(42);   // preferred over new
+std::cout &lt;&lt; *p &lt;&lt; "\n";              // 42
+
+// transfer ownership
+auto q = std::move(p);   // p is now null; q owns the int
+std::cout &lt;&lt; (p == nullptr) &lt;&lt; "\n";  // 1
+std::cout &lt;&lt; *q &lt;&lt; "\n";              // 42
+// q is destroyed when it goes out of scope - no delete needed</code></pre>
+    <t-b>
+      <code>unique_ptr</code> cannot be copied, only moved. This enforces single
+      ownership at compile time. Use it as the default smart pointer for any
+      heap-allocated object.
+    </t-b>
+  </section>
+
+  <!-- S8.2 shared_ptr -->
+  <section>
+    <h2>S8.2 shared_ptr</h2>
+    <pre><code class="language-cpp">auto s1 = std::make_shared&lt;std::string&gt;("shared data");
+auto s2 = s1;   // both own the same string; ref count = 2
+auto s3 = s1;   // ref count = 3
+
+std::cout &lt;&lt; s1.use_count() &lt;&lt; "\n";   // 3
+
+s2.reset();   // release s2's ownership; ref count = 2
+std::cout &lt;&lt; s1.use_count() &lt;&lt; "\n";   // 2
+// string destroyed when last owner (s1 or s3) goes out of scope</code></pre>
+    <t-b>
+      <code>shared_ptr</code> carries a reference-counted control block. Use it
+      when ownership genuinely needs to be shared. Its overhead (atomic ref count,
+      two pointer dereferences) is higher than <code>unique_ptr</code>.
+    </t-b>
+  </section>
+
+  <!-- S8.3 weak_ptr -->
+  <section>
+    <h2>S8.3 weak_ptr</h2>
+    <pre><code class="language-cpp">std::weak_ptr&lt;int&gt; weak;
+{
+    auto strong = std::make_shared&lt;int&gt;(99);
+    weak = strong;
+    std::cout &lt;&lt; weak.expired() &lt;&lt; "\n";   // 0
+
+    if (auto locked = weak.lock()) {        // promote to shared_ptr
+        std::cout &lt;&lt; *locked &lt;&lt; "\n";       // 99
+    }
+}   // strong destroyed
+std::cout &lt;&lt; weak.expired() &lt;&lt; "\n";   // 1</code></pre>
+    <t-b>
+      <code>weak_ptr</code> breaks cycles that would keep objects alive forever
+      through <code>shared_ptr</code>. Call <code>lock()</code> to get a
+      temporary <code>shared_ptr</code>; check for null before using it.
+    </t-b>
+  </section>
+
+  <!-- S8.4 make_unique and make_shared -->
+  <section>
+    <h2>S8.4 make_unique and make_shared</h2>
+    <pre><code class="language-cpp">// prefer these over new:
+auto p1 = std::make_unique&lt;std::string&gt;("hello");
+auto p2 = std::make_shared&lt;std::vector&lt;int&gt;&gt;(5, 0);
+
+// unique_ptr for arrays
+auto arr = std::make_unique&lt;int[]&gt;(10);
+arr[0] = 42;</code></pre>
+    <t-b>
+      <code>make_unique</code> and <code>make_shared</code> are exception-safe and
+      clearer than <code>new</code>. <code>make_shared</code> also allocates the
+      control block and the object in a single allocation, reducing overhead.
+    </t-b>
+  </section>
+
+  <!-- S8.5 Example -->
+  <section>
+    <h2>S8.5 Example - All Together</h2>
+    <pre><code class="language-cpp">// SmartPointers - unique_ptr, shared_ptr, weak_ptr.
+
+#include &lt;iostream&gt;
+#include &lt;memory&gt;
+#include &lt;string&gt;
+
+struct Node {
+    std::string name;
+    explicit Node(std::string n) : name(std::move(n)) {
+        std::cout &lt;&lt; "created " &lt;&lt; name &lt;&lt; "\n";
+    }
+    ~Node() { std::cout &lt;&lt; "destroyed " &lt;&lt; name &lt;&lt; "\n"; }
+};
+
+int main() {
+    std::cout &lt;&lt; "--- unique_ptr ---\n";
+    {
+        auto p = std::make_unique&lt;Node&gt;("alpha");
+        auto q = std::move(p);
+        std::cout &lt;&lt; "p null: " &lt;&lt; (p == nullptr) &lt;&lt; "\n";
+    }
+
+    std::cout &lt;&lt; "\n--- shared_ptr ---\n";
+    {
+        auto s1 = std::make_shared&lt;Node&gt;("beta");
+        { auto s2 = s1; std::cout &lt;&lt; "count=" &lt;&lt; s1.use_count() &lt;&lt; "\n"; }
+        std::cout &lt;&lt; "count=" &lt;&lt; s1.use_count() &lt;&lt; "\n";
+    }
+
+    std::cout &lt;&lt; "\n--- weak_ptr ---\n";
+    std::weak_ptr&lt;Node&gt; w;
+    {
+        auto s = std::make_shared&lt;Node&gt;("gamma");
+        w = s;
+        std::cout &lt;&lt; "expired=" &lt;&lt; w.expired() &lt;&lt; "\n";
+    }
+    std::cout &lt;&lt; "expired=" &lt;&lt; w.expired() &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+    <pre class="output"><code class="language-terminal">--- unique_ptr ---
+created alpha
+p null: 1
+destroyed alpha
+
+--- shared_ptr ---
+created beta
+count=2
+count=1
+destroyed beta
+
+--- weak_ptr ---
+created gamma
+expired=0
+destroyed gamma
+expired=1</code></pre>
+  </section>
+
+  <!-- S8.6 Exercise -->
+  <section>
+    <h2>S8.6 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Build a singly linked list using
+          <code>unique_ptr&lt;Node&gt;</code> where each <code>Node</code>
+          holds an <code>int</code> and a <code>unique_ptr&lt;Node&gt;</code>
+          to the next node. Write a function that sums all values.</li>
+        <li>Create three <code>shared_ptr</code> copies of the same object and
+          confirm the use count after each copy and each reset.</li>
+        <li>Create a circular reference using two <code>shared_ptr</code>s that
+          point at each other. Observe the memory leak. Fix it by changing one
+          pointer to <code>weak_ptr</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S8.7 Common Mistakes -->
+  <section>
+    <h2>S8.7 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Managing the same raw pointer with two unique_ptrs</h3>
+      <pre><code class="language-cpp">int* raw = new int(42);
+auto p1 = std::unique_ptr&lt;int&gt;(raw);
+auto p2 = std::unique_ptr&lt;int&gt;(raw);   // double-free: both will delete raw</code></pre>
+      <t-b>Always use <code>make_unique</code>. Never construct two smart pointers
+        from the same raw pointer.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Accessing a moved-from unique_ptr</h3>
+      <pre><code class="language-cpp">auto p = std::make_unique&lt;int&gt;(42);
+auto q = std::move(p);
+std::cout &lt;&lt; *p;   // undefined behavior: p is null after move</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Creating shared_ptr from raw pointer obtained from another shared_ptr</h3>
+      <pre><code class="language-cpp">auto s1 = std::make_shared&lt;int&gt;(42);
+auto s2 = std::shared_ptr&lt;int&gt;(s1.get());   // double-free: s2 doesn't know about s1</code></pre>
+      <t-b>Copy <code>s1</code> directly to get a new owner: <code>auto s2 = s1;</code>.</t-b>
+    </div>
+  </section>
+
+  <!-- S8.8 Key Terms -->
+  <section>
+    <h2>S8.8 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>unique_ptr&lt;T&gt;</td><td>Sole owner of a heap object; non-copyable, movable; no overhead over raw pointer</td></tr>
+        <tr><td>shared_ptr&lt;T&gt;</td><td>Shared ownership via reference counting; object freed when count reaches 0</td></tr>
+        <tr><td>weak_ptr&lt;T&gt;</td><td>Non-owning observer; use lock() to get a temporary shared_ptr</td></tr>
+        <tr><td>make_unique&lt;T&gt;</td><td>Creates a unique_ptr; exception-safe, preferred over new</td></tr>
+        <tr><td>make_shared&lt;T&gt;</td><td>Creates a shared_ptr; single allocation for object and control block</td></tr>
+        <tr><td>use_count()</td><td>Current reference count of a shared_ptr</td></tr>
+        <tr><td>reset()</td><td>Release ownership; pointer becomes null</td></tr>
+        <tr><td>lock()</td><td>Promote weak_ptr to shared_ptr; returns null if object was destroyed</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  C++ / Learn / StdLib &nbsp;&bull;&nbsp; Tutorial S8 &nbsp;&bull;&nbsp; Smart Pointers
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CppTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

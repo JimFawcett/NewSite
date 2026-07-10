@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Closures - Rust Anonymous Functions</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Closures &mdash; Rust Anonymous Functions</h1>
+  <t-b>Tutorial S7.0 &nbsp;&bull;&nbsp; Rust / Learn / StdLib</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- S7.0 What This Teaches -->
+  <section>
+    <h2>S7.0 What This Teaches</h2>
+    <t-b>
+      A closure is an anonymous function that can capture variables from its enclosing
+      scope. Closures are the backbone of Rust's iterator adapters, threading, and
+      callbacks. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Closure syntax and type inference</li>
+      <li>Capturing variables by reference, mutable reference, or value</li>
+      <li>The three closure traits: <code>Fn</code>, <code>FnMut</code>, <code>FnOnce</code></li>
+      <li>Passing closures to functions with trait bounds</li>
+      <li>Returning a closure from a function</li>
+    </ul>
+  </section>
+
+  <!-- S7.1 Basic Closure Syntax -->
+  <section>
+    <h2>S7.1 Basic Closure Syntax</h2>
+    <t-b>
+      Parameters are between <code>|...|</code>. The body is a single expression (or a
+      <code>{ }</code> block for multiple statements). Rust infers parameter and return
+      types from usage - explicit annotations are rarely needed:
+    </t-b>
+    <pre><code class="language-rust">let double = |x: i32| x * 2;
+println!("{}", double(5));   // 10
+
+let clamp = |x: i32, lo: i32, hi: i32| {
+    if x &lt; lo { lo } else if x &gt; hi { hi } else { x }
+};
+println!("{}", clamp(15, 0, 10));   // 10</code></pre>
+  </section>
+
+  <!-- S7.2 Capturing Variables -->
+  <section>
+    <h2>S7.2 Capturing Variables</h2>
+    <t-b>
+      Closures automatically capture variables from the surrounding scope. The capture
+      mode depends on how the variable is used:
+    </t-b>
+    <t-b>
+      <strong>By shared reference</strong> - the closure reads but does not mutate:
+    </t-b>
+    <pre><code class="language-rust">let threshold = 5;
+let above = |x: i32| x &gt; threshold;   // borrows threshold
+println!("{}", above(7));              // true</code></pre>
+    <t-b>
+      <strong>By mutable reference</strong> - the closure mutates a variable in scope:
+    </t-b>
+    <pre><code class="language-rust">let mut count = 0;
+let mut increment = || { count += 1; count };
+println!("{}", increment());  // 1
+println!("{}", increment());  // 2</code></pre>
+    <t-b>
+      <strong>By value with move</strong> - transfers ownership into the closure. Required
+      when the closure must outlive the scope where the variable was declared (and always
+      required for thread closures):
+    </t-b>
+    <pre><code class="language-rust">let greeting = String::from("hello");
+let consume = move || greeting.to_uppercase();
+println!("{}", consume());   // HELLO
+// greeting is no longer usable here</code></pre>
+  </section>
+
+  <!-- S7.3 The Three Closure Traits -->
+  <section>
+    <h2>S7.3 The Three Closure Traits</h2>
+    <t-b>
+      Rust categorizes closures by how they use their captured environment:
+    </t-b>
+    <table>
+      <thead>
+        <tr><th>Trait</th><th>Callable</th><th>What it can do with captures</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>FnOnce</td><td>Once</td><td>May move out of captured values</td></tr>
+        <tr><td>FnMut</td><td>Many times</td><td>May mutate captured values</td></tr>
+        <tr><td>Fn</td><td>Many times</td><td>Only reads captured values</td></tr>
+      </tbody>
+    </table>
+    <t-b>
+      Every closure implements at least <code>FnOnce</code>. Closures that do not move
+      out of captures also implement <code>FnMut</code>. Closures that do not mutate
+      captures also implement <code>Fn</code>.
+    </t-b>
+    <t-b>
+      When writing a function that accepts a closure, choose the least restrictive bound
+      that satisfies your needs:
+    </t-b>
+    <pre><code class="language-rust">fn apply&lt;F: Fn(i32) -> i32&gt;(f: F, x: i32) -> i32      { f(x) }
+fn apply_mut&lt;F: FnMut() -> i32&gt;(mut f: F) -> i32       { f() }
+fn apply_once&lt;F: FnOnce() -> String&gt;(f: F) -> String   { f() }</code></pre>
+  </section>
+
+  <!-- S7.4 Returning a Closure -->
+  <section>
+    <h2>S7.4 Returning a Closure</h2>
+    <t-b>
+      Functions can return closures. Use <code>impl Fn(...)</code> as the return type.
+      The <code>move</code> keyword is usually needed to move captured values into the
+      returned closure:
+    </t-b>
+    <pre><code class="language-rust">fn make_adder(n: i32) -> impl Fn(i32) -> i32 {
+    move |x| x + n   // n is moved into the closure
+}
+
+let add5  = make_adder(5);
+let add10 = make_adder(10);
+println!("{}", add5(3));    // 8
+println!("{}", add10(3));   // 13</code></pre>
+    <t-b>
+      Each call to <code>make_adder</code> produces a distinct closure that owns its own
+      copy of <code>n</code>.
+    </t-b>
+  </section>
+
+  <!-- S7.5 Closures with Iterators -->
+  <section>
+    <h2>S7.5 Closures with Iterators</h2>
+    <t-b>
+      Closures and iterators are designed to work together. The iterator adapters
+      <code>map</code>, <code>filter</code>, <code>fold</code>, and others all take
+      closures:
+    </t-b>
+    <pre><code class="language-rust">let nums = vec![1, 2, 3, 4, 5];
+let sum: i32 = nums.iter()
+    .filter(|&amp;&amp;x| x % 2 != 0)   // odd numbers
+    .map(|&amp;x| x * x)             // squared
+    .sum();
+println!("{sum}");   // 35</code></pre>
+  </section>
+
+  <!-- S7.6 Example -->
+  <section>
+    <h2>S7.6 Example - All Together</h2>
+    <pre><code class="language-rust">// Closures - demonstrates closure syntax, capture modes, and Fn/FnMut/FnOnce bounds.
+
+fn apply&lt;F: Fn(i32) -> i32&gt;(f: F, x: i32) -> i32      { f(x) }
+fn apply_mut&lt;F: FnMut() -> i32&gt;(mut f: F) -> i32       { f() }
+fn apply_once&lt;F: FnOnce() -> String&gt;(f: F) -> String   { f() }
+
+fn make_adder(n: i32) -> impl Fn(i32) -> i32 {
+    move |x| x + n
+}
+
+fn main() {
+    // --- basic closure syntax ---
+    println!("--- basic ---");
+    let double = |x: i32| x * 2;
+    println!("double(5) = {}", double(5));
+
+    let clamp = |x: i32, lo: i32, hi: i32| {
+        if x &lt; lo { lo } else if x &gt; hi { hi } else { x }
+    };
+    println!("clamp(15, 0, 10) = {}", clamp(15, 0, 10));
+
+    // --- Fn: capture by shared reference ---
+    println!("--- Fn (shared ref) ---");
+    let threshold = 5;
+    let above = |x: i32| x &gt; threshold;
+    println!("above(3): {}, above(7): {}", above(3), above(7));
+
+    // --- FnMut: capture by mutable reference ---
+    println!("--- FnMut (mut ref) ---");
+    let mut count = 0;
+    let mut increment = || { count += 1; count };
+    println!("{}", increment());
+    println!("{}", increment());
+    println!("{}", increment());
+
+    // --- Fn trait bound ---
+    println!("--- Fn bound ---");
+    println!("apply square: {}", apply(|x| x * x, 7));
+
+    // --- FnMut trait bound ---
+    println!("--- FnMut bound ---");
+    let mut total = 0;
+    println!("apply_mut: {}", apply_mut(|| { total += 10; total }));
+
+    // --- FnOnce: moves a captured value, callable only once ---
+    println!("--- FnOnce ---");
+    let greeting = String::from("hello");
+    let consume = move || greeting.to_uppercase();
+    println!("once: {}", apply_once(consume));
+
+    // --- returning a closure ---
+    println!("--- returning closure ---");
+    let add5  = make_adder(5);
+    let add10 = make_adder(10);
+    println!("add5(3)={}, add10(3)={}", add5(3), add10(3));
+
+    // --- closures with iterators ---
+    println!("--- closure + iterator ---");
+    let nums = vec![1, 2, 3, 4, 5];
+    let sum: i32 = nums.iter()
+        .filter(|&amp;&amp;x| x % 2 != 0)
+        .map(|&amp;x| x * x)
+        .sum();
+    println!("sum of odd squares: {sum}");
+}</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">--- basic ---
+double(5) = 10
+clamp(15, 0, 10) = 10
+--- Fn (shared ref) ---
+above(3): false, above(7): true
+--- FnMut (mut ref) ---
+1
+2
+3
+--- Fn bound ---
+apply square: 49
+--- FnMut bound ---
+apply_mut: 10
+--- FnOnce ---
+once: HELLO
+--- returning closure ---
+add5(3)=8, add10(3)=13
+--- closure + iterator ---
+sum of odd squares: 35</code></pre>
+  </section>
+
+  <!-- S7.7 Exercise -->
+  <section>
+    <h2>S7.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write a function <code>apply_twice&lt;F: Fn(i32) -&gt; i32&gt;(f: F, x: i32) -&gt; i32</code>
+          that applies <code>f</code> to <code>x</code> and then applies <code>f</code>
+          again to the result. Call it with a doubling closure and print the result for
+          input 3.</li>
+        <li>Write a function <code>make_multiplier(factor: i32) -&gt; impl Fn(i32) -&gt; i32</code>
+          that returns a closure multiplying its input by <code>factor</code>. Create
+          multipliers for 3 and 7 and apply each to several values.</li>
+        <li>Use <code>fold</code> with a closure to compute the product of all even numbers
+          in <code>vec![1,2,3,4,5,6]</code>. The result should be 48.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S7.8 Common Mistakes -->
+  <section>
+    <h2>S7.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Using a moved value after a move closure</h3>
+      <pre><code class="language-rust">let s = String::from("hi");
+let f = move || println!("{s}");
+println!("{s}");   // error: s was moved into f</code></pre>
+      <t-b>
+        After <code>move</code>, <code>s</code> belongs to the closure. Either clone it
+        before the closure or restructure so you do not need <code>s</code> afterward.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Calling an FnOnce closure more than once</h3>
+      <pre><code class="language-rust">let s = String::from("hi");
+let consume = move || drop(s);
+consume();
+consume();   // error: cannot call FnOnce closure more than once</code></pre>
+      <t-b>
+        A closure that moves out of a capture can only run once. Use <code>Fn</code> or
+        <code>FnMut</code> closures when repeated calls are needed.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Capturing a mutable reference in two closures at once</h3>
+      <pre><code class="language-rust">let mut count = 0;
+let inc  = || count += 1;
+let read = || println!("{count}");   // error: count already borrowed mutably by inc</code></pre>
+      <t-b>
+        Rust does not allow a mutable and any other borrow of the same variable to coexist.
+        Drop <code>inc</code> before creating <code>read</code>, or restructure to avoid
+        the overlap.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- S7.9 Key Terms -->
+  <section>
+    <h2>S7.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>closure</td><td>An anonymous function that captures variables from its enclosing scope</td></tr>
+        <tr><td>|x|</td><td>Closure parameter syntax; analogous to <code>fn(x)</code> but inlined</td></tr>
+        <tr><td>capture</td><td>A variable from the outer scope used inside the closure</td></tr>
+        <tr><td>move</td><td>Keyword that forces the closure to take ownership of all captured values</td></tr>
+        <tr><td>Fn</td><td>Closure trait: reads captures; callable many times</td></tr>
+        <tr><td>FnMut</td><td>Closure trait: mutates captures; callable many times</td></tr>
+        <tr><td>FnOnce</td><td>Closure trait: may move out of captures; callable only once</td></tr>
+        <tr><td>impl Fn(T) -&gt; R</td><td>Return type syntax for a closure returned from a function</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  Rust / Learn / StdLib &nbsp;&bull;&nbsp; Tutorial S7 &nbsp;&bull;&nbsp; Closures
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/RustTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

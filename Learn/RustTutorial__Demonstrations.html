@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demonstrations - Using the examples/ Folder</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Demonstrations &mdash; Using the examples/ Folder</h1>
+  <t-b>Tutorial D1.0 &nbsp;&bull;&nbsp; Rust / Learn / Demonstrations</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- D1.0 What This Teaches -->
+  <section>
+    <h2>D1.0 What This Teaches</h2>
+    <t-b>
+      Cargo's <code>examples/</code> directory lets you write standalone runnable programs that
+      import from your library crate, without mixing that code into <code>src/main.rs</code>
+      or the test suite. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>What the <code>examples/</code> directory is and why it exists</li>
+      <li>Single-file examples that import from the library</li>
+      <li>Multi-file examples using a local <code>mod</code> inside <code>examples/</code></li>
+      <li>The <code>cargo run --example</code> and <code>cargo build --examples</code> commands</li>
+      <li>How examples access the library crate by name</li>
+    </ul>
+  </section>
+
+  <!-- D1.1 Why examples/? -->
+  <section>
+    <h2>D1.1 Why examples/?</h2>
+    <t-b>
+      A library crate has no entry point - you cannot <code>cargo run</code> it directly. The
+      <code>examples/</code> directory solves this: each file in it compiles as its own binary
+      that can <code>use</code> any public item from the library. This keeps demonstrations out
+      of the test suite (which tests correctness) and out of <code>src/main.rs</code> (which
+      would only allow one entry point).
+    </t-b>
+    <t-b>
+      Examples are also the conventional place to show how a library is meant to be used -
+      they serve as living documentation.
+    </t-b>
+  </section>
+
+  <!-- D1.2 Project Layout -->
+  <section>
+    <h2>D1.2 Project Layout</h2>
+    <pre><code class="language-terminal">Demonstrations/
+├── Cargo.toml
+├── src/
+│   └── lib.rs          ← the library: add, clamp, word_count, Circle, Rectangle
+├── examples/
+│   ├── basic.rs        ← single-file example
+│   ├── words.rs        ← single-file example
+│   ├── shapes.rs       ← single-file example
+│   └── shapes_multifile/
+│       ├── main.rs     ← entry point for the multi-file example
+│       └── geometry.rs ← local module used only by this example</code></pre>
+    <t-b>
+      A single-file example lives directly in <code>examples/</code>. A multi-file example
+      gets its own subdirectory; Cargo looks for <code>main.rs</code> inside it as the entry
+      point.
+    </t-b>
+  </section>
+
+  <!-- D1.3 The Library -->
+  <section>
+    <h2>D1.3 The Library - src/lib.rs</h2>
+    <t-b>
+      All items examples import must be <code>pub</code>:
+    </t-b>
+    <pre><code class="language-rust">// Demonstrations/lib.rs - small public library used by examples in examples/.
+
+pub fn add(a: i32, b: i32) -> i32 { a + b }
+
+pub fn clamp(value: i32, lo: i32, hi: i32) -> i32 {
+    if value &lt; lo { lo } else if value &gt; hi { hi } else { value }
+}
+
+pub fn word_count(s: &amp;str) -> usize {
+    s.split_whitespace().count()
+}
+
+pub fn unique_words(s: &amp;str) -> Vec&lt;&amp;str&gt; {
+    let mut words: Vec&lt;&amp;str&gt; = s.split_whitespace().collect();
+    words.sort_unstable();
+    words.dedup();
+    words
+}
+
+#[derive(Debug)]
+pub struct Circle {
+    pub radius: f64,
+}
+
+impl Circle {
+    pub fn new(radius: f64) -> Self { Circle { radius } }
+    pub fn area(&amp;self) -> f64 { std::f64::consts::PI * self.radius * self.radius }
+    pub fn circumference(&amp;self) -> f64 { 2.0 * std::f64::consts::PI * self.radius }
+}
+
+#[derive(Debug)]
+pub struct Rectangle {
+    pub width: f64,
+    pub height: f64,
+}
+
+impl Rectangle {
+    pub fn new(width: f64, height: f64) -> Self { Rectangle { width, height } }
+    pub fn area(&amp;self) -> f64 { self.width * self.height }
+    pub fn perimeter(&amp;self) -> f64 { 2.0 * (self.width + self.height) }
+    pub fn is_square(&amp;self) -> bool { self.width == self.height }
+}</code></pre>
+    <t-b>
+      The crate name comes from <code>Cargo.toml</code>: <code>name = "demonstrations"</code>.
+      That name is what examples use in their <code>use</code> statements.
+    </t-b>
+  </section>
+
+  <!-- D1.4 Single-File Example: basic -->
+  <section>
+    <h2>D1.4 Single-File Example: basic.rs</h2>
+    <pre><code class="language-rust">// basic.rs - demonstrates add and clamp from the demonstrations library.
+// Run with: cargo run --example basic
+
+use demonstrations::{add, clamp};
+
+fn main() {
+    println!("=== basic example ===");
+
+    let sum = add(7, 3);
+    println!("add(7, 3)         = {sum}");
+
+    let clamped_high = clamp(25, 0, 20);
+    let clamped_low  = clamp(-5, 0, 20);
+    let clamped_mid  = clamp(10, 0, 20);
+    println!("clamp(25, 0, 20)  = {clamped_high}");
+    println!("clamp(-5, 0, 20)  = {clamped_low}");
+    println!("clamp(10, 0, 20)  = {clamped_mid}");
+}</code></pre>
+    <t-b>
+      <code>use demonstrations::{add, clamp}</code> imports by the crate name defined in
+      <code>Cargo.toml</code>. Run it with <code>cargo run --example basic</code>.
+    </t-b>
+  </section>
+
+  <!-- D1.5 Single-File Example: words -->
+  <section>
+    <h2>D1.5 Single-File Example: words.rs</h2>
+    <pre><code class="language-rust">// words.rs - demonstrates word_count and unique_words from the demonstrations library.
+// Run with: cargo run --example words
+
+use demonstrations::{word_count, unique_words};
+
+fn main() {
+    println!("=== words example ===");
+
+    let text = "the quick brown fox jumps over the lazy dog the fox";
+
+    println!("text:         \"{text}\"");
+    println!("word_count:   {}", word_count(text));
+    println!("unique words: {:?}", unique_words(text));
+}</code></pre>
+  </section>
+
+  <!-- D1.6 Single-File Example: shapes -->
+  <section>
+    <h2>D1.6 Single-File Example: shapes.rs</h2>
+    <pre><code class="language-rust">// shapes.rs - demonstrates Circle and Rectangle from the demonstrations library.
+// Run with: cargo run --example shapes
+
+use demonstrations::{Circle, Rectangle};
+
+fn main() {
+    println!("=== shapes example ===");
+
+    let c = Circle::new(5.0);
+    println!("Circle r=5:");
+    println!("  area          = {:.4}", c.area());
+    println!("  circumference = {:.4}", c.circumference());
+
+    let r = Rectangle::new(4.0, 6.0);
+    println!("Rectangle 4x6:");
+    println!("  area          = {:.1}", r.area());
+    println!("  perimeter     = {:.1}", r.perimeter());
+    println!("  is_square     = {}", r.is_square());
+
+    let sq = Rectangle::new(5.0, 5.0);
+    println!("Rectangle 5x5:");
+    println!("  is_square     = {}", sq.is_square());
+}</code></pre>
+  </section>
+
+  <!-- D1.7 Multi-File Example: shapes_multifile -->
+  <section>
+    <h2>D1.7 Multi-File Example: shapes_multifile</h2>
+    <t-b>
+      When an example needs helper modules, put it in a subdirectory. Cargo uses
+      <code>examples/shapes_multifile/main.rs</code> as the entry point and compiles the
+      subdirectory as a mini-crate:
+    </t-b>
+    <pre><code class="language-rust">// shapes_multifile/main.rs - multi-file example showing local module use within examples/.
+// Run with: cargo run --example shapes_multifile
+
+mod geometry;
+
+use demonstrations::{Circle, Rectangle};
+
+fn main() {
+    println!("=== shapes_multifile example ===");
+
+    let shapes_c = vec![Circle::new(1.0), Circle::new(3.0), Circle::new(5.0)];
+    println!("Circles:");
+    for c in &amp;shapes_c {
+        geometry::print_circle_report(c);
+    }
+
+    let shapes_r = vec![
+        Rectangle::new(2.0, 8.0),
+        Rectangle::new(5.0, 5.0),
+        Rectangle::new(3.0, 7.0),
+    ];
+    println!("Rectangles:");
+    for r in &amp;shapes_r {
+        geometry::print_rect_report(r);
+    }
+}</code></pre>
+    <t-b>
+      <code>mod geometry;</code> pulls in <code>geometry.rs</code> from the same
+      <code>shapes_multifile/</code> directory. That module can also use items from the
+      library:
+    </t-b>
+    <pre><code class="language-rust">// geometry.rs - local helper module for the shapes_multifile example.
+
+use demonstrations::{Circle, Rectangle};
+
+pub fn print_circle_report(c: &amp;Circle) {
+    println!("  {:?}", c);
+    println!("    area          = {:.4}", c.area());
+    println!("    circumference = {:.4}", c.circumference());
+}
+
+pub fn print_rect_report(r: &amp;Rectangle) {
+    println!("  {:?}", r);
+    println!("    area          = {:.2}", r.area());
+    println!("    perimeter     = {:.2}", r.perimeter());
+    println!("    is_square     = {}", r.is_square());
+}</code></pre>
+  </section>
+
+  <!-- D1.8 cargo Commands -->
+  <section>
+    <h2>D1.8 cargo Commands</h2>
+    <table>
+      <thead>
+        <tr><th>Command</th><th>What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>cargo run --example basic</code></td><td>Compile and run examples/basic.rs</td></tr>
+        <tr><td><code>cargo run --example words</code></td><td>Compile and run examples/words.rs</td></tr>
+        <tr><td><code>cargo run --example shapes_multifile</code></td><td>Compile and run examples/shapes_multifile/main.rs</td></tr>
+        <tr><td><code>cargo build --examples</code></td><td>Build all examples without running them</td></tr>
+        <tr><td><code>cargo test</code></td><td>Runs unit and integration tests; does NOT run examples</td></tr>
+      </tbody>
+    </table>
+    <t-b>
+      Example binaries land in <code>target/debug/examples/</code>. You can run them directly
+      from there if you need to pass arguments that <code>cargo run</code> would interpret
+      as its own flags.
+    </t-b>
+  </section>
+
+  <!-- D1.9 How Examples Access the Library -->
+  <section>
+    <h2>D1.9 How Examples Access the Library</h2>
+    <t-b>
+      Cargo automatically links each example against the library defined in the same
+      <code>Cargo.toml</code>. The import path is the crate name from <code>Cargo.toml</code>:
+    </t-b>
+    <pre><code class="language-terminal">[package]
+name = "demonstrations"   ← this becomes the crate name in use statements</code></pre>
+    <pre><code class="language-rust">use demonstrations::add;   // works in any file under examples/</code></pre>
+    <t-b>
+      Only <code>pub</code> items are accessible. Private functions, fields, and modules are
+      invisible to examples just as they would be to an external crate.
+    </t-b>
+  </section>
+
+  <!-- D1.10 Examples vs. Tests vs. main.rs -->
+  <section>
+    <h2>D1.10 Examples vs. Tests vs. main.rs</h2>
+    <table style="width:max-content; max-width:90%;">
+      <thead>
+        <tr><th style="width:14rem;">Location</th><th style="width:auto;">Purpose</th><th style="width:14rem;">Run with</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>examples/</td><td>Demonstrate library usage; living documentation</td><td>cargo run --example &lt;name&gt;</td></tr>
+        <tr><td>tests/</td><td>Integration tests; verify public API behavior</td><td>cargo test</td></tr>
+        <tr><td>#[cfg(test)] mod tests</td><td>Unit tests; verify internal logic</td><td>cargo test</td></tr>
+        <tr><td>src/main.rs</td><td>Binary entry point; one program per package</td><td>cargo run</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- D1.11 Expected Outputs -->
+  <section>
+    <h2>D1.11 Expected Outputs</h2>
+    <t-b><code>cargo run --example basic</code></t-b>
+    <pre class="output"><code class="language-terminal">=== basic example ===
+add(7, 3)         = 10
+clamp(25, 0, 20)  = 20
+clamp(-5, 0, 20)  = 0
+clamp(10, 0, 20)  = 10</code></pre>
+
+    <t-b><code>cargo run --example words</code></t-b>
+    <pre class="output"><code class="language-terminal">=== words example ===
+text:         "the quick brown fox jumps over the lazy dog the fox"
+word_count:   11
+unique words: ["brown", "dog", "fox", "jumps", "lazy", "over", "quick", "the"]</code></pre>
+
+    <t-b><code>cargo run --example shapes</code></t-b>
+    <pre class="output"><code class="language-terminal">=== shapes example ===
+Circle r=5:
+  area          = 78.5398
+  circumference = 31.4159
+Rectangle 4x6:
+  area          = 24.0
+  perimeter     = 20.0
+  is_square     = false
+Rectangle 5x5:
+  is_square     = true</code></pre>
+
+    <t-b><code>cargo run --example shapes_multifile</code></t-b>
+    <pre class="output"><code class="language-terminal">=== shapes_multifile example ===
+Circles:
+  Circle { radius: 1.0 }
+    area          = 3.1416
+    circumference = 6.2832
+  Circle { radius: 3.0 }
+    area          = 28.2743
+    circumference = 18.8496
+  Circle { radius: 5.0 }
+    area          = 78.5398
+    circumference = 31.4159
+Rectangles:
+  Rectangle { width: 2.0, height: 8.0 }
+    area          = 16.00
+    perimeter     = 20.00
+    is_square     = false
+  Rectangle { width: 5.0, height: 5.0 }
+    area          = 25.00
+    perimeter     = 20.00
+    is_square     = true
+  Rectangle { width: 3.0, height: 7.0 }
+    area          = 21.00
+    perimeter     = 20.00
+    is_square     = false</code></pre>
+  </section>
+
+  <!-- D1.12 Exercise -->
+  <section>
+    <h2>D1.12 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Add a <code>pub fn median(values: &amp;mut Vec&lt;f64&gt;) -&gt; Option&lt;f64&gt;</code>
+          function to <code>lib.rs</code>. It should sort the vec in place and return
+          the middle element (or the average of the two middle elements for even-length
+          vecs). Return <code>None</code> for an empty vec.</li>
+        <li>Write a new single-file example <code>examples/stats.rs</code> that creates
+          several <code>Vec&lt;f64&gt;</code> values, calls <code>median</code> on each,
+          and prints the result. Run it with <code>cargo run --example stats</code>.</li>
+        <li>Add a multi-file example <code>examples/report/</code> with a
+          <code>main.rs</code> entry point and a <code>format.rs</code> helper module.
+          <code>format.rs</code> should contain a <code>pub fn row(label: &amp;str, value: f64)</code>
+          that prints a padded label-value pair. Call it from <code>main.rs</code> to
+          print a formatted summary of several shapes.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- D1.13 Common Mistakes -->
+  <section>
+    <h2>D1.13 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Forgetting lib.rs - examples import a library, not main.rs</h3>
+      <t-b>
+        If your package only has <code>src/main.rs</code>, there is no library crate for
+        examples to import. Add <code>src/lib.rs</code> and move the shared code there. A
+        package can have both <code>main.rs</code> and <code>lib.rs</code>.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Wrong crate name in use statements</h3>
+      <pre><code class="language-rust">use my_project::add;   // error if Cargo.toml says name = "demonstrations"
+use demonstrations::add; // correct</code></pre>
+      <t-b>
+        The name in the <code>use</code> path must exactly match the <code>name</code> field
+        in <code>[package]</code> of <code>Cargo.toml</code>. Hyphens in the name become
+        underscores: <code>my-lib</code> in Cargo.toml is <code>my_lib</code> in code.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Naming a single-file example the same as a subdirectory example</h3>
+      <pre><code class="language-terminal">examples/shapes.rs          ← single-file example named "shapes"
+examples/shapes/main.rs     ← multi-file example also named "shapes" ← conflict</code></pre>
+      <t-b>
+        Each example must have a unique name. Use distinct names for single-file and
+        multi-file examples. Cargo will error if both exist.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Expecting cargo test to run examples</h3>
+      <t-b>
+        <code>cargo test</code> runs unit tests (<code>#[test]</code>) and integration tests
+        (<code>tests/</code>). It does not run examples. Use
+        <code>cargo run --example &lt;name&gt;</code> or
+        <code>cargo build --examples</code> to compile examples.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Accessing private items from examples</h3>
+      <pre><code class="language-rust">use demonstrations::internal_helper;  // error: function is not pub</code></pre>
+      <t-b>
+        Examples are external callers - they can only access <code>pub</code> items. Mark
+        anything the examples need as <code>pub</code> in <code>lib.rs</code>.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- D1.14 Key Terms -->
+  <section>
+    <h2>D1.14 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>examples/</td><td>Cargo-recognized directory; each file (or subdirectory with main.rs) compiles as a standalone binary</td></tr>
+        <tr><td>cargo run --example &lt;name&gt;</td><td>Compile and run the named example</td></tr>
+        <tr><td>cargo build --examples</td><td>Build all examples without running</td></tr>
+        <tr><td>crate name</td><td>The <code>name</code> field in <code>[package]</code> of <code>Cargo.toml</code>; used in <code>use</code> paths</td></tr>
+        <tr><td>single-file example</td><td>One <code>.rs</code> file directly in <code>examples/</code>; the filename is the example name</td></tr>
+        <tr><td>multi-file example</td><td>A subdirectory in <code>examples/</code> with <code>main.rs</code> as the entry point</td></tr>
+        <tr><td>pub</td><td>Visibility modifier required for any item accessible from examples or external crates</td></tr>
+        <tr><td>lib.rs</td><td>Root of the library crate; must exist for examples to import anything</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  Rust / Learn / Demonstrations &nbsp;&bull;&nbsp; Tutorial D1 &nbsp;&bull;&nbsp; Demonstrations
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/RustTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

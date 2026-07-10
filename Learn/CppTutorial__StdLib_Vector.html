@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vector - std::vector</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Vector &mdash; std::vector</h1>
+  <t-b>Tutorial S2.0 &nbsp;&bull;&nbsp; C++ / Learn / StdLib</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- S2.0 What This Teaches -->
+  <section>
+    <h2>S2.0 What This Teaches</h2>
+    <t-b>
+      <code>std::vector&lt;T&gt;</code> is the default dynamic array in C++. This
+      tutorial covers:
+    </t-b>
+    <ul>
+      <li>Creating and initializing vectors</li>
+      <li><code>push_back</code>, <code>pop_back</code>, <code>insert</code>, <code>erase</code></li>
+      <li>Element access: <code>[]</code>, <code>at()</code>, <code>front()</code>, <code>back()</code></li>
+      <li>Size vs capacity</li>
+      <li>Iterating with range-for and algorithms</li>
+    </ul>
+  </section>
+
+  <!-- S2.1 Creating a Vector -->
+  <section>
+    <h2>S2.1 Creating a Vector</h2>
+    <pre><code class="language-cpp">std::vector&lt;int&gt; v1 = {3, 1, 4, 1, 5, 9};   // initializer list
+std::vector&lt;int&gt; v2(5, 0);                   // five zeros
+std::vector&lt;int&gt; v3;                         // empty
+
+// reserve capacity upfront to avoid repeated reallocation
+std::vector&lt;int&gt; v4;
+v4.reserve(100);</code></pre>
+  </section>
+
+  <!-- S2.2 Adding and Removing -->
+  <section>
+    <h2>S2.2 push_back, pop_back, emplace_back</h2>
+    <pre><code class="language-cpp">std::vector&lt;int&gt; v;
+v.push_back(10);     // append by copy/move
+v.push_back(20);
+v.push_back(30);     // {10, 20, 30}
+
+v.pop_back();        // remove last element: {10, 20}
+
+v.emplace_back(30);  // construct in-place (more efficient for complex types)</code></pre>
+  </section>
+
+  <!-- S2.3 Element Access -->
+  <section>
+    <h2>S2.3 Element Access</h2>
+    <pre><code class="language-cpp">std::vector&lt;int&gt; v = {10, 20, 30};
+
+v[1];         // 20 - unchecked; undefined behavior if out of range
+v.at(1);      // 20 - throws std::out_of_range if index invalid
+v.front();    // 10 - first element
+v.back();     // 30 - last element
+v.data();     // raw pointer to underlying array</code></pre>
+  </section>
+
+  <!-- S2.4 Size and Capacity -->
+  <section>
+    <h2>S2.4 Size and Capacity</h2>
+    <pre><code class="language-cpp">std::vector&lt;int&gt; v;
+v.reserve(10);          // allocate space for 10 without changing size
+
+v.push_back(1);
+v.push_back(2);
+std::cout &lt;&lt; v.size();      // 2  - number of elements
+std::cout &lt;&lt; v.capacity();  // 10 - allocated slots
+
+v.shrink_to_fit();      // release excess capacity</code></pre>
+    <t-b>
+      When a vector runs out of capacity it reallocates to a larger buffer (typically
+      2×). <code>reserve(n)</code> before filling avoids repeated reallocations.
+    </t-b>
+  </section>
+
+  <!-- S2.5 Insert and Erase -->
+  <section>
+    <h2>S2.5 insert and erase</h2>
+    <pre><code class="language-cpp">std::vector&lt;int&gt; v = {1, 2, 4, 5};
+v.insert(v.begin() + 2, 3);   // {1, 2, 3, 4, 5}
+v.erase(v.begin() + 2);       // {1, 2, 4, 5}</code></pre>
+    <t-b>
+      Both are O(n) because elements after the insertion/deletion point must be
+      shifted. Use <code>push_back</code>/<code>pop_back</code> for O(1) operations
+      at the end.
+    </t-b>
+  </section>
+
+  <!-- S2.6 Example -->
+  <section>
+    <h2>S2.6 Example - All Together</h2>
+    <pre><code class="language-cpp">// Vector - creation, access, iteration, modification.
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;algorithm&gt;
+#include &lt;numeric&gt;
+
+int main() {
+    std::vector&lt;int&gt; v = {3, 1, 4, 1, 5, 9, 2, 6};
+
+    std::sort(v.begin(), v.end());
+    std::cout &lt;&lt; "sorted: ";
+    for (int x : v) std::cout &lt;&lt; x &lt;&lt; " ";
+    std::cout &lt;&lt; "\n";
+
+    v.erase(std::unique(v.begin(), v.end()), v.end());  // remove duplicates
+    std::cout &lt;&lt; "unique: ";
+    for (int x : v) std::cout &lt;&lt; x &lt;&lt; " ";
+    std::cout &lt;&lt; "\n";
+
+    int sum = std::accumulate(v.begin(), v.end(), 0);
+    std::cout &lt;&lt; "sum=" &lt;&lt; sum &lt;&lt; " size=" &lt;&lt; v.size() &lt;&lt; "\n";
+
+    v.push_back(99);
+    v.pop_back();
+
+    std::cout &lt;&lt; "at(0)=" &lt;&lt; v.at(0) &lt;&lt; " back=" &lt;&lt; v.back() &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+    <pre class="output"><code class="language-terminal">sorted: 1 1 2 3 4 5 6 9
+unique: 1 2 3 4 5 6 9
+sum=30 size=7
+at(0)=1 back=9</code></pre>
+  </section>
+
+  <!-- S2.7 Exercise -->
+  <section>
+    <h2>S2.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Create a <code>std::vector&lt;double&gt;</code> of 10 values and write
+          a function that returns the mean and the median.</li>
+        <li>Use <code>std::remove_if</code> followed by <code>erase</code> to remove
+          all odd numbers from a vector (the erase-remove idiom).</li>
+        <li>Use <code>reserve</code> to pre-allocate space for 1 000 000 elements
+          and fill with <code>push_back</code>. Repeat without <code>reserve</code>
+          and observe the timing difference.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S2.8 Common Mistakes -->
+  <section>
+    <h2>S2.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Using [] with an out-of-range index</h3>
+      <pre><code class="language-cpp">std::vector&lt;int&gt; v = {1, 2, 3};
+std::cout &lt;&lt; v[5];   // undefined behavior: no bounds check</code></pre>
+      <t-b>Use <code>v.at(5)</code> during development to get a catchable exception.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Iterator invalidation after push_back</h3>
+      <pre><code class="language-cpp">auto it = v.begin();
+v.push_back(42);   // may reallocate; it is now dangling
+std::cout &lt;&lt; *it;  // undefined behavior</code></pre>
+      <t-b>Do not hold iterators or pointers into a vector across any operation
+        that may reallocate.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Confusing size and capacity</h3>
+      <t-b>
+        <code>size()</code> is the number of elements. <code>capacity()</code> is
+        the number of elements that fit without reallocation. After
+        <code>reserve(100)</code>, <code>size()</code> is still 0.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- S2.9 Key Terms -->
+  <section>
+    <h2>S2.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>push_back</td><td>Append an element; may reallocate if at capacity</td></tr>
+        <tr><td>emplace_back</td><td>Construct element in-place at the end; avoids extra copy</td></tr>
+        <tr><td>pop_back</td><td>Remove the last element; O(1)</td></tr>
+        <tr><td>at(i)</td><td>Bounds-checked element access; throws std::out_of_range</td></tr>
+        <tr><td>reserve(n)</td><td>Ensure capacity for n elements without changing size</td></tr>
+        <tr><td>size()</td><td>Number of elements currently stored</td></tr>
+        <tr><td>capacity()</td><td>Elements that fit without reallocation</td></tr>
+        <tr><td>iterator invalidation</td><td>Reallocation makes existing iterators/pointers invalid</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  C++ / Learn / StdLib &nbsp;&bull;&nbsp; Tutorial S2 &nbsp;&bull;&nbsp; Vector
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CppTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

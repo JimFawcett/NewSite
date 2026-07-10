@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Map - std::unordered_map</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Map &mdash; std::unordered_map</h1>
+  <t-b>Tutorial S3.0 &nbsp;&bull;&nbsp; C++ / Learn / StdLib</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- S3.0 What This Teaches -->
+  <section>
+    <h2>S3.0 What This Teaches</h2>
+    <t-b>
+      The standard library provides two map types. This tutorial covers:
+    </t-b>
+    <ul>
+      <li><code>std::unordered_map</code> - O(1) average, hash-based, unordered</li>
+      <li><code>std::map</code> - O(log n), tree-based, sorted by key</li>
+      <li>Inserting and looking up values</li>
+      <li>The <code>[]</code> operator vs <code>find()</code></li>
+      <li>Structured bindings for clean iteration</li>
+    </ul>
+  </section>
+
+  <!-- S3.1 unordered_map vs map -->
+  <section>
+    <h2>S3.1 unordered_map vs map</h2>
+    <table>
+      <thead>
+        <tr><th></th><th>unordered_map</th><th>map</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Lookup</td><td>O(1) average</td><td>O(log n)</td></tr>
+        <tr><td>Order</td><td>Unspecified</td><td>Sorted by key</td></tr>
+        <tr><td>Key requirement</td><td>Hashable + equality</td><td>Less-than comparable</td></tr>
+        <tr><td>Use when</td><td>Fast lookup matters most</td><td>Ordered iteration needed</td></tr>
+      </tbody>
+    </table>
+    <t-b>
+      Default to <code>unordered_map</code>. Switch to <code>map</code> when
+      you need keys in sorted order.
+    </t-b>
+  </section>
+
+  <!-- S3.2 Inserting and Looking Up -->
+  <section>
+    <h2>S3.2 Inserting and Looking Up</h2>
+    <pre><code class="language-cpp">std::unordered_map&lt;std::string, int&gt; scores;
+
+// insert
+scores["Alice"] = 95;
+scores.insert({"Bob", 87});
+scores.emplace("Carol", 92);
+
+// safe lookup with find
+auto it = scores.find("Alice");
+if (it != scores.end())
+    std::cout &lt;&lt; it-&gt;second &lt;&lt; "\n";   // 95</code></pre>
+  </section>
+
+  <!-- S3.3 [] vs find -->
+  <section>
+    <h2>S3.3 The [] Operator vs find()</h2>
+    <pre><code class="language-cpp">scores["Dave"];         // inserts "Dave" with default value 0 if not present
+scores["Dave"] += 10;   // now 10
+
+// find does NOT insert
+auto it = scores.find("Eve");
+if (it == scores.end())
+    std::cout &lt;&lt; "Eve not found\n";
+
+// count: returns 0 or 1 (maps have unique keys)
+if (scores.count("Alice"))
+    std::cout &lt;&lt; "Alice exists\n";</code></pre>
+    <t-b>
+      Avoid <code>[]</code> for reads when you are not certain the key exists -
+      it inserts a default-constructed value if missing, silently growing the map.
+      Use <code>find()</code> or <code>count()</code> instead.
+    </t-b>
+  </section>
+
+  <!-- S3.4 Iteration -->
+  <section>
+    <h2>S3.4 Iteration</h2>
+    <pre><code class="language-cpp">for (const auto&amp; [key, value] : scores)
+    std::cout &lt;&lt; key &lt;&lt; ": " &lt;&lt; value &lt;&lt; "\n";
+
+// map iterates in sorted key order; unordered_map order is unspecified</code></pre>
+    <t-b>
+      The structured binding <code>[key, value]</code> (C++17) unpacks the
+      <code>std::pair&lt;const Key, Value&gt;</code> stored at each position.
+    </t-b>
+  </section>
+
+  <!-- S3.5 Example -->
+  <section>
+    <h2>S3.5 Example - All Together</h2>
+    <pre><code class="language-cpp">// Map - std::unordered_map and std::map.
+
+#include &lt;iostream&gt;
+#include &lt;unordered_map&gt;
+#include &lt;map&gt;
+#include &lt;string&gt;
+
+int main() {
+    // word frequency count
+    std::unordered_map&lt;std::string, int&gt; freq;
+    for (const auto&amp; word : {"the", "cat", "sat", "on", "the", "mat", "the"})
+        freq[word]++;
+
+    std::cout &lt;&lt; "frequencies:\n";
+    for (const auto&amp; [word, count] : freq)
+        std::cout &lt;&lt; "  " &lt;&lt; word &lt;&lt; ": " &lt;&lt; count &lt;&lt; "\n";
+
+    // sorted map for ordered output
+    std::map&lt;std::string, int&gt; sorted_freq(freq.begin(), freq.end());
+    std::cout &lt;&lt; "\nsorted:\n";
+    for (const auto&amp; [word, count] : sorted_freq)
+        std::cout &lt;&lt; "  " &lt;&lt; word &lt;&lt; ": " &lt;&lt; count &lt;&lt; "\n";
+
+    sorted_freq.erase("on");
+    std::cout &lt;&lt; "\nsize after erase: " &lt;&lt; sorted_freq.size() &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+    <pre class="output"><code class="language-terminal">frequencies:
+  the: 3
+  mat: 1
+  on: 1
+  sat: 1
+  cat: 1
+
+sorted:
+  cat: 1
+  mat: 1
+  on: 1
+  sat: 1
+  the: 3
+
+size after erase: 4</code></pre>
+    <t-b>Note: <code>unordered_map</code> iteration order varies between runs.</t-b>
+  </section>
+
+  <!-- S3.6 Exercise -->
+  <section>
+    <h2>S3.6 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Count the character frequencies of a string using an
+          <code>unordered_map&lt;char, int&gt;</code>. Print the results sorted
+          by frequency (highest first) using a <code>vector</code> of pairs.</li>
+        <li>Build a phone book using <code>map&lt;std::string, std::string&gt;</code>
+          (name → number). Add, look up, and remove entries, then iterate in
+          alphabetical order.</li>
+        <li>Use <code>emplace</code> instead of <code>insert</code> or <code>[]</code>
+          to add entries. Confirm it does not overwrite an existing key.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S3.7 Common Mistakes -->
+  <section>
+    <h2>S3.7 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>[] on a const map</h3>
+      <pre><code class="language-cpp">const std::unordered_map&lt;std::string, int&gt; m = {{"a", 1}};
+m["a"];   // error: [] is not const because it may insert</code></pre>
+      <t-b>Use <code>m.at("a")</code> or <code>m.find("a")</code> on const maps.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Assuming insertion order</h3>
+      <t-b>
+        <code>unordered_map</code> does not preserve insertion order. If you need
+        predictable order use <code>map</code> (sorted) or maintain a separate
+        <code>vector</code> of keys.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Using a non-hashable type as key</h3>
+      <pre><code class="language-cpp">struct Point { int x, y; };
+std::unordered_map&lt;Point, int&gt; m;   // error: no std::hash for Point</code></pre>
+      <t-b>Provide a custom hash or use <code>std::map</code> with a custom
+        comparator.</t-b>
+    </div>
+  </section>
+
+  <!-- S3.8 Key Terms -->
+  <section>
+    <h2>S3.8 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>unordered_map</td><td>Hash-based map; O(1) average lookup; unordered</td></tr>
+        <tr><td>map</td><td>Tree-based map; O(log n) lookup; sorted by key</td></tr>
+        <tr><td>find(key)</td><td>Returns iterator to element or end(); does not insert</td></tr>
+        <tr><td>operator[]</td><td>Inserts default value if key missing; not safe on const map</td></tr>
+        <tr><td>at(key)</td><td>Bounds-checked lookup; throws std::out_of_range if missing</td></tr>
+        <tr><td>count(key)</td><td>Returns 0 or 1 for maps (maps have unique keys)</td></tr>
+        <tr><td>structured binding</td><td>auto&amp; [key, value] unpacks pair into named variables (C++17)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  C++ / Learn / StdLib &nbsp;&bull;&nbsp; Tutorial S3 &nbsp;&bull;&nbsp; Map
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CppTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

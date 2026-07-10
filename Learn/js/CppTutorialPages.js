@@ -1,0 +1,25 @@
+// CppTutorialPages.js - page list for the C++ Learn track dropdown
+const tutorialPages = [
+  { name: "Intro - Tutorial index", url: "Learn_intro.html" },
+  { name: "Hello - Your First C++ Program", url: "CppTutorial__Hello.html" },
+  { name: "Tools - C++ Build Toolchain", url: "CppTutorial__Tools.html" },
+  { name: "Variables - Types and Initialization", url: "CppTutorial__Variables.html" },
+  { name: "Functions - Definitions and Overloading", url: "CppTutorial__Functions.html" },
+  { name: "Control Flow - Execution Control", url: "CppTutorial__Control_Flow.html" },
+  { name: "Classes - Data Grouping and Methods", url: "CppTutorial__Classes.html" },
+  { name: "Relationships - Inheritance, Composition, Aggregation", url: "CppTutorial__Relationships.html" },
+  { name: "Enums - enum and enum class", url: "CppTutorial__Enums.html" },
+  { name: "Memory - Pointers, References, RAII", url: "CppTutorial__Memory.html" },
+  { name: "Templates - Generic Programming", url: "CppTutorial__Templates.html" },
+  { name: "Testing - Unit Testing", url: "CppTutorial__Testing.html" },
+  { name: "Strings - std::string and string_view", url: "CppTutorial__StdLib_Strings.html" },
+  { name: "Vector - std::vector", url: "CppTutorial__StdLib_Vector.html" },
+  { name: "Map - std::unordered_map", url: "CppTutorial__StdLib_Map.html" },
+  { name: "Exceptions - try, catch, throw", url: "CppTutorial__StdLib_Exceptions.html" },
+  { name: "File I/O - fstream Operations", url: "CppTutorial__StdLib_FileIO.html" },
+  { name: "Algorithms - STL Algorithms", url: "CppTutorial__StdLib_Algorithms.html" },
+  { name: "Lambdas - Anonymous Functions", url: "CppTutorial__StdLib_Lambdas.html" },
+  { name: "Smart Pointers - unique_ptr, shared_ptr", url: "CppTutorial__StdLib_SmartPointers.html" },
+  { name: "Threads - std::thread and mutex", url: "CppTutorial__StdLib_Threads.html" },
+  { name: "Formatting - std::format and ostream", url: "CppTutorial__StdLib_Formatting.html" }
+];

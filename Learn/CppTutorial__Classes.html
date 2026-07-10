@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Classes - Data Grouping and Methods</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Classes &mdash; Data Grouping and Methods</h1>
+  <t-b>Tutorial 6.0 &nbsp;&bull;&nbsp; C++ / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- 6.0 What This Teaches -->
+  <section>
+    <h2>6.0 What This Teaches</h2>
+    <t-b>
+      Classes bundle data and the functions that operate on it into one unit.
+      This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Defining a class with data members and member functions</li>
+      <li>Constructors and member initializer lists</li>
+      <li><code>public</code> and <code>private</code> access specifiers</li>
+      <li><code>const</code> member functions</li>
+      <li>Destructors and RAII</li>
+      <li>The <code>explicit</code> keyword</li>
+    </ul>
+  </section>
+
+  <!-- 6.1 Defining a Class -->
+  <section>
+    <h2>6.1 Defining a Class</h2>
+    <pre><code class="language-cpp">class Point {
+public:
+    double x, y;
+
+    Point(double x, double y) : x(x), y(y) {}
+
+    void print() const {
+        std::cout &lt;&lt; "(" &lt;&lt; x &lt;&lt; ", " &lt;&lt; y &lt;&lt; ")";
+    }
+};</code></pre>
+    <t-b>
+      The class body ends with a semicolon. Members are <code>private</code> by
+      default; <code>public:</code> makes them accessible from outside the class.
+    </t-b>
+  </section>
+
+  <!-- 6.2 Constructors and Initializer Lists -->
+  <section>
+    <h2>6.2 Constructors and Member Initializer Lists</h2>
+    <pre><code class="language-cpp">class Rectangle {
+public:
+    double width, height;
+
+    Rectangle(double w, double h) : width(w), height(h) {}
+
+    // default constructor
+    Rectangle() : width(1.0), height(1.0) {}
+};</code></pre>
+    <t-b>
+      The <code>: width(w), height(h)</code> part is the member initializer list.
+      It initializes members before the constructor body runs. Prefer it over
+      assignment inside the body - it is more efficient and required for
+      <code>const</code> members and references.
+    </t-b>
+  </section>
+
+  <!-- 6.3 Access Specifiers -->
+  <section>
+    <h2>6.3 public and private</h2>
+    <pre><code class="language-cpp">class BankAccount {
+public:
+    explicit BankAccount(double initial) : balance_(initial) {}
+
+    void    deposit(double amount)  { balance_ += amount; }
+    bool    withdraw(double amount) {
+        if (amount &gt; balance_) return false;
+        balance_ -= amount;
+        return true;
+    }
+    double balance() const { return balance_; }
+
+private:
+    double balance_;   // only accessible through public methods
+};</code></pre>
+    <t-b>
+      Private data members are a convention enforced by the compiler: external code
+      cannot read or write <code>balance_</code> directly. This lets the class
+      guarantee invariants (e.g., balance never goes negative).
+    </t-b>
+  </section>
+
+  <!-- 6.4 const Member Functions -->
+  <section>
+    <h2>6.4 const Member Functions</h2>
+    <pre><code class="language-cpp">double area() const { return width * height; }</code></pre>
+    <t-b>
+      A <code>const</code> member function promises not to modify the object. It can
+      be called on both <code>const</code> and non-<code>const</code> objects.
+      Non-<code>const</code> member functions can only be called on non-<code>const</code>
+      objects. Mark every function that does not modify state as <code>const</code>.
+    </t-b>
+  </section>
+
+  <!-- 6.5 Destructors -->
+  <section>
+    <h2>6.5 Destructors</h2>
+    <pre><code class="language-cpp">class Logger {
+public:
+    Logger() { std::cout &lt;&lt; "Logger opened\n"; }
+    ~Logger() { std::cout &lt;&lt; "Logger closed\n"; }  // called automatically on scope exit
+};
+
+void demo() {
+    Logger log;    // "Logger opened"
+    // ... use log ...
+}   // "Logger closed" - destructor called here automatically</code></pre>
+    <t-b>
+      The destructor <code>~ClassName()</code> runs automatically when the object
+      goes out of scope or is deleted. This is RAII (Resource Acquisition Is
+      Initialization) - resources acquired in the constructor are released in the
+      destructor.
+    </t-b>
+  </section>
+
+  <!-- 6.6 Example -->
+  <section>
+    <h2>6.6 Example - All Together</h2>
+    <pre><code class="language-cpp">// Classes - data grouping, constructors, member functions, access specifiers.
+
+#include &lt;iostream&gt;
+#include &lt;cmath&gt;
+
+class Point {
+public:
+    double x, y;
+    Point(double x, double y) : x(x), y(y) {}
+
+    double distance_to(const Point&amp; other) const {
+        double dx = x - other.x, dy = y - other.y;
+        return std::sqrt(dx * dx + dy * dy);
+    }
+    void print() const { std::cout &lt;&lt; "(" &lt;&lt; x &lt;&lt; ", " &lt;&lt; y &lt;&lt; ")"; }
+};
+
+class BankAccount {
+public:
+    explicit BankAccount(double initial) : balance_(initial) {}
+    void deposit(double amount)  { balance_ += amount; }
+    bool withdraw(double amount) {
+        if (amount &gt; balance_) return false;
+        balance_ -= amount; return true;
+    }
+    double balance() const { return balance_; }
+private:
+    double balance_;
+};
+
+int main() {
+    Point p1{1.0, 2.0}, p2{4.0, 6.0};
+    p1.print(); std::cout &lt;&lt; " to "; p2.print();
+    std::cout &lt;&lt; " = " &lt;&lt; p1.distance_to(p2) &lt;&lt; "\n";
+
+    BankAccount acct{100.0};
+    acct.deposit(50.0);
+    std::cout &lt;&lt; "balance: " &lt;&lt; acct.balance() &lt;&lt; "\n";
+    std::cout &lt;&lt; "withdraw 200: " &lt;&lt; (acct.withdraw(200.0) ? "ok" : "no") &lt;&lt; "\n";
+    std::cout &lt;&lt; "withdraw 75:  " &lt;&lt; (acct.withdraw(75.0)  ? "ok" : "no") &lt;&lt; "\n";
+    std::cout &lt;&lt; "balance: " &lt;&lt; acct.balance() &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+    <pre class="output"><code class="language-terminal">(1, 2) to (4, 6) = 5
+balance: 150
+withdraw 200: no
+withdraw 75:  ok
+balance: 75</code></pre>
+  </section>
+
+  <!-- 6.7 Exercise -->
+  <section>
+    <h2>6.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Define a <code>Circle</code> class with a private <code>radius_</code>
+          member, a constructor, and <code>const</code> methods <code>area()</code>
+          and <code>circumference()</code>.</li>
+        <li>Add a <code>scale(double factor)</code> method that multiplies the radius
+          by <code>factor</code>. Confirm it is not <code>const</code>.</li>
+        <li>Write a destructor that prints <code>"Circle destroyed"</code> and create
+          a <code>Circle</code> in a nested block to observe when it fires.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6.8 Common Mistakes -->
+  <section>
+    <h2>6.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Forgetting the semicolon after the class body</h3>
+      <pre><code class="language-cpp">class Foo {
+    int x;
+}   // error: expected ';' after class definition</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Calling a non-const method on a const object</h3>
+      <pre><code class="language-cpp">const BankAccount acct{100.0};
+acct.deposit(50.0);   // error: cannot call non-const member function on const object</code></pre>
+      <t-b>Mark all methods that do not modify state as <code>const</code>.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Assignment in constructor body instead of initializer list</h3>
+      <pre><code class="language-cpp">// inefficient: default-constructs first, then assigns
+Rectangle(double w, double h) { width = w; height = h; }
+
+// preferred: direct initialization
+Rectangle(double w, double h) : width(w), height(h) {}</code></pre>
+    </div>
+  </section>
+
+  <!-- 6.9 Key Terms -->
+  <section>
+    <h2>6.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>class</td><td>User-defined type bundling data and functions</td></tr>
+        <tr><td>constructor</td><td>Special function called when an object is created</td></tr>
+        <tr><td>destructor</td><td>Special function called when an object is destroyed</td></tr>
+        <tr><td>member initializer list</td><td>Initializes members before the constructor body; preferred over assignment</td></tr>
+        <tr><td>public</td><td>Access specifier: members accessible from anywhere</td></tr>
+        <tr><td>private</td><td>Access specifier: members accessible only within the class</td></tr>
+        <tr><td>const member function</td><td>Does not modify the object; callable on const objects</td></tr>
+        <tr><td>explicit</td><td>Prevents implicit single-argument constructor conversions</td></tr>
+        <tr><td>RAII</td><td>Resource Acquisition Is Initialization: acquire in constructor, release in destructor</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  C++ / Learn &nbsp;&bull;&nbsp; Tutorial 6 &nbsp;&bull;&nbsp; Classes
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CppTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

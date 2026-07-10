@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lambdas - Anonymous Functions</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Lambdas &mdash; Anonymous Functions</h1>
+  <t-b>Tutorial S7.0 &nbsp;&bull;&nbsp; C++ / Learn / StdLib</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- S7.0 What This Teaches -->
+  <section>
+    <h2>S7.0 What This Teaches</h2>
+    <t-b>
+      Lambdas are anonymous function objects defined inline. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Lambda syntax: parameters, return type, body</li>
+      <li>Capture modes: by value, by reference, default captures</li>
+      <li>Using lambdas with standard algorithms</li>
+      <li><code>std::function</code> for storing callable objects</li>
+      <li>Returning lambdas from functions</li>
+      <li><code>mutable</code> lambdas</li>
+    </ul>
+  </section>
+
+  <!-- S7.1 Lambda Syntax -->
+  <section>
+    <h2>S7.1 Lambda Syntax</h2>
+    <pre><code class="language-cpp">// [capture](params) -> return_type { body }
+// return type is usually inferred
+
+auto add = [](int a, int b) { return a + b; };
+auto greet = [](const std::string&amp; name) -&gt; std::string {
+    return "Hello, " + name + "!";
+};
+
+std::cout &lt;&lt; add(3, 4) &lt;&lt; "\n";         // 7
+std::cout &lt;&lt; greet("Alice") &lt;&lt; "\n";    // Hello, Alice!</code></pre>
+  </section>
+
+  <!-- S7.2 Capture Modes -->
+  <section>
+    <h2>S7.2 Capture Modes</h2>
+    <pre><code class="language-cpp">int x = 10, y = 20;
+
+auto by_value = [x, y]()    { return x + y; };    // copies of x and y
+auto by_ref   = [&amp;x, &amp;y]()  { x++; return x + y; }; // references to x and y
+auto all_val  = [=]()       { return x + y; };    // capture all by value
+auto all_ref  = [&amp;]()       { x++; y++; };        // capture all by reference
+
+// mutable: modify the captured copy (not the original)
+auto inc_copy = [x]() mutable { return ++x; };   // x in outer scope unchanged</code></pre>
+    <t-b>
+      Prefer explicit captures (<code>[x, &amp;y]</code>) over default captures
+      (<code>[=]</code>, <code>[&amp;]</code>). Explicit captures make it clear
+      what the lambda depends on.
+    </t-b>
+  </section>
+
+  <!-- S7.3 Lambdas with Algorithms -->
+  <section>
+    <h2>S7.3 Lambdas with Algorithms</h2>
+    <pre><code class="language-cpp">std::vector&lt;int&gt; v = {3, 1, 4, 1, 5, 9};
+
+// sort descending
+std::sort(v.begin(), v.end(), [](int a, int b){ return a &gt; b; });
+
+// find first even
+auto it = std::find_if(v.begin(), v.end(), [](int x){ return x % 2 == 0; });
+
+// filter to new vector
+std::vector&lt;int&gt; big;
+std::copy_if(v.begin(), v.end(), std::back_inserter(big),
+             [](int x){ return x &gt; 3; });</code></pre>
+  </section>
+
+  <!-- S7.4 std::function -->
+  <section>
+    <h2>S7.4 std::function</h2>
+    <pre><code class="language-cpp">#include &lt;functional&gt;
+
+std::function&lt;int(int, int)&gt; op;
+
+op = [](int a, int b) { return a + b; };
+std::cout &lt;&lt; op(3, 4) &lt;&lt; "\n";   // 7
+
+op = [](int a, int b) { return a * b; };
+std::cout &lt;&lt; op(3, 4) &lt;&lt; "\n";   // 12</code></pre>
+    <t-b>
+      <code>std::function</code> can store any callable with a matching signature.
+      It has overhead from type erasure - use <code>auto</code> for local lambdas
+      and <code>std::function</code> only when you need to store or pass callables
+      polymorphically.
+    </t-b>
+  </section>
+
+  <!-- S7.5 Returning Lambdas -->
+  <section>
+    <h2>S7.5 Returning Lambdas</h2>
+    <pre><code class="language-cpp">auto make_adder(int n) {
+    return [n](int x) { return x + n; };
+}
+
+auto add5  = make_adder(5);
+auto add10 = make_adder(10);
+
+std::cout &lt;&lt; add5(3)  &lt;&lt; "\n";   // 8
+std::cout &lt;&lt; add10(3) &lt;&lt; "\n";   // 13</code></pre>
+    <t-b>
+      The returned lambda captures <code>n</code> by value, so each call to
+      <code>make_adder</code> creates a closure with its own copy of <code>n</code>.
+    </t-b>
+  </section>
+
+  <!-- S7.6 Example -->
+  <section>
+    <h2>S7.6 Example - All Together</h2>
+    <pre><code class="language-cpp">// Lambdas - syntax, capture modes, algorithms, std::function, returning lambdas.
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;algorithm&gt;
+#include &lt;functional&gt;
+
+int main() {
+    auto add = [](int a, int b) { return a + b; };
+    std::cout &lt;&lt; "add(3,4)=" &lt;&lt; add(3, 4) &lt;&lt; "\n";
+
+    int offset = 10;
+    auto add_offset = [offset](int x) { return x + offset; };
+    std::cout &lt;&lt; "add_offset(5)=" &lt;&lt; add_offset(5) &lt;&lt; "\n";
+
+    int counter = 0;
+    auto inc = [&amp;counter]() { ++counter; };
+    inc(); inc(); inc();
+    std::cout &lt;&lt; "counter=" &lt;&lt; counter &lt;&lt; "\n";
+
+    std::vector&lt;int&gt; v = {5, 3, 8, 1, 9};
+    std::sort(v.begin(), v.end(), [](int a, int b){ return a &gt; b; });
+    std::cout &lt;&lt; "sorted desc: ";
+    for (int x : v) std::cout &lt;&lt; x &lt;&lt; " ";
+    std::cout &lt;&lt; "\n";
+
+    auto make_multiplier = [](int f){ return [f](int x){ return x * f; }; };
+    auto triple = make_multiplier(3);
+    std::cout &lt;&lt; "triple(7)=" &lt;&lt; triple(7) &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+    <pre class="output"><code class="language-terminal">add(3,4)=7
+add_offset(5)=15
+counter=3
+sorted desc: 9 8 5 3 1
+triple(7)=21</code></pre>
+  </section>
+
+  <!-- S7.7 Exercise -->
+  <section>
+    <h2>S7.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write a lambda <code>is_prime</code> and use it with
+          <code>copy_if</code> to extract all primes from a
+          <code>vector&lt;int&gt;</code> of 1 through 30.</li>
+        <li>Write a function <code>apply(std::function&lt;int(int)&gt; f, int x)</code>
+          and call it with three different lambdas (square, double, negate).</li>
+        <li>Write a factory function <code>make_between_checker(int lo, int hi)</code>
+          that returns a lambda capturing <code>lo</code> and <code>hi</code> and
+          returning <code>true</code> if its argument is in range.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S7.8 Common Mistakes -->
+  <section>
+    <h2>S7.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Dangling reference capture</h3>
+      <pre><code class="language-cpp">std::function&lt;int()&gt; get_lambda() {
+    int local = 42;
+    return [&amp;local]() { return local; };   // dangling: local is gone after return
+}</code></pre>
+      <t-b>Capture by value when the lambda outlives the captured variable.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Forgetting mutable</h3>
+      <pre><code class="language-cpp">int n = 5;
+auto f = [n]() { return ++n; };   // error: n captured by value is const by default</code></pre>
+      <t-b>Add <code>mutable</code> to modify a value-captured variable inside
+        the lambda.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>std::function overhead in performance-critical code</h3>
+      <t-b>
+        <code>std::function</code> uses type erasure and may allocate. In tight
+        loops, prefer <code>auto</code> or template parameters for callables.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- S7.9 Key Terms -->
+  <section>
+    <h2>S7.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>lambda</td><td>Inline anonymous function object; syntax [capture](params){ body }</td></tr>
+        <tr><td>capture clause</td><td>[] specifies which outer variables the lambda can access</td></tr>
+        <tr><td>capture by value [x]</td><td>Lambda gets its own copy of x at the time of creation</td></tr>
+        <tr><td>capture by reference [&amp;x]</td><td>Lambda holds a reference to x; changes are visible outside</td></tr>
+        <tr><td>mutable</td><td>Allows a value-captured variable to be modified inside the lambda</td></tr>
+        <tr><td>closure</td><td>Lambda together with its captured environment</td></tr>
+        <tr><td>std::function&lt;R(Args)&gt;</td><td>Type-erased callable wrapper; stores any callable with matching signature</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  C++ / Learn / StdLib &nbsp;&bull;&nbsp; Tutorial S7 &nbsp;&bull;&nbsp; Lambdas
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CppTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

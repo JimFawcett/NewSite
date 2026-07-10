@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Formatting - std::format and ostream</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Formatting &mdash; std::format and ostream</h1>
+  <t-b>Tutorial S10.0 &nbsp;&bull;&nbsp; C++ / Learn / StdLib</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- S10.0 What This Teaches -->
+  <section>
+    <h2>S10.0 What This Teaches</h2>
+    <t-b>
+      C++ has two main approaches to text formatting. This tutorial covers:
+    </t-b>
+    <ul>
+      <li><code>std::format</code> (C++20) — Python-style format strings</li>
+      <li>Width, alignment, fill, precision, and numeric bases</li>
+      <li><code>ostream</code> manipulators from <code>&lt;iomanip&gt;</code></li>
+      <li><code>printf</code> — the C-style approach (legacy)</li>
+      <li>When to use each approach</li>
+    </ul>
+  </section>
+
+  <!-- S10.1 std::format Basics -->
+  <section>
+    <h2>S10.1 std::format Basics</h2>
+    <pre><code class="language-cpp">#include &lt;format&gt;
+#include &lt;iostream&gt;
+
+std::string s = std::format("Hello, {}!", "world");
+std::cout &lt;&lt; s &lt;&lt; "\n";   // Hello, world!
+
+int n = 42;
+double pi = 3.14159;
+std::cout &lt;&lt; std::format("n={}, pi={}\n", n, pi);   // n=42, pi=3.14159</code></pre>
+    <t-b>
+      <code>{}</code> is a replacement field. Arguments are substituted in order.
+      <code>std::format</code> returns a <code>std::string</code>; pass it to
+      <code>std::cout</code> or store it. C++23 adds <code>std::print</code>
+      which writes directly.
+    </t-b>
+  </section>
+
+  <!-- S10.2 Format Specifiers -->
+  <section>
+    <h2>S10.2 Format Specifiers</h2>
+    <pre><code class="language-cpp">double pi = 3.14159265358979;
+
+// precision
+std::cout &lt;&lt; std::format("{:.2f}\n", pi);       // 3.14
+std::cout &lt;&lt; std::format("{:.6f}\n", pi);       // 3.141593
+
+// width and alignment
+std::cout &lt;&lt; std::format("{:&gt;10}\n",  "right"); //      right
+std::cout &lt;&lt; std::format("{:&lt;10}\n",  "left");  // left
+std::cout &lt;&lt; std::format("{:^10}\n",  "mid");   //    mid
+
+// fill character
+std::cout &lt;&lt; std::format("{:0&gt;8d}\n", 42);      // 00000042
+std::cout &lt;&lt; std::format("{:-^10}\n", "hi");    // ----hi----
+
+// numeric bases
+std::cout &lt;&lt; std::format("{:#x}\n",  255);      // 0xff
+std::cout &lt;&lt; std::format("{:#b}\n",  10);       // 0b1010
+std::cout &lt;&lt; std::format("{:#o}\n",  8);        // 010</code></pre>
+  </section>
+
+  <!-- S10.3 ostream Manipulators -->
+  <section>
+    <h2>S10.3 ostream Manipulators</h2>
+    <pre><code class="language-cpp">#include &lt;iomanip&gt;
+
+// width (applies to next output only)
+std::cout &lt;&lt; std::setw(10) &lt;&lt; std::right &lt;&lt; "right" &lt;&lt; "\n";   //      right
+std::cout &lt;&lt; std::setw(10) &lt;&lt; std::left  &lt;&lt; "left"  &lt;&lt; "\n";   // left
+
+// fill character (persists)
+std::cout &lt;&lt; std::setfill('0') &lt;&lt; std::setw(6) &lt;&lt; 42 &lt;&lt; "\n";  // 000042
+std::cout &lt;&lt; std::setfill(' ');   // reset fill to space
+
+// floating point
+std::cout &lt;&lt; std::fixed &lt;&lt; std::setprecision(4) &lt;&lt; 3.14159 &lt;&lt; "\n";  // 3.1416
+
+// numeric base (persists until changed)
+std::cout &lt;&lt; std::hex &lt;&lt; 255 &lt;&lt; "\n";   // ff
+std::cout &lt;&lt; std::dec;                  // reset to decimal</code></pre>
+    <t-b>
+      Manipulators that persist (<code>setfill</code>, <code>hex</code>,
+      <code>fixed</code>, <code>setprecision</code>) change the stream's
+      state for all subsequent output. Reset them after use to avoid
+      surprising behavior elsewhere.
+    </t-b>
+  </section>
+
+  <!-- S10.4 printf -->
+  <section>
+    <h2>S10.4 printf (Legacy)</h2>
+    <pre><code class="language-cpp">#include &lt;cstdio&gt;
+
+std::printf("Hello, %s!\n", "world");
+std::printf("n=%d, pi=%.4f\n", 42, 3.14159);
+std::printf("%10s | %-10s\n", "right", "left");</code></pre>
+    <t-b>
+      <code>printf</code> has no type safety — passing the wrong type for a
+      format specifier is undefined behavior. Use it only when interfacing with
+      C code or legacy systems. Prefer <code>std::format</code> for new code.
+    </t-b>
+  </section>
+
+  <!-- S10.5 Comparison Table -->
+  <section>
+    <h2>S10.5 Approach Comparison</h2>
+    <table>
+      <thead>
+        <tr><th>Approach</th><th>Header</th><th>Type-safe</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>std::format</td><td>&lt;format&gt;</td><td>Yes</td><td>C++20; preferred for new code</td></tr>
+        <tr><td>ostream &lt;&lt;</td><td>&lt;iostream&gt; &lt;iomanip&gt;</td><td>Yes</td><td>All C++ versions; manipulator state persists</td></tr>
+        <tr><td>printf</td><td>&lt;cstdio&gt;</td><td>No</td><td>C legacy; avoid in new C++ code</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- S10.6 Example -->
+  <section>
+    <h2>S10.6 Example - All Together</h2>
+    <pre><code class="language-cpp">// Formatting - std::format (C++20), ostream manipulators, printf comparison.
+
+#include &lt;iostream&gt;
+#include &lt;format&gt;
+#include &lt;iomanip&gt;
+#include &lt;cstdio&gt;
+
+int main() {
+    double pi = 3.14159265358979;
+
+    std::cout &lt;&lt; "--- std::format ---\n";
+    std::cout &lt;&lt; std::format("pi = {:.4f}\n", pi);
+    std::cout &lt;&lt; std::format("{:&gt;10} | {:-^10} | {:&lt;10}\n", "right", "mid", "left");
+    std::cout &lt;&lt; std::format("{:#x}  {:#b}  {:#o}\n", 255, 10, 8);
+
+    std::cout &lt;&lt; "\n--- manipulators ---\n";
+    std::cout &lt;&lt; std::fixed &lt;&lt; std::setprecision(4) &lt;&lt; pi &lt;&lt; "\n";
+    std::cout &lt;&lt; std::setw(10) &lt;&lt; std::right &lt;&lt; "right" &lt;&lt; "\n";
+    std::cout &lt;&lt; std::hex &lt;&lt; std::showbase &lt;&lt; 255 &lt;&lt; "\n";
+    std::cout &lt;&lt; std::dec;
+
+    std::cout &lt;&lt; "\n--- printf ---\n";
+    std::printf("pi = %.4f\n", pi);
+    std::printf("%10s | %-10s\n", "right", "left");
+
+    return 0;
+}</code></pre>
+    <pre class="output"><code class="language-terminal">--- std::format ---
+pi = 3.1416
+     right | ---mid---- | left
+0xff  0b1010  010
+
+--- manipulators ---
+3.1416
+     right
+0xff
+
+--- printf ---
+pi = 3.1416
+     right | left</code></pre>
+  </section>
+
+  <!-- S10.7 Exercise -->
+  <section>
+    <h2>S10.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Use <code>std::format</code> to print a table of squares and cubes
+          for 1 through 10, right-aligned in columns of width 6.</li>
+        <li>Use <code>ostream</code> manipulators to print the same table.
+          Note the extra effort required to reset state.</li>
+        <li>Write a function
+          <code>hex_dump(const std::vector&lt;uint8_t&gt;&amp;)</code>
+          that prints each byte as a two-digit hex value separated by spaces,
+          using <code>std::format</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S10.8 Common Mistakes -->
+  <section>
+    <h2>S10.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Persistent manipulator state polluting later output</h3>
+      <pre><code class="language-cpp">std::cout &lt;&lt; std::hex &lt;&lt; 255 &lt;&lt; "\n";   // ff
+std::cout &lt;&lt; 42 &lt;&lt; "\n";                // 2a  (still hex!)</code></pre>
+      <t-b>Reset <code>std::hex</code> with <code>std::dec</code> after use.
+        <code>std::format</code> avoids this entirely — each call is
+        independent.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>printf type mismatch</h3>
+      <pre><code class="language-cpp">std::printf("%d\n", 3.14);   // undefined behavior: %d expects int, got double</code></pre>
+      <t-b>Use <code>std::format</code> or ostream to get compile-time type
+        checking.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>std::format not available before C++20</h3>
+      <t-b>
+        Confirm your compiler targets C++20 (<code>-std=c++20</code> for
+        GCC/Clang, <code>/std:c++20</code> for MSVC). For older standards,
+        use ostream manipulators or the {fmt} library.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- S10.9 Key Terms -->
+  <section>
+    <h2>S10.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>std::format</td><td>C++20 function returning a formatted string; type-safe, no side effects on stream state</td></tr>
+        <tr><td>{}</td><td>Replacement field in a format string; {} auto-selects type, {:specifier} customizes</td></tr>
+        <tr><td>std::setw(n)</td><td>Set minimum field width for the next output item only</td></tr>
+        <tr><td>std::setfill(c)</td><td>Set fill character used when output is shorter than setw; persists</td></tr>
+        <tr><td>std::setprecision(n)</td><td>Set decimal precision for floating-point output; persists</td></tr>
+        <tr><td>std::fixed</td><td>Format floating-point in fixed notation; persists</td></tr>
+        <tr><td>std::hex / std::dec</td><td>Print integers in hex / decimal; persists until changed</td></tr>
+        <tr><td>printf</td><td>C-style formatted output; not type-safe; avoid in new C++ code</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  C++ / Learn / StdLib &nbsp;&bull;&nbsp; Tutorial S10 &nbsp;&bull;&nbsp; Formatting
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CppTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+// TutorialPages.js - page list for the Learn track dropdown
+const tutorialPages = [
+  { name: "Intro - Tutorial index", url: "Learn_intro.html" },
+  { name: "Hello - Your First Rust Program", url: "RustTutorial__Hello.html" },
+  { name: "Tools - Rust Development Toolchain", url: "RustTutorial__Tools.html" },
+  { name: "Variables - Rust Bindings and Types", url: "RustTutorial__Variables.html" },
+  { name: "Functions - Rust Function Definitions", url: "RustTutorial__Functions.html" },
+  { name: "Control Flow - Rust Execution Control", url: "RustTutorial__Control_Flow.html" },
+  { name: "Ownership - Rust Memory Safety", url: "RustTutorial__Ownership.html" },
+  { name: "Structs - Rust Data Grouping", url: "RustTutorial__Structs.html" },
+  { name: "Enums - Rust Enums and Match", url: "RustTutorial__Enums.html" },
+  { name: "Iterators - Rust Iterator Pattern", url: "RustTutorial__Iterators.html" },
+  { name: "Strings - String and &str", url: "RustTutorial__stdlib_Strings.html" },
+  { name: "Vec - Rust Growable Array", url: "RustTutorial__StdLib_Vec.html" },
+  { name: "HashMap - Rust Hash Map", url: "RustTutorial__StdLib_HashMap.html" },
+  { name: "Result - Rust Error Handling", url: "RustTutorial__StdLib_Result.html" },
+  { name: "File I/O - Rust File Operations", url: "RustTutorial__StdLib_FileIO.html" },
+  { name: "Traits - Rust Shared Behavior", url: "RustTutorial__StdLib_Traits.html" },
+  { name: "Closures - Rust Anonymous Functions", url: "RustTutorial__StdLib_Closures.html" },
+  { name: "Smart Pointers - Box, Rc, RefCell", url: "RustTutorial__StdLib_SmartPointers.html" },
+  { name: "Threads - Rust Concurrency", url: "RustTutorial__StdLib_Threads.html" },
+  { name: "Formatting - Display and Debug", url: "RustTutorial__StdLib_Formatting.html" },
+  { name: "Testing - Rust Unit and Integration Tests", url: "RustTutorial__Testing.html" },
+  { name: "Demonstrations - Using the examples/ Folder", url: "RustTutorial__Demonstrations.html" }
+];

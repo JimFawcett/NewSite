@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Enums - enum and enum class</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Enums &mdash; enum and enum class</h1>
+  <t-b>Tutorial 8.0 &nbsp;&bull;&nbsp; C++ / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- 7.0 What This Teaches -->
+  <section>
+    <h2>8.0 What This Teaches</h2>
+    <t-b>
+      Enumerations give names to a fixed set of integer values. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Plain <code>enum</code> and its scope pollution problem</li>
+      <li>Scoped <code>enum class</code> (preferred in modern C++)</li>
+      <li>Specifying the underlying integer type</li>
+      <li>Using enums in <code>switch</code> statements</li>
+      <li>Converting between enums and integers</li>
+    </ul>
+  </section>
+
+  <!-- 7.1 Plain enum -->
+  <section>
+    <h2>8.1 Plain enum</h2>
+    <pre><code class="language-cpp">enum Direction { North, South, East, West };
+
+Direction d = North;   // North is in the enclosing scope
+int n = d;             // implicit conversion to int (North = 0)</code></pre>
+    <t-b>
+      Plain <code>enum</code> names leak into the enclosing scope. If two enums
+      define <code>Red</code>, they conflict. The implicit conversion to <code>int</code>
+      is also a common source of bugs.
+    </t-b>
+  </section>
+
+  <!-- 7.2 enum class -->
+  <section>
+    <h2>8.2 enum class (Scoped Enum)</h2>
+    <pre><code class="language-cpp">enum class Color { Red, Green, Blue };
+
+Color c = Color::Green;   // must qualify with Color::
+// int n = c;             // error: no implicit conversion
+int n = static_cast&lt;int&gt;(c);   // 1 - explicit cast required</code></pre>
+    <t-b>
+      <code>enum class</code> keeps names in the enum's own scope and disables
+      implicit conversion to <code>int</code>. Prefer <code>enum class</code> in
+      new code.
+    </t-b>
+  </section>
+
+  <!-- 7.3 Underlying Type -->
+  <section>
+    <h2>8.3 Underlying Integer Type</h2>
+    <pre><code class="language-cpp">enum class Status : uint8_t { Ok = 0, NotFound = 1, Error = 2 };
+enum class Flags  : uint32_t { None = 0, Read = 1, Write = 2, Exec = 4 };</code></pre>
+    <t-b>
+      The default underlying type is <code>int</code>. Specifying it explicitly
+      controls storage size and enables bitwise flag operations on
+      <code>Flags</code>-style enums.
+    </t-b>
+  </section>
+
+  <!-- 7.4 Enums in switch -->
+  <section>
+    <h2>8.4 Enums in switch</h2>
+    <pre><code class="language-cpp">std::string color_name(Color c) {
+    switch (c) {
+        case Color::Red:   return "Red";
+        case Color::Green: return "Green";
+        case Color::Blue:  return "Blue";
+    }
+    return "Unknown";
+}</code></pre>
+    <t-b>
+      Compilers warn when a <code>switch</code> on an <code>enum class</code> omits
+      a case. This makes exhaustive handling easier to enforce than with integers.
+    </t-b>
+  </section>
+
+  <!-- 7.5 Example -->
+  <section>
+    <h2>8.5 Example - All Together</h2>
+    <pre><code class="language-cpp">// Enums - plain enum, enum class, underlying type, switch.
+
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+enum Direction { North, South, East, West };
+
+enum class Color { Red, Green, Blue };
+
+enum class Status : uint8_t { Ok = 0, NotFound = 1, Error = 2 };
+
+std::string direction_name(Direction d) {
+    switch (d) {
+        case North: return "North";
+        case South: return "South";
+        case East:  return "East";
+        case West:  return "West";
+    }
+    return "Unknown";
+}
+
+std::string color_name(Color c) {
+    switch (c) {
+        case Color::Red:   return "Red";
+        case Color::Green: return "Green";
+        case Color::Blue:  return "Blue";
+    }
+    return "Unknown";
+}
+
+int main() {
+    Direction d = North;
+    std::cout &lt;&lt; direction_name(d) &lt;&lt; " (" &lt;&lt; d &lt;&lt; ")\n";
+
+    Color c = Color::Green;
+    std::cout &lt;&lt; color_name(c) &lt;&lt; "\n";
+
+    Status s = Status::NotFound;
+    std::cout &lt;&lt; "status: " &lt;&lt; static_cast&lt;int&gt;(s) &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+    <pre class="output"><code class="language-terminal">North (0)
+Green
+status: 1</code></pre>
+  </section>
+
+  <!-- 7.6 Exercise -->
+  <section>
+    <h2>8.6 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Define an <code>enum class Weekday</code> with values
+          <code>Mon</code> through <code>Sun</code>. Write a function
+          <code>is_weekend(Weekday d)</code> that returns <code>true</code> for
+          <code>Sat</code> and <code>Sun</code>.</li>
+        <li>Define an <code>enum class Permission : uint8_t</code> with
+          <code>None=0</code>, <code>Read=1</code>, <code>Write=2</code>,
+          <code>Exec=4</code>. Use bitwise OR to combine permissions and check
+          them with bitwise AND.</li>
+        <li>Add a <code>default:</code> case to a <code>switch</code> on your
+          <code>Weekday</code> enum that prints an error, then observe the
+          compiler warning about the unhandled cases when you also have
+          explicit cases for all values.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7.7 Common Mistakes -->
+  <section>
+    <h2>8.7 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Name collision with plain enum</h3>
+      <pre><code class="language-cpp">enum Fruit { Apple, Orange };
+enum Color { Red, Orange };   // error: Orange already defined</code></pre>
+      <t-b>Use <code>enum class</code> to put names in their own scope.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Comparing enum class to integer without cast</h3>
+      <pre><code class="language-cpp">Color c = Color::Red;
+if (c == 0) { }   // error: no implicit conversion from int to Color</code></pre>
+      <t-b>Use <code>static_cast&lt;Color&gt;(0)</code> or compare against a named
+        enum value.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Missing case in switch on enum class</h3>
+      <t-b>
+        When you add a new value to an <code>enum class</code>, the compiler warns
+        about <code>switch</code> statements that don't handle it - but only if you
+        compile with <code>-Wall</code> and do not have a <code>default:</code> case.
+        Omit <code>default:</code> on exhaustive enums to get this safety check.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- 7.8 Key Terms -->
+  <section>
+    <h2>8.8 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>enum</td><td>Plain enumeration; names leak into enclosing scope; implicit int conversion</td></tr>
+        <tr><td>enum class</td><td>Scoped enumeration; names qualified by type; no implicit int conversion</td></tr>
+        <tr><td>underlying type</td><td>The integer type used to store enum values; default is int</td></tr>
+        <tr><td>static_cast&lt;int&gt;(e)</td><td>Explicit conversion from enum class to integer</td></tr>
+        <tr><td>exhaustive switch</td><td>A switch that handles every enumerator; compiler warns if a case is missing</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  C++ / Learn &nbsp;&bull;&nbsp; Tutorial 8 &nbsp;&bull;&nbsp; Enums
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CppTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

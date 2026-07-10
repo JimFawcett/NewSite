@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iterators - Rust Iterator Pattern</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Iterators &mdash; Rust Iterator Pattern</h1>
+  <t-b>Tutorial 9.0 &nbsp;&bull;&nbsp; Rust / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- 9.0 What This Teaches -->
+  <section>
+    <h2>9.0 What This Teaches</h2>
+    <t-b>
+      Rust's iterator pattern lets you process sequences of values in a composable, lazy way
+      without writing manual index loops. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>The <code>Iterator</code> trait and its <code>next()</code> method</li>
+      <li>Creating iterators: <code>.iter()</code>, <code>.iter_mut()</code>, <code>.into_iter()</code></li>
+      <li>Lazy evaluation - adaptors do no work until consumed</li>
+      <li>Consuming adaptors: <code>sum()</code>, <code>count()</code>, <code>collect()</code>, <code>for_each()</code></li>
+      <li>Transforming adaptors: <code>map()</code>, <code>filter()</code>, <code>copied()</code></li>
+      <li><code>enumerate()</code> and <code>zip()</code></li>
+      <li>Chaining multiple adaptors</li>
+      <li>Implementing <code>Iterator</code> for a custom type</li>
+    </ul>
+  </section>
+
+  <!-- 9.1 The Iterator Trait -->
+  <section>
+    <h2>9.1 The Iterator Trait</h2>
+    <t-b>
+      The <code>Iterator</code> trait requires exactly one method: <code>next()</code>. It
+      returns <code>Some(item)</code> while items remain and <code>None</code> when the
+      sequence is exhausted. Every other method on iterators - <code>map</code>,
+      <code>filter</code>, <code>collect</code>, and dozens more - is provided automatically,
+      built on top of <code>next()</code>.
+    </t-b>
+    <pre><code class="language-rust">// Iterator trait - simplified view
+pub trait Iterator {
+    type Item;
+    fn next(&mut self) -> Option&lt;Self::Item&gt;;
+    // all other methods are provided defaults built on next()
+}</code></pre>
+    <t-b>
+      <code>type Item</code> is an associated type - it declares what kind of value the
+      iterator yields. A <code>Vec&lt;i32&gt;</code> iterator yields <code>i32</code> (or
+      references to it, depending on how you create the iterator).
+    </t-b>
+  </section>
+
+  <!-- 9.2 Creating Iterators -->
+  <section>
+    <h2>9.2 Creating Iterators</h2>
+    <t-b>
+      Collections provide three methods for creating iterators, each with a different
+      ownership relationship to the source data:
+    </t-b>
+    <ul>
+      <li><code>.iter()</code> - borrows each element; yields <code>&amp;T</code>; collection still usable after</li>
+      <li><code>.iter_mut()</code> - mutably borrows each element; yields <code>&amp;mut T</code></li>
+      <li><code>.into_iter()</code> - consumes the collection; yields <code>T</code> by value</li>
+    </ul>
+    <pre><code class="language-rust">// Iterators - creating iterators from a Vec
+let v = vec![1, 2, 3];
+
+for x in v.iter() {         // x: &i32
+    println!("{x}");
+}
+println!("v still here: {v:?}");  // v is still owned here
+
+let mut w = vec![1, 2, 3];
+for x in w.iter_mut() {     // x: &mut i32
+    *x *= 2;
+}
+println!("{w:?}");           // [2, 4, 6]
+
+for x in v.into_iter() {    // x: i32, v is consumed
+    println!("{x}");
+}
+// v cannot be used here</code></pre>
+  </section>
+
+  <!-- 9.3 Consuming Adaptors -->
+  <section>
+    <h2>9.3 Consuming Adaptors</h2>
+    <t-b>
+      A consuming adaptor drives the iterator to completion and produces a single result.
+      After a consuming adaptor runs, the iterator is spent and cannot be reused.
+    </t-b>
+    <pre><code class="language-rust">// Iterators - consuming adaptors
+let nums = vec![1, 2, 3, 4, 5];
+
+let total: i32 = nums.iter().copied().sum();   // 15
+let count = nums.iter().count();               // 5
+let doubled: Vec&lt;i32&gt; = nums.iter().map(|&amp;x| x * 2).collect();
+nums.iter().for_each(|x| println!("{x}"));</code></pre>
+    <t-b>
+      <code>collect()</code> is the most flexible consumer - it can gather items into a
+      <code>Vec</code>, <code>HashMap</code>, <code>String</code>, or any other collection
+      that implements <code>FromIterator</code>. The type annotation tells Rust which
+      collection to build.
+    </t-b>
+  </section>
+
+  <!-- 9.4 map and filter -->
+  <section>
+    <h2>9.4 map and filter</h2>
+    <t-b>
+      <code>map</code> transforms each element by applying a closure. <code>filter</code>
+      keeps only elements where the closure returns <code>true</code>. Both are lazy -
+      they produce a new iterator type and do no work until a consuming adaptor pulls from
+      the chain.
+    </t-b>
+    <pre><code class="language-rust">// Iterators - map and filter
+let nums = vec![1, 2, 3, 4, 5, 6];
+
+let evens_doubled: Vec&lt;i32&gt; = nums.iter()
+    .filter(|&&x| x % 2 == 0)   // keep even elements
+    .map(|&amp;x| x * 2)             // double each one
+    .collect();
+
+println!("{evens_doubled:?}");   // [4, 8, 12]</code></pre>
+    <t-b>
+      The double reference pattern <code>|&amp;&amp;x|</code> in the <code>filter</code>
+      closure arises because <code>.iter()</code> yields <code>&amp;i32</code>, and
+      <code>filter</code> passes a reference to that, giving <code>&amp;&amp;i32</code>.
+      Destructuring both levels with <code>&amp;&amp;x</code> gives the plain <code>i32</code>.
+      Using <code>.copied()</code> before <code>filter</code> avoids this.
+    </t-b>
+    <pre><code class="language-rust">// Iterators - using copied() to avoid double-reference patterns
+let evens_doubled: Vec&lt;i32&gt; = nums.iter()
+    .copied()                    // &amp;i32 -&gt; i32
+    .filter(|&amp;x| x % 2 == 0)
+    .map(|x| x * 2)
+    .collect();                  // [4, 8, 12]</code></pre>
+  </section>
+
+  <!-- 9.5 enumerate and zip -->
+  <section>
+    <h2>9.5 enumerate and zip</h2>
+    <t-b>
+      <code>enumerate()</code> pairs each element with its index, yielding
+      <code>(usize, &amp;T)</code> tuples. <code>zip()</code> combines two iterators
+      element-by-element into pairs, stopping when the shorter one is exhausted.
+    </t-b>
+    <pre><code class="language-rust">// Iterators - enumerate and zip
+let words = vec!["alpha", "beta", "gamma"];
+
+for (i, w) in words.iter().enumerate() {
+    println!("{i}: {w}");
+}
+// 0: alpha
+// 1: beta
+// 2: gamma
+
+let nums   = vec![1, 2, 3];
+let letters = vec!['a', 'b', 'c'];
+let pairs: Vec&lt;_&gt; = nums.iter().zip(letters.iter()).collect();
+println!("{pairs:?}");   // [(1, 'a'), (2, 'b'), (3, 'c')]</code></pre>
+  </section>
+
+  <!-- 9.6 Chaining Adaptors -->
+  <section>
+    <h2>9.6 Chaining Adaptors</h2>
+    <t-b>
+      Adaptors compose naturally. Each one wraps the previous iterator in a new type;
+      the entire chain stays lazy until a consuming adaptor is called. Rust's type
+      system and optimizer collapse the chain into efficient code with no intermediate
+      allocations.
+    </t-b>
+    <pre><code class="language-rust">// Iterators - chaining multiple adaptors
+let data = vec![3, 1, 4, 1, 5, 9, 2, 6];
+
+let result: Vec&lt;i32&gt; = data.iter()
+    .copied()                    // &amp;i32 -&gt; i32
+    .filter(|&amp;x| x &gt; 3)         // keep values above 3
+    .map(|x| x * x)              // square each value
+    .collect();
+
+println!("{result:?}");   // [16, 25, 81, 36]</code></pre>
+    <t-b>
+      No intermediate <code>Vec</code> is created between steps. Each element flows
+      through the full chain one at a time, allocated to the final <code>Vec</code>
+      only when <code>collect()</code> runs.
+    </t-b>
+  </section>
+
+  <!-- 9.7 Implementing Iterator -->
+  <section>
+    <h2>9.7 Implementing Iterator</h2>
+    <t-b>
+      Any struct can become an iterator by implementing <code>Iterator</code>. Only
+      <code>next()</code> is required. All adaptor and consumer methods become available
+      automatically because they are default methods on the trait.
+    </t-b>
+    <pre><code class="language-rust">// Iterators - custom iterator that counts from 1 up to a limit
+struct Counter {
+    current: u32,
+    limit: u32,
+}
+
+impl Counter {
+    fn new(limit: u32) -> Self {
+        Counter { current: 0, limit }
+    }
+}
+
+impl Iterator for Counter {
+    type Item = u32;
+
+    fn next(&mut self) -> Option&lt;Self::Item&gt; {
+        if self.current &lt; self.limit {
+            self.current += 1;
+            Some(self.current)
+        } else {
+            None
+        }
+    }
+}
+
+// all Iterator methods are now available for free
+let values: Vec&lt;u32&gt; = Counter::new(5).collect();
+println!("{values:?}");       // [1, 2, 3, 4, 5]
+
+let total: u32 = Counter::new(5).sum();
+println!("{total}");           // 15
+
+let squares: Vec&lt;u32&gt; = Counter::new(4).map(|x| x * x).collect();
+println!("{squares:?}");      // [1, 4, 9, 16]</code></pre>
+  </section>
+
+  <!-- 9.8 Example -->
+  <section>
+    <h2>9.8 Example - All Together</h2>
+    <pre><code class="language-rust">// Iterators - demonstrates creating, adapting, and consuming iterators in Rust.
+
+struct Counter {
+    current: u32,
+    limit: u32,
+}
+
+impl Counter {
+    fn new(limit: u32) -> Self {
+        Counter { current: 0, limit }
+    }
+}
+
+impl Iterator for Counter {
+    type Item = u32;
+
+    fn next(&mut self) -> Option&lt;Self::Item&gt; {
+        if self.current &lt; self.limit {
+            self.current += 1;
+            Some(self.current)
+        } else {
+            None
+        }
+    }
+}
+
+fn main() {
+    // sum via copied() + sum()
+    let v = vec![1, 2, 3, 4, 5];
+    let total: i32 = v.iter().copied().sum();
+    println!("sum = {total}");
+
+    // filter + map + collect
+    let evens_doubled: Vec&lt;i32&gt; = v.iter()
+        .copied()
+        .filter(|&amp;x| x % 2 == 0)
+        .map(|x| x * 2)
+        .collect();
+    println!("evens doubled = {evens_doubled:?}");
+
+    // enumerate
+    let words = vec!["alpha", "beta", "gamma"];
+    for (i, w) in words.iter().enumerate() {
+        println!("{i}: {w}");
+    }
+
+    // zip
+    let nums    = vec![1, 2, 3];
+    let letters = vec!['a', 'b', 'c'];
+    let pairs: Vec&lt;_&gt; = nums.iter().zip(letters.iter()).collect();
+    println!("{pairs:?}");
+
+    // chaining
+    let data = vec![3, 1, 4, 1, 5, 9, 2, 6];
+    let result: Vec&lt;i32&gt; = data.iter()
+        .copied()
+        .filter(|&amp;x| x &gt; 3)
+        .map(|x| x * x)
+        .collect();
+    println!("{result:?}");
+
+    // custom iterator
+    let csum: u32 = Counter::new(5).sum();
+    println!("counter sum = {csum}");
+}</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">sum = 15
+evens doubled = [4, 8, 12]
+0: alpha
+1: beta
+2: gamma
+[(1, 'a'), (2, 'b'), (3, 'c')]
+[16, 25, 81, 36]
+counter sum = 15</code></pre>
+  </section>
+
+  <!-- 9.9 Exercise -->
+  <section>
+    <h2>9.9 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Count how many numbers in a <code>Vec&lt;i32&gt;</code> are divisible by 3 using
+          <code>.iter().copied().filter(...).count()</code>.</li>
+        <li>Convert a <code>Vec&lt;&amp;str&gt;</code> into a <code>Vec&lt;String&gt;</code>
+          using <code>.map(|s| s.to_string()).collect()</code>.</li>
+        <li>Implement a <code>Fibonacci</code> iterator that yields the Fibonacci sequence
+          indefinitely. Collect the first 10 values with
+          <code>.take(10).collect::&lt;Vec&lt;_&gt;&gt;()</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9.10 Common Mistakes -->
+  <section>
+    <h2>9.10 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Consuming the same iterator twice</h3>
+      <pre><code class="language-rust">let v = vec![1, 2, 3];
+let it = v.iter();
+let s: i32 = it.copied().sum();
+let c = it.count();   // compile error: value used after move</code></pre>
+      <t-b>A consuming adaptor takes ownership of the iterator. Create a fresh iterator for each use.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Forgetting collect() - nothing runs</h3>
+      <pre><code class="language-rust">let v = vec![1, 2, 3];
+v.iter().map(|&amp;x| x * 2);   // does nothing - no consumer</code></pre>
+      <t-b>
+        Adaptors are lazy. Without <code>.collect()</code>, <code>.sum()</code>, or another
+        consumer at the end, the chain never executes.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Double-reference pattern in filter closures</h3>
+      <pre><code class="language-rust">let v = vec![1, 2, 3];
+// iter() yields &amp;i32; filter adds another &amp;, giving &amp;&amp;i32
+v.iter().filter(|x| *x &gt; 1);     // x is &amp;&amp;i32, must deref
+v.iter().filter(|&amp;&amp;x| x &gt; 1);    // destructure both layers
+v.iter().copied().filter(|&amp;x| x &gt; 1);  // or use copied() first</code></pre>
+      <t-b>Use <code>.copied()</code> before <code>filter</code> to work with plain values.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Using into_iter() when you still need the collection</h3>
+      <pre><code class="language-rust">let v = vec![1, 2, 3];
+let _s: i32 = v.into_iter().sum();
+println!("{v:?}");   // compile error: value borrowed after move</code></pre>
+      <t-b>
+        <code>into_iter()</code> consumes the collection. Use <code>.iter().copied().sum()</code>
+        if you need <code>v</code> afterward.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- 9.11 Key Terms -->
+  <section>
+    <h2>9.11 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Iterator</td><td>Trait with <code>next()</code> and all adaptor/consumer methods; core of Rust's iteration model</td></tr>
+        <tr><td>Item</td><td>Associated type on <code>Iterator</code>; the element type returned by <code>next()</code></td></tr>
+        <tr><td>iter()</td><td>Creates a borrowing iterator yielding <code>&amp;T</code>; source collection remains usable</td></tr>
+        <tr><td>iter_mut()</td><td>Creates a mutable-borrowing iterator yielding <code>&amp;mut T</code>; allows in-place mutation</td></tr>
+        <tr><td>into_iter()</td><td>Consumes the collection and yields owned <code>T</code> values</td></tr>
+        <tr><td>adaptor</td><td>Method that transforms one iterator into another; lazy - does no work until consumed</td></tr>
+        <tr><td>consumer</td><td>Method that drives the iterator chain to completion (<code>sum</code>, <code>collect</code>, <code>for_each</code>)</td></tr>
+        <tr><td>lazy evaluation</td><td>Adaptors produce no output until a consumer pulls from the chain</td></tr>
+        <tr><td>copied()</td><td>Adaptor that converts <code>&amp;T</code> to <code>T</code> for <code>Copy</code> types, simplifying closures</td></tr>
+        <tr><td>collect()</td><td>Consumer that gathers iterator output into a <code>Vec</code>, <code>HashMap</code>, or any <code>FromIterator</code> type</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  Rust / Learn &nbsp;&bull;&nbsp; Tutorial 9 &nbsp;&bull;&nbsp; Iterators
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/RustTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

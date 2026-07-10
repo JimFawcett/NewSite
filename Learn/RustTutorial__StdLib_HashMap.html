@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HashMap - Rust Hash Map</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>HashMap&lt;K,V&gt; &mdash; Rust Hash Map</h1>
+  <t-b>Tutorial S3.0 &nbsp;&bull;&nbsp; Rust / Learn / StdLib</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- S3.0 What This Teaches -->
+  <section>
+    <h2>S3.0 What This Teaches</h2>
+    <t-b>
+      <code>HashMap&lt;K, V&gt;</code> stores key-value pairs with O(1) average lookup.
+      This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Constructing a <code>HashMap</code> and inserting entries</li>
+      <li>Looking up values with <code>get</code></li>
+      <li>The entry API for conditional insertion and in-place mutation</li>
+      <li>Iterating over keys, values, and pairs</li>
+      <li>A practical word-frequency example</li>
+    </ul>
+  </section>
+
+  <!-- S3.1 Construction and Insertion -->
+  <section>
+    <h2>S3.1 Construction and Insertion</h2>
+    <t-b>
+      <code>HashMap</code> is in <code>std::collections</code>, so bring it into scope
+      with <code>use</code>:
+    </t-b>
+    <pre><code class="language-rust">use std::collections::HashMap;
+
+let mut scores: HashMap&lt;String, u32&gt; = HashMap::new();
+scores.insert(String::from("Alice"), 90);
+scores.insert(String::from("Bob"),   75);</code></pre>
+    <t-b>
+      <code>insert</code> returns <code>Option&lt;V&gt;</code> - <code>Some(old_value)</code>
+      if the key already existed, <code>None</code> if it was new. A second
+      <code>insert</code> with the same key overwrites the value.
+    </t-b>
+  </section>
+
+  <!-- S3.2 get and contains_key -->
+  <section>
+    <h2>S3.2 get and contains_key</h2>
+    <t-b>
+      <code>get</code> returns <code>Option&lt;&amp;V&gt;</code> - a reference to the value,
+      or <code>None</code> if the key is absent:
+    </t-b>
+    <pre><code class="language-rust">if let Some(s) = scores.get("Alice") {
+    println!("Alice: {s}");
+}
+println!("{:?}", scores.get("Dave"));       // None
+println!("{}", scores.contains_key("Bob")); // true</code></pre>
+    <t-b>
+      Use <code>scores["Alice"]</code> for direct access when you are certain the key
+      exists - it panics if it does not.
+    </t-b>
+  </section>
+
+  <!-- S3.3 remove -->
+  <section>
+    <h2>S3.3 remove</h2>
+    <pre><code class="language-rust">scores.remove("Bob");</code></pre>
+    <t-b>
+      <code>remove</code> returns <code>Option&lt;V&gt;</code> - the removed value, or
+      <code>None</code> if the key was absent.
+    </t-b>
+  </section>
+
+  <!-- S3.4 The Entry API -->
+  <section>
+    <h2>S3.4 The Entry API</h2>
+    <t-b>
+      The entry API handles "insert if absent, otherwise leave alone" in one operation -
+      no double lookup:
+    </t-b>
+    <pre><code class="language-rust">scores.entry(String::from("Dave")).or_insert(70);  // adds Dave: 70
+scores.entry(String::from("Alice")).or_insert(0);  // Alice exists; unchanged</code></pre>
+    <t-b>
+      <code>or_insert</code> returns a mutable reference to the value (existing or newly
+      inserted). Use it directly to modify the value in place:
+    </t-b>
+    <pre><code class="language-rust">let alice = scores.entry(String::from("Alice")).or_insert(0);
+*alice += 5;</code></pre>
+    <t-b>
+      This pattern is the idiomatic way to build a frequency counter:
+    </t-b>
+    <pre><code class="language-rust">let text = "the quick brown fox jumps over the lazy dog the fox";
+let mut freq: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
+for word in text.split_whitespace() {
+    *freq.entry(word).or_insert(0) += 1;
+}</code></pre>
+  </section>
+
+  <!-- S3.5 Iteration -->
+  <section>
+    <h2>S3.5 Iteration</h2>
+    <t-b>
+      <code>HashMap</code> does not guarantee order. Sort before printing when you need
+      stable output:
+    </t-b>
+    <pre><code class="language-rust">let mut pairs: Vec&lt;(&amp;String, &amp;u32)&gt; = scores.iter().collect();
+pairs.sort_by_key(|(k, _)| k.as_str());
+for (name, score) in pairs {
+    println!("{name}: {score}");
+}</code></pre>
+    <t-b>
+      Other iteration forms: <code>.keys()</code>, <code>.values()</code>,
+      <code>.into_iter()</code> (consumes the map and yields owned key-value pairs).
+    </t-b>
+  </section>
+
+  <!-- S3.6 Example -->
+  <section>
+    <h2>S3.6 Example - All Together</h2>
+    <pre><code class="language-rust">// HashMap - demonstrates construction, lookup, the entry API, and iteration.
+
+use std::collections::HashMap;
+
+fn main() {
+    // --- construction ---
+    println!("--- construction ---");
+    let mut scores: HashMap&lt;String, u32&gt; = HashMap::new();
+    scores.insert(String::from("Alice"), 90);
+    scores.insert(String::from("Bob"),   75);
+    scores.insert(String::from("Carol"), 88);
+    println!("{scores:?}");
+
+    // --- get: returns Option&lt;&amp;V&gt; ---
+    println!("--- get ---");
+    if let Some(s) = scores.get("Alice") {
+        println!("Alice: {s}");
+    }
+    println!("Dave: {:?}", scores.get("Dave"));
+
+    // --- contains_key ---
+    println!("--- contains_key ---");
+    println!("has Bob: {}", scores.contains_key("Bob"));
+
+    // --- remove ---
+    println!("--- remove ---");
+    scores.remove("Bob");
+    println!("after remove Bob: {} entries", scores.len());
+
+    // --- entry: insert only if absent ---
+    println!("--- entry or_insert ---");
+    scores.entry(String::from("Dave")).or_insert(70);
+    scores.entry(String::from("Alice")).or_insert(0);  // Alice exists; unchanged
+    println!("Dave: {}, Alice: {}", scores["Dave"], scores["Alice"]);
+
+    // --- entry: mutate existing value ---
+    println!("--- entry modify ---");
+    let alice = scores.entry(String::from("Alice")).or_insert(0);
+    *alice += 5;
+    println!("Alice after +5: {}", scores["Alice"]);
+
+    // --- sorted iteration ---
+    println!("--- iteration ---");
+    let mut pairs: Vec&lt;(&amp;String, &amp;u32)&gt; = scores.iter().collect();
+    pairs.sort_by_key(|(k, _)| k.as_str());
+    for (name, score) in pairs {
+        println!("{name}: {score}");
+    }
+
+    // --- word frequency (classic entry pattern) ---
+    println!("--- word count ---");
+    let text = "the quick brown fox jumps over the lazy dog the fox";
+    let mut freq: HashMap&lt;&amp;str, u32&gt; = HashMap::new();
+    for word in text.split_whitespace() {
+        *freq.entry(word).or_insert(0) += 1;
+    }
+    let mut fv: Vec&lt;(&&amp;str, &amp;u32)&gt; = freq.iter().collect();
+    fv.sort_by_key(|(w, _)| **w);
+    for (word, count) in fv {
+        println!("  {word}: {count}");
+    }
+}</code></pre>
+    <t-b>Expected output (construction line order varies - HashMap is unordered):</t-b>
+    <pre class="output"><code class="language-terminal">--- construction ---
+{"Bob": 75, "Carol": 88, "Alice": 90}
+--- get ---
+Alice: 90
+Dave: None
+--- contains_key ---
+has Bob: true
+--- remove ---
+after remove Bob: 2 entries
+--- entry or_insert ---
+Dave: 70, Alice: 90
+--- entry modify ---
+Alice after +5: 95
+--- iteration ---
+Alice: 95
+Carol: 88
+Dave: 70
+--- word count ---
+  brown: 1
+  dog: 1
+  fox: 2
+  jumps: 1
+  lazy: 1
+  over: 1
+  quick: 1
+  the: 3</code></pre>
+  </section>
+
+  <!-- S3.7 Exercise -->
+  <section>
+    <h2>S3.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Build a <code>HashMap&lt;&amp;str, Vec&lt;i32&gt;&gt;</code> that groups numbers
+          by a label. Insert <code>"odd" -&gt; [1,3,5]</code> and
+          <code>"even" -&gt; [2,4,6]</code>. Print both groups.</li>
+        <li>Write a function
+          <code>char_frequency(s: &amp;str) -&gt; HashMap&lt;char, usize&gt;</code> that
+          counts how often each character appears. Test it on <code>"mississippi"</code>
+          and print results in alphabetical order.</li>
+        <li>Given two <code>HashMap&lt;String, u32&gt;</code> maps, write a function that
+          merges the second into the first, summing values for keys that appear in both.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S3.8 Common Mistakes -->
+  <section>
+    <h2>S3.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Indexing with a key that may not exist</h3>
+      <pre><code class="language-rust">println!("{}", scores["Dave"]);   // panics if Dave is absent</code></pre>
+      <t-b>Use <code>scores.get("Dave")</code> and handle the <code>Option</code>.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Unnecessary allocation on lookup</h3>
+      <pre><code class="language-rust">scores.insert(String::from("Alice"), 90);
+scores.get(&amp;"Alice".to_string());   // allocates needlessly
+scores.get("Alice");                // works - &amp;str coerces correctly</code></pre>
+      <t-b>
+        <code>HashMap</code> accepts any type that implements <code>Borrow&lt;K&gt;</code>
+        for lookup. <code>&amp;str</code> works directly for <code>String</code> keys -
+        no <code>.to_string()</code> needed.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Assuming iteration order</h3>
+      <pre><code class="language-rust">for (k, v) in &amp;scores {
+    println!("{k}: {v}");   // order is non-deterministic across runs
+}</code></pre>
+      <t-b>
+        <code>HashMap</code> uses a random hash seed. Collect into a <code>Vec</code> and
+        sort before printing when consistent output is required.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- S3.9 Key Terms -->
+  <section>
+    <h2>S3.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>HashMap&lt;K, V&gt;</td><td>Hash table mapping keys of type <code>K</code> to values of type <code>V</code></td></tr>
+        <tr><td>insert</td><td>Adds or overwrites a key-value pair; returns the old value as <code>Option&lt;V&gt;</code></td></tr>
+        <tr><td>get</td><td>Returns <code>Option&lt;&amp;V&gt;</code> for a given key; does not panic</td></tr>
+        <tr><td>remove</td><td>Removes a key and returns its value as <code>Option&lt;V&gt;</code></td></tr>
+        <tr><td>entry API</td><td><code>entry(key).or_insert(val)</code> - insert-if-absent with one lookup</td></tr>
+        <tr><td>or_insert</td><td>Returns <code>&amp;mut V</code> to the existing or newly inserted value</td></tr>
+        <tr><td>contains_key</td><td>Returns <code>bool</code> indicating whether the key is present</td></tr>
+        <tr><td>Borrow</td><td>Trait that lets <code>String</code> keys be looked up via <code>&amp;str</code> references</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  Rust / Learn / StdLib &nbsp;&bull;&nbsp; Tutorial S3 &nbsp;&bull;&nbsp; HashMap&lt;K,V&gt;
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/RustTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

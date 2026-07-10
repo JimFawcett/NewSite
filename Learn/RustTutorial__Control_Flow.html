@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Control Flow - Rust Execution Control</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Control Flow &mdash; Rust Execution Control</h1>
+  <t-b>Tutorial 5.0 &nbsp;&bull;&nbsp; Rust / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- 5.0 What This Teaches -->
+  <section>
+    <h2>5.0 What This Teaches</h2>
+    <t-b>This tutorial covers every construct Rust provides for directing the order of execution:</t-b>
+    <ul>
+      <li><code>if</code> / <code>else</code> as both a statement and an expression</li>
+      <li><code>loop</code> with <code>break</code> carrying a value</li>
+      <li><code>while</code> for condition-driven repetition</li>
+      <li><code>for</code> over ranges and slices</li>
+      <li><code>match</code> for exhaustive pattern matching</li>
+    </ul>
+  </section>
+
+  <!-- 5.1 if / else -->
+  <section>
+    <h2>5.1 if / else</h2>
+    <t-b>
+      <code>if</code> selects a branch based on a boolean condition. Rust does not coerce
+      integers or other types to <code>bool</code> - the condition must be exactly
+      <code>bool</code>.
+    </t-b>
+    <pre><code class="language-rust">let temp = 72;
+
+if temp > 80 {
+    println!("hot");
+} else if temp > 60 {
+    println!("comfortable");
+} else {
+    println!("cold");
+}</code></pre>
+  </section>
+
+  <!-- 5.2 if as an Expression -->
+  <section>
+    <h2>5.2 if as an Expression</h2>
+    <t-b>
+      Because <code>if</code> is an expression in Rust, it can produce a value. Both arms
+      must evaluate to the same type - the compiler enforces this at compile time.
+    </t-b>
+    <pre><code class="language-rust">let description = if temp > 60 { "warm" } else { "cool" };
+println!("temp is {description}");</code></pre>
+    <t-b>
+      This is more direct than declaring a mutable variable and reassigning it inside each
+      branch. Use it whenever you are choosing between two values of the same type.
+    </t-b>
+  </section>
+
+  <!-- 5.3 loop -->
+  <section>
+    <h2>5.3 loop</h2>
+    <t-b>
+      <code>loop</code> runs its body forever. You exit it with <code>break</code>. Unlike
+      <code>while true</code>, <code>loop</code> signals intent clearly: "this runs until
+      I explicitly stop it."
+    </t-b>
+    <t-b>
+      <code>break</code> can carry a value out of the loop, making <code>loop</code>
+      usable as an expression:
+    </t-b>
+    <pre><code class="language-rust">let mut n = 0;
+let result = loop {
+    n += 1;
+    if n == 5 {
+        break n * 2;  // result receives 10
+    }
+};
+println!("loop result = {result}");</code></pre>
+    <t-b>
+      This pattern is useful when computing a value requires retrying - for example,
+      reading user input or waiting for a condition to become true.
+    </t-b>
+  </section>
+
+  <!-- 5.4 while -->
+  <section>
+    <h2>5.4 while</h2>
+    <t-b>
+      <code>while</code> checks a condition before each iteration and stops when it
+      becomes <code>false</code>.
+    </t-b>
+    <pre><code class="language-rust">let mut count = 3;
+while count > 0 {
+    println!("count = {count}");
+    count -= 1;
+}</code></pre>
+    <t-b>
+      Use <code>while</code> when the number of iterations depends on a condition that
+      changes inside the loop body. Use <code>for</code> when iterating over a known
+      sequence.
+    </t-b>
+  </section>
+
+  <!-- 5.5 for over a Range -->
+  <section>
+    <h2>5.5 for over a Range</h2>
+    <t-b>
+      Ranges give a concise way to iterate over integers. <code>0..4</code> is exclusive
+      of the upper bound (produces 0, 1, 2, 3). <code>1..=3</code> is inclusive
+      (produces 1, 2, 3).
+    </t-b>
+    <pre><code class="language-rust">for i in 0..4 {
+    print!("{i} ");
+}
+println!();  // flush the line</code></pre>
+    <pre><code class="language-rust">for i in 1..=3 {
+    print!("{i} ");
+}
+println!();</code></pre>
+    <t-b>
+      <code>print!</code> (without <code>ln</code>) writes without a trailing newline.
+      The final <code>println!()</code> with no arguments writes just a newline,
+      completing the line.
+    </t-b>
+  </section>
+
+  <!-- 5.6 for over a Slice -->
+  <section>
+    <h2>5.6 for over a Slice</h2>
+    <t-b>
+      <code>for</code> works over any iterator, including slices. The <code>&amp;</code>
+      before the array name borrows it - you are reading the elements, not consuming or
+      moving them.
+    </t-b>
+    <pre><code class="language-rust">let words = ["alpha", "beta", "gamma"];
+for word in &words {
+    println!("{word}");
+}</code></pre>
+    <t-b>If you need the index alongside the value, use <code>.iter().enumerate()</code>:</t-b>
+    <pre><code class="language-rust">for (i, word) in words.iter().enumerate() {
+    println!("{i}: {word}");
+}</code></pre>
+  </section>
+
+  <!-- 5.7 match -->
+  <section>
+    <h2>5.7 match</h2>
+    <t-b>
+      <code>match</code> compares a value against a list of patterns and runs the first
+      arm that matches. It is <em>exhaustive</em> - the compiler requires every possible
+      value to be covered. The wildcard <code>_</code> catches anything not matched by
+      an earlier arm.
+    </t-b>
+    <pre><code class="language-rust">let score = 85;
+let grade = match score {
+    90..=100 => "A",
+    80..=89  => "B",
+    70..=79  => "C",
+    _        => "below C",
+};
+println!("grade = {grade}");</code></pre>
+    <t-b>
+      Each arm is <code>pattern =&gt; expression</code>. A comma ends each arm (the last
+      comma is optional). <code>match</code> is an expression - here the matched string
+      slice is assigned directly to <code>grade</code>.
+    </t-b>
+    <t-b>
+      <code>match</code> is preferred over long <code>if/else if</code> chains when
+      testing a single value against multiple cases. The compiler warns about unreachable
+      arms and errors if any value is unhandled.
+    </t-b>
+  </section>
+
+  <!-- 5.8 Example -->
+  <section>
+    <h2>5.8 Example - All Together</h2>
+    <pre><code class="language-rust">// Control_Flow - demonstrates if/else, loop, while, for, and match in Rust.
+
+fn main() {
+    let temp = 72;
+    if temp > 80 {
+        println!("hot");
+    } else if temp > 60 {
+        println!("comfortable");
+    } else {
+        println!("cold");
+    }
+
+    let description = if temp > 60 { "warm" } else { "cool" };
+    println!("temp is {description}");
+
+    let mut n = 0;
+    let result = loop {
+        n += 1;
+        if n == 5 { break n * 2; }
+    };
+    println!("loop result = {result}");
+
+    let mut count = 3;
+    while count > 0 {
+        println!("count = {count}");
+        count -= 1;
+    }
+
+    for i in 0..4 { print!("{i} "); }
+    println!();
+
+    for i in 1..=3 { print!("{i} "); }
+    println!();
+
+    let words = ["alpha", "beta", "gamma"];
+    for word in &words { println!("{word}"); }
+
+    let score = 85;
+    let grade = match score {
+        90..=100 => "A",
+        80..=89  => "B",
+        70..=79  => "C",
+        _        => "below C",
+    };
+    println!("grade = {grade}");
+}</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">comfortable
+temp is warm
+loop result = 10
+count = 3
+count = 2
+count = 1
+0 1 2 3
+1 2 3
+alpha
+beta
+gamma
+grade = B</code></pre>
+  </section>
+
+  <!-- 5.9 Exercise -->
+  <section>
+    <h2>5.9 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write a <code>for</code> loop over the range <code>1..=10</code> that prints
+          each number, but prints "fizz" instead when the number is divisible by 3 and
+          "buzz" when divisible by 5. Use <code>if</code>/<code>else if</code>/<code>else</code>
+          inside the loop body.</li>
+        <li>Use <code>loop</code> and <code>break</code> to find the first integer greater
+          than 100 that is divisible by 7. Print it. Assign the result using
+          <code>break value</code> so you do not need a separate variable.</li>
+        <li>Rewrite the grade computation from section 5.7 using <code>if</code>/
+          <code>else if</code>/<code>else</code> as an expression instead of
+          <code>match</code>. Which reads more clearly for this case?</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 5.10 Common Mistakes -->
+  <section>
+    <h2>5.10 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Non-boolean condition in if</h3>
+      <pre><code class="language-rust">let x = 1;
+if x { ... }  // error: expected bool, found integer</code></pre>
+      <t-b>Rust does not treat non-zero as true. Write <code>if x != 0 { ... }</code>.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Mismatched types in if expression arms</h3>
+      <pre><code class="language-rust">let v = if condition { 1 } else { "one" };  // error: mismatched types</code></pre>
+      <t-b>Both arms must produce the same type. Here <code>1</code> is <code>i32</code> and
+        <code>"one"</code> is <code>&amp;str</code>.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Exclusive vs. inclusive range confusion</h3>
+      <pre><code class="language-rust">for i in 0..5 { ... }   // iterates 0, 1, 2, 3, 4  (5 is excluded)
+for i in 0..=5 { ... }  // iterates 0, 1, 2, 3, 4, 5</code></pre>
+      <t-b><code>..</code> excludes the upper bound; <code>..=</code> includes it.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Non-exhaustive match</h3>
+      <pre><code class="language-rust">let x: i32 = 3;
+match x {
+    1 => println!("one"),
+    2 => println!("two"),
+    // error: pattern `i32::MIN..=0_i32` and more not covered
+}</code></pre>
+      <t-b>Add a <code>_ =&gt; ...</code> arm or cover every possible value.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Forgetting &amp; when iterating a slice</h3>
+      <pre><code class="language-rust">let nums = [1, 2, 3];
+for n in nums { ... }   // moves the array; fine for Copy types like i32
+for n in &nums { ... }  // borrows; works for any type and is more general</code></pre>
+      <t-b>
+        For non-<code>Copy</code> types (like <code>String</code>), iterating without
+        <code>&amp;</code> moves the elements out of the array, which is usually not
+        what you want.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- 5.11 Key Terms -->
+  <section>
+    <h2>5.11 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>if expression</td><td>A branch construct that can produce a value when both arms have the same type</td></tr>
+        <tr><td>loop</td><td>An unconditional loop that runs until <code>break</code></td></tr>
+        <tr><td>break value</td><td>Exits a <code>loop</code> and delivers <code>value</code> as the loop expression's result</td></tr>
+        <tr><td>while</td><td>A loop that checks a boolean condition before each iteration</td></tr>
+        <tr><td>for</td><td>Iterates over a range or any other iterator</td></tr>
+        <tr><td>range 0..n</td><td>Produces integers from 0 up to but not including n</td></tr>
+        <tr><td>range 0..=n</td><td>Produces integers from 0 through n inclusive</td></tr>
+        <tr><td>match</td><td>Exhaustive pattern matching; every possible value must be handled</td></tr>
+        <tr><td>wildcard _</td><td>A match arm pattern that matches anything not covered by earlier arms</td></tr>
+        <tr><td>.enumerate()</td><td>Iterator adapter that pairs each element with its index</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  Rust / Learn &nbsp;&bull;&nbsp; Tutorial 5 &nbsp;&bull;&nbsp; Control Flow
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/RustTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

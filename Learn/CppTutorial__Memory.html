@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Memory - Pointers, References, RAII</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Memory &mdash; Pointers, References, RAII</h1>
+  <t-b>Tutorial 9.0 &nbsp;&bull;&nbsp; C++ / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- 8.0 What This Teaches -->
+  <section>
+    <h2>9.0 What This Teaches</h2>
+    <t-b>
+      C++ gives direct access to memory. Understanding how memory works is essential
+      for writing correct, efficient programs. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Stack allocation vs heap allocation</li>
+      <li>Pointers: holding addresses, dereferencing, null pointers</li>
+      <li>References: aliases that cannot be rebound or null</li>
+      <li>Manual heap management with <code>new</code> and <code>delete</code></li>
+      <li>RAII: tying resource lifetime to object lifetime</li>
+    </ul>
+  </section>
+
+  <!-- 8.1 Stack and Heap -->
+  <section>
+    <h2>9.1 Stack and Heap</h2>
+    <t-b>
+      Every variable lives in one of two memory regions:
+    </t-b>
+    <table>
+      <thead>
+        <tr><th></th><th>Stack</th><th>Heap</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Allocation</td><td>Automatic on declaration</td><td>Explicit with <code>new</code></td></tr>
+        <tr><td>Deallocation</td><td>Automatic on scope exit</td><td>Explicit with <code>delete</code></td></tr>
+        <tr><td>Size</td><td>Fixed at compile time</td><td>Dynamic at runtime</td></tr>
+        <tr><td>Speed</td><td>Very fast</td><td>Slower (allocator overhead)</td></tr>
+        <tr><td>Failure mode</td><td>Stack overflow</td><td>Memory leak if delete forgotten</td></tr>
+      </tbody>
+    </table>
+    <t-b>
+      Prefer stack allocation. Use the heap (or smart pointers) only when you need
+      dynamic size or lifetime that outlasts the current scope.
+    </t-b>
+  </section>
+
+  <!-- 8.2 Pointers -->
+  <section>
+    <h2>9.2 Pointers</h2>
+    <pre><code class="language-cpp">int x = 10;
+int* p = &amp;x;      // p holds the address of x
+
+std::cout &lt;&lt; *p;   // dereference: read the value at the address
+*p = 20;           // modify x through the pointer
+std::cout &lt;&lt; x;    // 20
+
+int* null_p = nullptr;  // safer than NULL or 0
+if (null_p != nullptr) {
+    std::cout &lt;&lt; *null_p;   // never reached
+}</code></pre>
+    <t-b>
+      Always initialize pointers. Use <code>nullptr</code> rather than
+      <code>0</code> or <code>NULL</code> for null pointers - it is type-safe.
+    </t-b>
+  </section>
+
+  <!-- 8.3 References -->
+  <section>
+    <h2>9.3 References</h2>
+    <pre><code class="language-cpp">int a = 5;
+int&amp; ref = a;   // ref is an alias for a; must be initialized; cannot be rebound
+
+ref = 99;
+std::cout &lt;&lt; a;   // 99
+
+// const reference: read-only alias; can bind to temporaries
+const int&amp; cref = 42;   // ok: 42 is kept alive by the const reference</code></pre>
+    <t-b>
+      References are simpler and safer than pointers for most use cases: they cannot
+      be null, cannot be rebound, and do not need dereferencing syntax.
+    </t-b>
+  </section>
+
+  <!-- 8.4 new and delete -->
+  <section>
+    <h2>9.4 new and delete</h2>
+    <pre><code class="language-cpp">int* p = new int(42);    // allocate one int on the heap
+std::cout &lt;&lt; *p;         // 42
+delete p;                // free the memory
+p = nullptr;             // avoid dangling pointer
+
+int* arr = new int[10];  // allocate array
+arr[0] = 1;
+delete[] arr;            // free array - must match new[]</code></pre>
+    <t-b>
+      Every <code>new</code> must be paired with exactly one <code>delete</code>;
+      every <code>new[]</code> with <code>delete[]</code>. In modern C++ prefer
+      <code>std::unique_ptr</code> and <code>std::vector</code> to avoid manual
+      management entirely.
+    </t-b>
+  </section>
+
+  <!-- 8.5 RAII -->
+  <section>
+    <h2>9.5 RAII</h2>
+    <pre><code class="language-cpp">class FileHandle {
+public:
+    FileHandle(const std::string&amp; name) : name_(name) {
+        std::cout &lt;&lt; "opened: " &lt;&lt; name_ &lt;&lt; "\n";
+    }
+    ~FileHandle() {
+        std::cout &lt;&lt; "closed: " &lt;&lt; name_ &lt;&lt; "\n";
+    }
+private:
+    std::string name_;
+};
+
+void demo() {
+    FileHandle fh("log.txt");   // "opened: log.txt"
+    // ... use fh ...
+}   // "closed: log.txt" - destructor fires automatically, even if an exception is thrown</code></pre>
+    <t-b>
+      RAII (Resource Acquisition Is Initialization) is the C++ idiom for safe
+      resource management. Acquire the resource in the constructor, release it
+      in the destructor. The resource is always released when the object goes out
+      of scope - even through exceptions.
+    </t-b>
+  </section>
+
+  <!-- 8.6 Example -->
+  <section>
+    <h2>9.6 Example - All Together</h2>
+    <pre><code class="language-cpp">// Memory - stack vs heap, pointers, references, new/delete, RAII.
+
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+class FileHandle {
+public:
+    FileHandle(const std::string&amp; name) : name_(name) {
+        std::cout &lt;&lt; "opened: " &lt;&lt; name_ &lt;&lt; "\n";
+    }
+    ~FileHandle() { std::cout &lt;&lt; "closed: " &lt;&lt; name_ &lt;&lt; "\n"; }
+private:
+    std::string name_;
+};
+
+int main() {
+    // pointers
+    int x = 10;
+    int* p = &amp;x;
+    *p = 20;
+    std::cout &lt;&lt; "x=" &lt;&lt; x &lt;&lt; "\n";
+
+    // heap
+    int* hp = new int(42);
+    std::cout &lt;&lt; "heap=" &lt;&lt; *hp &lt;&lt; "\n";
+    delete hp;
+    hp = nullptr;
+
+    // references
+    int a = 5;
+    int&amp; ref = a;
+    ref = 99;
+    std::cout &lt;&lt; "a=" &lt;&lt; a &lt;&lt; "\n";
+
+    // RAII
+    {
+        FileHandle fh("log.txt");
+    }   // destructor fires here
+
+    return 0;
+}</code></pre>
+    <pre class="output"><code class="language-terminal">x=20
+heap=42
+a=99
+opened: log.txt
+closed: log.txt</code></pre>
+  </section>
+
+  <!-- 8.7 Exercise -->
+  <section>
+    <h2>9.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Allocate an array of 5 <code>double</code> values on the heap, fill it
+          with squares (0.0, 1.0, 4.0, 9.0, 16.0), print them, then free the
+          array correctly.</li>
+        <li>Write a function <code>increment(int&amp; n)</code> that increments its
+          argument. Call it and confirm the caller's variable changed.</li>
+        <li>Create an <code>RAII</code> class that prints "lock acquired" in its
+          constructor and "lock released" in its destructor. Create an instance in
+          a block and observe the output order.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 8.8 Common Mistakes -->
+  <section>
+    <h2>9.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Memory leak: forgetting delete</h3>
+      <pre><code class="language-cpp">void leak() {
+    int* p = new int(42);
+    // ... forgot delete p; ...
+}   // p goes out of scope; memory is never freed</code></pre>
+      <t-b>Use <code>std::unique_ptr</code> instead of raw <code>new</code>.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Dangling pointer</h3>
+      <pre><code class="language-cpp">int* p = new int(42);
+delete p;
+std::cout &lt;&lt; *p;   // undefined behavior: p points to freed memory</code></pre>
+      <t-b>Set pointers to <code>nullptr</code> after <code>delete</code>.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>delete[] vs delete mismatch</h3>
+      <pre><code class="language-cpp">int* arr = new int[10];
+delete arr;    // undefined behavior: should be delete[]</code></pre>
+    </div>
+  </section>
+
+  <!-- 8.9 Key Terms -->
+  <section>
+    <h2>9.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>pointer (T*)</td><td>Variable holding a memory address; dereference with *</td></tr>
+        <tr><td>reference (T&amp;)</td><td>Alias for an existing variable; cannot be null or rebound</td></tr>
+        <tr><td>nullptr</td><td>Null pointer constant; type-safe replacement for NULL</td></tr>
+        <tr><td>new / delete</td><td>Allocate / free a single object on the heap</td></tr>
+        <tr><td>new[] / delete[]</td><td>Allocate / free an array on the heap</td></tr>
+        <tr><td>dangling pointer</td><td>Pointer to freed or out-of-scope memory; dereferencing is undefined behavior</td></tr>
+        <tr><td>memory leak</td><td>Heap memory allocated but never freed</td></tr>
+        <tr><td>RAII</td><td>Resource Acquisition Is Initialization: destructor guarantees cleanup</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  C++ / Learn &nbsp;&bull;&nbsp; Tutorial 9 &nbsp;&bull;&nbsp; Memory
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CppTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

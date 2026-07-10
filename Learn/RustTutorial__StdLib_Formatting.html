@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Formatting - Display and Debug</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Formatting &mdash; Display and Debug</h1>
+  <t-b>Tutorial S10.0 &nbsp;&bull;&nbsp; Rust / Learn / StdLib</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- S10.0 What This Teaches -->
+  <section>
+    <h2>S10.0 What This Teaches</h2>
+    <t-b>
+      Rust's formatting system is built around traits and the <code>format_args!</code>
+      infrastructure. Understanding it lets you control exactly how your types appear in
+      output. This tutorial covers:
+    </t-b>
+    <ul>
+      <li><code>Display</code> vs <code>Debug</code> - when to implement each</li>
+      <li>Implementing <code>std::fmt::Display</code> for a custom type</li>
+      <li>Format specifiers for numbers, alignment, and width</li>
+      <li>Named arguments in format strings</li>
+      <li><code>format!</code>, <code>print!</code>, <code>println!</code>, <code>eprintln!</code></li>
+    </ul>
+  </section>
+
+  <!-- S10.1 Display vs Debug -->
+  <section>
+    <h2>S10.1 Display vs Debug</h2>
+    <t-b>
+      Rust has two main formatting traits:
+    </t-b>
+    <table>
+      <thead>
+        <tr><th>Trait</th><th>Format spec</th><th>Intended audience</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Debug</td><td>{:?} / {:#?}</td><td>Developers during debugging</td></tr>
+        <tr><td>Display</td><td>{}</td><td>End users; human-readable output</td></tr>
+      </tbody>
+    </table>
+    <t-b>
+      <code>Debug</code> is usually derived with <code>#[derive(Debug)]</code>.
+      <code>Display</code> must be implemented manually because "human-readable" depends
+      on the type's purpose. If you try to print a type with <code>{}</code> and it does
+      not implement <code>Display</code>, the compiler gives an error at compile time.
+    </t-b>
+  </section>
+
+  <!-- S10.2 Implementing Display -->
+  <section>
+    <h2>S10.2 Implementing Display</h2>
+    <pre><code class="language-rust">use std::fmt;
+
+struct Point { x: f64, y: f64 }
+
+impl fmt::Display for Point {
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter&lt;'_&gt;) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
+}</code></pre>
+    <t-b>
+      <code>fmt::Result</code> is <code>Result&lt;(), fmt::Error&gt;</code>. Return it
+      from <code>write!</code> or <code>writeln!</code> - they already produce the right
+      type. The <code>?</code> operator works inside <code>fmt</code> functions.
+    </t-b>
+    <t-b>
+      Once <code>Display</code> is implemented, <code>{}</code> works in any format string
+      and <code>.to_string()</code> becomes automatically available.
+    </t-b>
+  </section>
+
+  <!-- S10.3 Implementing Debug Manually -->
+  <section>
+    <h2>S10.3 Implementing Debug Manually</h2>
+    <t-b>
+      Derive <code>Debug</code> whenever you can. Write a manual <code>impl fmt::Debug</code>
+      only when the derived output is wrong or confusing:
+    </t-b>
+    <pre><code class="language-rust">impl fmt::Debug for Point {
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter&lt;'_&gt;) -> fmt::Result {
+        write!(f, "Point {{ x: {}, y: {} }}", self.x, self.y)
+    }
+}</code></pre>
+    <t-b>
+      The <code>{{</code> and <code>}}</code> inside format strings are escaped braces -
+      they produce literal <code>{</code> and <code>}</code> in the output.
+    </t-b>
+  </section>
+
+  <!-- S10.4 Numeric Format Specifiers -->
+  <section>
+    <h2>S10.4 Numeric Format Specifiers</h2>
+    <pre><code class="language-rust">let n = 42;
+let f = 3.14159_f64;
+
+println!("{n}");     // 42        decimal (default)
+println!("{n:b}");   // 101010    binary
+println!("{n:o}");   // 52        octal
+println!("{n:x}");   // 2a        hex lowercase
+println!("{n:X}");   // 2A        hex uppercase
+println!("{f:.2}");  // 3.14      two decimal places
+println!("{f:e}");   // 3.14159e0 scientific notation</code></pre>
+  </section>
+
+  <!-- S10.5 Width and Alignment -->
+  <section>
+    <h2>S10.5 Width and Alignment</h2>
+    <pre><code class="language-rust">let n = 42;
+println!("'{n:&gt;8}'");   // '      42'   right-align in 8 chars
+println!("'{n:&lt;8}'");   // '42      '   left-align
+println!("'{n:^8}'");   // '   42   '   center
+println!("'{n:08}'");   // '00000042'   zero-pad to 8 digits</code></pre>
+    <t-b>
+      The format <code>:{fill}{align}{width}</code> where <code>fill</code> is any
+      character, <code>align</code> is <code>&lt;</code>, <code>&gt;</code>, or
+      <code>^</code>, and <code>width</code> is a number.
+    </t-b>
+  </section>
+
+  <!-- S10.6 Named Arguments -->
+  <section>
+    <h2>S10.6 Named Arguments</h2>
+    <t-b>
+      Variables in scope can be used directly by name inside format strings:
+    </t-b>
+    <pre><code class="language-rust">let name = "Rust";
+let edition = 2021;
+println!("language={name}, edition={edition}");</code></pre>
+    <t-b>
+      This is cleaner than positional <code>{}</code> placeholders when the format string
+      is long or has many arguments.
+    </t-b>
+  </section>
+
+  <!-- S10.7 format!, print!, println!, eprintln! -->
+  <section>
+    <h2>S10.7 format!, print!, println!, eprintln!</h2>
+    <table>
+      <thead>
+        <tr><th>Macro</th><th>Destination</th><th>Trailing newline</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>format!</td><td>returns a String</td><td>no</td></tr>
+        <tr><td>print!</td><td>stdout</td><td>no</td></tr>
+        <tr><td>println!</td><td>stdout</td><td>yes</td></tr>
+        <tr><td>eprintln!</td><td>stderr</td><td>yes</td></tr>
+      </tbody>
+    </table>
+    <t-b>
+      Use <code>eprintln!</code> for error messages and diagnostic output so they appear
+      on stderr and can be redirected separately from normal program output.
+    </t-b>
+  </section>
+
+  <!-- S10.8 Example -->
+  <section>
+    <h2>S10.8 Example - All Together</h2>
+    <pre><code class="language-rust">// Formatting - demonstrates Display, Debug, format specifiers, and the fmt module.
+
+use std::fmt;
+
+struct Point { x: f64, y: f64 }
+
+impl fmt::Display for Point {
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter&lt;'_&gt;) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
+impl fmt::Debug for Point {
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter&lt;'_&gt;) -> fmt::Result {
+        write!(f, "Point {{ x: {}, y: {} }}", self.x, self.y)
+    }
+}
+
+fn main() {
+    let p = Point { x: 3.0, y: 4.0 };
+
+    // --- Display vs Debug ---
+    println!("--- Display vs Debug ---");
+    println!("Display: {p}");
+    println!("Debug:   {p:?}");
+
+    // --- numeric format specifiers ---
+    println!("--- numeric ---");
+    let n = 42;
+    let f = 3.14159_f64;
+    println!("decimal:  {n}");
+    println!("binary:   {n:b}");
+    println!("octal:    {n:o}");
+    println!("hex:      {n:x}");
+    println!("float 2dp:{f:.2}");
+    println!("sci:      {f:e}");
+
+    // --- width and alignment ---
+    println!("--- alignment ---");
+    println!("right:  '{n:&gt;8}'");
+    println!("left:   '{n:&lt;8}'");
+    println!("center: '{n:^8}'");
+    println!("zero:   '{n:08}'");
+
+    // --- named arguments ---
+    println!("--- named args ---");
+    let name = "Rust";
+    let edition = 2021;
+    println!("language={name}, edition={edition}");
+
+    // --- format! builds a String ---
+    println!("--- format! ---");
+    let s = format!("point is {p}, debug: {p:?}");
+    println!("{s}");
+
+    // --- eprintln! writes to stderr ---
+    eprintln!("this line goes to stderr");
+}</code></pre>
+    <t-b>Expected output (the <code>eprintln!</code> line goes to stderr and may not
+      appear in captured output):</t-b>
+    <pre class="output"><code class="language-terminal">--- Display vs Debug ---
+Display: (3, 4)
+Debug:   Point { x: 3, y: 4 }
+--- numeric ---
+decimal:  42
+binary:   101010
+octal:    52
+hex:      2a
+float 2dp:3.14
+sci:      3.14159e0
+--- alignment ---
+right:  '      42'
+left:   '42      '
+center: '   42   '
+zero:   '00000042'
+--- named args ---
+language=Rust, edition=2021
+--- format! ---
+point is (3, 4), debug: Point { x: 3, y: 4 }</code></pre>
+  </section>
+
+  <!-- S10.9 Exercise -->
+  <section>
+    <h2>S10.9 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Define a struct <code>Color(u8, u8, u8)</code> and implement <code>Display</code>
+          to print it as <code>#RRGGBB</code> hex (e.g., <code>Color(255, 128, 0)</code>
+          prints <code>#FF8000</code>). Use <code>{:02X}</code> for each channel.</li>
+        <li>Implement <code>Display</code> for a <code>Fraction { num: i32, den: i32 }</code>
+          struct that prints as <code>"3/4"</code>. Also implement <code>Debug</code> to
+          print as <code>"Fraction { num: 3, den: 4 }"</code>.</li>
+        <li>Write a function <code>table(headers: &amp;[&amp;str], rows: &amp;[Vec&lt;String&gt;])</code>
+          that prints a left-aligned table with each column padded to the width of its
+          longest entry.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S10.10 Common Mistakes -->
+  <section>
+    <h2>S10.10 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Using {} on a type that only implements Debug</h3>
+      <pre><code class="language-rust">println!("{}", my_struct);   // error: my_struct doesn't implement Display</code></pre>
+      <t-b>Either implement <code>Display</code>, or use <code>{:?}</code> for the <code>Debug</code> output.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Forgetting to escape braces</h3>
+      <pre><code class="language-rust">println!("set: {1, 2, 3}");   // error: invalid format string
+println!("set: {{1, 2, 3}}"); // correct: {{ and }} produce literal braces</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Calling to_string() before Display is implemented</h3>
+      <t-b>
+        <code>to_string()</code> is automatically available for any type implementing
+        <code>Display</code>. Calling it before the <code>impl</code> exists gives a
+        compile error, not a silent empty string.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Using print! when println! is needed</h3>
+      <t-b>
+        <code>print!</code> does not flush stdout automatically. On some platforms, output
+        may not appear until a newline or an explicit <code>std::io::stdout().flush()</code>
+        call. Prefer <code>println!</code> for interactive output.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- S10.11 Key Terms -->
+  <section>
+    <h2>S10.11 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Display</td><td>Trait for human-readable <code>{}</code> formatting; must be implemented manually</td></tr>
+        <tr><td>Debug</td><td>Trait for developer <code>{:?}</code> formatting; usually derived with <code>#[derive(Debug)]</code></td></tr>
+        <tr><td>fmt::Formatter</td><td>Context object passed to <code>fmt</code> methods; carries alignment, width, precision</td></tr>
+        <tr><td>{:?}</td><td>Debug format specifier</td></tr>
+        <tr><td>{:#?}</td><td>Pretty-printed Debug format (indented, one field per line)</td></tr>
+        <tr><td>{:.N}</td><td>Floating-point precision: N decimal places</td></tr>
+        <tr><td>{:&gt;N}, {:&lt;N}, {:^N}</td><td>Right-, left-, center-align in N characters</td></tr>
+        <tr><td>{:0N}</td><td>Zero-pad to N digits</td></tr>
+        <tr><td>format!</td><td>Macro that builds a <code>String</code> from a format template</td></tr>
+        <tr><td>eprintln!</td><td>Prints to stderr with a trailing newline</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  Rust / Learn / StdLib &nbsp;&bull;&nbsp; Tutorial S10 &nbsp;&bull;&nbsp; Formatting
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/RustTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

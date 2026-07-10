@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Threads - std::thread and mutex</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Threads &mdash; std::thread and mutex</h1>
+  <t-b>Tutorial S9.0 &nbsp;&bull;&nbsp; C++ / Learn / StdLib</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- S9.0 What This Teaches -->
+  <section>
+    <h2>S9.0 What This Teaches</h2>
+    <t-b>
+      C++ threads let you run code concurrently. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Creating threads with <code>std::thread</code></li>
+      <li><code>join()</code> and <code>detach()</code></li>
+      <li>Passing arguments to threads</li>
+      <li><code>std::mutex</code> and <code>std::lock_guard</code></li>
+      <li>Data races and how to prevent them</li>
+    </ul>
+  </section>
+
+  <!-- S9.1 Creating a Thread -->
+  <section>
+    <h2>S9.1 Creating a Thread</h2>
+    <pre><code class="language-cpp">#include &lt;thread&gt;
+#include &lt;iostream&gt;
+
+void say_hello(int id) {
+    std::cout &lt;&lt; "hello from thread " &lt;&lt; id &lt;&lt; "\n";
+}
+
+int main() {
+    std::thread t(say_hello, 1);
+    t.join();   // wait for t to finish before continuing
+    std::cout &lt;&lt; "done\n";
+}</code></pre>
+    <t-b>
+      <code>std::thread</code> starts immediately on construction. Call
+      <code>join()</code> before the thread object is destroyed, or the
+      program will terminate with an error.
+    </t-b>
+  </section>
+
+  <!-- S9.2 join and detach -->
+  <section>
+    <h2>S9.2 join and detach</h2>
+    <pre><code class="language-cpp">std::thread t(say_hello, 2);
+
+// Option 1: join - caller blocks until t finishes
+t.join();
+
+// Option 2: detach - t runs independently; caller does not wait
+// std::thread t2(say_hello, 3);
+// t2.detach();   // t2 is now a daemon thread; do NOT access t2 after this</code></pre>
+    <t-b>
+      Prefer <code>join()</code> for threads that need to finish before
+      the program continues. Use <code>detach()</code> only for fire-and-forget
+      background tasks, and ensure the thread does not reference local variables
+      that will go out of scope.
+    </t-b>
+  </section>
+
+  <!-- S9.3 Passing Arguments -->
+  <section>
+    <h2>S9.3 Passing Arguments</h2>
+    <pre><code class="language-cpp">void add(int a, int b, int&amp; result) {
+    result = a + b;
+}
+
+int main() {
+    int r = 0;
+    std::thread t(add, 3, 4, std::ref(r));   // std::ref wraps reference args
+    t.join();
+    std::cout &lt;&lt; r &lt;&lt; "\n";   // 7
+}</code></pre>
+    <t-b>
+      Thread arguments are copied by default. Wrap reference arguments with
+      <code>std::ref()</code>. Use lambdas for cleaner capture of local state.
+    </t-b>
+  </section>
+
+  <!-- S9.4 mutex and lock_guard -->
+  <section>
+    <h2>S9.4 mutex and lock_guard</h2>
+    <pre><code class="language-cpp">#include &lt;mutex&gt;
+
+std::mutex mtx;
+int counter = 0;
+
+void increment() {
+    std::lock_guard&lt;std::mutex&gt; lock(mtx);   // locked on construction
+    ++counter;
+}   // lock released here (RAII)</code></pre>
+    <t-b>
+      <code>std::mutex</code> protects shared data. <code>std::lock_guard</code>
+      acquires the mutex on construction and releases it on destruction - no
+      manual unlock needed. Always use RAII wrappers rather than calling
+      <code>lock()</code>/<code>unlock()</code> directly.
+    </t-b>
+  </section>
+
+  <!-- S9.5 Vector of Threads -->
+  <section>
+    <h2>S9.5 Vector of Threads</h2>
+    <pre><code class="language-cpp">std::mutex mtx;
+int shared = 0;
+
+void worker(int id) {
+    std::lock_guard&lt;std::mutex&gt; lock(mtx);
+    ++shared;
+    std::cout &lt;&lt; "thread " &lt;&lt; id &lt;&lt; " -> " &lt;&lt; shared &lt;&lt; "\n";
+}
+
+int main() {
+    std::vector&lt;std::thread&gt; threads;
+    for (int i = 0; i &lt; 4; ++i)
+        threads.emplace_back(worker, i);
+    for (auto&amp; t : threads)
+        t.join();
+    std::cout &lt;&lt; "final: " &lt;&lt; shared &lt;&lt; "\n";
+}</code></pre>
+  </section>
+
+  <!-- S9.6 Example -->
+  <section>
+    <h2>S9.6 Example - All Together</h2>
+    <pre><code class="language-cpp">// Threads - std::thread, join, mutex, lock_guard, shared data.
+
+#include &lt;iostream&gt;
+#include &lt;thread&gt;
+#include &lt;mutex&gt;
+#include &lt;vector&gt;
+#include &lt;string&gt;
+
+std::mutex g_mutex;
+
+void worker(int id, int&amp; shared_count) {
+    std::lock_guard&lt;std::mutex&gt; lock(g_mutex);
+    ++shared_count;
+    std::cout &lt;&lt; "thread " &lt;&lt; id &lt;&lt; " incremented count to " &lt;&lt; shared_count &lt;&lt; "\n";
+}
+
+int main() {
+    int count = 0;
+    std::vector&lt;std::thread&gt; threads;
+    for (int i = 0; i &lt; 4; ++i)
+        threads.emplace_back(worker, i, std::ref(count));
+    for (auto&amp; t : threads)
+        t.join();
+    std::cout &lt;&lt; "final count: " &lt;&lt; count &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+    <pre class="output"><code class="language-terminal">thread 0 incremented count to 1
+thread 1 incremented count to 2
+thread 2 incremented count to 3
+thread 3 incremented count to 4
+final count: 4</code></pre>
+    <t-b>
+      Thread scheduling is non-deterministic. The order of output lines may
+      vary between runs, but the final count is always 4 because each increment
+      is protected by the mutex.
+    </t-b>
+  </section>
+
+  <!-- S9.7 Exercise -->
+  <section>
+    <h2>S9.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Launch 5 threads, each of which appends its id to a
+          <code>std::vector&lt;int&gt;</code> (protected by a mutex). After
+          joining all threads, print the vector.</li>
+        <li>Remove the mutex from the example above and run it many times.
+          Observe the data race. Re-add the mutex to fix it.</li>
+        <li>Write a function <code>parallel_sum</code> that splits a
+          <code>vector&lt;int&gt;</code> in half, sums each half in a separate
+          thread, and returns the total.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S9.8 Common Mistakes -->
+  <section>
+    <h2>S9.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Forgetting to join (or detach)</h3>
+      <pre><code class="language-cpp">void bad() {
+    std::thread t([]{ std::cout &lt;&lt; "hi\n"; });
+}   // destructor of t calls std::terminate() if t is joinable</code></pre>
+      <t-b>Always call <code>join()</code> or <code>detach()</code> before the
+        thread object is destroyed. Use a RAII wrapper or
+        <code>std::jthread</code> (C++20) to automate this.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Accessing a moved-from thread</h3>
+      <pre><code class="language-cpp">std::thread t(worker, 0, std::ref(count));
+std::thread u = std::move(t);
+t.join();   // error: t no longer owns the thread after move</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Detached thread accessing destroyed local variables</h3>
+      <pre><code class="language-cpp">void bad() {
+    int local = 42;
+    std::thread t([&amp;local]{ std::this_thread::sleep_for(std::chrono::seconds(1));
+                             std::cout &lt;&lt; local; });   // dangling ref
+    t.detach();
+}   // local destroyed; thread still running</code></pre>
+      <t-b>Capture by value when detaching, or ensure the thread's lifetime
+        is bounded by the variable's lifetime.</t-b>
+    </div>
+  </section>
+
+  <!-- S9.9 Key Terms -->
+  <section>
+    <h2>S9.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>std::thread</td><td>Represents a single OS thread; starts on construction</td></tr>
+        <tr><td>join()</td><td>Block the calling thread until this thread finishes</td></tr>
+        <tr><td>detach()</td><td>Allow thread to run independently; caller does not wait</td></tr>
+        <tr><td>std::ref()</td><td>Wrap a reference so it can be passed to a thread constructor</td></tr>
+        <tr><td>std::mutex</td><td>Mutual-exclusion primitive; only one thread holds it at a time</td></tr>
+        <tr><td>std::lock_guard</td><td>RAII mutex wrapper; locks on construction, unlocks on destruction</td></tr>
+        <tr><td>data race</td><td>Two threads access the same memory concurrently, at least one writing, without synchronization - undefined behavior</td></tr>
+        <tr><td>std::jthread</td><td>C++20 thread that automatically joins on destruction</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  C++ / Learn / StdLib &nbsp;&bull;&nbsp; Tutorial S9 &nbsp;&bull;&nbsp; Threads
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CppTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Templates - Generic Programming</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Templates &mdash; Generic Programming</h1>
+  <t-b>Tutorial 10.0 &nbsp;&bull;&nbsp; C++ / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- 9.0 What This Teaches -->
+  <section>
+    <h2>10.0 What This Teaches</h2>
+    <t-b>
+      Templates let you write code that works with any type without sacrificing
+      type safety. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Function templates and type deduction</li>
+      <li>Class templates</li>
+      <li>Template parameters: <code>typename T</code> and non-type parameters</li>
+      <li>Compile-time branching with <code>if constexpr</code> (C++17)</li>
+      <li>Where templates fit vs overloading</li>
+    </ul>
+  </section>
+
+  <!-- 9.1 Function Templates -->
+  <section>
+    <h2>10.1 Function Templates</h2>
+    <pre><code class="language-cpp">template&lt;typename T&gt;
+T max_of(T a, T b) { return a &gt; b ? a : b; }
+
+max_of(3, 7);                             // T = int
+max_of(2.5, 1.8);                         // T = double
+max_of(std::string("apple"), std::string("fig")); // T = std::string</code></pre>
+    <t-b>
+      The compiler deduces <code>T</code> from the argument types. You can also
+      specify it explicitly: <code>max_of&lt;double&gt;(3, 7.0)</code>. The
+      template generates a separate function for each distinct type used - this
+      is called instantiation.
+    </t-b>
+  </section>
+
+  <!-- 9.2 Multiple Type Parameters -->
+  <section>
+    <h2>10.2 Multiple Type Parameters</h2>
+    <pre><code class="language-cpp">template&lt;typename T, typename U&gt;
+void print_pair(T first, U second) {
+    std::cout &lt;&lt; first &lt;&lt; ", " &lt;&lt; second &lt;&lt; "\n";
+}
+
+print_pair(42, 3.14);
+print_pair(std::string("name"), 100);</code></pre>
+    <t-b>
+      Each template parameter is deduced independently from its argument.
+    </t-b>
+  </section>
+
+  <!-- 9.3 Class Templates -->
+  <section>
+    <h2>10.3 Class Templates</h2>
+    <pre><code class="language-cpp">template&lt;typename T&gt;
+class Stack {
+public:
+    void push(const T&amp; val) { data_.push_back(val); }
+    void pop()               { data_.pop_back(); }
+    const T&amp; top() const     { return data_.back(); }
+    bool empty() const       { return data_.empty(); }
+private:
+    std::vector&lt;T&gt; data_;
+};
+
+Stack&lt;int&gt; si;
+si.push(1); si.push(2);
+std::cout &lt;&lt; si.top();   // 2
+
+Stack&lt;std::string&gt; ss;
+ss.push("hello");</code></pre>
+    <t-b>
+      Class templates must have the type argument specified explicitly:
+      <code>Stack&lt;int&gt;</code>. Class Template Argument Deduction (CTAD,
+      C++17) can infer it in some cases, but explicit is clearer.
+    </t-b>
+  </section>
+
+  <!-- 9.4 if constexpr -->
+  <section>
+    <h2>10.4 Compile-time Branching with if constexpr</h2>
+    <pre><code class="language-cpp">#include &lt;type_traits&gt;
+
+template&lt;typename T&gt;
+std::string type_label() {
+    if constexpr (std::is_integral_v&lt;T&gt;)           return "integral";
+    else if constexpr (std::is_floating_point_v&lt;T&gt;) return "floating point";
+    else                                             return "other";
+}
+
+type_label&lt;int&gt;();    // "integral"
+type_label&lt;double&gt;(); // "floating point"</code></pre>
+    <t-b>
+      <code>if constexpr</code> evaluates the condition at compile time and only
+      compiles the matching branch. This lets template code behave differently for
+      different types without runtime overhead.
+    </t-b>
+  </section>
+
+  <!-- 9.5 Example -->
+  <section>
+    <h2>10.5 Example - All Together</h2>
+    <pre><code class="language-cpp">// Templates - function templates, class templates, type deduction.
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;string&gt;
+#include &lt;type_traits&gt;
+
+template&lt;typename T&gt;
+T max_of(T a, T b) { return a &gt; b ? a : b; }
+
+template&lt;typename T&gt;
+class Stack {
+public:
+    void push(const T&amp; val) { data_.push_back(val); }
+    void pop()              { data_.pop_back(); }
+    const T&amp; top() const   { return data_.back(); }
+    bool empty() const     { return data_.empty(); }
+private:
+    std::vector&lt;T&gt; data_;
+};
+
+template&lt;typename T&gt;
+std::string type_label() {
+    if constexpr (std::is_integral_v&lt;T&gt;)            return "integral";
+    else if constexpr (std::is_floating_point_v&lt;T&gt;) return "floating point";
+    else                                             return "other";
+}
+
+int main() {
+    std::cout &lt;&lt; max_of(3, 7)    &lt;&lt; "\n";   // 7
+    std::cout &lt;&lt; max_of(2.5, 1.8) &lt;&lt; "\n";  // 2.5
+
+    Stack&lt;int&gt; s;
+    s.push(10); s.push(20); s.push(30);
+    while (!s.empty()) { std::cout &lt;&lt; s.top() &lt;&lt; " "; s.pop(); }
+    std::cout &lt;&lt; "\n";
+
+    std::cout &lt;&lt; type_label&lt;int&gt;()    &lt;&lt; "\n";
+    std::cout &lt;&lt; type_label&lt;double&gt;() &lt;&lt; "\n";
+    std::cout &lt;&lt; type_label&lt;std::string&gt;() &lt;&lt; "\n";
+    return 0;
+}</code></pre>
+    <pre class="output"><code class="language-terminal">7
+2.5
+30 20 10
+integral
+floating point
+other</code></pre>
+  </section>
+
+  <!-- 9.6 Exercise -->
+  <section>
+    <h2>10.6 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write a function template <code>sum(const std::vector&lt;T&gt;&amp; v)</code>
+          that returns the sum of all elements. Test it with <code>int</code> and
+          <code>double</code> vectors.</li>
+        <li>Write a class template <code>Pair&lt;T, U&gt;</code> with public members
+          <code>first</code> and <code>second</code> and a constructor that takes
+          both. Add a <code>swap()</code> method that swaps the values (only works
+          when T == U).</li>
+        <li>Use <code>if constexpr</code> with <code>std::is_same_v&lt;T, std::string&gt;</code>
+          to write a template function that prints the length of a string or the
+          absolute value of a number.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9.7 Common Mistakes -->
+  <section>
+    <h2>10.7 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Template definition must be in the header</h3>
+      <t-b>
+        Templates are instantiated at compile time when the type is known. If you put
+        the template definition in a <code>.cpp</code> file, other translation units
+        cannot instantiate it. Put template definitions in header (<code>.h</code>)
+        files or inline in the class body.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Type does not support the required operations</h3>
+      <pre><code class="language-cpp">max_of(std::vector&lt;int&gt;{1,2}, std::vector&lt;int&gt;{3,4});
+// error: operator&gt; not defined for vector</code></pre>
+      <t-b>Templates fail to compile if the type argument lacks required operations.
+        The error messages can be long. C++20 Concepts improve diagnostics.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Ambiguity between template and overload</h3>
+      <pre><code class="language-cpp">template&lt;typename T&gt; void f(T x) {}
+void f(int x) {}   // ok: non-template is preferred for exact match
+f(42);             // calls the non-template version</code></pre>
+    </div>
+  </section>
+
+  <!-- 9.8 Key Terms -->
+  <section>
+    <h2>10.8 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>template&lt;typename T&gt;</td><td>Declares a function or class parameterized on type T</td></tr>
+        <tr><td>instantiation</td><td>Compiler generates a concrete version of the template for a specific type</td></tr>
+        <tr><td>type deduction</td><td>Compiler infers T from the argument types</td></tr>
+        <tr><td>class template</td><td>A class parameterized on one or more types</td></tr>
+        <tr><td>if constexpr</td><td>Compile-time conditional; only the matching branch is compiled</td></tr>
+        <tr><td>std::is_integral_v&lt;T&gt;</td><td>Compile-time boolean: true if T is an integer type</td></tr>
+        <tr><td>CTAD</td><td>Class Template Argument Deduction (C++17): infer template args from constructor args</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  C++ / Learn &nbsp;&bull;&nbsp; Tutorial 10 &nbsp;&bull;&nbsp; Templates
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CppTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

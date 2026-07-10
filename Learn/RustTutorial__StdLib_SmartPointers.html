@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Pointers - Box, Rc, RefCell</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Smart Pointers &mdash; Box, Rc, RefCell</h1>
+  <t-b>Tutorial S8.0 &nbsp;&bull;&nbsp; Rust / Learn / StdLib</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- S8.0 What This Teaches -->
+  <section>
+    <h2>S8.0 What This Teaches</h2>
+    <t-b>
+      Rust's ownership model covers most cases, but some designs genuinely need heap
+      allocation, shared ownership, or interior mutability. Smart pointers provide these
+      capabilities without sacrificing safety. This tutorial covers:
+    </t-b>
+    <ul>
+      <li><code>Box&lt;T&gt;</code> for single-owner heap allocation and recursive types</li>
+      <li><code>Rc&lt;T&gt;</code> for shared ownership on a single thread</li>
+      <li><code>RefCell&lt;T&gt;</code> for interior mutability with runtime borrow checking</li>
+      <li><code>Rc&lt;RefCell&lt;T&gt;&gt;</code> for the combination of both</li>
+    </ul>
+  </section>
+
+  <!-- S8.1 Box<T> -->
+  <section>
+    <h2>S8.1 Box&lt;T&gt; - Heap Allocation</h2>
+    <t-b>
+      <code>Box&lt;T&gt;</code> stores a value on the heap and gives you a single owning
+      pointer to it. When the <code>Box</code> is dropped, the heap memory is freed:
+    </t-b>
+    <pre><code class="language-rust">let b = Box::new(42);
+println!("{b}");    // 42 - Deref coercion lets you use it like a plain i32
+println!("{}", *b); // explicit deref</code></pre>
+    <t-b>
+      The main practical use is enabling recursive types. Without <code>Box</code>, the
+      compiler cannot determine the size of a type that contains itself:
+    </t-b>
+    <pre><code class="language-rust">enum List {
+    Cons(i32, Box&lt;List&gt;),  // Box breaks the infinite size cycle
+    Nil,
+}
+
+let list = List::Cons(1, Box::new(List::Cons(2, Box::new(List::Nil))));</code></pre>
+    <t-b>
+      <code>Box&lt;List&gt;</code> has a known, fixed size (one pointer), so the compiler
+      accepts it.
+    </t-b>
+  </section>
+
+  <!-- S8.2 Rc<T> -->
+  <section>
+    <h2>S8.2 Rc&lt;T&gt; - Shared Ownership</h2>
+    <t-b>
+      <code>Rc&lt;T&gt;</code> (reference-counted pointer) allows multiple owners of the
+      same heap value on a single thread. Each <code>Rc::clone</code> increments a counter;
+      when the counter reaches zero, the value is freed:
+    </t-b>
+    <pre><code class="language-rust">use std::rc::Rc;
+
+let shared = Rc::new(String::from("shared data"));
+let c1 = Rc::clone(&amp;shared);   // counter becomes 2; no heap copy
+let c2 = Rc::clone(&amp;shared);   // counter becomes 3
+
+println!("count: {}", Rc::strong_count(&amp;shared));  // 3
+drop(c1);
+println!("count: {}", Rc::strong_count(&amp;shared));  // 2</code></pre>
+    <t-b>
+      <code>Rc</code> is read-only shared ownership - every clone points to the same
+      allocation and none can mutate it through <code>Rc</code> alone. <code>Rc</code>
+      is not safe to send across threads; use <code>Arc&lt;T&gt;</code> (atomic reference
+      count) when sharing across threads.
+    </t-b>
+  </section>
+
+  <!-- S8.3 RefCell<T> -->
+  <section>
+    <h2>S8.3 RefCell&lt;T&gt; - Interior Mutability</h2>
+    <t-b>
+      Rust's borrow rules are normally enforced at compile time. <code>RefCell&lt;T&gt;</code>
+      defers those checks to runtime, allowing mutation through a shared reference:
+    </t-b>
+    <pre><code class="language-rust">use std::cell::RefCell;
+
+let data = RefCell::new(vec![1, 2, 3]);
+
+{
+    let mut v = data.borrow_mut();  // runtime check: panics if already borrowed
+    v.push(4);
+}   // mutable borrow released here
+
+println!("{:?}", data.borrow());   // [1, 2, 3, 4]</code></pre>
+    <t-b>
+      The borrow rules still hold - you cannot have a <code>borrow_mut</code> and a
+      <code>borrow</code> active at the same time - but violations become runtime panics
+      instead of compile errors. Use <code>RefCell</code> only when the compiler's static
+      analysis is too conservative and you can reason that the rules are not violated at
+      runtime.
+    </t-b>
+  </section>
+
+  <!-- S8.4 Rc<RefCell<T>> -->
+  <section>
+    <h2>S8.4 Rc&lt;RefCell&lt;T&gt;&gt; - Shared Mutable State</h2>
+    <t-b>
+      Combine <code>Rc</code> and <code>RefCell</code> when multiple owners need to mutate
+      a shared value:
+    </t-b>
+    <pre><code class="language-rust">use std::rc::Rc;
+use std::cell::RefCell;
+
+let counter = Rc::new(RefCell::new(0));
+let c1 = Rc::clone(&amp;counter);
+let c2 = Rc::clone(&amp;counter);
+
+*c1.borrow_mut() += 1;
+*c2.borrow_mut() += 1;
+
+println!("{}", counter.borrow());   // 2</code></pre>
+    <t-b>
+      For multithreaded shared mutation, use <code>Arc&lt;Mutex&lt;T&gt;&gt;</code> instead
+      (covered in the Threads tutorial).
+    </t-b>
+  </section>
+
+  <!-- S8.5 Example -->
+  <section>
+    <h2>S8.5 Example - All Together</h2>
+    <pre><code class="language-rust">// SmartPointers - demonstrates Box&lt;T&gt;, Rc&lt;T&gt;, and RefCell&lt;T&gt; in Rust.
+
+use std::rc::Rc;
+use std::cell::RefCell;
+
+#[derive(Debug)]
+#[allow(dead_code)]
+enum List {
+    Cons(i32, Box&lt;List&gt;),
+    Nil,
+}
+
+fn main() {
+    // --- Box&lt;T&gt;: single-owner heap allocation ---
+    println!("--- Box ---");
+    let b = Box::new(42);
+    println!("boxed: {b}, deref: {}", *b);
+
+    // Box makes recursive types possible by giving the compiler a known size
+    let list = List::Cons(1, Box::new(List::Cons(2, Box::new(List::Nil))));
+    println!("{list:?}");
+
+    // --- Rc&lt;T&gt;: shared ownership on a single thread ---
+    println!("--- Rc ---");
+    let shared = Rc::new(String::from("shared data"));
+    let c1 = Rc::clone(&amp;shared);
+    let c2 = Rc::clone(&amp;shared);
+    println!("value: {shared}, ref count: {}", Rc::strong_count(&amp;shared));
+    drop(c1);
+    println!("after drop c1, count: {}", Rc::strong_count(&amp;shared));
+    drop(c2);
+    println!("after drop c2, count: {}", Rc::strong_count(&amp;shared));
+
+    // --- RefCell&lt;T&gt;: interior mutability, borrow checked at runtime ---
+    println!("--- RefCell ---");
+    let data = RefCell::new(vec![1, 2, 3]);
+    {
+        let mut v = data.borrow_mut();
+        v.push(4);
+    }
+    println!("{:?}", data.borrow());
+
+    // --- Rc&lt;RefCell&lt;T&gt;&gt;: shared ownership + interior mutability ---
+    println!("--- Rc&lt;RefCell&lt;T&gt;&gt; ---");
+    let counter = Rc::new(RefCell::new(0));
+    let c1 = Rc::clone(&amp;counter);
+    let c2 = Rc::clone(&amp;counter);
+    *c1.borrow_mut() += 1;
+    *c2.borrow_mut() += 1;
+    println!("counter: {}", counter.borrow());
+}</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">--- Box ---
+boxed: 42, deref: 42
+Cons(1, Cons(2, Nil))
+--- Rc ---
+value: shared data, ref count: 3
+after drop c1, count: 2
+after drop c2, count: 1
+--- RefCell ---
+[1, 2, 3, 4]
+--- Rc&lt;RefCell&lt;T&gt;&gt; ---
+counter: 2</code></pre>
+  </section>
+
+  <!-- S8.6 Exercise -->
+  <section>
+    <h2>S8.6 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Define a recursive <code>Tree</code> enum using <code>Box</code>:
+          <code>Tree::Leaf(i32)</code> and <code>Tree::Node(Box&lt;Tree&gt;, Box&lt;Tree&gt;)</code>.
+          Build a small tree and write a function <code>sum(t: &amp;Tree) -&gt; i32</code>
+          that sums all leaf values.</li>
+        <li>Create two <code>Rc&lt;String&gt;</code> clones of the same string. Confirm
+          the reference count is 3 (original + 2 clones). Drop one and confirm it drops
+          to 2.</li>
+        <li>Use <code>Rc&lt;RefCell&lt;Vec&lt;i32&gt;&gt;&gt;</code> to share a vec between
+          two "owners" (two separate variables). Append a value through each and print
+          the final vec through the original.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S8.7 Common Mistakes -->
+  <section>
+    <h2>S8.7 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Using Rc across threads</h3>
+      <pre><code class="language-rust">use std::rc::Rc;
+let r = Rc::new(42);
+std::thread::spawn(move || println!("{r}"));  // error: Rc cannot be sent across threads</code></pre>
+      <t-b><code>Rc</code> is not <code>Send</code>. Use <code>Arc&lt;T&gt;</code> for cross-thread shared ownership.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Calling borrow_mut twice without releasing</h3>
+      <pre><code class="language-rust">let cell = RefCell::new(0);
+let a = cell.borrow_mut();
+let b = cell.borrow_mut();  // panics at runtime: already mutably borrowed</code></pre>
+      <t-b>
+        The first <code>borrow_mut</code> must be dropped before taking a second one.
+        Structure code so borrows are short-lived within a <code>{ }</code> block.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Boxing unnecessarily</h3>
+      <pre><code class="language-rust">let x = Box::new(42_i32);  // rarely useful - i32 is Copy and already small</code></pre>
+      <t-b>
+        Box values that are large (to avoid stack overflow), that need a stable address,
+        or that are part of a recursive type. Do not Box as a default.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- S8.8 Key Terms -->
+  <section>
+    <h2>S8.8 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Box&lt;T&gt;</td><td>Single-owner heap pointer; frees memory when dropped</td></tr>
+        <tr><td>Rc&lt;T&gt;</td><td>Reference-counted shared ownership; single-threaded only</td></tr>
+        <tr><td>Rc::clone</td><td>Increments the reference count; does not copy the heap data</td></tr>
+        <tr><td>Rc::strong_count</td><td>Returns the current reference count</td></tr>
+        <tr><td>RefCell&lt;T&gt;</td><td>Enforces borrow rules at runtime instead of compile time</td></tr>
+        <tr><td>borrow()</td><td>Returns an immutable <code>Ref&lt;T&gt;</code> guard; panics if mutably borrowed</td></tr>
+        <tr><td>borrow_mut()</td><td>Returns a mutable <code>RefMut&lt;T&gt;</code> guard; panics if any borrow is active</td></tr>
+        <tr><td>interior mutability</td><td>Mutating data through a shared reference, enforced at runtime</td></tr>
+        <tr><td>Arc&lt;T&gt;</td><td>Atomic reference count; like <code>Rc</code> but safe across threads</td></tr>
+        <tr><td>Mutex&lt;T&gt;</td><td>Mutual exclusion lock; pairs with <code>Arc</code> for shared mutable state across threads</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  Rust / Learn / StdLib &nbsp;&bull;&nbsp; Tutorial S8 &nbsp;&bull;&nbsp; Smart Pointers
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/RustTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

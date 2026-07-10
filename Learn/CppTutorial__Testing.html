@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testing - Unit Testing</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Testing &mdash; Unit Testing</h1>
+  <t-b>Tutorial 11.0 &nbsp;&bull;&nbsp; C++ / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- 10.0 What This Teaches -->
+  <section>
+    <h2>11.0 What This Teaches</h2>
+    <t-b>
+      Testing verifies that code behaves as specified. C++ has no built-in test
+      framework, but you can write effective tests with standard tools and a small
+      helper. This tutorial covers:
+    </t-b>
+    <ul>
+      <li><code>assert</code> from <code>&lt;cassert&gt;</code> for quick checks</li>
+      <li>A minimal test runner using exceptions and <code>std::function</code></li>
+      <li>A <code>CHECK</code> macro for readable failure messages</li>
+      <li>Structuring tests by function under test</li>
+      <li>Exit codes: returning 1 when tests fail</li>
+    </ul>
+  </section>
+
+  <!-- 10.1 assert -->
+  <section>
+    <h2>11.1 assert</h2>
+    <pre><code class="language-cpp">#include &lt;cassert&gt;
+
+int add(int a, int b) { return a + b; }
+
+int main() {
+    assert(add(2, 3) == 5);   // aborts with message if false
+    assert(add(0, 0) == 0);
+}</code></pre>
+    <t-b>
+      <code>assert</code> aborts the program if the condition is false, printing the
+      file and line number. It is disabled when <code>NDEBUG</code> is defined
+      (release builds). Use it for cheap sanity checks, not for production error
+      handling.
+    </t-b>
+  </section>
+
+  <!-- 10.2 A Minimal Test Runner -->
+  <section>
+    <h2>11.2 A Minimal Test Runner</h2>
+    <pre><code class="language-cpp">#include &lt;iostream&gt;
+#include &lt;functional&gt;
+#include &lt;stdexcept&gt;
+#include &lt;vector&gt;
+#include &lt;string&gt;
+
+struct TestResult { std::string name; bool passed; std::string message; };
+std::vector&lt;TestResult&gt; results;
+
+void run_test(const std::string&amp; name, std::function&lt;void()&gt; fn) {
+    try {
+        fn();
+        results.push_back({name, true, ""});
+    } catch (const std::exception&amp; e) {
+        results.push_back({name, false, e.what()});
+    }
+}
+
+#define CHECK(expr) \
+    if (!(expr)) throw std::runtime_error("CHECK failed: " #expr)</code></pre>
+    <t-b>
+      Each test is a callable that throws on failure. <code>run_test</code> catches
+      the exception, records the result, and continues with the next test -
+      one test failure does not stop the others.
+    </t-b>
+  </section>
+
+  <!-- 10.3 Writing Tests -->
+  <section>
+    <h2>11.3 Writing Tests</h2>
+    <pre><code class="language-cpp">int clamp(int v, int lo, int hi) {
+    return v &lt; lo ? lo : v &gt; hi ? hi : v;
+}
+
+void test_clamp() {
+    CHECK(clamp(10, 0, 20) == 10);   // in range: unchanged
+    CHECK(clamp(25, 0, 20) == 20);   // above hi: clamped to hi
+    CHECK(clamp(-5, 0, 20) ==  0);   // below lo: clamped to lo
+    CHECK(clamp( 0, 0, 20) ==  0);   // at lo boundary
+    CHECK(clamp(20, 0, 20) == 20);   // at hi boundary
+}</code></pre>
+    <t-b>
+      Group tests by the function they cover. Test the normal case, the boundaries,
+      and any error conditions. Each <code>CHECK</code> failure reports which
+      expression failed.
+    </t-b>
+  </section>
+
+  <!-- 10.4 Printing Results -->
+  <section>
+    <h2>11.4 Printing Results and Exit Code</h2>
+    <pre><code class="language-cpp">int main() {
+    run_test("clamp: in/hi/lo", test_clamp);
+    // ... more tests ...
+
+    int passed = 0, failed = 0;
+    for (const auto&amp; r : results) {
+        if (r.passed) { std::cout &lt;&lt; "[PASS] " &lt;&lt; r.name &lt;&lt; "\n"; ++passed; }
+        else { std::cout &lt;&lt; "[FAIL] " &lt;&lt; r.name &lt;&lt; ": " &lt;&lt; r.message &lt;&lt; "\n"; ++failed; }
+    }
+    std::cout &lt;&lt; "\n" &lt;&lt; passed &lt;&lt; " passed, " &lt;&lt; failed &lt;&lt; " failed\n";
+    return failed &gt; 0 ? 1 : 0;   // non-zero exit signals failure to CI
+}</code></pre>
+  </section>
+
+  <!-- 10.5 Example -->
+  <section>
+    <h2>11.5 Example - All Together</h2>
+    <pre><code class="language-cpp">// Testing - simple assert-based unit tests and a minimal test runner.
+
+#include &lt;iostream&gt;
+#include &lt;functional&gt;
+#include &lt;stdexcept&gt;
+#include &lt;vector&gt;
+#include &lt;string&gt;
+
+int add(int a, int b) { return a + b; }
+int clamp(int v, int lo, int hi) { return v &lt; lo ? lo : v &gt; hi ? hi : v; }
+std::string to_upper(std::string s) {
+    for (char&amp; c : s) c = static_cast&lt;char&gt;(std::toupper(c));
+    return s;
+}
+
+struct TestResult { std::string name; bool passed; std::string message; };
+std::vector&lt;TestResult&gt; results;
+
+void run_test(const std::string&amp; name, std::function&lt;void()&gt; fn) {
+    try { fn(); results.push_back({name, true, ""}); }
+    catch (const std::exception&amp; e) { results.push_back({name, false, e.what()}); }
+}
+
+#define CHECK(expr) \
+    if (!(expr)) throw std::runtime_error("CHECK failed: " #expr)
+
+void test_add()      { CHECK(add(2,3)==5); CHECK(add(-1,1)==0); }
+void test_clamp()    { CHECK(clamp(25,0,20)==20); CHECK(clamp(-5,0,20)==0); CHECK(clamp(10,0,20)==10); }
+void test_to_upper() { CHECK(to_upper("hello")=="HELLO"); CHECK(to_upper("")==""); }
+
+int main() {
+    run_test("add",      test_add);
+    run_test("clamp",    test_clamp);
+    run_test("to_upper", test_to_upper);
+
+    int passed = 0, failed = 0;
+    for (const auto&amp; r : results) {
+        std::cout &lt;&lt; (r.passed ? "[PASS] " : "[FAIL] ") &lt;&lt; r.name;
+        if (!r.passed) std::cout &lt;&lt; ": " &lt;&lt; r.message;
+        std::cout &lt;&lt; "\n";
+        r.passed ? ++passed : ++failed;
+    }
+    std::cout &lt;&lt; "\n" &lt;&lt; passed &lt;&lt; " passed, " &lt;&lt; failed &lt;&lt; " failed\n";
+    return failed &gt; 0 ? 1 : 0;
+}</code></pre>
+    <pre class="output"><code class="language-terminal">[PASS] add
+[PASS] clamp
+[PASS] to_upper
+
+3 passed, 0 failed</code></pre>
+  </section>
+
+  <!-- 10.6 Exercise -->
+  <section>
+    <h2>11.6 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Add a function <code>bool is_palindrome(const std::string&amp; s)</code>
+          and write tests for it covering empty strings, single characters,
+          palindromes, and non-palindromes.</li>
+        <li>Deliberately break one of the tested functions and confirm the
+          <code>[FAIL]</code> output shows which <code>CHECK</code> expression
+          failed.</li>
+        <li>Look up Google Test (<code>gtest</code>) or Catch2 and compare their
+          <code>EXPECT_EQ</code> / <code>REQUIRE</code> macros to the
+          <code>CHECK</code> macro above.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10.7 Common Mistakes -->
+  <section>
+    <h2>11.7 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>assert disabled in release builds</h3>
+      <t-b>
+        When compiled with <code>-DNDEBUG</code> (or in Release mode in MSVC/CMake),
+        all <code>assert</code> calls are removed. Tests using only <code>assert</code>
+        silently pass in release builds regardless of correctness. Use a proper
+        check mechanism in test code.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>One test failure stops all tests</h3>
+      <t-b>
+        If tests call each other or if the first <code>assert</code> aborts,
+        subsequent tests never run. Wrap each test in a try/catch as shown in the
+        runner so a single failure does not hide others.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Not checking the exit code</h3>
+      <t-b>
+        Returning 0 from <code>main</code> even when tests fail makes CI pipelines
+        see the test binary as succeeding. Always return a non-zero exit code on
+        failure.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- 10.8 Key Terms -->
+  <section>
+    <h2>11.8 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>assert(expr)</td><td>Aborts if expr is false; disabled by NDEBUG in release builds</td></tr>
+        <tr><td>CHECK macro</td><td>Throws an exception with the failing expression; allows tests to continue</td></tr>
+        <tr><td>test runner</td><td>Code that calls each test, catches failures, and reports results</td></tr>
+        <tr><td>NDEBUG</td><td>Preprocessor macro that disables assert; set by release build configurations</td></tr>
+        <tr><td>exit code</td><td>Value returned from main; 0 = success, non-zero = failure; checked by shells and CI</td></tr>
+        <tr><td>Google Test</td><td>Popular C++ testing framework; provides EXPECT_EQ, ASSERT_EQ, test fixtures</td></tr>
+        <tr><td>Catch2</td><td>Header-only C++ testing framework; REQUIRE and CHECK macros</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  C++ / Learn &nbsp;&bull;&nbsp; Tutorial 11 &nbsp;&bull;&nbsp; Testing
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CppTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

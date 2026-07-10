@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vec&lt;T&gt; - Rust Growable Array</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>Vec&lt;T&gt; &mdash; Rust Growable Array</h1>
+  <t-b>Tutorial S2.0 &nbsp;&bull;&nbsp; Rust / Learn / StdLib</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- S2.0 What This Teaches -->
+  <section>
+    <h2>S2.0 What This Teaches</h2>
+    <t-b>
+      <code>Vec&lt;T&gt;</code> is Rust's growable array - the most commonly used collection.
+      This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Constructing a <code>Vec</code></li>
+      <li>Adding and removing elements</li>
+      <li>Indexing, slicing, and safe access with <code>get</code></li>
+      <li>Sorting, deduplication, and filtering with <code>retain</code></li>
+      <li>Iterating and extending</li>
+    </ul>
+  </section>
+
+  <!-- S2.1 Construction -->
+  <section>
+    <h2>S2.1 Construction</h2>
+    <pre><code class="language-rust">let v1: Vec&lt;i32&gt; = Vec::new();          // empty; type must be annotated
+let v2 = vec![1, 2, 3, 4, 5];           // macro shorthand
+let v3: Vec&lt;i32&gt; = Vec::with_capacity(10); // reserves heap space; len stays 0
+println!("v1 len={}, v3 capacity={}", v1.len(), v3.capacity());</code></pre>
+    <t-b>
+      <code>with_capacity</code> avoids repeated reallocations when you know the approximate
+      final size. The <code>vec![]</code> macro is idiomatic for small, known-at-compile-time
+      values.
+    </t-b>
+  </section>
+
+  <!-- S2.2 push and pop -->
+  <section>
+    <h2>S2.2 push and pop</h2>
+    <t-b>
+      <code>push</code> appends to the end; <code>pop</code> removes and returns the last
+      element as <code>Option&lt;T&gt;</code>:
+    </t-b>
+    <pre><code class="language-rust">let mut v = vec![1, 2, 3];
+v.push(4);
+v.push(5);
+println!("{v:?}");          // [1, 2, 3, 4, 5]
+
+let last = v.pop();
+println!("{last:?}");       // Some(5)
+println!("{v:?}");          // [1, 2, 3, 4]</code></pre>
+    <t-b>
+      <code>pop</code> on an empty <code>Vec</code> returns <code>None</code> rather than
+      panicking.
+    </t-b>
+  </section>
+
+  <!-- S2.3 insert and remove -->
+  <section>
+    <h2>S2.3 insert and remove</h2>
+    <t-b>
+      <code>insert(index, value)</code> shifts elements right; <code>remove(index)</code>
+      shifts left:
+    </t-b>
+    <pre><code class="language-rust">v.insert(1, 99);   // [1, 99, 2, 3, 4]
+v.remove(1);       // [1, 2, 3, 4]</code></pre>
+    <t-b>
+      Both are O(n) because they move elements. For frequent insertions in the middle,
+      consider <code>VecDeque</code> from <code>std::collections</code>.
+    </t-b>
+  </section>
+
+  <!-- S2.4 Indexing and Safe Access -->
+  <section>
+    <h2>S2.4 Indexing and Safe Access</h2>
+    <t-b>
+      <code>v[i]</code> panics if <code>i</code> is out of bounds. <code>v.get(i)</code>
+      returns <code>Option&lt;&amp;T&gt;</code> - safe for untrusted indices:
+    </t-b>
+    <pre><code class="language-rust">println!("{}", v[0]);           // 1
+println!("{:?}", v.get(10));    // None</code></pre>
+    <t-b>
+      Use <code>get</code> whenever the index comes from user input or a calculation where
+      you are not certain it is in range.
+    </t-b>
+  </section>
+
+  <!-- S2.5 Slicing -->
+  <section>
+    <h2>S2.5 Slicing</h2>
+    <t-b>
+      A slice <code>&amp;v[a..b]</code> borrows a contiguous subsequence without copying:
+    </t-b>
+    <pre><code class="language-rust">let slice = &amp;v[1..3];
+println!("{slice:?}");   // [2, 3]</code></pre>
+    <t-b>
+      Slices have type <code>&amp;[T]</code> - the same type accepted by most standard library
+      functions that process sequences. Writing functions that take <code>&amp;[T]</code>
+      instead of <code>&amp;Vec&lt;T&gt;</code> makes them usable with arrays and slices too.
+    </t-b>
+  </section>
+
+  <!-- S2.6 Sorting and Deduplication -->
+  <section>
+    <h2>S2.6 Sorting and Deduplication</h2>
+    <t-b>
+      <code>sort</code> uses an in-place stable sort. <code>dedup</code> removes consecutive
+      duplicate elements - most effective immediately after sorting:
+    </t-b>
+    <pre><code class="language-rust">let mut nums = vec![3, 1, 4, 1, 5, 9, 2, 6, 5, 3];
+nums.sort();
+println!("{nums:?}");   // [1, 1, 2, 3, 3, 4, 5, 5, 6, 9]
+nums.dedup();
+println!("{nums:?}");   // [1, 2, 3, 4, 5, 6, 9]</code></pre>
+    <t-b>
+      For floating-point values use <code>sort_by(|a, b| a.partial_cmp(b).unwrap())</code>
+      because <code>f32</code>/<code>f64</code> do not implement <code>Ord</code> (NaN breaks
+      total ordering).
+    </t-b>
+  </section>
+
+  <!-- S2.7 retain -->
+  <section>
+    <h2>S2.7 retain</h2>
+    <t-b>
+      <code>retain</code> removes every element for which the predicate returns
+      <code>false</code>, in place:
+    </t-b>
+    <pre><code class="language-rust">let mut v = vec![1, 2, 3, 4, 5, 6];
+v.retain(|n| n % 2 == 0);
+println!("{v:?}");   // [2, 4, 6]</code></pre>
+  </section>
+
+  <!-- S2.8 extend, contains, position -->
+  <section>
+    <h2>S2.8 extend, contains, position</h2>
+    <pre><code class="language-rust">let mut base = vec![1, 2, 3];
+base.extend([4, 5, 6]);
+println!("{base:?}");                                 // [1, 2, 3, 4, 5, 6]
+println!("{}", base.contains(&amp;3));                    // true
+println!("{:?}", base.iter().position(|n| *n == 3));  // Some(2)</code></pre>
+    <t-b>
+      <code>extend</code> accepts any iterator or array, appending all its elements.
+      <code>position</code> returns the index of the first match as <code>Option&lt;usize&gt;</code>.
+    </t-b>
+  </section>
+
+  <!-- S2.9 Example -->
+  <section>
+    <h2>S2.9 Example - All Together</h2>
+    <pre><code class="language-rust">// Vec - demonstrates construction, mutation, slicing, sorting, and iteration of Vec&lt;T&gt;.
+
+fn main() {
+    // --- construction ---
+    println!("--- construction ---");
+    let v1: Vec&lt;i32&gt; = Vec::new();
+    let v2 = vec![1, 2, 3, 4, 5];
+    let v3: Vec&lt;i32&gt; = Vec::with_capacity(10);
+    println!("v1 len={}, v2={v2:?}, v3 capacity={}", v1.len(), v3.capacity());
+
+    // --- push and pop ---
+    println!("--- push / pop ---");
+    let mut v = vec![1, 2, 3];
+    v.push(4);
+    v.push(5);
+    println!("after push: {v:?}");
+    let last = v.pop();
+    println!("popped: {last:?}, remaining: {v:?}");
+
+    // --- insert and remove ---
+    println!("--- insert / remove ---");
+    v.insert(1, 99);
+    println!("after insert: {v:?}");
+    v.remove(1);
+    println!("after remove: {v:?}");
+
+    // --- indexing and get ---
+    println!("--- index / get ---");
+    println!("v[0] = {}", v[0]);
+    println!("v.get(10) = {:?}", v.get(10));
+
+    // --- slicing ---
+    println!("--- slice ---");
+    let slice = &amp;v[1..3];
+    println!("slice [1..3]: {slice:?}");
+
+    // --- iteration ---
+    println!("--- iteration ---");
+    for n in &amp;v { print!("{n} "); }
+    println!();
+
+    // --- sort and dedup ---
+    println!("--- sort / dedup ---");
+    let mut nums = vec![3, 1, 4, 1, 5, 9, 2, 6, 5, 3];
+    nums.sort();
+    println!("sorted: {nums:?}");
+    nums.dedup();
+    println!("deduped: {nums:?}");
+
+    // --- retain ---
+    println!("--- retain ---");
+    let mut evens = vec![1, 2, 3, 4, 5, 6];
+    evens.retain(|n| n % 2 == 0);
+    println!("evens: {evens:?}");
+
+    // --- extend ---
+    println!("--- extend ---");
+    let mut base = vec![1, 2, 3];
+    base.extend([4, 5, 6]);
+    println!("extended: {base:?}");
+
+    // --- contains and position ---
+    println!("--- contains / position ---");
+    println!("contains 3: {}", base.contains(&amp;3));
+    println!("position of 3: {:?}", base.iter().position(|n| *n == 3));
+
+    // --- len and clear ---
+    println!("--- len / clear ---");
+    println!("len: {}", base.len());
+    base.clear();
+    println!("after clear, is_empty: {}", base.is_empty());
+}</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">--- construction ---
+v1 len=0, v2=[1, 2, 3, 4, 5], v3 capacity=10
+--- push / pop ---
+after push: [1, 2, 3, 4, 5]
+popped: Some(5), remaining: [1, 2, 3, 4]
+--- insert / remove ---
+after insert: [1, 99, 2, 3, 4]
+after remove: [1, 2, 3, 4]
+--- index / get ---
+v[0] = 1
+v.get(10) = None
+--- slice ---
+slice [1..3]: [2, 3]
+--- iteration ---
+1 2 3 4
+--- sort / dedup ---
+sorted: [1, 1, 2, 3, 3, 4, 5, 5, 6, 9]
+deduped: [1, 2, 3, 4, 5, 6, 9]
+--- retain ---
+evens: [2, 4, 6]
+--- extend ---
+extended: [1, 2, 3, 4, 5, 6]
+--- contains / position ---
+contains 3: true
+position of 3: Some(2)
+--- len / clear ---
+len: 6
+after clear, is_empty: true</code></pre>
+  </section>
+
+  <!-- S2.10 Exercise -->
+  <section>
+    <h2>S2.10 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Build a <code>Vec&lt;i32&gt;</code> from the range <code>1..=20</code>. Use
+          <code>retain</code> to keep only values divisible by 3. Print the result.</li>
+        <li>Write a function <code>median(v: &amp;mut Vec&lt;f64&gt;) -&gt; Option&lt;f64&gt;</code>
+          that sorts the vec and returns the middle element (or the average of the two middle
+          elements for even length). Return <code>None</code> for an empty vec.</li>
+        <li>Write a function <code>deduplicate&lt;T: Eq + Ord&gt;(v: &amp;mut Vec&lt;T&gt;)</code>
+          that sorts and deduplicates in one step. Test it on
+          <code>vec!["b","a","b","c","a"]</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S2.11 Common Mistakes -->
+  <section>
+    <h2>S2.11 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Indexing out of bounds</h3>
+      <pre><code class="language-rust">let v = vec![1, 2, 3];
+println!("{}", v[5]);   // panics at runtime</code></pre>
+      <t-b>Use <code>v.get(5)</code> to get <code>None</code> instead of a panic.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Mutating a Vec while iterating</h3>
+      <pre><code class="language-rust">let mut v = vec![1, 2, 3];
+for i in 0..v.len() {
+    v.push(i);   // error: cannot borrow `v` as mutable because it is borrowed
+}</code></pre>
+      <t-b>
+        You cannot mutate a <code>Vec</code> while it is borrowed. Collect indices first,
+        or restructure the loop.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Calling sort on f64</h3>
+      <pre><code class="language-rust">let mut floats = vec![3.0_f64, 1.0, 2.0];
+floats.sort();   // error: f64 does not implement Ord</code></pre>
+      <t-b>Use <code>sort_by(|a, b| a.partial_cmp(b).unwrap())</code> for floating-point slices.</t-b>
+    </div>
+  </section>
+
+  <!-- S2.12 Key Terms -->
+  <section>
+    <h2>S2.12 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Vec&lt;T&gt;</td><td>Heap-allocated growable array of <code>T</code> values</td></tr>
+        <tr><td>vec![]</td><td>Macro that creates a <code>Vec</code> from a literal list</td></tr>
+        <tr><td>push / pop</td><td>Append / remove-and-return the last element</td></tr>
+        <tr><td>insert / remove</td><td>Add or remove at an arbitrary index; O(n)</td></tr>
+        <tr><td>get(i)</td><td>Returns <code>Option&lt;&amp;T&gt;</code>; safe alternative to <code>v[i]</code></td></tr>
+        <tr><td>&amp;[T]</td><td>Slice: a borrowed view of a contiguous sequence</td></tr>
+        <tr><td>retain</td><td>In-place filter: keeps elements matching a predicate</td></tr>
+        <tr><td>dedup</td><td>Removes consecutive duplicates; call after sort for full dedup</td></tr>
+        <tr><td>with_capacity</td><td>Pre-allocates heap space to avoid repeated reallocation</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  Rust / Learn / StdLib &nbsp;&bull;&nbsp; Tutorial S2 &nbsp;&bull;&nbsp; Vec&lt;T&gt;
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/RustTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>

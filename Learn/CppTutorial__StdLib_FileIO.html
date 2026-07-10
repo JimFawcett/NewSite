@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>File I/O - fstream Operations</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<button id="pages-btn" type="button">Pages</button>
+<a id="site-btn" href="../Site/SiteHome.html">Site</a>
+<div id="pages-dropdown"></div>
+
+<header>
+  <h1>File I/O &mdash; fstream Operations</h1>
+  <t-b>Tutorial S5.0 &nbsp;&bull;&nbsp; C++ / Learn / StdLib</t-b>
+</header>
+<nav id="lang-bar">
+  <a href="Learn_intro.html">Index</a>
+  <a href="RustTutorial__Hello.html">Rust</a>
+  <a href="CppTutorial__Hello.html">C++</a>
+  <a href="#" class="disabled">C#</a>
+  <a href="#" class="disabled">Python</a>
+</nav>
+
+<main>
+
+  <!-- S5.0 What This Teaches -->
+  <section>
+    <h2>S5.0 What This Teaches</h2>
+    <t-b>
+      C++ file I/O uses RAII stream objects. This tutorial covers:
+    </t-b>
+    <ul>
+      <li><code>std::ofstream</code> for writing</li>
+      <li><code>std::ifstream</code> for reading</li>
+      <li>Reading line-by-line with <code>std::getline</code></li>
+      <li>Reading the whole file at once</li>
+      <li>Appending to an existing file</li>
+      <li>Checking stream state</li>
+    </ul>
+  </section>
+
+  <!-- S5.1 Writing -->
+  <section>
+    <h2>S5.1 Writing with ofstream</h2>
+    <pre><code class="language-cpp">#include &lt;fstream&gt;
+
+{
+    std::ofstream out("output.txt");
+    if (!out) throw std::runtime_error("cannot open file");
+    out &lt;&lt; "line one\n";
+    out &lt;&lt; "line two\n";
+}   // RAII: file closed automatically when out goes out of scope</code></pre>
+    <t-b>
+      <code>ofstream</code> truncates the file if it already exists. The file is
+      closed when the stream object is destroyed - no explicit <code>close()</code>
+      call is needed.
+    </t-b>
+  </section>
+
+  <!-- S5.2 Reading Line by Line -->
+  <section>
+    <h2>S5.2 Reading Line by Line</h2>
+    <pre><code class="language-cpp">#include &lt;fstream&gt;
+#include &lt;string&gt;
+
+std::ifstream in("output.txt");
+if (!in) throw std::runtime_error("cannot open file");
+
+std::string line;
+while (std::getline(in, line)) {
+    std::cout &lt;&lt; line &lt;&lt; "\n";
+}</code></pre>
+    <t-b>
+      <code>std::getline</code> reads one line at a time, stripping the newline.
+      The while loop terminates when <code>getline</code> returns a falsy stream
+      (EOF or error).
+    </t-b>
+  </section>
+
+  <!-- S5.3 Reading Whole File -->
+  <section>
+    <h2>S5.3 Reading the Whole File</h2>
+    <pre><code class="language-cpp">#include &lt;fstream&gt;
+#include &lt;sstream&gt;
+
+std::ifstream in("output.txt");
+std::ostringstream buf;
+buf &lt;&lt; in.rdbuf();           // reads entire file into string stream
+std::string content = buf.str();</code></pre>
+    <t-b>
+      <code>rdbuf()</code> returns a pointer to the stream buffer; inserting it
+      into another stream copies all remaining data. This is the idiomatic one-liner
+      for reading an entire file into a string.
+    </t-b>
+  </section>
+
+  <!-- S5.4 Appending -->
+  <section>
+    <h2>S5.4 Appending to a File</h2>
+    <pre><code class="language-cpp">std::ofstream app("output.txt", std::ios::app);
+app &lt;&lt; "appended line\n";</code></pre>
+    <t-b>
+      <code>std::ios::app</code> opens in append mode: all writes go to the end
+      of the file and existing content is preserved.
+    </t-b>
+  </section>
+
+  <!-- S5.5 Stream State -->
+  <section>
+    <h2>S5.5 Checking Stream State</h2>
+    <pre><code class="language-cpp">std::ifstream in("missing.txt");
+
+if (!in)      std::cout &lt;&lt; "failed to open\n";
+if (in.fail()) std::cout &lt;&lt; "fail bit set\n";
+if (in.eof())  std::cout &lt;&lt; "at end of file\n";
+if (in.bad())  std::cout &lt;&lt; "bad bit set (IO error)\n";
+if (in.good()) std::cout &lt;&lt; "stream ok\n";</code></pre>
+    <t-b>
+      Always check that the stream opened successfully before reading or writing.
+      <code>if (!stream)</code> is the standard idiom.
+    </t-b>
+  </section>
+
+  <!-- S5.6 Example -->
+  <section>
+    <h2>S5.6 Example - All Together</h2>
+    <pre><code class="language-cpp">// FileIO - ofstream, ifstream, getline, fstream.
+
+#include &lt;iostream&gt;
+#include &lt;fstream&gt;
+#include &lt;sstream&gt;
+#include &lt;string&gt;
+
+int main() {
+    const std::string filename = "demo.txt";
+
+    // write
+    {
+        std::ofstream out(filename);
+        if (!out) { std::cerr &lt;&lt; "open failed\n"; return 1; }
+        out &lt;&lt; "line one\n" &lt;&lt; "line two\n" &lt;&lt; "line three\n";
+    }
+
+    // read whole file
+    {
+        std::ifstream in(filename);
+        std::ostringstream buf;
+        buf &lt;&lt; in.rdbuf();
+        std::cout &lt;&lt; buf.str();
+    }
+
+    // append
+    {
+        std::ofstream app(filename, std::ios::app);
+        app &lt;&lt; "line four\n";
+    }
+
+    // read line by line
+    {
+        std::ifstream in(filename);
+        std::string line;
+        int n = 0;
+        while (std::getline(in, line))
+            std::cout &lt;&lt; ++n &lt;&lt; ": " &lt;&lt; line &lt;&lt; "\n";
+    }
+    return 0;
+}</code></pre>
+    <pre class="output"><code class="language-terminal">line one
+line two
+line three
+1: line one
+2: line two
+3: line three
+4: line four</code></pre>
+  </section>
+
+  <!-- S5.7 Exercise -->
+  <section>
+    <h2>S5.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write a program that reads a text file line by line, counts the total
+          number of words across all lines (split on whitespace), and prints the
+          count.</li>
+        <li>Write a CSV row to a file using <code>ofstream</code>, then read it
+          back and split on <code>','</code> to recover the fields.</li>
+        <li>Copy one file to another by reading the source with <code>rdbuf()</code>
+          and writing to a new <code>ofstream</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S5.8 Common Mistakes -->
+  <section>
+    <h2>S5.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Not checking if the file opened</h3>
+      <pre><code class="language-cpp">std::ifstream in("missing.txt");
+std::string line;
+std::getline(in, line);   // silent failure; line is empty</code></pre>
+      <t-b>Always test <code>if (!in)</code> immediately after construction.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Reading after EOF without clearing the error</h3>
+      <pre><code class="language-cpp">while (!in.eof()) {           // wrong: last iteration reads empty
+    std::getline(in, line);
+    process(line);
+}
+// correct:
+while (std::getline(in, line))
+    process(line);</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Forgetting ios::app and overwriting the file</h3>
+      <t-b>
+        Opening an existing file with plain <code>ofstream</code> truncates it.
+        Use <code>std::ios::app</code> to preserve existing content.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- S5.9 Key Terms -->
+  <section>
+    <h2>S5.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>ofstream</td><td>Output file stream; write text to a file</td></tr>
+        <tr><td>ifstream</td><td>Input file stream; read text from a file</td></tr>
+        <tr><td>fstream</td><td>Read-write file stream</td></tr>
+        <tr><td>getline(stream, s)</td><td>Reads one line into s; returns the stream (falsy at EOF)</td></tr>
+        <tr><td>rdbuf()</td><td>Returns the stream buffer; inserting it copies all remaining data</td></tr>
+        <tr><td>ios::app</td><td>Open flag: append to file rather than truncate</td></tr>
+        <tr><td>ios::binary</td><td>Open flag: read/write binary data without newline translation</td></tr>
+        <tr><td>fail(), eof(), bad()</td><td>Stream state flags indicating error conditions</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  C++ / Learn / StdLib &nbsp;&bull;&nbsp; Tutorial S5 &nbsp;&bull;&nbsp; File I/O
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CppTutorialPages.js"></script>
+  <script>
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    btn.addEventListener('click', e => {
+      dropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+  </script>
+</body>
+</html>
