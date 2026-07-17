@@ -45,7 +45,7 @@ class InterfaceDemoAgent:
             raise ValueError("ANTHROPIC_API_KEY must be provided or set in environment")
         
         self.client = anthropic.Anthropic(api_key=self.api_key)
-        self.model = "claude-sonnet-4-20250514"
+        self.model = "claude-sonnet-4-6"
     
     def find_library_files(self, project_path: str) -> List[Tuple[str, str]]:
         """

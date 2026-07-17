@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("page_validator")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c5c22605ddd52fb6dff92b634a779073d0b26d5d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+21ef276f943ecc7f8bd6dd361b5da1dd95b4c182")]
 [assembly: System.Reflection.AssemblyProductAttribute("page_validator")]
 [assembly: System.Reflection.AssemblyTitleAttribute("page_validator")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
