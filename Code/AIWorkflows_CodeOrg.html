@@ -205,6 +205,159 @@ After I confirm the list, rename the file and update all references.</code></pre
       </table>
     </div>
 
+    <!-- ======================================================= -->
+    <a id="casestudy"></a>
+    <h3>6. Case Study: NewSite/Code Organization</h3>
+    <t-b>
+      This survey was run against the Code/ content track of NewSite before any structural changes
+      were planned.  The directory holds approximately 90 HTML pages, 22 JS files, and 8 CSS files.
+      The goal was to identify naming inconsistencies, orphaned files, and empty directories so that
+      any future reorganization starts from a clear picture rather than discovering problems mid-move.
+      Nothing is changed here.
+    </t-b>
+
+    <h4>codeorg.md</h4>
+<pre class="language-markdown"><code class="language-markdown"># Code Organization Context
+
+## Target
+NewSite/Code/ -- static web content track for code tutorials and AI workflows
+All HTML pages, and the js/ and css/ subdirectories
+
+## Mode
+Read-only analysis. Do not move, rename, or create any files.
+Describe the current organization and suggest improvements.
+
+## Survey Questions
+1. What naming prefixes are used for HTML files? Count files per group.
+   Flag any files that don't fit a clear prefix convention.
+2. List all subdirectories and their contents. Flag empty or near-empty ones.
+3. In js/ and css/, classify each file as page-group-specific or site-wide utility.
+   Suggest whether a split into subdirectories would help.
+4. Are there directory names that conflict with or duplicate each other
+   (e.g., _template_cpp/ alongside an empty C++/)?
+
+## Constraints
+Analysis only. Do not move, rename, or create any files.
+Cite file paths for each observation.
+State each suggestion as: current state | proposed change | benefit.</code></pre>
+
+    <h4>Prompt 1 - survey structure</h4>
+<pre class="language-text"><code class="language-text">Read codeorg.md.
+List all HTML files in Code/ root, all files in Code/js/, and all files in Code/css/.
+Group HTML files by naming prefix, count each group, and flag files with no clear group.</code></pre>
+
+    <h4>Result 1</h4>
+<pre class="language-text"><code class="language-text">HTML files by prefix (90 total):
+
+  DecCodeStory_*   14 files   declarative programming paradigm series
+  ImpCodeStory_*   14 files   imperative programming paradigm series
+  AIStory_*        13 files   AI narrative series
+  AIBites_*        12 files   AI quick-reference series
+  AIWorkflows_*    11 files   AI-assisted development workflows
+  RepoCode_*        8 files   repository code analysis series
+  CodeStory_*       6 files   code fundamentals series
+  ProjectStory_*    6 files   project walkthrough series
+
+  No clear group (6 files):
+    Code/CodeHome.html          track landing/navigation page
+    Code/CodeGlossary.html      standalone reference, no series
+    Code/ExploreCode.html       iframe navigator shell; not a content page
+    Code/ExploreReposCode.html  second navigator variant
+    Code/CodeStory.html         looks like a CodeStory_* entry but has no number
+    Code/ProjectStory.html      looks like a ProjectStory_* entry but has no number
+
+js/ (22 files):
+
+  Page-group scripts (one per content series):
+    AIBitesPages.js   AIStoryPages.js   AIWorkflowsPages.js
+    CodeBitesPages.js  CodeStoryPages.js  DecCodeStoryPages.js
+    ImpCodeStoryPages.js  ProjectStoryPages.js  RepoCodePages.js
+    BasicsBitesPages.js  BasicsStoryPages.js
+
+  Site-wide utilities (no page-group affiliation):
+    contentElements.js  contentMessages.js  cookies.js
+    FigureSizer.js  link-nav.js  SitePagesForTools.js
+    ExploreCodeMsg.js  exploreMessages.js
+    BlogsAndHelp.js  CodeContent.js  CodeViewer.js
+
+css/ (8 files):
+
+  Page-group specific:
+    Styles_Bits.css  Styles_BitsContent.css
+    Explorer.css  gridExplorer.css
+
+  Site-wide utilities:
+    content-links.css  explorer-links.css  FigureSizer.css  link-nav.css
+
+Subdirectories (selected):
+  AI/               AI demo code (populated)
+  Projects/         project source code (populated)
+  archive/          22 deprecated pages (well organized)
+  documents/        8 supporting md files
+  _template_cpp/    6 C++ page templates
+  _template_csharp/ 5 C# page templates
+  _template_python/ 7 Python page templates
+  _template_rust/   6 Rust page templates
+  C++/              empty
+  Rust/             empty
+  Basics/           empty
+  Components/       empty</code></pre>
+
+    <h4>Prompt 2 - reorganization suggestions</h4>
+<pre class="language-text"><code class="language-text">Read codeorg.md.
+
+Based on the survey, identify reorganization opportunities.
+State each as: current state | proposed change | benefit.
+Do not implement any changes.</code></pre>
+
+    <h4>Result 2</h4>
+<pre class="language-text"><code class="language-text">1. Ambiguous series-index files
+   Current:   Code/CodeStory.html and Code/ProjectStory.html sit alongside
+              the numbered CodeStory_01_*.html and ProjectStory_01_*.html series.
+   Proposed:  Rename to CodeStory_Index.html and ProjectStory_Index.html.
+   Benefit:   Makes their role (entry point to the series) explicit by naming
+              convention; removes the false impression that they are unnumbered
+              series pages. References in ExploreCode.html left-panel nav would
+              need updating after the rename.
+
+2. Navigator/shell pages mixed with content pages
+   Current:   CodeHome.html, ExploreCode.html, ExploreReposCode.html live in
+              the same flat directory as 90 content pages, indistinguishable by
+              name alone.
+   Proposed:  Move to a Code/navigation/ subdirectory, or prefix them
+              consistently (Nav_CodeHome.html, Nav_ExploreCode.html).
+   Benefit:   New contributors can immediately distinguish infrastructure
+              pages from content pages. Script src and link href references
+              in those files would need path updates.
+
+3. Orphan reference page
+   Current:   Code/CodeGlossary.html has no series prefix and no series.
+   Proposed:  Prefix as CodeResources_Glossary.html to signal it is a
+              standalone resource rather than a series entry.
+   Benefit:   Consistent naming makes it easier to find and less likely to
+              be mistaken for a missing series page.
+
+4. Empty language directories
+   Current:   C++/, Rust/, Basics/, Components/ directories are empty.
+              _template_cpp/, _template_rust/ exist separately with content.
+   Proposed:  Either remove the empty directories (if they have no planned use)
+              or consolidate: move _template_cpp/ content into C++/templates/
+              and similarly for Rust.
+   Benefit:   Empty directories imply content that doesn't exist, creating
+              confusion for contributors exploring the layout. Removing them
+              or populating them resolves the ambiguity.
+
+5. js/ utility files vs. page-group scripts
+   Current:   22 files in a flat js/ directory: 11 page-group scripts
+              (AIWorkflowsPages.js, etc.) and 11 utility files (cookies.js, etc.).
+              The split is already visible from naming but requires reading each
+              filename to confirm.
+   Proposed:  Move the 11 utility files to js/utils/ or js/shared/.
+   Benefit:   A contributor adding a new content series knows to add their
+              Pages.js to js/ and leave js/utils/ alone. The split is structural,
+              not just conventional. All HTML script src tags referencing the
+              moved files would need updating -- verify with grep before moving.</code></pre>
+
     <div style="height:10rem;"></div>
   </content-block>
 
