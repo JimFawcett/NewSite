@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  AIWorkflows_Vulnerabilities.html
+-->
+<head>
+  <title>AI Workflows: Vulnerabilities</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    pre[class*="language-"] {
+      margin: 0.5rem 0 0.75rem 1.5rem;
+      width: max-content;
+      max-width: 95%;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    AIWorkflows_Vulnerabilities.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 07/18/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Workflows: Vulnerabilities</h2>
+        <h4 id="subtitle" class="indent">
+          finding security and correctness issues before they ship
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0rem 0rem 0.25rem 0rem; margin-top:0.125rem; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25rem; margin-left:1.5rem;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/NewSite/tree/main/Code" style="margin-left:1rem; color:var(--atten);">Code Repo</a>
+      </div>
+    </header>
+    <div style="height:0.5rem;"></div>
+
+    <!-- ======================================================= -->
+    <a id="summary"></a>
+    <h3>1. Summary</h3>
+    <t-b>
+      Claude serves well as a first-pass security and correctness reviewer - not a replacement for a
+      formal audit, but effective at catching common issue classes before they reach production.  The
+      most effective approach uses role framing and a specific threat category per session.  Asking
+      Claude to "review for security" produces a generic scan; asking it to act as an auditor focused
+      on path handling produces findings you can act on.
+    </t-b>
+    <t-b>
+      This workflow does not require an md file for one-off reviews.  For recurring reviews across a
+      project, a vuln.md file can encode the threat model, scope, and severity classification
+      conventions your team uses.
+    </t-b>
+
+    <!-- ======================================================= -->
+    <a id="categories"></a>
+    <h3>2. Threat Categories Worth Reviewing</h3>
+    <div class="indent">
+      <table class="help" style="box-shadow:3px 3px 10px #999; width:min(55em,95%);">
+        <tr><th style="width:14rem;">Category</th><th>What to check</th></tr>
+        <tr>
+          <td>Path traversal</td>
+          <td>Paths constructed from user input - can they escape the intended root?</td>
+        </tr>
+        <tr>
+          <td>Command injection</td>
+          <td>User input reaching shell commands or subprocess calls without sanitization</td>
+        </tr>
+        <tr>
+          <td>Input validation</td>
+          <td>User-supplied strings, numbers, or paths accepted without range or format checks</td>
+        </tr>
+        <tr>
+          <td>Panics on valid input</td>
+          <td>unwrap(), expect(), array indexing, integer overflow on inputs you don't fully control</td>
+        </tr>
+        <tr>
+          <td>Resource leaks</td>
+          <td>File handles, network connections, or allocations that may not be released on all paths</td>
+        </tr>
+        <tr>
+          <td>Race conditions</td>
+          <td>Shared mutable state accessed across threads without synchronization</td>
+        </tr>
+        <tr>
+          <td>Symlink following</td>
+          <td>Directory traversal that follows symlinks out of the intended tree</td>
+        </tr>
+        <tr>
+          <td>Information leakage</td>
+          <td>Error messages or logs that expose internal paths, credentials, or stack traces</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- ======================================================= -->
+    <a id="examples"></a>
+    <h3>3. Example Prompts</h3>
+    <t-b>
+      Path handling review:
+    </t-b>
+<pre class="language-text"><code class="language-text">Review [file.rs] as a security auditor focused on path handling.
+- Can any constructed path escape the intended root directory?
+- Are symlinks followed? Should they be?
+- Is user input sanitized before it reaches path construction?
+Cite file:line for each finding. Rate each as: safe, needs review, or unsafe.</code></pre>
+    <t-b>
+      Command injection review:
+    </t-b>
+<pre class="language-text"><code class="language-text">Review [script.py] for command injection.
+Identify every point where user-supplied input reaches a shell command,
+subprocess call, or eval. For each, state whether it is safe or unsafe and why.
+Cite file:line for each finding.</code></pre>
+    <t-b>
+      Panic surface review (Rust):
+    </t-b>
+<pre class="language-text"><code class="language-text">Review [file.rs] for panics on valid input.
+Find every unwrap(), expect(), and direct index operation on a slice or vec.
+For each, state whether the panic is reachable from external input.
+Propose a safe alternative only where the panic is reachable.</code></pre>
+    <t-b>
+      Input validation sweep:
+    </t-b>
+<pre class="language-text"><code class="language-text">Review [module] for missing input validation.
+Identify every location where data from outside the program boundary
+(CLI args, environment variables, files, network) is used without
+checking its range, format, or presence. Cite file:line for each gap.</code></pre>
+
+    <!-- ======================================================= -->
+    <a id="systematic"></a>
+    <h3>4. Systematic Review Across a Codebase</h3>
+    <t-b>
+      When reviewing more than two or three files, a structured approach prevents gaps in coverage.
+      Review one file at a time, confirm each finding, and ask before moving to the next:
+    </t-b>
+<pre class="language-text"><code class="language-text">I want to audit [module] for [threat category].
+Files to review: [list]
+
+Start with [file1]. When done with that file, list each finding with
+file:line and severity. Then wait for me to approve before moving to [file2].</code></pre>
+    <t-b>
+      This pacing matters.  A single prompt asking Claude to review ten files produces a list of
+      findings too long to verify.  File-by-file review produces findings you can address before
+      the next file is touched.
+    </t-b>
+
+    <!-- ======================================================= -->
+    <a id="findings"></a>
+    <h3>5. Acting on Findings</h3>
+    <t-b>
+      After a review session, don't fix findings in the same session.  Findings from analysis belong
+      in a new session where the fix is the explicit goal - and where refactor.md or a targeted prompt
+      keeps the fix from expanding scope.
+    </t-b>
+<pre class="language-text"><code class="language-text">From the security review, the finding at [file:line] is: [paste finding].
+
+Fix only that issue. Do not change anything else in the file.
+Show the diff only.</code></pre>
+    <t-b>
+      Handing the finding explicitly prevents Claude from re-deriving it (and possibly finding a
+      different issue) and keeps the fix focused on what you verified.
+    </t-b>
+
+    <div style="height:10rem;"></div>
+  </content-block>
+
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#summary">summary</a>
+        <a href="#categories">threat categories</a>
+        <a href="#examples">example prompts</a>
+        <a href="#systematic">systematic review</a>
+        <a href="#findings">acting on findings</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+
+  <a id="bottom"></a>
+  <script src="js/AIWorkflowsPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+</body>
+</html>

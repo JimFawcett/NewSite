@@ -6,12 +6,15 @@
     - introduction discusses context management with md files
     - build small tools => direct prompt or pytools.md
     - spec driven implementation => spec.md
+    - spec driven testing => testspec.md
+    - error triage (compiler error => fix) => 
     - analysis => anal.md
     - refactoring => refactor.md
-    - vulnerabilities
+    - vulnerabilities => vuln.md
     - dependency => depend.md
     - code organization => codeorg.md
       - create, move dirs and files
+    - review before commit => ask claude to review its own changes, simpler sol?
     - publish => pub.md
       - [readme.md](http://readme.md/)
       - git agent => git update, git push

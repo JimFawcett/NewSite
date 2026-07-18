@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  AIWorkflows_Refactoring.html
+-->
+<head>
+  <title>AI Workflows: Refactoring</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    pre[class*="language-"] {
+      margin: 0.5rem 0 0.75rem 1.5rem;
+      width: max-content;
+      max-width: 95%;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    AIWorkflows_Refactoring.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 07/18/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Workflows: Refactoring</h2>
+        <h4 id="subtitle" class="indent">
+          changing structure without changing behavior
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0rem 0rem 0.25rem 0rem; margin-top:0.125rem; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25rem; margin-left:1.5rem;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/NewSite/tree/main/Code" style="margin-left:1rem; color:var(--atten);">Code Repo</a>
+      </div>
+    </header>
+    <div style="height:0.5rem;"></div>
+
+    <!-- ======================================================= -->
+    <a id="summary"></a>
+    <h3>1. Summary</h3>
+    <t-b>
+      Refactoring changes how code is organized without changing what it does.  The risk is regression -
+      introducing behavior changes while moving code.  Left unconstrained, Claude tends to combine
+      refactoring with "improvements": renaming things, adding error handling, pulling in abstractions.
+      These are not refactors.  A refactor.md file holds the line: it states the transformation to apply,
+      the scope, and the invariants that must hold throughout.
+    </t-b>
+
+    <!-- ======================================================= -->
+    <a id="refactormd"></a>
+    <h3>2. refactor.md Structure</h3>
+<pre class="language-markdown"><code class="language-markdown"># Refactor Context
+
+## Goal
+One sentence: what structural change to make.
+
+## Scope
+Files in scope: [list]
+Files not in scope: [list - be explicit]
+
+## Invariants
+These behaviors must not change:
+- [public API signatures stay identical]
+- [error handling behavior unchanged]
+- [specific behavioral invariants for this codebase]
+
+## Constraints
+- Do not rename anything not directly involved in the refactor
+- Do not add new dependencies
+- Do not add new features or error handling
+- Do not reformat code unrelated to the change
+
+## Done When
+[Specific checkable condition - e.g., "all tests pass", "file X imports from Y instead of Z"]</code></pre>
+
+    <!-- ======================================================= -->
+    <a id="sequence"></a>
+    <h3>3. Safe Refactoring Sequence</h3>
+    <t-b>
+      Refactoring fails when changes batch together, making it impossible to identify which change
+      introduced a regression.  The sequence below keeps each change small and verifiable:
+    </t-b>
+    <t-b class="indent">
+      <ol>
+        <li><strong>List first.</strong> Ask Claude to enumerate every change it will make before making any.
+            Review the list against the invariants in refactor.md.</li>
+        <li><strong>One logical unit at a time.</strong> Apply one item from the list, stop, verify.
+            Do not approve the next item until the current one is confirmed correct.</li>
+        <li><strong>Update references immediately.</strong> If a change moves or renames something,
+            update all references to it before touching anything else.</li>
+        <li><strong>Check the done condition.</strong> Verify it explicitly against the condition in
+            refactor.md, not against a general sense that things look right.</li>
+      </ol>
+    </t-b>
+
+    <!-- ======================================================= -->
+    <a id="examples"></a>
+    <h3>4. Example Prompts</h3>
+    <t-b>
+      Opening the session:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read refactor.md.
+
+Before making any changes, list every file and every specific change you will
+make. State which invariant from refactor.md each change preserves. Stop after
+the list so I can review it.</code></pre>
+    <t-b>
+      After approving the list, apply changes one item at a time:
+    </t-b>
+<pre class="language-text"><code class="language-text">Apply change 1 only - stop after that and show me what changed.</code></pre>
+    <t-b>
+      Keeping Claude from expanding scope:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read refactor.md.
+
+You will see some functions in [file] that could be simplified. Do not simplify
+them. This session is only for the structural change stated in refactor.md.
+Apply change 2 now.</code></pre>
+    <t-b>
+      Extracting a function:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read refactor.md.
+Read [source_file].
+
+Extract the block starting at line [N] through line [M] into a function named
+[name]. The function signature must match refactor.md. Do not change any other
+code in the file. Show the diff only.</code></pre>
+    <t-b>
+      Moving a module:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read refactor.md.
+
+Move [module] from [old_path] to [new_path]. Then update every import and
+reference to it across the codebase. Show the list of files you will update
+before making any changes.</code></pre>
+
+    <!-- ======================================================= -->
+    <a id="pitfalls"></a>
+    <h3>5. Common Pitfalls</h3>
+    <div class="indent">
+      <table class="help" style="box-shadow:3px 3px 10px #999; width:min(55em,95%);">
+        <tr><th>Pitfall</th><th>Prevention</th></tr>
+        <tr>
+          <td>Claude adds features during refactor</td>
+          <td>State explicitly in refactor.md and in the prompt: "do not add features"</td>
+        </tr>
+        <tr>
+          <td>Claude renames things "for clarity"</td>
+          <td>State: "do not rename anything not directly involved in the refactor"</td>
+        </tr>
+        <tr>
+          <td>Claude changes error handling</td>
+          <td>Name error-handling invariants explicitly in refactor.md</td>
+        </tr>
+        <tr>
+          <td>References updated partially</td>
+          <td>Ask for the full list of references before any move, then check them after</td>
+        </tr>
+        <tr>
+          <td>Multiple changes batched together</td>
+          <td>Enforce "one change, stop, confirm" in every prompt</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="height:10rem;"></div>
+  </content-block>
+
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#summary">summary</a>
+        <a href="#refactormd">refactor.md</a>
+        <a href="#sequence">safe sequence</a>
+        <a href="#examples">example prompts</a>
+        <a href="#pitfalls">common pitfalls</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+
+  <a id="bottom"></a>
+  <script src="js/AIWorkflowsPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+</body>
+</html>

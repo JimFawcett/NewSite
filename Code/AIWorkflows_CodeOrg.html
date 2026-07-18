@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  AIWorkflows_CodeOrg.html
+-->
+<head>
+  <title>AI Workflows: Code Organization</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    pre[class*="language-"] {
+      margin: 0.5rem 0 0.75rem 1.5rem;
+      width: max-content;
+      max-width: 95%;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    AIWorkflows_CodeOrg.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 07/18/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Workflows: Code Organization</h2>
+        <h4 id="subtitle" class="indent">
+          restructuring directories and files safely
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0rem 0rem 0.25rem 0rem; margin-top:0.125rem; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25rem; margin-left:1.5rem;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/NewSite/tree/main/Code" style="margin-left:1rem; color:var(--atten);">Code Repo</a>
+      </div>
+    </header>
+    <div style="height:0.5rem;"></div>
+
+    <!-- ======================================================= -->
+    <a id="summary"></a>
+    <h3>1. Summary</h3>
+    <t-b>
+      Structural changes - creating directories, moving files, renaming modules - affect every file
+      that imports or references the moved items.  A partial move, where the file moves but some
+      references still point to the old location, is worse than no move at all.  A codeorg.md file
+      scopes the reorganization, states the target structure, and enumerates what categories of
+      references need updating.
+    </t-b>
+    <t-b>
+      The key discipline: move one item at a time and update all references to it before touching
+      anything else.  Batching moves hides which move broke which reference.
+    </t-b>
+
+    <!-- ======================================================= -->
+    <a id="codeorgmd"></a>
+    <h3>2. codeorg.md Structure</h3>
+<pre class="language-markdown"><code class="language-markdown"># Code Organization Context
+
+## Goal
+What structural change to make.
+
+## Current Structure
+Relevant portion of the current directory tree (only what changes).
+
+## Target Structure
+What the structure should look like after the change.
+
+## Reference Types to Update
+After each move, scan for and update:
+- import/use/require statements in source files
+- HTML &lt;script src&gt; and &lt;link href&gt; tags
+- Config files that reference file paths
+- Build files (Cargo.toml, .csproj, Makefile)
+- Documentation that names the old path
+
+## Constraints
+- Move one item at a time; update all references before the next move
+- Prefer git mv over delete + create to preserve history
+- Do not change file content during a move - only paths
+- Do not rename or restructure beyond the stated goal</code></pre>
+
+    <!-- ======================================================= -->
+    <a id="sequence"></a>
+    <h3>3. Safe Sequence for Structural Changes</h3>
+    <t-b class="indent">
+      <ol>
+        <li><strong>State the target structure first.</strong> Ask Claude to describe the full
+            after-state before any files move.  Review it against your intent.</li>
+        <li><strong>List all references to the first item to move.</strong> Every file that will
+            need updating should be on the list before the move happens.</li>
+        <li><strong>Move one item.</strong> Confirm it landed correctly.</li>
+        <li><strong>Update all references to that item.</strong> Check the list from step 2.</li>
+        <li><strong>Verify.</strong> Build or load the project; confirm no broken references.</li>
+        <li><strong>Repeat for the next item.</strong></li>
+      </ol>
+    </t-b>
+
+    <!-- ======================================================= -->
+    <a id="examples"></a>
+    <h3>4. Example Prompts</h3>
+    <t-b>
+      Preview before any moves:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read codeorg.md.
+
+Before moving anything, describe the full target directory structure.
+Then list every file that will need a path update after each planned move.
+Stop after the list so I can review it.</code></pre>
+    <t-b>
+      References first, then move:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read codeorg.md.
+
+List every file that references [current_path/file.js] - including HTML script tags,
+import statements, and any config files. Do not move anything yet.</code></pre>
+    <t-b>
+      Then, after reviewing:
+    </t-b>
+<pre class="language-text"><code class="language-text">The reference list looks complete. Move [file.js] to [new_path/file.js] and
+update all the references you listed. Stop after that and confirm what changed.</code></pre>
+    <t-b>
+      Creating a new directory structure:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read codeorg.md.
+
+Create these directories under [root]:
+  [subdir1]/
+  [subdir2]/
+  [subdir3]/
+
+Do not move any files yet. Confirm the directories exist, then stop.</code></pre>
+    <t-b>
+      Renaming a module and updating all references:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read codeorg.md.
+
+I want to rename [OldName.js] to [NewName.js] in place (same directory).
+List every file that imports or references OldName before renaming.
+After I confirm the list, rename the file and update all references.</code></pre>
+
+    <!-- ======================================================= -->
+    <a id="pitfalls"></a>
+    <h3>5. Common Pitfalls</h3>
+    <div class="indent">
+      <table class="help" style="box-shadow:3px 3px 10px #999; width:min(55em,95%);">
+        <tr><th>Pitfall</th><th>Prevention</th></tr>
+        <tr>
+          <td>Moving multiple files at once</td>
+          <td>State "one at a time" in codeorg.md and in every prompt</td>
+        </tr>
+        <tr>
+          <td>References missed in HTML or config files</td>
+          <td>Name all reference types in codeorg.md; ask Claude to search each type explicitly</td>
+        </tr>
+        <tr>
+          <td>Content changed during a move</td>
+          <td>State "do not change file content during a move" in codeorg.md</td>
+        </tr>
+        <tr>
+          <td>History lost (delete + create instead of mv)</td>
+          <td>Specify "prefer git mv" in codeorg.md for git-tracked repos</td>
+        </tr>
+        <tr>
+          <td>Verifying with the wrong working directory</td>
+          <td>After each move, state the full path when asking Claude to confirm</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="height:10rem;"></div>
+  </content-block>
+
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#summary">summary</a>
+        <a href="#codeorgmd">codeorg.md</a>
+        <a href="#sequence">safe sequence</a>
+        <a href="#examples">example prompts</a>
+        <a href="#pitfalls">common pitfalls</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+
+  <a id="bottom"></a>
+  <script src="js/AIWorkflowsPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 7, 10);
+  </script>
+</body>
+</html>

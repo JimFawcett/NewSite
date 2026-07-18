@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  AIWorkflows_SmallTools.html
+-->
+<head>
+  <title>AI Workflows: Small Tools</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    pre[class*="language-"] {
+      margin: 0.5rem 0 0.75rem 1.5rem;
+      width: max-content;
+      max-width: 95%;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    AIWorkflows_SmallTools.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 07/18/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Workflows: Small Tools</h2>
+        <h4 id="subtitle" class="indent">
+          building utility scripts with direct prompts or a pytools.md context
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0rem 0rem 0.25rem 0rem; margin-top:0.125rem; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25rem; margin-left:1.5rem;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/NewSite/tree/main/Code" style="margin-left:1rem; color:var(--atten);">Code Repo</a>
+      </div>
+    </header>
+    <div style="height:0.5rem;"></div>
+
+    <!-- ======================================================= -->
+    <a id="summary"></a>
+    <h3>1. Summary</h3>
+    <t-b>
+      Small tools - focused utility scripts - are the easiest entry point for Claude Code-assisted
+      development.  A script that renames files, parses a log, or generates a report can often be built
+      in a single well-formed prompt with no md file at all.  When you build similar tools repeatedly
+      against the same codebase, a pytools.md file encodes the shared context so you don't restate
+      it each session.
+    </t-b>
+    <t-b>
+      Two modes:
+    </t-b>
+    <t-b class="indent">
+      <ul>
+        <li><strong>Direct prompt</strong> - describe everything inline.  Best for one-off tasks where the
+            full context fits in a single message.</li>
+        <li><strong>pytools.md</strong> - load shared conventions at session start, then state only what
+            differs for this specific tool.</li>
+      </ul>
+    </t-b>
+
+    <!-- ======================================================= -->
+    <a id="direct"></a>
+    <h3>2. Direct Prompting</h3>
+    <t-b>
+      When the task is self-contained and you only need it once, describe everything inline.  A good
+      direct prompt for a utility script has four parts: what the script reads, what it produces,
+      hard constraints, and error behavior.
+    </t-b>
+<pre class="language-text"><code class="language-text">Write a Python script that walks a directory tree starting at a given path,
+finds all .html files whose filenames contain "AIBites", and prints their
+relative paths to stdout. Accept the root path as a command-line argument.
+No dependencies beyond the standard library. If the path doesn't exist,
+print an error to stderr and exit with code 1.</code></pre>
+    <t-b>
+      Every element in that prompt prevents a common wrong assumption:
+    </t-b>
+    <div class="indent">
+      <table class="help" style="box-shadow:3px 3px 10px #999; width:min(50em,95%);">
+        <tr><th>Element</th><th>Without it, Claude might...</th></tr>
+        <tr><td>root path as argument</td><td>hardcode a path or use cwd</td></tr>
+        <tr><td>relative paths</td><td>print absolute paths</td></tr>
+        <tr><td>stdlib only</td><td>import pathlib + click + colorama</td></tr>
+        <tr><td>error behavior</td><td>raise an unhandled exception</td></tr>
+      </table>
+    </div>
+
+    <!-- ======================================================= -->
+    <a id="pytools"></a>
+    <h3>3. The pytools.md Context File</h3>
+    <t-b>
+      When you build tools targeting the same codebase repeatedly, a pytools.md captures the shared
+      context once.  Directory layout, file conventions, output format, and hard constraints go in the
+      file.  Each session prompt then states only what is specific to that tool.
+    </t-b>
+    <t-b>
+      pytools.md Structure:
+    </t-b>
+<pre class="language-markdown"><code class="language-markdown"># pytools context
+
+## Codebase
+Root: [project root path]
+[file type]: [directories]
+[file type]: [directories]
+
+## Tool Conventions
+Language: [language and version]
+Output: [output format and destination]
+Errors: [error handling behavior]
+Paths: [path format - relative/absolute, from where]
+
+## What to Avoid
+[constraint]
+[constraint]
+[constraint]</code></pre>
+
+    <!-- ======================================================= -->
+    <a id="using"></a>
+    <h3>4. Using pytools.md</h3>
+    <t-b>
+      Load it at session start, then state only the specific task.  Because the shared constraints are
+      already in the md file, the prompt focuses on what differs.
+    </t-b>
+<pre class="language-text"><code class="language-text">Read pytools.md.
+
+Write a script that finds all HTML files in the site that reference a given
+CSS file via a &lt;link rel="stylesheet"&gt; tag. Accept the CSS filename as a
+command-line argument. Print matching HTML files as relative paths.</code></pre>
+    <t-b>
+      The prompt says nothing about paths, output format, error handling, or language - pytools.md
+      already covers those.  The prompt states only the search logic and the argument.
+    </t-b>
+    <t-b>
+      Session management: continue the same session when iterating on a single script.  Start a fresh
+      session (with /clear, then reload pytools.md) when switching to a different tool - the clean
+      context prevents the previous script's specifics from bleeding into the new one.
+    </t-b>
+
+    <!-- ======================================================= -->
+    <a id="examples"></a>
+    <h3>5. More Example Prompts</h3>
+    <t-b>
+      Find unreferenced CSS files:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read pytools.md.
+
+Write a script that scans all HTML files in the site and collects every CSS
+filename referenced via &lt;link rel="stylesheet"&gt;. Then check which files in
+css/ are never referenced by any HTML file. Print the unreferenced filenames.</code></pre>
+    <t-b>
+      Inventory files by type and size:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read pytools.md.
+
+Write a script that walks the Code/ directory and prints a tab-separated list:
+filename, extension, size in bytes. One file per line. Skip directories named
+obj, bin, or __pycache__.</code></pre>
+    <t-b>
+      Count nav links in an explorer page:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read pytools.md.
+
+Write a script that reads ExploreCode.html and counts how many &lt;a href&gt; elements
+appear inside the element with id="nav". Print the count and each href found.</code></pre>
+
+    <!-- ======================================================= -->
+    <a id="casestudy"></a>
+    <h3>6. Case Study: check_unused_css2.py</h3>
+    <t-b>
+      <code>check_unused_css2.py</code> is a tool built for this site using the pytools.md workflow.
+      It reports which CSS stylesheets loaded by an HTML page contribute no matching selectors - either
+      because the page doesn't use any of the classes or IDs the stylesheet defines, or because the file
+      is missing entirely.  The prompts below produce it from scratch; the usage and run example use
+      this generated version.
+    </t-b>
+    <t-b>
+      pytools.md:
+    </t-b>
+<pre class="language-markdown"><code class="language-markdown"># pytools context
+
+## Codebase
+Root: c:\github\JimFawcett\NewSite
+HTML files: Code/, Rust/, Cpp/, CSharp/, Python/, SWDev/, WebDev/
+JS files: js/ (site-wide) or Code/js/ (code-track-specific)
+CSS files: css/
+
+## Tool Conventions
+Language: Python 3, stdlib only unless the task requires otherwise
+Output: print to stdout, one result per line
+Errors: print to stderr, continue processing remaining items
+Paths: print as relative paths from the root
+
+## What to Avoid
+No hardcoded absolute paths
+No pip dependencies unless explicitly requested
+No interactive prompts - all configuration via command-line arguments</code></pre>
+    <t-b>
+      The initial prompt:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read pytools.md.
+
+Write a script that reports which CSS stylesheets loaded by an HTML page are
+unused - meaning none of their selectors match any element on the page.
+
+Accept one or more HTML files or directory paths as arguments. For each page,
+list every linked stylesheet and classify it as:
+  ok       - at least one selector matches an element on the page
+  partial  - some selectors match but not all; show count as N/M
+  UNUSED   - no selector matches any element
+  MISSING  - the CSS file doesn't exist on disk
+
+A selector "matches" if every class, ID, and custom element name it references
+exists somewhere in the page. Standard HTML element names (div, span, p, etc.)
+don't count - they're nearly always present and produce false positives if used.
+
+Add a --detail flag to also print the non-matching selectors for partial results.
+
+This task needs tinycss2 and beautifulsoup4 - those are acceptable here.</code></pre>
+    <t-b>
+      Two things distinguish this from the simpler examples in section 5.  First, the prompt explicitly
+      overrides the stdlib-only default from pytools.md ("those are acceptable here") - the task genuinely
+      requires a CSS parser and an HTML parser, and stating the override in the prompt is cleaner than
+      editing pytools.md for a single exception.  Second, the match strategy is stated precisely up front:
+      ignore standard HTML element names, require every class/ID/custom element in the selector to exist
+      on the page.  Without that precision, the model would have made its own call and likely produced
+      false positives.
+    </t-b>
+    <t-b>
+      The script grew through one follow-up iteration.  After the first version ran, some "UNUSED" results
+      were found to be stylesheets whose selector names appeared in dynamically generated markup from
+      JavaScript.  A second prompt added JS reference detection:
+    </t-b>
+<pre class="language-text"><code class="language-text">When a stylesheet is classified UNUSED, check whether any of its selector names
+(class names, IDs, custom element names) appear as string literals in the page's
+inline scripts or linked JS files. If they do, append [JS: name1, name2] to the
+UNUSED line so it's visible but not a false alarm.</code></pre>
+    <t-b>
+      That is the normal shape of a small-tool session: one prompt for the core behavior, one follow-up
+      for the edge case discovered on first run, done.  The pytools.md context meant neither prompt needed
+      to restate paths, output format, or error handling.
+    </t-b>
+    <t-b>
+      Usage:
+    </t-b>
+<pre class="language-text"><code class="language-text">python check_unused_css2.py &lt;page.html|dir&gt; [&lt;page.html|dir&gt; ...] [--detail]
+
+  page.html   one or more HTML files to check
+  dir         expand to all .html files in that directory (non-recursive)
+  --detail    for each partial result, list each non-matching selector,
+              annotated with [JS: name] if that selector name appears in
+              the page's inline or linked JavaScript
+              (UNUSED lines always show [JS: ...] regardless of --detail)</code></pre>
+    <t-b>
+      Running it on this page:
+    </t-b>
+<pre class="language-text"><code class="language-text">python check_unused_css2.py AIWorkflows_SmallTools.html</code></pre>
+<pre class="language-text"><code class="language-text">AIWorkflows_SmallTools.html  (12 stylesheets)
+----------------------------------------------------------------
+  partial 29/35  reset.css
+  partial 11/20  ContentMenus.css
+  partial 40/138  Content.css
+  partial 10/11  help.css
+  partial  2/5   ThemeCode.css
+  UNUSED      StylesPhoto.css
+  UNUSED      StylesSizerComp.css  [JS: lightElem]
+  UNUSED      StylesWebComponents.css  [JS: code-block, hidephotosizer-block, photo-block, photosizer-block]
+  UNUSED      FigureSizer.css  [JS: caption, content, figure-sizer]
+  UNUSED      link-nav.css  [JS: active, controls, link-container]
+  partial 10/12  content-links.css
+  partial  6/58  prism.css</code></pre>
+    <t-b>
+      Four of the five UNUSED entries carry <code>[JS: ...]</code> annotations - their selector names
+      are referenced by JavaScript that generates markup dynamically, so they are not dead weight.
+      Only StylesPhoto.css is fully unused with no JS refs.  All five are standard includes carried
+      by every page in this site, so removing StylesPhoto from this one page would require per-page
+      CSS management that costs more than the bandwidth saved.  The output is useful precisely because
+      it surfaces that distinction: a stylesheet with no page references and no JS refs is a genuine
+      candidate for removal; one with JS refs is not.
+    </t-b>
+
+    <div style="height:10rem;"></div>
+  </content-block>
+
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#summary">summary</a>
+        <a href="#direct">direct prompting</a>
+        <a href="#pytools">pytools.md</a>
+        <a href="#using">using pytools.md</a>
+        <a href="#examples">more examples</a>
+        <a href="#casestudy">case study</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+
+  <a id="bottom"></a>
+  <script src="js/AIWorkflowsPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 1, 10);
+  </script>
+</body>
+</html>

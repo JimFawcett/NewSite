@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  AIWorkflows_Analysis.html
+-->
+<head>
+  <title>AI Workflows: Analysis</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    pre[class*="language-"] {
+      margin: 0.5rem 0 0.75rem 1.5rem;
+      width: max-content;
+      max-width: 95%;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    AIWorkflows_Analysis.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 07/18/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Workflows: Analysis</h2>
+        <h4 id="subtitle" class="indent">
+          understanding existing code before changing it
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0rem 0rem 0.25rem 0rem; margin-top:0.125rem; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25rem; margin-left:1.5rem;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/NewSite/tree/main/Code" style="margin-left:1rem; color:var(--atten);">Code Repo</a>
+      </div>
+    </header>
+    <div style="height:0.5rem;"></div>
+
+    <!-- ======================================================= -->
+    <a id="summary"></a>
+    <h3>1. Summary</h3>
+    <t-b>
+      When inheriting code, fixing a bug, or adding a feature to an unfamiliar module, analysis comes
+      before change.  Asking Claude to read the code and answer specific questions produces more reliable
+      results than asking it to jump straight to modifications.  An analysis.md file focuses the session:
+      it names the target files, states what you want to understand, and sets the level of detail you need.
+    </t-b>
+    <t-b>
+      Analysis sessions have one important constraint: Claude should report findings, not propose changes,
+      unless you ask.  State this explicitly or the model will often blend analysis with unsolicited
+      suggestions.
+    </t-b>
+
+    <!-- ======================================================= -->
+    <a id="analysismd"></a>
+    <h3>2. analysis.md Structure</h3>
+<pre class="language-markdown"><code class="language-markdown"># Analysis Context
+
+## Target
+Files or modules to analyze: [list them]
+
+## Questions
+What you want to understand. Be specific - "explain this module" produces
+vague output; "identify every function that modifies shared state" does not.
+
+## Scope
+Analysis only. Do not propose changes or refactors unless explicitly asked.
+
+## Output Format
+For each finding: state the result, then cite file:line.
+If a question has no answer in the code, say so explicitly rather than guessing.</code></pre>
+
+    <!-- ======================================================= -->
+    <a id="questions"></a>
+    <h3>3. Useful Analysis Questions</h3>
+    <t-b>
+      The quality of analysis output depends entirely on the specificity of the question.  Vague questions
+      produce summaries.  Specific questions produce findings you can act on.
+    </t-b>
+    <div class="indent">
+      <table class="help" style="box-shadow:3px 3px 10px #999; width:min(55em,95%);">
+        <tr><th>Category</th><th>Specific question form</th></tr>
+        <tr>
+          <td>Function behavior</td>
+          <td>"What are the preconditions for [function]? What happens if they are violated?"</td>
+        </tr>
+        <tr>
+          <td>Failure modes</td>
+          <td>"What inputs to [function] could cause a panic, crash, or silent wrong result?"</td>
+        </tr>
+        <tr>
+          <td>Data flow</td>
+          <td>"Trace the path from [entry point] to where results are written. Name every transformation and where it happens."</td>
+        </tr>
+        <tr>
+          <td>Invariants</td>
+          <td>"What invariants does [struct/class] maintain? Are any of them enforced by the type system?"</td>
+        </tr>
+        <tr>
+          <td>Dead code</td>
+          <td>"Are there any functions or branches in [file] that can never be reached on valid input?"</td>
+        </tr>
+        <tr>
+          <td>Side effects</td>
+          <td>"Which functions in [module] have side effects beyond their return value?"</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- ======================================================= -->
+    <a id="examples"></a>
+    <h3>4. Example Prompts</h3>
+    <t-b>
+      Function-level analysis:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read analysis.md.
+Read [file.rs].
+
+For each public function, write one sentence describing what it does.
+Then identify any function that could panic on valid input.
+Cite file:line for each potential panic.</code></pre>
+    <t-b>
+      Data flow trace:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read analysis.md.
+Read [module.py].
+
+Trace the data flow from the entry point through to where results are written
+to disk. Name every intermediate transformation and the file:line where it
+occurs. Do not propose any changes.</code></pre>
+    <t-b>
+      Dependency surface before a change:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read analysis.md.
+
+I am about to change the signature of [function] in [file].
+List every caller of that function across the codebase and what each
+caller expects from it. Cite file:line for each caller.</code></pre>
+    <t-b>
+      Invariant identification:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read analysis.md.
+Read [class_file].
+
+What invariants does [ClassName] maintain across its lifetime?
+Which ones are enforced by the type system and which rely on convention?
+Flag any invariant that a caller could violate without a compile error.</code></pre>
+
+    <!-- ======================================================= -->
+    <a id="followup"></a>
+    <h3>5. Following Up</h3>
+    <t-b>
+      A good analysis session produces a list of findings, each with a file:line citation.  The next
+      step depends on what you found:
+    </t-b>
+    <t-b class="indent">
+      <ul>
+        <li>If findings reveal a misunderstanding of the design, start a fresh session with that corrected
+            understanding before proposing changes.</li>
+        <li>If findings reveal a specific bug, hand the finding to a targeted fix session - state the
+            finding explicitly rather than asking Claude to re-derive it.</li>
+        <li>If findings reveal a structural problem, the analysis becomes the input to a refactoring
+            session - see <a href="AIWorkflows_Refactoring.html">Refactoring</a>.</li>
+      </ul>
+    </t-b>
+    <t-b>
+      Do not extend an analysis session into implementation.  Start a new session with the findings
+      from the analysis as explicit context.  This keeps the implementation session focused and prevents
+      the analysis from being evicted from context mid-implementation.
+    </t-b>
+
+    <div style="height:10rem;"></div>
+  </content-block>
+
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#summary">summary</a>
+        <a href="#analysismd">analysis.md</a>
+        <a href="#questions">useful questions</a>
+        <a href="#examples">example prompts</a>
+        <a href="#followup">following up</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+
+  <a id="bottom"></a>
+  <script src="js/AIWorkflowsPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  AIWorkflows_Dependency.html
+-->
+<head>
+  <title>AI Workflows: Dependencies</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    pre[class*="language-"] {
+      margin: 0.5rem 0 0.75rem 1.5rem;
+      width: max-content;
+      max-width: 95%;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    AIWorkflows_Dependency.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 07/18/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Workflows: Dependencies</h2>
+        <h4 id="subtitle" class="indent">
+          mapping what your code relies on and what relies on it
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0rem 0rem 0.25rem 0rem; margin-top:0.125rem; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25rem; margin-left:1.5rem;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/NewSite/tree/main/Code" style="margin-left:1rem; color:var(--atten);">Code Repo</a>
+      </div>
+    </header>
+    <div style="height:0.5rem;"></div>
+
+    <!-- ======================================================= -->
+    <a id="summary"></a>
+    <h3>1. Summary</h3>
+    <t-b>
+      Before upgrading a library, changing a shared utility, or splitting a module, understand what
+      depends on what.  Dependency analysis answers: what does this component rely on, what relies
+      on it, and what breaks if it changes.  A depend.md file targets the analysis: it names the
+      component under scrutiny and asks for a specific type of dependency map.
+    </t-b>
+    <t-b>
+      Two directions matter:
+    </t-b>
+    <t-b class="indent">
+      <ul>
+        <li><strong>Outgoing</strong> - what does this module import or call?  Matters when upgrading
+            external dependencies or understanding what a module requires to function.</li>
+        <li><strong>Incoming</strong> - what imports or calls this module?  Matters when changing a
+            signature, moving a file, or removing a function.</li>
+      </ul>
+    </t-b>
+
+    <!-- ======================================================= -->
+    <a id="dependmd"></a>
+    <h3>2. depend.md Structure</h3>
+<pre class="language-markdown"><code class="language-markdown"># Dependency Context
+
+## Target
+Component, module, or function to analyze: [name and path]
+
+## Direction
+[ ] Outgoing - what does the target depend on?
+[ ] Incoming - what depends on the target?
+[ ] Both
+
+## Scope
+Files and directories to search: [list]
+Files to exclude: [list]
+
+## Output Format
+List as: [dependent] -> [dependency], one per line.
+Cite file:line for each relationship.
+If a dependency is external (crate, package, stdlib), label it as such.</code></pre>
+
+    <!-- ======================================================= -->
+    <a id="questions"></a>
+    <h3>3. Types of Dependency Questions</h3>
+    <div class="indent">
+      <table class="help" style="box-shadow:3px 3px 10px #999; width:min(55em,95%);">
+        <tr><th>Question</th><th>Why it matters</th></tr>
+        <tr>
+          <td>What does [module] import, directly and transitively?</td>
+          <td>Understand the full footprint before isolating or testing it</td>
+        </tr>
+        <tr>
+          <td>What files import [module]?</td>
+          <td>Know the blast radius before changing a public API</td>
+        </tr>
+        <tr>
+          <td>If [function] signature changes, what breaks?</td>
+          <td>Plan the update scope before making the change</td>
+        </tr>
+        <tr>
+          <td>Is [package] used anywhere besides [file]?</td>
+          <td>Determine if removing a dependency is safe</td>
+        </tr>
+        <tr>
+          <td>What would need to move if I extracted [module] into a library?</td>
+          <td>Plan a library extraction before touching any files</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- ======================================================= -->
+    <a id="examples"></a>
+    <h3>4. Example Prompts</h3>
+    <t-b>
+      Map callers before a signature change:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read depend.md.
+
+Map all callers of [function_name] in [file.rs] across the codebase.
+For each caller, state what it passes as arguments and what it does with
+the return value. Cite file:line for each. Do not propose any changes.</code></pre>
+    <t-b>
+      Incoming dependencies before moving a module:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read depend.md.
+
+I plan to move [module] from [current_path] to [new_path].
+List every file that imports it, references it by path, or links to it
+(including HTML script tags and CSS links if applicable).
+Cite file:line for each reference.</code></pre>
+    <t-b>
+      Library extraction planning:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read depend.md.
+
+I want to extract [module] into a standalone library.
+List everything it depends on that would need to move with it.
+Separately, list everything that depends on it that would need updating.
+Do not propose how to do the extraction yet - just the dependency map.</code></pre>
+    <t-b>
+      Checking for unused external dependencies:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read depend.md.
+
+[package/crate] appears in [Cargo.toml / requirements.txt / package.json].
+Find every file in scope that imports or uses it. If it appears nowhere,
+confirm that it is safe to remove.</code></pre>
+
+    <!-- ======================================================= -->
+    <a id="followup"></a>
+    <h3>5. After the Dependency Map</h3>
+    <t-b>
+      A dependency map is a planning artifact, not a change.  Use it to scope the work, then start
+      a new session for the change itself - referencing the map as explicit context:
+    </t-b>
+<pre class="language-text"><code class="language-text">The dependency analysis found these callers of [function]: [paste list].
+
+I am now changing the signature of [function] to [new signature].
+Update the callers in this order: [ordered list]. Update one at a time,
+stop after each so I can verify, then ask before continuing to the next.</code></pre>
+    <t-b>
+      Starting a new session with the map as explicit input prevents Claude from re-deriving the
+      dependency structure and potentially missing a reference the analysis already found.
+    </t-b>
+
+    <div style="height:10rem;"></div>
+  </content-block>
+
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#summary">summary</a>
+        <a href="#dependmd">depend.md</a>
+        <a href="#questions">dependency questions</a>
+        <a href="#examples">example prompts</a>
+        <a href="#followup">after the map</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+
+  <a id="bottom"></a>
+  <script src="js/AIWorkflowsPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 6, 10);
+  </script>
+</body>
+</html>
