@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html id="top">
+<!--
+  AIWorkflows_CodeSmells.html
+-->
+<head>
+  <title>AI Workflows: Code Smells</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    pre[class*="language-"] {
+      margin: 0.5rem 0 0.75rem 1.5rem;
+      width: max-content;
+      max-width: 95%;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    AIWorkflows_CodeSmells.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 07/18/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AI Workflows: Code Smells</h2>
+        <h4 id="subtitle" class="indent">
+          finding structural problems before they cause failures
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0rem 0rem 0.25rem 0rem; margin-top:0.125rem; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25rem; margin-left:1.5rem;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/NewSite/tree/main/Code" style="margin-left:1rem; color:var(--atten);">Code Repo</a>
+      </div>
+    </header>
+    <div style="height:0.5rem;"></div>
+
+    <!-- ======================================================= -->
+    <a id="summary"></a>
+    <h3>1. Summary</h3>
+    <t-b>
+      Code smells are patterns that signal structural problems without necessarily causing failures.
+      A smell does not crash the program; it makes the program harder to understand, modify, or extend
+      correctly.  Finding smells before making changes avoids the situation where a bug introduced
+      by a refactor turns out to trace back to a structural problem that predated it.
+    </t-b>
+    <t-b>
+      A smell-finding session has one governing constraint: read-only.  The goal is a list of findings
+      with locations and proposed resolutions, not a set of edits.  Keeping the session read-only
+      separates discovery from decision.  Each finding can then become a targeted fix session, a
+      refactoring session, or a deliberate accept-and-document decision - on your schedule, not Claude's.
+    </t-b>
+    <t-b>
+      A codesmells.md sets the target files, the categories to check, and the output format.  The
+      read-only constraint and the output format belong in the md file so they are present at session
+      start and cannot be forgotten mid-session.
+    </t-b>
+
+    <!-- ======================================================= -->
+    <a id="codesmellsmd"></a>
+    <h3>2. codesmells.md Structure</h3>
+<pre class="language-markdown"><code class="language-markdown"># Code Smells Context
+
+## Target
+Files or modules to examine: [list them]
+
+## Mode
+Read-only analysis. Do not change any files.
+For each smell: name it, cite file:line, describe the problem, suggest a resolution.
+
+## Categories to Check
+- Mixed responsibilities (single-responsibility violations)
+- Duplicated logic (DRY violations)
+- Unsafe interfaces (preconditions not enforced by the type system)
+- Dead or commented-out code left in place
+- Long methods with deep nesting
+- Magic strings or hardcoded literals
+
+## Output Format
+Report as a table: Smell | File:Line | Description | Resolution</code></pre>
+    <t-b>
+      Customize the categories for the language and codebase.  A Python codebase might add
+      mutable default arguments and bare except clauses.  A C++ codebase might add raw
+      resource management.  Keeping the list to six or fewer categories produces focused output;
+      a longer list produces a wall of findings with no obvious priority.
+    </t-b>
+
+    <!-- ======================================================= -->
+    <a id="smells"></a>
+    <h3>3. Common C++ Code Smells</h3>
+    <div class="indent">
+      <table class="help" style="box-shadow:3px 3px 10px #999; width:min(55em,95%);">
+        <tr><th style="width:14rem;">Smell</th><th>What to look for</th></tr>
+        <tr>
+          <td>Mixed responsibilities</td>
+          <td>One class or header doing two unrelated jobs - data storage and display, parsing and serialization</td>
+        </tr>
+        <tr>
+          <td>Duplicated logic</td>
+          <td>The same 3-5 line sequence appearing more than twice; manual iterator construction repeated across files</td>
+        </tr>
+        <tr>
+          <td>Unsafe precondition</td>
+          <td>Method that requires an earlier call; violation is UB or a silent wrong result with no diagnostic</td>
+        </tr>
+        <tr>
+          <td>Commented-out code</td>
+          <td>Blocks disabled with "may use later" comments; adds noise and gives false impression of interface scope</td>
+        </tr>
+        <tr>
+          <td>Deep nesting</td>
+          <td>Methods with 4+ levels of indentation; control flow requires reading the whole body to understand one branch</td>
+        </tr>
+        <tr>
+          <td>Magic strings</td>
+          <td>Hardcoded tag names, option keys, or format strings scattered through the code with no named constant</td>
+        </tr>
+        <tr>
+          <td>Raw resource management</td>
+          <td>new/delete or file handles managed manually where a smart pointer or RAII wrapper would eliminate the lifetime burden</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- ======================================================= -->
+    <a id="examples"></a>
+    <h3>4. Example Prompts</h3>
+    <t-b>
+      Scan a single file:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read codesmells.md.
+Read [file].
+
+Find every smell in the categories listed in codesmells.md.
+Report as a table: Smell | File:Line | Description | Resolution.
+Do not change any files.</code></pre>
+    <t-b>
+      Scan across multiple files:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read codesmells.md.
+Read [file1].
+Read [file2].
+Read [file3].
+
+Scan all three files for the categories in codesmells.md. Report as a single table
+sorted by severity: unsafe preconditions first, then structural smells, then cosmetic.
+Do not change any files.</code></pre>
+    <t-b>
+      Targeted category scan:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read codesmells.md.
+Read [file].
+
+Check only for duplicated logic and unsafe preconditions.
+For each finding, explain in one sentence why it is a structural risk.
+Do not change any files.</code></pre>
+
+    <!-- ======================================================= -->
+    <a id="casestudy"></a>
+    <h3>5. Case Study: CppNoSqlDB</h3>
+    <t-b>
+      This smell survey was run on CppNoSqlDB before any structural work was planned.  Three files
+      were scanned: the core database header, the query conditions class, and the XML persistence
+      class.  The goal was a prioritized list of findings so that the structural work could be
+      sequenced by risk rather than discovered opportunistically during edits.
+    </t-b>
+
+    <h4>codesmells.md</h4>
+<pre class="language-markdown"><code class="language-markdown"># Code Smells Context
+
+## Target
+CppNoSqlDB -- C++ NoSql key-value database:
+  DbCore/DbCore.h    core database and element types
+  Query/Query.h      query conditions and execution
+  Persist/Persist.h  XML persistence and sharding
+
+## Mode
+Read-only analysis. Do not change any files.
+For each smell: name it, cite file:line, describe the problem, suggest a resolution.
+
+## Categories to Check
+- Mixed responsibilities (single-responsibility violations)
+- Duplicated logic (DRY violations)
+- Unsafe interfaces (preconditions not enforced by the type system)
+- Dead or commented-out code left in place
+- Long methods with deep nesting
+- Magic strings or hardcoded literals
+
+## Output Format
+Report as a table: Smell | File:Line | Description | Resolution</code></pre>
+
+    <h4>Prompt</h4>
+<pre class="language-text"><code class="language-text">Read codesmells.md.
+Read DbCore/DbCore.h.
+Read Query/Query.h.
+Read Persist/Persist.h.
+
+Find every smell in the categories listed in codesmells.md. Report as a table
+sorted by severity: unsafe preconditions first, then structural smells, then cosmetic.
+Do not change any files.</code></pre>
+
+    <h4>Findings</h4>
+    <div class="indent">
+      <table class="help" style="box-shadow:3px 3px 10px #999; width:min(72em,95%);">
+        <tr>
+          <th style="width:13rem;">Smell</th>
+          <th style="width:12rem;">Location</th>
+          <th>Description</th>
+          <th>Resolution</th>
+        </tr>
+        <tr>
+          <td>Unsafe raw-pointer precondition</td>
+          <td>Query.h:57, 84</td>
+          <td><code>Conditions&lt;P&gt;</code> stores <code>pDbElem_</code> as a raw pointer set via <code>value()</code>. Calling <code>match()</code> before <code>value()</code> dereferences a null pointer with no diagnostic.</td>
+          <td>Change <code>match()</code> to accept <code>const DbElement&lt;P&gt;&amp;</code> directly. Remove the pointer and the setter; the precondition disappears.</td>
+        </tr>
+        <tr>
+          <td>Display logic in core header</td>
+          <td>DbCore.h:308-399</td>
+          <td>~90 lines of <code>showKeys</code>, <code>showHeader</code>, <code>showElem</code>, <code>showRecord</code>, <code>showDb</code> defined inside the database header. <code>&lt;iomanip&gt;</code> is included solely for these functions.</td>
+          <td>Move to <code>Display.h</code>. Database callers include <code>DbCore.h</code>; display callers include <code>Display.h</code>.</td>
+        </tr>
+        <tr>
+          <td>Class with two responsibilities</td>
+          <td>Persist.h:51-68</td>
+          <td><code>Persist&lt;P&gt;</code> owns both shard-key filtering (<code>shardKeys_</code>, <code>shard()</code>, <code>addShardKey()</code>) and XML serialization (<code>toXml()</code>, <code>fromXml()</code>). The two concerns share no state.</td>
+          <td>Split into <code>ShardFilter&lt;P&gt;</code> and <code>XmlStore&lt;P&gt;</code>. <code>Persist&lt;P&gt;</code> can remain as a facade composing both.</td>
+        </tr>
+        <tr>
+          <td>Duplicated key-search pattern</td>
+          <td>DbCore.h:99-104,<br />Persist.h:94-100</td>
+          <td><code>containsChildKey()</code> and <code>containsKey()</code> both construct begin/end iterators manually for the same <code>std::find</code> check. <code>removeChildKey()</code> (DbCore.h:122) extends the pattern further.</td>
+          <td>Replace with <code>std::find(cbegin, cend, key) != cend()</code> one-liner. If the pattern recurs, add a <code>containsKey(Keys, Key)</code> free function to <code>Definitions.h</code>.</td>
+        </tr>
+        <tr>
+          <td>Long method with deep nesting</td>
+          <td>Persist.h:179-241</td>
+          <td><code>fromXml()</code> has 5+ levels of if/for nesting. Tag dispatch on XML strings is embedded inside the traversal loop, making any single branch difficult to follow in isolation.</td>
+          <td>Extract <code>parseRecord()</code> and <code>parseValue()</code> helpers. <code>fromXml()</code> becomes the outer loop only.</td>
+        </tr>
+        <tr>
+          <td>Magic strings in serialization</td>
+          <td>Persist.h:121-143</td>
+          <td>XML tag names (<code>"dbRecord"</code>, <code>"key"</code>, <code>"value"</code>, <code>"name"</code>, <code>"description"</code>, <code>"children"</code>, <code>"payload"</code>) are hardcoded literals in <code>toXmlRecord()</code> with matching strings in <code>fromXml()</code>.</td>
+          <td>Define named constants in a <code>XmlTags</code> namespace or struct. A typo then causes a compile error rather than a silent load failure.</td>
+        </tr>
+        <tr>
+          <td>Commented-out code</td>
+          <td>Query.h:70-80</td>
+          <td>Payload matching functions left disabled with "Not currently using... may use later" comments inside the class body, obscuring the class's actual interface.</td>
+          <td>Remove the commented block. If the feature is wanted, add it under a branch or issue; dead code in headers misleads readers about what the class does.</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- ======================================================= -->
+    <a id="followup"></a>
+    <h3>6. Following Up</h3>
+    <t-b>
+      A smell survey produces a prioritized list, not a work order.  Before starting any fix, decide
+      whether to fix, defer, or accept each finding.  Some smells are load-bearing - removing them
+      changes more code than the smell is worth.  Document accepted smells with a comment so future
+      readers know the choice was deliberate.
+    </t-b>
+    <t-b>
+      Each smell maps naturally to another workflow:
+    </t-b>
+    <t-b class="indent">
+      <ul>
+        <li>
+          <strong>Unsafe preconditions</strong> - open a targeted fix session with the specific finding
+          as explicit context.  State the current interface and the proposed change before asking Claude
+          to implement.
+        </li>
+        <li>
+          <strong>Structural smells</strong> (mixed responsibilities, long methods) - open a
+          <a href="AIWorkflows_Refactoring.html">Refactoring</a> session.  Hand the smell finding
+          directly as the goal statement in refactor.md.
+        </li>
+        <li>
+          <strong>Duplicated logic</strong> - usually a small targeted change; a single session with
+          both files in context is enough.
+        </li>
+        <li>
+          <strong>Cosmetic smells</strong> (commented-out code, magic strings) - low risk, low priority.
+          Batch them and handle in one session at a natural checkpoint.
+        </li>
+      </ul>
+    </t-b>
+    <t-b>
+      Do not carry smell findings forward into a fix session from the same conversation.  Start a
+      new session with the specific finding as explicit input.  The smell session has done its job;
+      the fix session should start clean.
+    </t-b>
+
+    <div style="height:10rem;"></div>
+  </content-block>
+
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#summary">summary</a>
+        <a href="#codesmellsmd">codesmells.md</a>
+        <a href="#smells">common smells</a>
+        <a href="#examples">example prompts</a>
+        <a href="#casestudy">case study</a>
+        <a href="#followup">following up</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+
+  <a id="bottom"></a>
+  <script src="js/AIWorkflowsPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+</body>
+</html>

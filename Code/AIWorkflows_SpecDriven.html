@@ -207,6 +207,362 @@ with a checkable output. Do not write any code yet.</code></pre>
 Walk through each acceptance criterion and confirm whether the current
 implementation satisfies it. Show the relevant code or output for each one.</code></pre>
 
+    <!-- ======================================================= -->
+    <a id="casestudy"></a>
+    <h3>7. Case Study: RustDirNav</h3>
+    <t-b>
+      RustDirNav is the generic directory navigator at the core of rs_textfinder.
+      It dispatches file and directory events to a caller-supplied App type through the
+      DirEvent trait, so the same traversal logic works for any application that implements
+      the two required methods.  Building it spec-first produced a clean separation between
+      the navigation contract, the implementation plan, and the code - each stage verifiable
+      against the previous one.
+    </t-b>
+
+    <h4>Directory tree</h4>
+<pre class="language-text"><code class="language-text">rs_textfinder/
+├── Constitution.md           -- language-agnostic governing document
+├── Structure.md              -- Rust-specific project layout
+├── Notes.md                  -- development notes
+├── docs/
+│   └── Project_Spec.md       -- top-level project specification
+├── RustCmdLine/
+│   ├── README.md             -- usage and design
+│   └── RustCmdLine_Spec.md   -- CLI parser API specification
+├── RustDirNav/
+│   ├── README.md             -- usage and design
+│   ├── RustDirNav_Spec.md    -- navigator API specification
+│   ├── examples/
+│   │   └── test1.rs          -- demonstration program
+│   ├── src/
+│   │   └── dir_nav_lib.rs    -- library implementation
+│   └── test_dir/             -- test fixture
+│       ├── test_file.rs
+│       └── test_sub1_dir/
+│           ├── test_file1.rs
+│           └── test_file2.exe
+├── RustTextFinder/
+│   ├── CLAUDE.md             -- Claude Code context for this crate
+│   ├── README.md             -- usage and design
+│   ├── Req_TextFinder.md     -- requirements and assertions
+│   └── RustTextFinder_Spec.md  -- text finder API specification
+└── RustTfVerify/             -- verification harness (no md files)</code></pre>
+
+    <h4>md files</h4>
+    <t-b>
+      Two md files drive the workflow.  <code>README.md</code> describes the design and build
+      steps at a high level.  <code>RustDirNav_Spec.md</code> is the working document produced
+      in the spec phase - it defines the DirEvent trait, every DirNav method, edge cases, invariants,
+      and acceptance criteria.  The spec was written before any code and served as the reference
+      for both the plan and the verification pass.
+    </t-b>
+    <details>
+      <summary class="labelStyle darkItem">RustDirNav_Spec.md (condensed)</summary>
+<pre class="language-markdown"><code class="language-markdown"># RustDirNav_Spec.md - Directory Navigator
+
+**Crate:** rust_dir_nav v1.1.0   **Source:** src/dir_nav_lib.rs
+
+## Purpose
+Walks a directory tree and dispatches file and directory names to a
+caller-supplied App type. App implements DirEvent to define what to do
+with each discovered file and directory.
+
+## Trait DirEvent
+  fn do_dir(&amp;mut self, d: &amp;str)  -- called for each selected directory
+  fn do_file(&amp;mut self, f: &amp;str) -- called for each file matching a pattern
+
+## Struct DirNav&lt;App: DirEvent + Default&gt;
+
+  new() -> Self
+    -- pre-populates skip_dirs: bin, obj, target, .git, .vs, archive, ...
+    -- recurse: true, hide: true
+
+  recurse(&amp;mut self, p: bool)      -- enable/disable subdirectory recursion
+  hide(&amp;mut self, p: bool)         -- suppress dirs with no matching files
+
+  add_skip&lt;S: Into&lt;String&gt;&gt;(&amp;mut self, s: S) -> &amp;mut DirNav&lt;App&gt;
+  add_pat&lt;S: Into&lt;String&gt;&gt;(&amp;mut self, p: S)  -> &amp;mut DirNav&lt;App&gt;
+
+  get_app(&amp;mut self)  -> &amp;mut App  -- access App state after traversal
+  get_dirs(&amp;self)     -> usize     -- directories entered (including hidden)
+  get_files(&amp;self)    -> usize     -- files matched (or all if no patterns)
+
+  clear(&amp;mut self)
+    -- clears pats, resets counters, replaces app with App::default()
+    -- preserves recurse, hide, skip_dirs
+
+  visit(&amp;mut self, dir: &amp;Path) -> io::Result&lt;()&gt;
+    -- depth-first search; calls app.do_dir and app.do_file
+    -- returns Err only if root path is not a directory
+
+## Edge Cases
+  - Empty pats: every file triggers do_file
+  - skip_dirs entries: silently excluded; never entered or counted
+  - hide(true): do_dir not called for dirs with no matching files
+  - clear() does NOT reset recurse, hide, or skip_dirs
+
+## Acceptance Criteria
+  1. visit() finds all files matching any registered extension
+  2. hide(true): do_dir suppressed for dirs with no file matches
+  3. recurse(false): only the root directory is examined
+  4. add_skip("name"): dirs named "name" are never entered or counted
+  5. cargo test -- --test-threads=1 passes all three tests</code></pre>
+    </details>
+
+    <h4>Prompt sequence</h4>
+    <t-b>
+      Draft the spec before planning or code.  The key constraints go in the initial prompt so
+      the model can surface open questions rather than guessing:
+    </t-b>
+<pre class="language-text"><code class="language-text">I want to build a generic directory navigator library in Rust named RustDirNav.
+
+Before any planning or code, draft a spec covering:
+  ## Goal
+  ## Behavior
+  ## Public API  (DirEvent trait and DirNav&lt;App&gt; struct with all methods)
+  ## Edge Cases
+  ## Acceptance Criteria
+  ## Open Questions
+
+Key behavior to capture:
+  - Generic over App: DirEvent + Default; App handles do_dir and do_file events
+  - Depth-first traversal with optional recursion (default: enabled)
+  - Extension-based file filtering; no filter means all files pass
+  - Skip list of directory names to never enter (bin, obj, target, .git, etc.)
+  - Option to suppress directories with no matching files (hide, default: enabled)
+  - Counters for dirs entered and files matched; clear() resets them
+
+Leave anything uncertain as an open question. Do not plan yet.</code></pre>
+    <t-b>
+      After reviewing the draft and resolving open questions, write it to
+      <code>RustDirNav_Spec.md</code>.  Then prompt for a plan grounded in it:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read RustDirNav_Spec.md.
+
+Propose an implementation plan as ordered steps, each producing a checkable output.
+Flag any spec ambiguities before the plan. Do not write any code yet.</code></pre>
+    <t-b>
+      After approving the plan, implement one step at a time:
+    </t-b>
+<pre class="language-text"><code class="language-text">The plan looks good. Implement step 1: DirEvent trait, SearchPatterns type alias,
+and DirNav&lt;App&gt; struct definition with all fields. Stop after that.</code></pre>
+<pre class="language-text"><code class="language-text">Step 1 looks correct. Implement step 2: new(), recurse(), hide(), all accessor
+and mutator methods, and clear(). Stop after that.</code></pre>
+<pre class="language-text"><code class="language-text">Good. Implement step 3: visit() with replace_sep() and in_patterns() helpers.
+Stop after that.</code></pre>
+    <t-b>
+      When all steps are complete, verify against the spec:
+    </t-b>
+<pre class="language-text"><code class="language-text">Read RustDirNav_Spec.md.
+
+Walk through each acceptance criterion and confirm whether the implementation
+satisfies it. Show the relevant code section for each criterion.</code></pre>
+
+    <h4>Usage</h4>
+<pre class="language-text"><code class="language-text">cd rs_textfinder/RustDirNav
+cargo run --example test1</code></pre>
+
+    <h4>Output</h4>
+<pre class="language-text"><code class="language-text">  Searching path "...rs_textfinder/RustDirNav"
+
+  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustDirNav
+      Cargo.toml
+      New Text Document.txt
+      Output.txt
+  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustDirNav/examples
+      test1.rs
+  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustDirNav/src
+      dir_nav_lib.rs
+  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustDirNav/test_dir
+      test_file.rs
+  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustDirNav/test_dir/test_sub1_dir
+      test_file1.rs
+      test_file2.exe
+  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustDirNav/test_dir/test_sub2_dir
+      test_file3.txt
+
+  processed 9 files and 7 dirs
+
+  Searching path "./test_dir"
+
+  ./test_dir
+      test_file.rs
+  ./test_dir/test_sub1_dir
+      test_file1.rs
+      test_file2.exe
+  ./test_dir/test_sub2_dir
+      test_file3.txt
+
+  processed 4 files in 3 dirs</code></pre>
+    <t-b>
+      The first pass searches the full crate tree from the working directory; the second
+      searches only the test fixture.  The target/, archive/, and .git/ directories are absent
+      from the output because they appear in the default skip list built by new().
+    </t-b>
+
+    <details>
+      <summary class="labelStyle darkItem">dir_nav_lib.rs</summary>
+<pre class="language-rust"><code class="language-rust">/////////////////////////////////////////////////////////////
+// dir_nav_lib.rs
+// Jim Fawcett, https://JimFawcett.github.io, 12 Apr 2020
+/////////////////////////////////////////////////////////////
+/*
+   DirNav&lt;App&gt; is a directory navigator that uses the generic
+   parameter App to define how files and directories are handled.
+   - displays only paths that have file targets by default
+   - hide(false) will show all directories traversed
+   - recurses directory tree at specified root by default
+   - recurse(false) examines only specified path.
+*/
+use std::fs::{self, DirEntry};
+use std::io;
+use std::io::{Error, ErrorKind};
+#[allow(unused_imports)]
+use std::path::{Path, PathBuf};
+
+/// trait required of the App generic parameter type
+pub trait DirEvent {
+    fn do_dir(&amp;mut self, d: &amp;str);
+    fn do_file(&amp;mut self, f: &amp;str);
+}
+
+/////////////////////////////////////////////////
+// Patterns are a collection of extension strings
+// used to identify files as search targets
+
+type SearchPatterns = Vec&lt;std::ffi::OsString&gt;;
+
+/// Directory Navigator Structure
+#[allow(dead_code)]
+#[derive(Debug, Default)]
+pub struct DirNav&lt;App: DirEvent&gt; {
+    /// file extensions to look for
+    pats: SearchPatterns,
+    /// directory names to skip during traversal
+    skip_dirs: SearchPatterns,
+    /// instance of App : DirEvent, requires do_file and do_dir methods
+    app: App,
+    /// number of files processed
+    num_file: usize,
+    /// number of dirs processed
+    num_dir: usize,
+    /// recurse ?
+    recurse : bool,
+    /// hide dirs with no targets ?
+    hide: bool,
+}
+impl&lt;App: DirEvent + Default&gt; DirNav&lt;App&gt; {
+    pub fn new() -> Self
+    where
+        App: DirEvent + Default,
+    {
+        let defaults = [
+            "bin", "obj",        // C#/.NET
+            "target",            // Rust
+            "build", "out",      // C++
+            "__pycache__", ".venv", "venv", "dist",  // Python
+            ".git", ".vs", ".idea",                  // VCS / IDE
+            "archive",
+        ];
+        let mut skip_dirs = SearchPatterns::new();
+        for name in &amp;defaults {
+            let mut s = std::ffi::OsString::new();
+            s.push(name);
+            skip_dirs.push(s);
+        }
+        Self {
+            pats: SearchPatterns::new(),
+            skip_dirs,
+            app: App::default(),
+            num_file: 0,
+            num_dir: 0,
+            recurse: true,
+            hide: true,
+        }
+    }
+    pub fn recurse(&amp;mut self, p: bool) { self.recurse = p; }
+    pub fn hide(&amp;mut self, p: bool)    { self.hide = p; }
+
+    pub fn get_app(&amp;mut self) -> &amp;mut App { &amp;mut self.app }
+    pub fn get_dirs(&amp;self)  -> usize { self.num_dir }
+    pub fn get_files(&amp;self) -> usize { self.num_file }
+    pub fn get_patts(&amp;self) -> &amp;SearchPatterns { &amp;self.pats }
+
+    pub fn add_skip&lt;S: Into&lt;String&gt;&gt;(&amp;mut self, s: S) -> &amp;mut DirNav&lt;App&gt; {
+        let mut t = std::ffi::OsString::new();
+        t.push(s.into());
+        self.skip_dirs.push(t);
+        self
+    }
+    pub fn add_pat&lt;S: Into&lt;String&gt;&gt;(&amp;mut self, p: S) -> &amp;mut DirNav&lt;App&gt; {
+        let mut t = std::ffi::OsString::new();
+        t.push(p.into());
+        self.pats.push(t);
+        self
+    }
+    pub fn clear(&amp;mut self) {
+        self.pats.clear();
+        self.num_dir = 0;
+        self.num_file = 0;
+        self.app = App::default();
+    }
+    pub fn visit(&amp;mut self, dir: &amp;Path) -> io::Result&lt;()&gt;
+    where App: DirEvent
+    {
+        self.num_dir += 1;
+        let dir_name: String =
+            self.replace_sep(dir).to_string_lossy().to_string();
+        let mut files    = Vec::&lt;std::ffi::OsString&gt;::new();
+        let mut sub_dirs = Vec::&lt;std::ffi::OsString&gt;::new();
+        if dir.is_dir() {
+            for entry in fs::read_dir(dir)? {
+                let entry = entry?;
+                let path  = entry.path();
+                if path.is_dir() {
+                    let skip = match path.file_name() {
+                        Some(name) => self.skip_dirs.contains(&amp;name.to_os_string()),
+                        None => false,
+                    };
+                    if !skip {
+                        sub_dirs.push(self.replace_sep(&amp;path));
+                    }
+                } else {
+                    if self.in_patterns(&amp;entry) || self.pats.is_empty() {
+                        self.num_file += 1;
+                        files.push(entry.file_name());
+                    }
+                }
+            }
+            if !files.is_empty() || !self.hide {
+                self.app.do_dir(&amp;dir_name);
+            }
+            for fl in files {
+                self.app.do_file(&amp;fl.to_string_lossy().to_string());
+            }
+            for sub in sub_dirs {
+                let mut pb = std::path::PathBuf::new();
+                pb.push(sub);
+                if self.recurse { self.visit(&amp;pb)?; }
+            }
+            return Ok(());
+        }
+        Err(Error::new(ErrorKind::Other, "not a directory"))
+    }
+    pub fn replace_sep(&amp;self, path: &amp;Path) -> std::ffi::OsString {
+        let mod_path = path.to_string_lossy().replace("\\", "/");
+        let mut os_str = std::ffi::OsString::new();
+        os_str.push(mod_path);
+        os_str
+    }
+    pub fn in_patterns(&amp;self, d: &amp;DirEntry) -> bool {
+        match d.path().extension() {
+            Some(extn) => self.pats.contains(&amp;extn.to_os_string()),
+            None => false,
+        }
+    }
+}</code></pre>
+    </details>
+
     <div style="height:10rem;"></div>
   </content-block>
 
@@ -222,6 +578,7 @@ implementation satisfies it. Show the relevant code or output for each one.</cod
         <a href="#drafting">drafting the spec</a>
         <a href="#planning">prompting for a plan</a>
         <a href="#implementing">implementing</a>
+        <a href="#casestudy">case study</a>
         <a href="#bottom">bottom</a>
       </div>
     </div>

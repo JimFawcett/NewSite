@@ -199,6 +199,100 @@ Show the diff only.</code></pre>
       different issue) and keeps the fix focused on what you verified.
     </t-b>
 
+    <!-- ======================================================= -->
+    <a id="casestudy"></a>
+    <h3>6. Case Study: CppNoSqlDB</h3>
+    <t-b>
+      This review was run against three headers in CppNoSqlDB before any changes were planned.
+      The <code>vulner.md</code> file encodes the files, the threat categories, and the required
+      table layout so the output format is consistent across sessions and reviewers.
+    </t-b>
+
+    <h4>vulner.md</h4>
+<pre class="language-markdown"><code class="language-markdown"># Vulnerability Review Context
+
+## Target
+CppNoSqlDB -- C++ NoSql key-value database:
+  DbCore/DbCore.h    core database and element types
+  Query/Query.h      query conditions and execution
+  Persist/Persist.h  XML persistence and sharding
+
+## Mode
+Read-only analysis. Do not change any files.
+For each finding: name the vulnerability, cite file:line, describe the problem,
+and propose a concrete fix.
+
+## Categories to Check
+- Null pointer dereferences (uninitialized pointers, missing null guards)
+- Uninitialized members (undefined behavior on first use)
+- Out-of-bounds access (unchecked vector indexing, unchecked XML structure)
+- Input validation gaps (unvalidated regex patterns passed to std::regex)
+- Silent failure (functions that return success regardless of outcome)
+- Exception safety (non-portable exception construction, resource leaks on throw)
+
+## Output Format
+Report as a table with these columns:
+  Vulnerability | File:Line | Description | Fix
+List entries in severity order: critical first, then high, then medium.</code></pre>
+
+    <h4>Prompt</h4>
+<pre class="language-text"><code class="language-text">Read vulner.md.
+Read DbCore/DbCore.h.
+Read Query/Query.h.
+Read Persist/Persist.h.
+
+Find every vulnerability in the categories listed in vulner.md.
+Report as the table specified in vulner.md.
+Do not change any files.</code></pre>
+
+    <h4>Findings</h4>
+    <div class="indent">
+      <table class="help" style="box-shadow:3px 3px 10px #999; width:min(72em,95%);">
+        <tr>
+          <th style="width:13rem;">Vulnerability</th>
+          <th style="width:12rem;">Location</th>
+          <th>Description</th>
+          <th>Fix</th>
+        </tr>
+        <tr>
+          <td>Null pointer dereference in Conditions</td>
+          <td>Query.h:84, 118, 128, 138, 150</td>
+          <td><code>pDbElem_</code> is initialized to <code>nullptr</code> (line 84). Every <code>match*()</code> method dereferences it unconditionally (lines 118, 128, 138, 150). Calling <code>match()</code> before <code>value()</code> is undefined behavior with no diagnostic.</td>
+          <td>Change <code>match()</code> to accept <code>const DbElement&lt;P&gt;&amp;</code> directly and remove the pointer. Or add <code>if (pDbElem_ == nullptr) return false;</code> at the top of each <code>match*()</code> method.</td>
+        </tr>
+        <tr>
+          <td>Uninitialized pDb_ in default constructor</td>
+          <td>Query.h:167</td>
+          <td><code>Query() {}</code> leaves <code>pDb_</code> uninitialized. Any subsequent call to <code>select()</code>, <code>from()</code>, or <code>keys()</code> dereferences an indeterminate pointer. The two-argument constructor initializes it correctly; the default does not.</td>
+          <td>Delete the default constructor (<code>Query() = delete;</code>) or initialize <code>pDb_</code> to <code>nullptr</code> and guard every use with a null check.</td>
+        </tr>
+        <tr>
+          <td>Unvalidated regex causes silent failure</td>
+          <td>Query.h:60, 117</td>
+          <td><code>name(RegExp re)</code> and <code>description(RegExp re)</code> store patterns without validation (line 60). <code>std::regex re(nameRegExp_)</code> at line 117 throws <code>std::regex_error</code> on a malformed pattern; <code>match()</code> catches all exceptions silently and returns <code>false</code> (lines 104-108). Every record silently fails to match with no error reported.</td>
+          <td>Validate the pattern at the setter: construct <code>std::regex</code> in <code>name()</code> and <code>description()</code> and propagate <code>std::invalid_argument</code> if it throws. Don't defer validation to match time.</td>
+        </tr>
+        <tr>
+          <td>Unchecked vector index in XML parsing</td>
+          <td>Persist.h:196, 226</td>
+          <td><code>pChild-&gt;children()[0]-&gt;value()</code> (line 196) and <code>pChild-&gt;children()[0]-&gt;value()</code> (line 226) access index 0 without checking vector size. Malformed or truncated XML with an empty element produces out-of-bounds access.</td>
+          <td>Guard both sites: <code>if (!pChild-&gt;children().empty())</code> before each <code>[0]</code> access. Use <code>.at(0)</code> to get a bounds-checked throw instead of undefined behavior if a guard is impractical.</td>
+        </tr>
+        <tr>
+          <td>fromXml always reports success</td>
+          <td>Persist.h:179, 240</td>
+          <td><code>fromXml()</code> unconditionally returns <code>true</code> (line 240) regardless of whether parsing succeeded. A caller that checks the return value to confirm the database was loaded correctly will always see success, even when the XML was empty or malformed and no records were loaded.</td>
+          <td>Track a success flag during parsing. Return <code>false</code> if no records were found when records were expected, or if any required field (key, value) was missing in a record.</td>
+        </tr>
+        <tr>
+          <td>Non-portable exception construction</td>
+          <td>DbCore.h:252, 267</td>
+          <td><code>throw(std::exception("key does not exist in db"))</code> passes a string to <code>std::exception</code>'s constructor. The standard <code>std::exception</code> does not accept a string argument; this relies on an MSVC extension. Code fails to compile on GCC or Clang.</td>
+          <td>Replace with <code>throw std::runtime_error("key does not exist in db");</code> which is portable and carries the message through <code>what()</code>.</td>
+        </tr>
+      </table>
+    </div>
+
     <div style="height:10rem;"></div>
   </content-block>
 
@@ -213,6 +307,7 @@ Show the diff only.</code></pre>
         <a href="#examples">example prompts</a>
         <a href="#systematic">systematic review</a>
         <a href="#findings">acting on findings</a>
+        <a href="#casestudy">case study</a>
         <a href="#bottom">bottom</a>
       </div>
     </div>
@@ -227,7 +322,7 @@ Show the diff only.</code></pre>
   <script>createSiteNavMenu('goto')</script>
   <script src="../js/link-nav.js" defer></script>
   <script>
-    setCookie('#pages', 5, 10);
+    setCookie('#pages', 6, 10);
   </script>
 </body>
 </html>

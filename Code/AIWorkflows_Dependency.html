@@ -201,6 +201,152 @@ stop after each so I can verify, then ask before continuing to the next.</code><
       dependency structure and potentially missing a reference the analysis already found.
     </t-b>
 
+    <!-- ======================================================= -->
+    <a id="casestudy"></a>
+    <h3>6. Case Study: CppNoSqlDB</h3>
+    <t-b>
+      This dependency map was built before any structural work on CppNoSqlDB.  The goal was to
+      understand which packages are hubs - high-impact, many dependents - and which are leaves,
+      so that later work could be sequenced from the outside in rather than discovering
+      ripple effects during edits.  The map is the deliverable; nothing is changed here.
+    </t-b>
+
+    <h4>depend.md</h4>
+<pre class="language-markdown"><code class="language-markdown"># Dependency Context
+
+## Target
+CppNoSqlDB -- C++ NoSql key-value database
+All packages: DateTime, DbCore, Query, Edit, Persist, PayLoad, Utilities, Executive
+
+## Direction
+Both: map outgoing dependencies (what each package includes) and
+incoming dependencies (what includes each package).
+
+## Scope
+Packages in scope:
+  DateTime/    DbCore/    Query/    Edit/
+  Persist/     PayLoad/   Utilities/   Executive/
+  TestApplication/   TestClassProj/
+
+Label any package outside this list as external.
+Do not follow includes into external packages.
+
+## Output Format
+Outgoing: [package] -> [packages it includes directly], file:line for each
+Incoming: [package] &lt;- [packages that include it], file:line for each
+Hubs:   packages with 3 or more direct dependents
+Leaves: packages with no intra-package dependencies
+Transitive closure: tree from TestApplication showing full include chain;
+  mark repeated nodes with [seen] to avoid cycles.</code></pre>
+
+    <h4>Prompt 1 - direct dependencies</h4>
+<pre class="language-text"><code class="language-text">Read depend.md.
+Read Executive/NoSqlDb.h.
+Read DbCore/DbCore.h.
+Read Query/Query.h.
+Read Edit/Edit.h.
+Read Persist/Persist.h.
+Read PayLoad/PayLoad.h.
+Read TestApplication/TestApplication.cpp.
+
+Map all direct package-to-package dependencies in both directions.
+For each package list what it includes (outgoing) and what includes it (incoming).
+Cite file:line for each relationship.
+Identify hubs and leaves as defined in depend.md.</code></pre>
+
+    <h4>Result 1</h4>
+<pre class="language-text"><code class="language-text">-- Outgoing dependencies --
+
+DateTime      -&gt; (none -- leaf)
+Utilities     -&gt; (none -- leaf)
+DbCore        -&gt; DateTime           (DbCore.h:47)
+PayLoad       -&gt; DbCore             (PayLoad.h:41-42)
+               -&gt; XmlDocument [ext] (PayLoad.h:39-40)
+Query         -&gt; DbCore             (Query.h:33-34)
+Edit          -&gt; DbCore             (Edit.h:26)
+               -&gt; Query             (Edit.h:27)
+               -&gt; DateTime          (Edit.h:28)
+Persist       -&gt; DbCore             (Persist.h:30)
+               -&gt; Query             (Persist.h:31)
+               -&gt; DateTime          (Persist.h:32)
+               -&gt; XmlDocument [ext] (Persist.h:33-34)
+Executive     -&gt; DateTime           (NoSqlDb.h:18)
+               -&gt; DbCore            (NoSqlDb.h:19-20)
+               -&gt; Edit              (NoSqlDb.h:21)
+               -&gt; Persist           (NoSqlDb.h:22)
+               -&gt; Query             (NoSqlDb.h:23)
+               -&gt; Utilities         (NoSqlDb.h:24-25)
+               -&gt; XmlDocument [ext] (NoSqlDb.h:26-27)
+TestApplication -&gt; Executive        (TestApplication.cpp:17)
+               -&gt; PayLoad           (TestApplication.cpp:18)
+
+-- Incoming dependencies --
+
+DateTime      &lt;- DbCore (DbCore.h:47), Edit (Edit.h:28),
+                  Persist (Persist.h:32), Executive (NoSqlDb.h:18)
+DbCore        &lt;- Query (Query.h:33-34), Edit (Edit.h:26),
+                  Persist (Persist.h:30), PayLoad (PayLoad.h:41-42),
+                  Executive (NoSqlDb.h:19-20)
+Query         &lt;- Edit (Edit.h:27), Persist (Persist.h:31),
+                  Executive (NoSqlDb.h:23)
+Edit          &lt;- Executive (NoSqlDb.h:21)
+Persist       &lt;- Executive (NoSqlDb.h:22)
+PayLoad       &lt;- Executive/Executive.cpp (Executive.cpp:16),
+                  TestApplication (TestApplication.cpp:18)
+Utilities     &lt;- Executive (NoSqlDb.h:24-25)
+XmlDocument   &lt;- Persist (Persist.h:33-34), PayLoad (PayLoad.h:39-40),
+                  Executive (NoSqlDb.h:26-27)
+
+-- Hubs (3 or more direct dependents) --
+
+DbCore   5 dependents: Query, Edit, Persist, PayLoad, Executive
+Query    3 dependents: Edit, Persist, Executive
+
+-- Leaves (no intra-package dependencies) --
+
+DateTime, Utilities</code></pre>
+
+    <h4>Prompt 2 - transitive closure</h4>
+<pre class="language-text"><code class="language-text">Show the transitive closure from TestApplication.
+List every package reachable from its includes as an indented tree.
+Mark repeated entries with [seen].
+Summarize the full package set at the end.</code></pre>
+
+    <h4>Result 2</h4>
+<pre class="language-text"><code class="language-text">TestApplication
+  ├── Executive/NoSqlDb.h     (TestApplication.cpp:17)
+  │   ├── DateTime            (NoSqlDb.h:18)
+  │   ├── DbCore              (NoSqlDb.h:19-20)
+  │   │   └── DateTime        [seen]
+  │   ├── Edit                (NoSqlDb.h:21)
+  │   │   ├── DbCore          [seen]
+  │   │   ├── Query           [seen below]
+  │   │   └── DateTime        [seen]
+  │   ├── Persist             (NoSqlDb.h:22)
+  │   │   ├── DbCore          [seen]
+  │   │   ├── Query           [seen below]
+  │   │   ├── DateTime        [seen]
+  │   │   └── XmlDocument     [external]
+  │   ├── Query               (NoSqlDb.h:23)
+  │   │   └── DbCore          [seen]
+  │   ├── Utilities           (NoSqlDb.h:24-25)
+  │   └── XmlDocument         (NoSqlDb.h:26-27) [external]
+  └── PayLoad                 (TestApplication.cpp:18)
+      ├── DbCore              [seen]
+      └── XmlDocument         [seen]
+
+Full package set reachable from TestApplication:
+  DateTime, DbCore, Query, Edit, Persist, PayLoad, Utilities
+  XmlDocument [external]
+
+Observations:
+  DbCore is the most deeply embedded package: reached via 6 separate include paths
+  (DbCore directly, Query, Edit, Persist, PayLoad, and the Executive aggregate).
+  Any change to DbCore's public API requires verifying Query, Edit, Persist,
+  PayLoad, and Executive -- the entire middle tier of the codebase.
+  Utilities and DateTime are true leaves: changing either affects only the
+  packages that directly include them, with no downstream ripple.</code></pre>
+
     <div style="height:10rem;"></div>
   </content-block>
 
@@ -215,6 +361,7 @@ stop after each so I can verify, then ask before continuing to the next.</code><
         <a href="#questions">dependency questions</a>
         <a href="#examples">example prompts</a>
         <a href="#followup">after the map</a>
+        <a href="#casestudy">case study</a>
         <a href="#bottom">bottom</a>
       </div>
     </div>
@@ -229,7 +376,7 @@ stop after each so I can verify, then ask before continuing to the next.</code><
   <script>createSiteNavMenu('goto')</script>
   <script src="../js/link-nav.js" defer></script>
   <script>
-    setCookie('#pages', 6, 10);
+    setCookie('#pages', 7, 10);
   </script>
 </body>
 </html>

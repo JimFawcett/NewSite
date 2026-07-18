@@ -185,8 +185,122 @@ Which ones are enforced by the type system and which rely on convention?
 Flag any invariant that a caller could violate without a compile error.</code></pre>
 
     <!-- ======================================================= -->
+    <a id="casestudy"></a>
+    <h3>5. Case Study: rs_textfinder Architecture</h3>
+    <t-b>
+      This analysis was run before adding multi-pattern text matching to rs_textfinder.
+      The goal was to understand the data flow, the contract at the DirNav/TfAppl boundary,
+      and any silent failure modes before touching the code.
+    </t-b>
+
+    <h4>analysis.md</h4>
+<pre class="language-markdown"><code class="language-markdown"># Analysis Context
+
+## Target
+rs_textfinder/ -- three-crate Rust text search tool:
+  RustCmdLine/src/cmd_line_lib.rs     CLI argument parser
+  RustDirNav/src/dir_nav_lib.rs       generic directory navigator
+  RustTextFinder/src/text_finder.rs   text search logic and main()
+
+## Questions
+1. Trace the data flow from CLI args through to printed output.
+   Name every transformation and the file:line where it occurs.
+2. What is the contract at the DirNav/TfAppl boundary?
+   What does DirNav guarantee and what must TfAppl supply?
+3. Which functions could panic, fail silently, or produce wrong results
+   on valid input? Cite file:line for each.
+4. What invariants does DirNav&lt;App&gt; maintain?
+   Which are enforced by the type system and which rely on convention?
+
+## Scope
+Analysis only. Do not propose changes or refactors.
+
+## Output Format
+For each finding: state the result, then cite file:line.
+If a question has no clear answer in the code, say so explicitly.</code></pre>
+
+    <h4>Prompt</h4>
+<pre class="language-text"><code class="language-text">Read analysis.md.
+Read RustCmdLine/src/cmd_line_lib.rs.
+Read RustDirNav/src/dir_nav_lib.rs.
+Read RustTextFinder/src/text_finder.rs.
+
+Answer each question in analysis.md. For each finding, cite file:line.
+Do not propose any changes.</code></pre>
+
+    <h4>Analysis</h4>
+<pre class="language-text"><code class="language-text">Q1 -- Data flow
+
+  CLI args -&gt; CmdLineParse.parse()  (cmd_line_lib.rs:193)
+    Scans std::env::args() left to right; '/' or '-' prefix identifies options.
+    /p value is comma-split into a patterns vec  (cmd_line_lib.rs:215-221).
+    abs_path() resolves the path via fs::canonicalize(), strips the Windows \\?\
+    prefix, and converts backslashes to '/'  (cmd_line_lib.rs:119-132).
+
+  main() configures DirNav&lt;TfAppl&gt;  (text_finder.rs:265-291)
+    recurse and hide are set on both dn and the embedded TfAppl.
+    Extension patterns are registered with dn.add_pat().
+    The regex string is set on the embedded TextFinder via dn.get_app().regex().
+
+  dn.visit(&amp;p) walks the tree depth-first  (dir_nav_lib.rs:495)
+    skip_dirs entries are silently excluded before being entered  (dir_nav_lib.rs:507-514).
+    app.do_dir() is called before any app.do_file() calls for that directory  (dir_nav_lib.rs:522-527).
+    If hide is true and no files match, do_dir() is never called  (dir_nav_lib.rs:522).
+
+  TfAppl::do_file() builds the full path from curr_dir + "/" + filename  (text_finder.rs:95-97)
+    Calls TextFinder::find() on the assembled path  (text_finder.rs:99).
+    On match: prints the directory on first match, then the filename  (text_finder.rs:102-110).
+
+  main() prints the summary line after visit() returns  (text_finder.rs:298-302).
+
+Q2 -- DirNav/TfAppl contract
+
+  DirNav&lt;App&gt; requires App: DirEvent + Default  (dir_nav_lib.rs:440).
+  DirEvent mandates two methods:
+    do_dir(&amp;mut self, d: &amp;str)   -- receives the full normalized directory path
+    do_file(&amp;mut self, f: &amp;str)  -- receives only the filename, not the full path
+
+  Guarantees from DirNav:
+    do_dir is called before any do_file calls for that directory  (dir_nav_lib.rs:522-527).
+    If hide is true and no files match, do_dir is not called  (dir_nav_lib.rs:522).
+
+  Burden on TfAppl:
+    do_file receives only the filename; TfAppl reconstructs the full path by
+    prepending curr_dir  (text_finder.rs:95-97).  curr_dir is set in do_dir.
+    The ordering guarantee makes this safe, but it is not enforced by the type system.
+
+Q3 -- Failure modes
+
+  Invalid regex: TextFinder::find() returns false with no diagnostic  (text_finder.rs:70).
+    Every file silently reports no match.
+
+  Non-existent root path: dn.visit() result is discarded with let _ =  (text_finder.rs:296).
+    abs_path() returns the error message string on canonicalize() failure  (cmd_line_lib.rs:130);
+    that string becomes the search root, causing visit() to fail silently.
+
+  CmdLineParse::value() panics on an unknown key  (cmd_line_lib.rs:166).
+    Direct HashMap indexing; panics if the key was never inserted.
+
+  CmdLineParse::is_opt() indexes as_bytes()[0] without a length check  (cmd_line_lib.rs:94-96).
+    An empty argument string produces an index-out-of-bounds panic.
+
+Q4 -- DirNav&lt;App&gt; invariants
+
+  Enforced by code structure:
+    do_dir is called before do_file for all files in that directory  (dir_nav_lib.rs:522-527).
+    skip_dirs entries are never entered or counted in num_dir  (dir_nav_lib.rs:507-514).
+    Empty pats: all files trigger do_file.  Non-empty: only extension-matching files  (dir_nav_lib.rs:516).
+
+  Enforced by the type system:
+    DirEvent + Default on App is verified at compile time  (dir_nav_lib.rs:440).
+
+  Convention only:
+    clear() preserves recurse, hide, and skip_dirs but clears pats and resets counters
+    (dir_nav_lib.rs:489-494).  Documented contract, not a type-level guarantee.</code></pre>
+
+    <!-- ======================================================= -->
     <a id="followup"></a>
-    <h3>5. Following Up</h3>
+    <h3>6. Following Up</h3>
     <t-b>
       A good analysis session produces a list of findings, each with a file:line citation.  The next
       step depends on what you found:
@@ -220,6 +334,7 @@ Flag any invariant that a caller could violate without a compile error.</code></
         <a href="#analysismd">analysis.md</a>
         <a href="#questions">useful questions</a>
         <a href="#examples">example prompts</a>
+        <a href="#casestudy">case study</a>
         <a href="#followup">following up</a>
         <a href="#bottom">bottom</a>
       </div>

@@ -174,8 +174,133 @@ reference to it across the codebase. Show the list of files you will update
 before making any changes.</code></pre>
 
     <!-- ======================================================= -->
+    <a id="casestudy"></a>
+    <h3>5. Case Study: CppNoSqlDB Refactoring Survey</h3>
+    <t-b>
+      This refactoring survey was run on CppNoSqlDB before any structural changes were made.
+      The goal was to identify specific structural problems - mixed responsibilities, duplicated
+      patterns, unsafe preconditions - and get concrete proposals for each, without touching
+      the code.  The <code>Mode: read-only</code> instruction in refactor.md is the constraint
+      that keeps Claude from writing changes before the suggestions have been reviewed.
+    </t-b>
+
+    <h4>refactor.md</h4>
+<pre class="language-markdown"><code class="language-markdown"># Refactor Context
+
+## Target
+CppNoSqlDB -- C++ NoSql key-value database:
+  DbCore/DbCore.h    core database and element types
+  Query/Query.h      query conditions and execution
+  Persist/Persist.h  XML persistence and sharding
+
+## Mode
+Read-only analysis. Do not change any files.
+For each suggestion: describe the current structure, propose the change,
+and state what structural property it improves.
+
+## Questions
+1. DbCore.h contains ~90 lines of display functions alongside database logic.
+   What would a clean separation look like?
+2. containsChildKey() in DbCore.h and containsKey() in Persist.h both use
+   the same iterator/std::find pattern. How should this be unified?
+3. Persist&lt;P&gt; mixes shard-selection logic with XML serialization.
+   What would those two responsibilities look like as separate classes?
+4. Conditions&lt;P&gt; uses a raw pointer for element access with scattered match
+   methods. What structural change would improve this?
+
+## Constraints
+Analysis only. Do not change any files.
+Cite file:line for each current-code observation.
+Format each suggestion as: current structure | proposed change | benefit.</code></pre>
+
+    <h4>Prompt</h4>
+<pre class="language-text"><code class="language-text">Read refactor.md.
+Read DbCore/DbCore.h.
+Read Query/Query.h.
+Read Persist/Persist.h.
+
+Answer each question in refactor.md. Cite file:line for every observation.
+Do not change any files.</code></pre>
+
+    <h4>Suggestions</h4>
+<pre class="language-text"><code class="language-text">Q1 -- Display functions in DbCore.h
+
+  Current: showKeys(), showHeader(), showElem(), showRecord(), and showDb()
+  are defined inside DbCore.h (lines 308-399), directly after the DbCore
+  class body. DbCore.h includes &lt;iomanip&gt; solely to support them (DbCore.h:44).
+
+  Proposed: move the five functions to a new Display.h header that includes
+  DbCore.h. The functions remain template functions in the NoSqlDb namespace;
+  no signatures need to change. Callers that need display include Display.h;
+  callers that only need the database include DbCore.h.
+
+  Benefit: DbCore.h becomes the database contract; Display.h becomes the
+  presentation layer. Tests can verify database logic without pulling in
+  display dependencies. Adding an alternate output format means a new header,
+  not changes to the database header.
+
+Q2 -- Duplicated iterator/find pattern
+
+  Current: containsChildKey() (DbCore.h:99-104) and containsKey() in Persist.h
+  (Persist.h:94-100) both do the same thing:
+    Keys::iterator start = vec.begin();
+    Keys::iterator end = vec.end();
+    return std::find(start, end, key) != end;
+  removeChildKey() (DbCore.h:122-133) extends the same pattern to erase.
+
+  Proposed: replace the three-line iterator construction with the one-liner
+  already available from &lt;algorithm&gt;:
+    return std::find(vec.cbegin(), vec.cend(), key) != vec.cend();
+  If the pattern recurs in more than two places, add a
+  containsKey(const Keys&amp;, const Key&amp;) free function to Definitions.h
+  and call it from both sites.
+
+  Benefit: eliminates repeated boilerplate, makes the intent immediately
+  visible, and centralizes any future change (e.g., switching from
+  vector to set for O(log n) lookup).
+
+Q3 -- Persist&lt;P&gt; mixed responsibilities
+
+  Current: Persist&lt;P&gt; (Persist.h:51-68) owns two unrelated concerns:
+    shard state: shardKeys_, shard(), addShardKey(), removeShard(),
+      containsKey()  (Persist.h:58-100)
+    XML serialization: toXmlRecord(), toXml(), fromXml()  (Persist.h:61-62,
+      116-239)
+  The fromXml() augment parameter (Persist.h:62) changes behavior
+  fundamentally -- false clears the database before loading.
+
+  Proposed: split into two classes:
+    ShardFilter&lt;P&gt;  owns shardKeys_ and a shouldPersist(Key) predicate
+    XmlStore&lt;P&gt;     owns toXml(ShardFilter&lt;P&gt;&amp;) and fromXml(bool augment)
+  Persist&lt;P&gt; can remain as a thin facade composing both if callers should
+  not see the split.
+
+  Benefit: shard policy becomes independently testable and reusable with any
+  future serialization format. The augment semantics are easier to follow when
+  database-clearing lives next to load logic, not alongside shard methods.
+  Adding JSON persistence means a new class, not modifying Persist.
+
+Q4 -- Conditions&lt;P&gt; raw pointer and scattered match methods
+
+  Current: Conditions&lt;P&gt; (Query.h:50-94) stores pDbElem_ as a raw pointer
+  (Query.h:84) set through a value() setter (Query.h:57). The caller must
+  call value() before any match*() call; calling match() without doing so
+  is undefined behavior. Five independent match methods all live on the
+  same class with no grouping by concern.
+
+  Proposed: pass the element by const reference directly into match():
+    bool match(const DbElement&lt;P&gt;&amp; elem) const;
+  This eliminates the pointer, the setter, and the ordering requirement.
+  The five match* helpers remain private; match() becomes safe to call
+  at any time with no precondition.
+
+  Benefit: the interface is const-correct and has no precondition.
+  The raw pointer and the lifetime concern it introduces are removed.
+  The class becomes usable with const DbElement references.</code></pre>
+
+    <!-- ======================================================= -->
     <a id="pitfalls"></a>
-    <h3>5. Common Pitfalls</h3>
+    <h3>6. Common Pitfalls</h3>
     <div class="indent">
       <table class="help" style="box-shadow:3px 3px 10px #999; width:min(55em,95%);">
         <tr><th>Pitfall</th><th>Prevention</th></tr>
@@ -215,6 +340,7 @@ before making any changes.</code></pre>
         <a href="#refactormd">refactor.md</a>
         <a href="#sequence">safe sequence</a>
         <a href="#examples">example prompts</a>
+        <a href="#casestudy">case study</a>
         <a href="#pitfalls">common pitfalls</a>
         <a href="#bottom">bottom</a>
       </div>

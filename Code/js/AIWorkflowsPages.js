@@ -15,6 +15,7 @@ function buildPages() {
         <a href='AIWorkflows_SpecDriven.html'>spec-driven impl</a>\
         <a href='AIWorkflows_Analysis.html'>analysis</a>\
         <a href='AIWorkflows_Refactoring.html'>refactoring</a>\
+        <a href='AIWorkflows_CodeSmells.html'>code smells</a>\
         <a href='AIWorkflows_Vulnerabilities.html'>vulnerabilities</a>\
         <a href='AIWorkflows_Dependency.html'>dependencies</a>\
         <a href='AIWorkflows_CodeOrg.html'>code organization</a>\
