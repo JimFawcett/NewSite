@@ -414,57 +414,110 @@ a practical utility and a clear instructional example.</pre>
     </t-b>
     <details>
       <summary class="darkItem">Rust ThreadPool Source</summary>
-      <code-viewer width="90ch" font-size="1.0rem" highlight="prism" language="css" bg-color="var(--light)" title-bg-color="#ccc" style="margin-left:-1rem; overflow-x:auto;">
-        Figure 3. Rust Thread Pool
-        <pre slot="code"><code>    1 /////////////////////////////////////////////////////////////
-    2 // rust_thread_pool::lib.rs - threadpool with BlockingQueue //
-    3 /////////////////////////////////////////////////////////////
-    4 #![allow(dead_code)]
-    5 use std::fmt::*;
-    6 use rust_blocking_queue::*;
-    7 use std::thread::*;
-    8 use std::sync::*;
-    9 use std::default::{Default};
-   10
-   11 #[derive(Debug)]
-   12 pub struct ThreadPool&lt;M&gt;
-   13 {
-   14     sbq: Arc&lt;BlockingQueue&lt;M&gt;&gt;,
-   15     thrd: Vec&lt;Option&lt;JoinHandle&lt;()&gt;&gt;&gt;
-   16 }
-   17 impl&lt;M&gt; ThreadPool&lt;M&gt;
-   18 where M: Send + 'static
-   19 {
-   20     pub fn new&lt;F&gt;(nt:u8, f:F) -&gt; ThreadPool&lt;M&gt;
-   21     where F: FnOnce(&BlockingQueue&lt;M&gt;) -&gt; () + Send + 'static + Copy
-   22     {
-   23         let sqm = Arc::new(BlockingQueue::&lt;M&gt;::new());
-   24         let mut vt = Vec::&lt;Option&lt;JoinHandle&lt;()&gt;&gt;&gt;::new();
-   25         for _i in 0..nt {
-   26             let sq = Arc::clone(&sqm);
-   27             let handle = std::thread::spawn( move || {
-   28                 f(&sq);
-   29             });
-   30             vt.push(Some(handle));
-   31         }
-   32         Self { sbq: sqm, thrd: vt }
-   33     }
-   34     pub fn wait(&mut self) {
-   35         for handle in &mut self.thrd {
-   36             let _ = handle.take().unwrap().join();
-   37         }
-   38     }
-   39     pub fn post_message(&mut self, _msg:M)
-   40     where M:Debug + Clone {
-   41         self.sbq.en_q(_msg);
-   42     }
-   43     pub fn get_message(&mut self) -&gt; M
-   44     where M:Debug + Clone + Default {
-   45         let m:M = M::default();
-   46         m
-   47     }
-   48 }</code></pre>
-      </code-viewer>
+<pre class="language-rust no-whitespace-normalization"><code class="language-rust">  1 /////////////////////////////////////////////////////////////
+  2 // rust_thread_pool::lib.rs - threadpool wit BlockingQueue // 
+  3 //                                                         //
+  4 // Jim Fawcett, https://JimFawcett.github.com, 29 Jun 2020 //
+  5 /////////////////////////////////////////////////////////////
+  6 /*
+  7    There are two undefined methods for ThreadPool&lt;M&gt;
+  8    that need to be implemented before this design is
+  9    complete, e.g.:
+ 10    - post_work_item posts a function object to input queue
+ 11    - get_message retrieves results from an output queue
+ 12 */
+ 13 #![allow(dead_code)]
+ 14 use std::fmt::*;
+ 15 use rust_blocking_queue::*;
+ 16 use std::thread::*;
+ 17 use std::sync::*;
+ 18 use std::default::{Default};
+ 19 
+ 20 #[derive(Debug)]
+ 21 pub struct ThreadPool&lt;M&gt; 
+ 22 {
+ 23     sbq: Arc&lt;BlockingQueue&lt;M&gt;&gt;,
+ 24     thrd: Vec&lt;Option&lt;JoinHandle&lt;()&gt;&gt;&gt;
+ 25     /* see note below about Option */
+ 26 }
+ 27 impl&lt;M&gt; ThreadPool&lt;M&gt; 
+ 28 where M: Send + 'static
+ 29 {
+ 30     /*-----------------------------------------------------
+ 31       construct threadpool, starting nt threads,
+ 32       provide threadpool processing as f:F in new 
+ 33     */
+ 34     pub fn new&lt;F&gt;(nt:u8, f:F) -&gt; ThreadPool&lt;M&gt; 
+ 35     where F: FnOnce(&amp;BlockingQueue&lt;M&gt;) -&gt; () + Send + 'static + Copy
+ 36     {
+ 37         /* safely share BlockingQueue with Arc */
+ 38         let sqm = Arc::new(BlockingQueue::&lt;M&gt;::new());
+ 39         let mut vt = Vec::&lt;Option&lt;JoinHandle&lt;()&gt;&gt;&gt;::new();
+ 40         /* start nt threads */
+ 41         for _i in 0..nt {
+ 42             /*----------------------------------------------- 
+ 43               ref sq to master shared queue (sqm) is captured
+ 44               by thread proc closure 
+ 45             */
+ 46             let sq = Arc::clone(&amp;sqm);
+ 47             let handle = std::thread::spawn( move || { 
+ 48                 f(&amp;sq);  // thread_pool_processing
+ 49             });
+ 50             vt.push(Some(handle));
+ 51         }
+ 52         Self { // return newly created threadpool
+ 53             sbq: sqm,
+ 54             thrd: vt, 
+ 55         }
+ 56     }
+ 57     /*-- wait for threads to finish --*/
+ 58     pub fn wait(&amp;mut self) {
+ 59         
+ 60         for handle in &amp;mut self.thrd {
+ 61             let _ = handle.take().unwrap().join();
+ 62             /*
+ 63               This is a hack!
+ 64               Without the Option, wrapping threadhandle, can't move threadhandle
+ 65               out of Vec&lt;JoinHandle&lt;()&gt;&gt;, so error in line above. 
+ 66               
+ 67               Can move out of the option as long as we replace
+ 68               the moved value (take swaps None for Some in option).
+ 69 
+ 70               I was stumpted until I saw this link.  Apparently a well known hack.
+ 71               https://users.rust-lang.org/t/spawn-threads-and-join-in-destructor/1613
+ 72             */
+ 73         }
+ 74     }
+ 75     /*-- post to ThreadPool queue --*/
+ 76     pub fn post_message(&amp;mut self, _msg:M) 
+ 77     where M:Debug + Clone {
+ 78         self.sbq.en_q(_msg);
+ 79     }
+ 80     /*-- return results to caller --*/
+ 81     pub fn get_message(&amp;mut self) -&gt; M 
+ 82     where M:Debug + Clone + Default {
+ 83         /* to be defined */
+ 84         let m:M = M::default();
+ 85         m
+ 86     }
+ 87 }
+ 88 
+ 89 #[cfg(test)]
+ 90 mod tests {
+ 91     use super::*;
+ 92     #[test]
+ 93     fn test_new() {
+ 94         let test = |bq:&amp;BlockingQueue&lt;String&gt;| { 
+ 95             let msg = bq.de_q();
+ 96             print!("\n  {:?}", msg);
+ 97         };
+ 98         let mut tp = ThreadPool::&lt;String&gt;::new(2, test);
+ 99         let msg = "test message".to_string();
+100         tp.post_message(msg);
+101         tp.post_message("quit".to_string());
+102         tp.wait();
+103     }
+104 }</code></pre>
     </details>
 
     <t-b>
