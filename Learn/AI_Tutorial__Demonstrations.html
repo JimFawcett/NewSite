@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demonstrations - Code Helper Tool</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Demonstrations &mdash; Code Helper Tool</h1>
+  <t-b>Tutorial D1.0 &nbsp;&bull;&nbsp; AI / Learn / Demonstrations</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>D1.0 What This Teaches</h2>
+    <t-b>
+      This tutorial combines file reading, streaming output, code review, and test
+      generation into one production-quality console tool. It covers:
+    </t-b>
+    <ul>
+      <li>Building a multi-command CLI with <code>argparse</code></li>
+      <li>Streaming responses to the terminal as tokens arrive</li>
+      <li>Saving streamed output to a file with <code>--output</code></li>
+      <li>Generating pytest test files and writing them to disk</li>
+      <li>Modular design - shared helper functions reduce duplication</li>
+      <li>Loading environment variables from a <code>.env</code> file</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>D1.1 Tool Design</h2>
+    <t-b>
+      The tool runs as:
+    </t-b>
+    <pre><code class="language-terminal">python code_helper.py &lt;command&gt; &lt;file&gt; [options]</code></pre>
+    <t-b>
+      Three commands are supported:
+    </t-b>
+    <table>
+      <thead>
+        <tr><th>Command</th><th>What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>explain</code></td><td>Streams an explanation of the file to the terminal</td></tr>
+        <tr><td><code>review</code></td><td>Streams a code review with issues and suggestions</td></tr>
+        <tr><td><code>tests</code></td><td>Generates pytest tests and writes them to <code>test_&lt;filename&gt;.py</code></td></tr>
+      </tbody>
+    </table>
+    <t-b>
+      Options: <code>--model</code> overrides the default model name;
+      <code>--output</code> saves the streamed text to a file.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>D1.2 Project Layout</h2>
+    <pre><code class="language-terminal">code_helper/
+├── code_helper.py      ← main CLI
+├── .env                ← ANTHROPIC_API_KEY=sk-ant-...
+└── requirements.txt    ← anthropic
+                           python-dotenv</code></pre>
+    <t-b>
+      <code>python-dotenv</code> reads the <code>.env</code> file and sets the environment
+      variable automatically. This avoids exporting the key in every terminal session.
+    </t-b>
+    <pre><code class="language-terminal">pip install anthropic python-dotenv</code></pre>
+  </section>
+
+  <section>
+    <h2>D1.3 The argparse CLI</h2>
+    <t-b>
+      <code>argparse</code> is the standard library module for building command-line
+      interfaces. It handles argument parsing, type checking, and help text automatically.
+    </t-b>
+    <pre><code class="language-python"># argparse setup for code_helper.py
+import argparse
+
+def build_parser() -&gt; argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="AI-powered code helper: explain, review, or generate tests."
+    )
+    parser.add_argument(
+        "command",
+        choices=["explain", "review", "tests"],
+        help="What to do with the file",
+    )
+    parser.add_argument(
+        "file",
+        help="Path to the source file",
+    )
+    parser.add_argument(
+        "--model",
+        default="claude-sonnet-4-6",
+        help="Claude model to use (default: claude-sonnet-4-6)",
+    )
+    parser.add_argument(
+        "--output",
+        help="Save output to this file in addition to printing",
+    )
+    return parser</code></pre>
+    <t-b>
+      <code>choices=["explain","review","tests"]</code> makes argparse reject any other
+      command with a clear error message before your code runs.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>D1.4 The explain Command</h2>
+    <t-b>
+      The explain command reads the file, streams the explanation to the terminal, and
+      optionally writes the full text to <code>--output</code>.
+    </t-b>
+    <pre><code class="language-python"># explain command implementation.
+EXPLAIN_SYSTEM = (
+    "You are a code explainer. Structure your response as: "
+    "(1) Purpose, (2) Key Components, (3) How It Works, (4) Potential Issues."
+)
+
+def cmd_explain(client, args, code: str, language: str):
+    prompt = f"Explain this {language} code:\n\n```{language}\n{code}\n```"
+    with client.messages.stream(
+        model=args.model,
+        max_tokens=1024,
+        system=EXPLAIN_SYSTEM,
+        messages=[{"role": "user", "content": prompt}],
+    ) as stream:
+        stream_to_output(stream, args.output)</code></pre>
+  </section>
+
+  <section>
+    <h2>D1.5 The review Command</h2>
+    <t-b>
+      The review command uses the same streaming pattern but with a code review system
+      prompt. The only difference is the system prompt and the prompt wording.
+    </t-b>
+    <pre><code class="language-python"># review command implementation.
+REVIEW_SYSTEM = (
+    "You are an expert code reviewer. "
+    "Structure your response as: (1) Summary, (2) Issues Found, (3) Suggestions."
+)
+
+def cmd_review(client, args, code: str, language: str):
+    prompt = f"Review this {language} code:\n\n```{language}\n{code}\n```"
+    with client.messages.stream(
+        model=args.model,
+        max_tokens=1024,
+        system=REVIEW_SYSTEM,
+        messages=[{"role": "user", "content": prompt}],
+    ) as stream:
+        stream_to_output(stream, args.output)</code></pre>
+    <t-b>
+      Both <code>cmd_explain</code> and <code>cmd_review</code> call the same
+      <code>stream_to_output</code> helper, keeping the streaming and file-writing
+      logic in one place.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>D1.6 The tests Command</h2>
+    <t-b>
+      Test generation does not stream - you want the complete test file before writing
+      it to disk. The output filename defaults to <code>test_&lt;original_name&gt;.py</code>.
+    </t-b>
+    <pre><code class="language-python"># tests command implementation.
+TESTS_SYSTEM = (
+    "You are a test generator. Generate pytest tests for the given code. "
+    "Include at least one test per public function. "
+    "Output only the Python test file, no explanation."
+)
+
+def cmd_tests(client, args, code: str, language: str):
+    from pathlib import Path
+    prompt = f"Generate pytest tests for this {language} code:\n\n```{language}\n{code}\n```"
+
+    response = client.messages.create(
+        model=args.model,
+        max_tokens=2048,
+        system=TESTS_SYSTEM,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    test_code = response.content[0].text
+
+    out_path = args.output or f"test_{Path(args.file).stem}.py"
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(test_code)
+    print(f"Tests written to: {out_path}")</code></pre>
+  </section>
+
+  <section>
+    <h2>D1.7 Complete Implementation</h2>
+    <pre><code class="language-python"># code_helper.py - AI-powered code helper: explain, review, or generate tests.
+# Usage: python code_helper.py &lt;command&gt; &lt;file&gt; [--model MODEL] [--output FILE]
+
+import sys
+import argparse
+from pathlib import Path
+from dotenv import load_dotenv
+import anthropic
+
+load_dotenv()
+
+EXPLAIN_SYSTEM = (
+    "You are a code explainer. Structure your response as: "
+    "(1) Purpose, (2) Key Components, (3) How It Works, (4) Potential Issues."
+)
+REVIEW_SYSTEM = (
+    "You are an expert code reviewer. "
+    "Structure your response as: (1) Summary, (2) Issues Found, (3) Suggestions."
+)
+TESTS_SYSTEM = (
+    "You are a test generator. Generate pytest tests for the given code. "
+    "Include at least one test per public function. "
+    "Output only the Python test file, no explanation."
+)
+EXT_TO_LANG = {
+    ".py": "Python", ".js": "JavaScript", ".cpp": "C++",
+    ".rs": "Rust",   ".cs": "C#",         ".ts": "TypeScript",
+}
+
+def read_source(path: str) -&gt; str:
+    p = Path(path)
+    if not p.exists():
+        print(f"Error: file not found: {path}")
+        sys.exit(1)
+    content = p.read_text(encoding="utf-8")
+    if not content.strip():
+        print(f"Error: file is empty: {path}")
+        sys.exit(1)
+    return content
+
+def detect_language(path: str) -&gt; str:
+    return EXT_TO_LANG.get(Path(path).suffix.lower(), "code")
+
+def stream_to_output(stream, output_path: str | None):
+    collected = []
+    for chunk in stream.text_stream:
+        print(chunk, end="", flush=True)
+        collected.append(chunk)
+    print()   # final newline
+    if output_path:
+        Path(output_path).write_text("".join(collected), encoding="utf-8")
+        print(f"\nSaved to: {output_path}")
+
+def cmd_explain(client, args, code: str, language: str):
+    prompt = f"Explain this {language} code:\n\n```{language}\n{code}\n```"
+    with client.messages.stream(
+        model=args.model, max_tokens=1024, system=EXPLAIN_SYSTEM,
+        messages=[{"role": "user", "content": prompt}],
+    ) as stream:
+        stream_to_output(stream, args.output)
+
+def cmd_review(client, args, code: str, language: str):
+    prompt = f"Review this {language} code:\n\n```{language}\n{code}\n```"
+    with client.messages.stream(
+        model=args.model, max_tokens=1024, system=REVIEW_SYSTEM,
+        messages=[{"role": "user", "content": prompt}],
+    ) as stream:
+        stream_to_output(stream, args.output)
+
+def cmd_tests(client, args, code: str, language: str):
+    prompt = f"Generate pytest tests for this {language} code:\n\n```{language}\n{code}\n```"
+    response = client.messages.create(
+        model=args.model, max_tokens=2048, system=TESTS_SYSTEM,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    test_code = response.content[0].text
+    out_path  = args.output or f"test_{Path(args.file).stem}.py"
+    Path(out_path).write_text(test_code, encoding="utf-8")
+    print(f"Tests written to: {out_path}")
+
+def main():
+    parser = argparse.ArgumentParser(description="AI-powered code helper.")
+    parser.add_argument("command", choices=["explain", "review", "tests"])
+    parser.add_argument("file")
+    parser.add_argument("--model",  default="claude-sonnet-4-6")
+    parser.add_argument("--output", default=None)
+    args = parser.parse_args()
+
+    code     = read_source(args.file)
+    language = detect_language(args.file)
+    client   = anthropic.Anthropic()
+
+    {"explain": cmd_explain, "review": cmd_review, "tests": cmd_tests}[
+        args.command
+    ](client, args, code, language)
+
+if __name__ == "__main__":
+    main()</code></pre>
+  </section>
+
+  <section>
+    <h2>D1.8 Sample Session</h2>
+    <pre><code class="language-terminal">$ python code_helper.py explain mylib.py
+
+(1) Purpose - mylib.py provides utility functions for string normalization and
+text processing used across the project.
+
+(2) Key Components
+- normalize(s): strips whitespace and converts to lowercase
+- word_count(s): returns the number of words in a string
+- truncate(s, n): shortens a string to at most n characters
+
+(3) How It Works
+Each function takes a string, applies one transformation, and returns the result.
+No state is shared between calls.
+
+(4) Potential Issues
+- truncate() does not add an ellipsis; callers may not know text was cut.
+- word_count() splits on whitespace only; punctuation-attached words count as one.</code></pre>
+    <pre><code class="language-terminal">$ python code_helper.py review mylib.py --output review.txt
+
+(1) Summary - The module is clean and focused. Three functions, each doing one job.
+
+(2) Issues Found
+- No type hints on any function; callers cannot see expected types.
+- word_count("") returns 0 correctly but is not tested.
+
+(3) Suggestions
+- Add type hints: def normalize(s: str) -&gt; str
+- Add a docstring to each function.
+- Consider adding an ellipsis option to truncate().
+
+Saved to: review.txt</code></pre>
+    <pre><code class="language-terminal">$ python code_helper.py tests mylib.py
+Tests written to: test_mylib.py
+
+$ pytest test_mylib.py -v
+collected 6 items
+
+test_mylib.py::test_normalize_strips_whitespace  PASSED
+test_mylib.py::test_normalize_lowercases         PASSED
+test_mylib.py::test_word_count_basic             PASSED
+test_mylib.py::test_word_count_empty             PASSED
+test_mylib.py::test_truncate_short               PASSED
+test_mylib.py::test_truncate_long                PASSED
+6 passed in 0.12s</code></pre>
+  </section>
+
+  <section>
+    <h2>D1.9 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Add a <code>compare</code> command that takes two filenames, computes a unified diff,
+        and streams a review of the changes.
+      </t-b>
+      <ol>
+        <li>Add <code>"compare"</code> to the <code>choices</code> list in the parser.</li>
+        <li>Add a second positional argument <code>file2</code> to the parser. Make it
+            optional (<code>nargs="?"</code>) so the existing commands still work with one
+            file.</li>
+        <li>Define <code>cmd_compare(client, args, code1, code2, language)</code>. Use
+            <code>difflib.unified_diff()</code> to compute the diff, then stream a review
+            of it.</li>
+        <li>Usage: <code>python code_helper.py compare old.py new.py</code></li>
+      </ol>
+      <t-b>
+        The diff review prompt: "Here is a unified diff between two versions of a
+        Python file. Review the changes: what was fixed, what was added, and are there
+        any concerns?"
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>D1.10 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Hard-coding the model name</h3>
+      <t-b>
+        Writing <code>model="claude-sonnet-4-6"</code> directly in the API call means
+        switching models requires editing the source. The <code>--model</code> argument
+        passes the name through from the command line, so users and scripts can override
+        it without changing the code.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Not handling empty files</h3>
+      <t-b>
+        If <code>read_source()</code> returns an empty string and you send it to Claude,
+        the model produces a confused response like "I don't see any code to explain."
+        Check <code>if not content.strip()</code> after reading and exit with a clear
+        error message.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Silently overwriting existing output files</h3>
+      <t-b>
+        When <code>--output</code> points to an existing file, <code>write_text()</code>
+        overwrites it without warning. For a tool used on real projects, check
+        <code>Path(output_path).exists()</code> before writing and either warn the user
+        or add an <code>--overwrite</code> flag.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>D1.11 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>argparse</td><td>Python standard library module for parsing command-line arguments and generating help text</td></tr>
+        <tr><td>command</td><td>A positional argument that selects which action to perform (explain, review, tests)</td></tr>
+        <tr><td>choices</td><td>An argparse parameter that restricts a positional argument to a fixed set of values</td></tr>
+        <tr><td>streaming output</td><td>Printing tokens to the terminal as they arrive rather than buffering the full response first</td></tr>
+        <tr><td>modular CLI</td><td>A CLI where each command is a separate function, making it easy to add or change commands</td></tr>
+        <tr><td>.env</td><td>A plain text file containing environment variable assignments; read by python-dotenv at startup</td></tr>
+        <tr><td>helper function</td><td>A small function (like read_source or stream_to_output) shared by multiple commands to avoid duplication</td></tr>
+        <tr><td>difflib</td><td>Python standard library module for computing differences between sequences of text</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn / Demonstrations &nbsp;&bull;&nbsp; Tutorial D1 &nbsp;&bull;&nbsp; Code Helper
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

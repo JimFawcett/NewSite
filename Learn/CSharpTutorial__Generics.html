@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Generics - C# Generic Programming</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Generics &mdash; C# Generic Programming</h1>
+  <t-b>Tutorial 9.0 &nbsp;&bull;&nbsp; C# / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="#" class="disabled">Rust</a>
+    <a href="CppTutorial__Templates.html">C++</a>
+    <a href="CSharpTutorial__Generics.html">C#</a>
+    <a href="#" class="disabled">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- 9.0 What This Teaches -->
+  <section>
+    <h2>9.0 What This Teaches</h2>
+    <t-b>This tutorial covers C# generic programming:</t-b>
+    <ul>
+      <li>Generic methods and why they exist</li>
+      <li>Generic classes and structs</li>
+      <li>Type constraints: <code>where T : constraint</code></li>
+      <li>Generic interfaces</li>
+      <li>Multiple type parameters</li>
+      <li>Common generic types from the BCL</li>
+    </ul>
+    <t-b>
+      C++ templates are expanded at compile time per type; C# generics are compiled
+      once with type erasure for reference types and specialized for value types.
+      Both provide type-safe code reuse without duplication.
+    </t-b>
+  </section>
+
+  <!-- 9.1 Generic Methods -->
+  <section>
+    <h2>9.1 Generic Methods</h2>
+    <t-b>
+      A generic method declares one or more type parameters in angle brackets. The
+      compiler infers the type from the arguments in most cases:
+    </t-b>
+    <pre><code class="language-csharp">static T Identity&lt;T&gt;(T value) =&gt; value;
+static void Swap&lt;T&gt;(ref T a, ref T b) { T tmp = a; a = b; b = tmp; }
+static T[] Repeat&lt;T&gt;(T item, int count) =&gt; Enumerable.Repeat(item, count).ToArray();
+
+Console.WriteLine(Identity(42));       // type inferred as int
+Console.WriteLine(Identity("hello"));  // type inferred as string
+
+int x = 3, y = 7;
+Swap(ref x, ref y);
+Console.WriteLine($"{x} {y}");  // 7 3
+
+var arr = Repeat("ok", 3);
+Console.WriteLine(string.Join(", ", arr));  // ok, ok, ok</code></pre>
+  </section>
+
+  <!-- 9.2 Generic Classes -->
+  <section>
+    <h2>9.2 Generic Classes</h2>
+    <t-b>
+      A generic class carries one or more type parameters that apply to fields,
+      methods, and properties throughout the class body:
+    </t-b>
+    <pre><code class="language-csharp">class Box&lt;T&gt;
+{
+    public T Value { get; set; }
+    public Box(T value) { Value = value; }
+    public override string ToString() =&gt; $"Box&lt;{typeof(T).Name}&gt;({Value})";
+}
+
+class Pair&lt;TFirst, TSecond&gt;
+{
+    public TFirst First { get; }
+    public TSecond Second { get; }
+    public Pair(TFirst first, TSecond second) { First = first; Second = second; }
+}
+
+var intBox = new Box&lt;int&gt;(42);
+var strBox = new Box&lt;string&gt;("hello");
+Console.WriteLine(intBox);   // Box&lt;Int32&gt;(42)
+Console.WriteLine(strBox);   // Box&lt;String&gt;(hello)
+
+var pair = new Pair&lt;string, int&gt;("age", 30);
+Console.WriteLine($"{pair.First}: {pair.Second}");</code></pre>
+  </section>
+
+  <!-- 9.3 Constraints -->
+  <section>
+    <h2>9.3 Type Constraints</h2>
+    <t-b>
+      Constraints limit which types can be substituted for <code>T</code> and unlock
+      type-specific operations inside the generic body:
+    </t-b>
+    <pre><code class="language-csharp">static T Max&lt;T&gt;(T a, T b) where T : IComparable&lt;T&gt;
+    =&gt; a.CompareTo(b) &gt;= 0 ? a : b;
+
+static T CreateNew&lt;T&gt;() where T : new()
+    =&gt; new T();
+
+Console.WriteLine(Max(3, 7));        // 7
+Console.WriteLine(Max("apple", "fig"));  // fig</code></pre>
+    <t-b>Common constraints:</t-b>
+    <table>
+      <thead>
+        <tr><th>Constraint</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>where T : class</code></td><td>T must be a reference type</td></tr>
+        <tr><td><code>where T : struct</code></td><td>T must be a value type</td></tr>
+        <tr><td><code>where T : new()</code></td><td>T must have a public parameterless constructor</td></tr>
+        <tr><td><code>where T : BaseClass</code></td><td>T must inherit from BaseClass</td></tr>
+        <tr><td><code>where T : IInterface</code></td><td>T must implement IInterface</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 9.4 Generic Interfaces -->
+  <section>
+    <h2>9.4 Generic Interfaces</h2>
+    <pre><code class="language-csharp">interface IRepository&lt;T, TId&gt;
+{
+    T? GetById(TId id);
+    void Save(T item);
+    IEnumerable&lt;T&gt; GetAll();
+}
+
+class InMemoryRepo&lt;T, TId&gt; : IRepository&lt;T, TId&gt;
+{
+    private readonly Dictionary&lt;TId, T&gt; _store = new();
+
+    public T? GetById(TId id) =&gt;
+        _store.TryGetValue(id!, out var v) ? v : default;
+
+    public void Save(T item) { /* simplified */ }
+    public IEnumerable&lt;T&gt; GetAll() =&gt; _store.Values;
+}</code></pre>
+    <t-b>
+      Generic interfaces let you write algorithms and data structures that work with
+      any type satisfying the contract, without losing type information.
+    </t-b>
+  </section>
+
+  <!-- 9.5 BCL Generic Types -->
+  <section>
+    <h2>9.5 Common Generic Types from the BCL</h2>
+    <table>
+      <thead>
+        <tr><th>Type</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>List&lt;T&gt;</code></td><td>Dynamic array</td></tr>
+        <tr><td><code>Dictionary&lt;TKey, TValue&gt;</code></td><td>Hash map</td></tr>
+        <tr><td><code>HashSet&lt;T&gt;</code></td><td>Unordered set; no duplicates</td></tr>
+        <tr><td><code>Stack&lt;T&gt;</code></td><td>LIFO collection</td></tr>
+        <tr><td><code>Queue&lt;T&gt;</code></td><td>FIFO collection</td></tr>
+        <tr><td><code>Nullable&lt;T&gt;</code> / <code>T?</code></td><td>Value type that can be null</td></tr>
+        <tr><td><code>Task&lt;T&gt;</code></td><td>Async operation returning T</td></tr>
+        <tr><td><code>IEnumerable&lt;T&gt;</code></td><td>Sequence that can be iterated</td></tr>
+        <tr><td><code>Func&lt;T, TResult&gt;</code></td><td>Delegate taking T, returning TResult</td></tr>
+        <tr><td><code>Action&lt;T&gt;</code></td><td>Delegate taking T, returning void</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 9.6 Example -->
+  <section>
+    <h2>9.6 Example - All Together</h2>
+    <pre><code class="language-csharp">// Generics - generic stack with constrained Peek helper.
+
+var stack = new TypedStack&lt;int&gt;();
+stack.Push(1); stack.Push(2); stack.Push(3);
+Console.WriteLine(stack.Pop());    // 3
+Console.WriteLine(stack.Peek());   // 2
+Console.WriteLine(stack.Count);    // 2
+
+Console.WriteLine(MaxOf(stack));   // 2 (max of remaining items)
+
+static T MaxOf&lt;T&gt;(IEnumerable&lt;T&gt; items) where T : IComparable&lt;T&gt;
+{
+    T? best = default;
+    foreach (var item in items)
+        if (best is null || item.CompareTo(best) &gt; 0)
+            best = item;
+    return best!;
+}
+
+class TypedStack&lt;T&gt;
+{
+    private readonly List&lt;T&gt; _data = new();
+    public int Count =&gt; _data.Count;
+    public void Push(T item) =&gt; _data.Add(item);
+    public T Pop()  { var v = _data[^1]; _data.RemoveAt(_data.Count - 1); return v; }
+    public T Peek() =&gt; _data[^1];
+    public IEnumerator&lt;T&gt; GetEnumerator() =&gt; _data.GetEnumerator();
+}</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">3
+2
+2
+2</code></pre>
+  </section>
+
+  <!-- 9.7 Exercise -->
+  <section>
+    <h2>9.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write a generic <code>Clamp&lt;T&gt;</code> method with a
+          <code>where T : IComparable&lt;T&gt;</code> constraint. Test it with
+          <code>int</code>, <code>double</code>, and <code>char</code>.</li>
+        <li>Write a generic <code>Result&lt;T&gt;</code> class with <code>IsSuccess</code>,
+          <code>Value</code>, and <code>ErrorMessage</code> properties. Return it from
+          a <code>Divide(double a, double b)</code> method that fails on division by zero.</li>
+        <li>Use <code>List&lt;T&gt;</code> and a generic <code>Filter&lt;T&gt;</code> method
+          accepting a <code>Func&lt;T, bool&gt;</code> predicate to filter a list of
+          integers to only even values.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9.8 Common Mistakes -->
+  <section>
+    <h2>9.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Calling type-specific operations without a constraint</h3>
+      <pre><code class="language-csharp">static T Add&lt;T&gt;(T a, T b) =&gt; a + b;  // compile error: + not defined for T
+// Fix: use a constraint or the INumber&lt;T&gt; interface (.NET 7+)</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Using object instead of a generic</h3>
+      <t-b>
+        Returning or accepting <code>object</code> loses type information and requires
+        casting. A generic method keeps the type through the call chain without boxing
+        value types.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Not specifying the type parameter when it can't be inferred</h3>
+      <pre><code class="language-csharp">var result = CreateNew();          // error: cannot infer T
+var result = CreateNew&lt;MyClass&gt;(); // correct: specify explicitly</code></pre>
+    </div>
+  </section>
+
+  <!-- 9.9 Key Terms -->
+  <section>
+    <h2>9.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>generic</td><td>Type or method parameterized by one or more type arguments</td></tr>
+        <tr><td>type parameter</td><td>Placeholder (T, TKey, TValue) filled in at the call or construction site</td></tr>
+        <tr><td>type argument</td><td>The actual type supplied for a type parameter: List&lt;int&gt; → int</td></tr>
+        <tr><td>constraint (where)</td><td>Restricts which types are valid for a type parameter</td></tr>
+        <tr><td>type inference</td><td>Compiler deducing type arguments from context, avoiding explicit brackets</td></tr>
+        <tr><td>open type</td><td>A generic type with unspecified type parameters: List&lt;T&gt;</td></tr>
+        <tr><td>closed type</td><td>A generic type with all type parameters specified: List&lt;int&gt;</td></tr>
+        <tr><td>BCL</td><td>Base Class Library - the standard .NET collection of generic types</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  C# / Learn &nbsp;&bull;&nbsp; Tutorial 9 &nbsp;&bull;&nbsp; Generics
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CSharpTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

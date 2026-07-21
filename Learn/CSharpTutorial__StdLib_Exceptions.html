@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exceptions - C# try/catch/finally</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Exceptions &mdash; C# try/catch/finally</h1>
+  <t-b>Tutorial S4 &nbsp;&bull;&nbsp; C# / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__StdLib_Result.html">Rust</a>
+    <a href="CppTutorial__StdLib_Exceptions.html">C++</a>
+    <a href="CSharpTutorial__StdLib_Exceptions.html">C#</a>
+    <a href="PythonTutorial__StdLib_Exceptions.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- S4.0 What This Teaches -->
+  <section>
+    <h2>S4.0 What This Teaches</h2>
+    <t-b>This tutorial covers C# exception handling:</t-b>
+    <ul>
+      <li><code>try</code> / <code>catch</code> / <code>finally</code> blocks</li>
+      <li>Exception types and the hierarchy</li>
+      <li>Throwing exceptions with <code>throw</code></li>
+      <li>Custom exception classes</li>
+      <li>Exception filters with <code>when</code></li>
+      <li>The <code>using</code> statement for deterministic cleanup</li>
+    </ul>
+    <t-b>
+      Rust uses <code>Result&lt;T, E&gt;</code> and <code>?</code> instead of
+      exceptions for recoverable errors. C# exceptions are for truly exceptional
+      conditions; prefer <code>TryParse</code>/<code>TryGet</code> patterns
+      for expected failures.
+    </t-b>
+  </section>
+
+  <!-- S4.1 try/catch/finally -->
+  <section>
+    <h2>S4.1 try / catch / finally</h2>
+    <pre><code class="language-csharp">try
+{
+    int x = int.Parse("abc");    // throws FormatException
+    int y = 10 / 0;              // throws DivideByZeroException
+}
+catch (FormatException ex)
+{
+    Console.WriteLine($"Format error: {ex.Message}");
+}
+catch (DivideByZeroException)
+{
+    Console.WriteLine("Cannot divide by zero");
+}
+catch (Exception ex)            // catch-all for unexpected exceptions
+{
+    Console.WriteLine($"Unexpected: {ex.GetType().Name}");
+}
+finally
+{
+    Console.WriteLine("finally always runs");
+}</code></pre>
+    <t-b>
+      <code>finally</code> runs whether or not an exception was thrown - even if
+      a <code>return</code> is reached in the try block. Use it to release resources.
+    </t-b>
+  </section>
+
+  <!-- S4.2 Exception Hierarchy -->
+  <section>
+    <h2>S4.2 Exception Hierarchy</h2>
+    <t-b>
+      All exceptions derive from <code>System.Exception</code>. Catch the most
+      specific type first; catching <code>Exception</code> catches everything.
+    </t-b>
+    <table>
+      <thead>
+        <tr><th>Exception</th><th>Common cause</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>ArgumentNullException</code></td><td>Null argument where not allowed</td></tr>
+        <tr><td><code>ArgumentOutOfRangeException</code></td><td>Argument outside valid range</td></tr>
+        <tr><td><code>InvalidOperationException</code></td><td>Method call invalid for current object state</td></tr>
+        <tr><td><code>NullReferenceException</code></td><td>Dereferenced a null reference</td></tr>
+        <tr><td><code>IndexOutOfRangeException</code></td><td>Array/list index out of bounds</td></tr>
+        <tr><td><code>FormatException</code></td><td>Input string not in expected format</td></tr>
+        <tr><td><code>IOException</code></td><td>File or network I/O failure</td></tr>
+        <tr><td><code>KeyNotFoundException</code></td><td>Dictionary key not found</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- S4.3 Throwing -->
+  <section>
+    <h2>S4.3 Throwing Exceptions</h2>
+    <pre><code class="language-csharp">static double SquareRoot(double x)
+{
+    if (x &lt; 0)
+        throw new ArgumentOutOfRangeException(nameof(x), "Must be non-negative");
+    return Math.Sqrt(x);
+}
+
+// Re-throw preserving stack trace
+try { DoWork(); }
+catch (Exception) { throw; }   // NOT throw ex; (which resets the stack trace)</code></pre>
+  </section>
+
+  <!-- S4.4 Custom Exceptions -->
+  <section>
+    <h2>S4.4 Custom Exceptions</h2>
+    <pre><code class="language-csharp">class InsufficientFundsException : Exception
+{
+    public decimal Amount { get; }
+    public decimal Balance { get; }
+
+    public InsufficientFundsException(decimal amount, decimal balance)
+        : base($"Cannot withdraw {amount:C}; balance is {balance:C}")
+    {
+        Amount = amount;
+        Balance = balance;
+    }
+}
+
+// Usage
+try
+{
+    Withdraw(100m, balance: 50m);
+}
+catch (InsufficientFundsException ex)
+{
+    Console.WriteLine(ex.Message);
+    Console.WriteLine($"Short by {ex.Amount - ex.Balance:C}");
+}</code></pre>
+  </section>
+
+  <!-- S4.5 Exception Filters -->
+  <section>
+    <h2>S4.5 Exception Filters</h2>
+    <t-b>
+      A <code>when</code> clause adds a condition to a catch block. The exception
+      is only caught when the condition is true:
+    </t-b>
+    <pre><code class="language-csharp">try
+{
+    int result = CallExternalApi();
+}
+catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+{
+    Console.WriteLine("Resource not found - returning default");
+}
+catch (HttpRequestException ex)
+{
+    Console.WriteLine($"HTTP error: {ex.StatusCode}");
+    throw;
+}</code></pre>
+  </section>
+
+  <!-- S4.6 using for Cleanup -->
+  <section>
+    <h2>S4.6 using for Deterministic Cleanup</h2>
+    <pre><code class="language-csharp">// using statement - Dispose() called even if exception is thrown
+using (var reader = new StreamReader("data.txt"))
+{
+    string? line;
+    while ((line = reader.ReadLine()) != null)
+        Console.WriteLine(line);
+}
+
+// using declaration (C# 8+) - disposes at end of enclosing scope
+using var writer = new StreamWriter("out.txt");
+writer.WriteLine("Hello");
+// writer.Dispose() called here automatically</code></pre>
+    <t-b>
+      Any type implementing <code>IDisposable</code> (file handles, database connections,
+      network streams) should be wrapped in <code>using</code>.
+    </t-b>
+  </section>
+
+  <!-- S4.7 Example -->
+  <section>
+    <h2>S4.7 Example - All Together</h2>
+    <pre><code class="language-csharp">// Exceptions - safe division and custom exception demo.
+
+Console.WriteLine(SafeDivide(10, 3));    // 3.33
+Console.WriteLine(SafeDivide(10, 0));    // fallback: 0
+TryParseSafely("42");                    // parsed: 42
+TryParseSafely("abc");                   // not a number: abc
+
+static double SafeDivide(double a, double b)
+{
+    try { return a / b; }
+    catch (DivideByZeroException) { return 0; }
+}
+
+static void TryParseSafely(string input)
+{
+    if (int.TryParse(input, out int n))
+        Console.WriteLine($"parsed: {n}");
+    else
+        Console.WriteLine($"not a number: {input}");
+}</code></pre>
+  </section>
+
+  <!-- S4.8 Exercise -->
+  <section>
+    <h2>S4.8 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write a method <code>ParseAge(string input)</code> that uses
+          <code>int.TryParse</code> and throws <code>ArgumentException</code>
+          if the result is negative or above 150.</li>
+        <li>Create a custom <code>ValidationException</code> with a
+          <code>FieldName</code> property. Throw it from a method that validates
+          a form-like data object.</li>
+        <li>Wrap a file-reading operation in <code>try/catch/finally</code> to
+          handle <code>FileNotFoundException</code> and always print "done" from
+          finally.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S4.9 Common Mistakes -->
+  <section>
+    <h2>S4.9 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Catching Exception too broadly</h3>
+      <t-b>
+        Catching <code>Exception</code> at every call site hides bugs. Catch only
+        what you can meaningfully handle. Let unexpected exceptions propagate to
+        an outer handler or crash the program with a useful stack trace.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>throw ex instead of throw</h3>
+      <pre><code class="language-csharp">catch (Exception ex) { throw ex; }  // resets stack trace - location is lost
+catch (Exception)    { throw; }      // correct - stack trace preserved</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Using exceptions for control flow</h3>
+      <t-b>
+        Exceptions are slow (stack unwinding, GC pressure). Use <code>TryParse</code>,
+        <code>TryGetValue</code>, and similar methods for expected failures
+        rather than catching exceptions in a loop.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- S4.10 Key Terms -->
+  <section>
+    <h2>S4.10 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>try</td><td>Block wrapping code that might throw</td></tr>
+        <tr><td>catch</td><td>Handles a specific exception type; multiple catches are checked in order</td></tr>
+        <tr><td>finally</td><td>Runs after try/catch regardless of outcome; used for cleanup</td></tr>
+        <tr><td>throw</td><td>Raises an exception; bare throw in catch re-throws preserving stack</td></tr>
+        <tr><td>when</td><td>Exception filter: condition on a catch clause</td></tr>
+        <tr><td>Exception.Message</td><td>Human-readable description of the error</td></tr>
+        <tr><td>IDisposable</td><td>Interface signaling the object holds resources; use with using</td></tr>
+        <tr><td>using</td><td>Ensures Dispose() is called; equivalent to try/finally Dispose</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  C# / Learn &nbsp;&bull;&nbsp; Tutorial S4 &nbsp;&bull;&nbsp; Exceptions
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CSharpTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interfaces - C# Contracts and Polymorphism</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Interfaces &mdash; Contracts and Polymorphism</h1>
+  <t-b>Tutorial 7.0 &nbsp;&bull;&nbsp; C# / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__StdLib_Traits.html">Rust</a>
+    <a href="#" class="disabled">C++</a>
+    <a href="CSharpTutorial__Interfaces.html">C#</a>
+    <a href="#" class="disabled">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- 7.0 What This Teaches -->
+  <section>
+    <h2>7.0 What This Teaches</h2>
+    <t-b>This tutorial covers how C# uses interfaces to define contracts:</t-b>
+    <ul>
+      <li>Interface syntax: declaring members without implementation</li>
+      <li>Implementing one or more interfaces on a class</li>
+      <li>Programming to an interface (polymorphism through interface references)</li>
+      <li>Common built-in interfaces: <code>IComparable&lt;T&gt;</code>, <code>IEnumerable&lt;T&gt;</code>, <code>IDisposable</code></li>
+      <li>Default interface methods (C# 8+)</li>
+      <li>Explicit interface implementation</li>
+    </ul>
+  </section>
+
+  <!-- 7.1 Interface Syntax -->
+  <section>
+    <h2>7.1 Interface Syntax</h2>
+    <t-b>
+      An interface declares a contract - a set of members any implementing type must
+      provide. No implementation lives in the interface (with the exception of default
+      methods added in C# 8):
+    </t-b>
+    <pre><code class="language-csharp">interface IShape
+{
+    double Area();
+    double Perimeter();
+    string Describe() => $"area={Area():F2}";  // default method (C# 8+)
+}</code></pre>
+    <t-b>
+      By convention, interface names start with <code>I</code>. Members declared in an
+      interface are implicitly <code>public</code> and <code>abstract</code>.
+    </t-b>
+  </section>
+
+  <!-- 7.2 Implementing Interfaces -->
+  <section>
+    <h2>7.2 Implementing Interfaces</h2>
+    <t-b>
+      List the interface after the class name (or after the base class if there is one).
+      The class must implement every member declared in the interface:
+    </t-b>
+    <pre><code class="language-csharp">class Circle : IShape
+{
+    public double Radius { get; }
+    public Circle(double r) { Radius = r; }
+
+    public double Area() =&gt; Math.PI * Radius * Radius;
+    public double Perimeter() =&gt; 2 * Math.PI * Radius;
+}
+
+class Square : IShape
+{
+    public double Side { get; }
+    public Square(double s) { Side = s; }
+
+    public double Area() =&gt; Side * Side;
+    public double Perimeter() =&gt; 4 * Side;
+}
+
+IShape c = new Circle(3);
+IShape s = new Square(4);
+Console.WriteLine(c.Describe());  // area=28.27
+Console.WriteLine(s.Describe());  // area=16.00</code></pre>
+  </section>
+
+  <!-- 7.3 Multiple Interfaces -->
+  <section>
+    <h2>7.3 Multiple Interfaces</h2>
+    <t-b>
+      A class can implement many interfaces. This is how C# achieves multiple inheritance
+      of behavior - C# allows only one base class but any number of interfaces:
+    </t-b>
+    <pre><code class="language-csharp">interface IDrawable
+{
+    void Draw(string canvas);
+}
+
+interface IResizable
+{
+    void Resize(double factor);
+}
+
+class Widget : IDrawable, IResizable
+{
+    public double Width { get; private set; }
+    public double Height { get; private set; }
+
+    public Widget(double w, double h) { Width = w; Height = h; }
+
+    public void Draw(string canvas) =&gt;
+        Console.WriteLine($"Drawing {Width}x{Height} on {canvas}");
+
+    public void Resize(double factor)
+    {
+        Width *= factor;
+        Height *= factor;
+    }
+}</code></pre>
+  </section>
+
+  <!-- 7.4 Interface References -->
+  <section>
+    <h2>7.4 Interface References</h2>
+    <t-b>
+      An interface reference can hold any object that implements it. This is the
+      foundation of polymorphism - code that depends on an interface works with
+      any implementing type, including ones that didn't exist when the code was written:
+    </t-b>
+    <pre><code class="language-csharp">static void PrintArea(IShape shape) =&gt;
+    Console.WriteLine($"{shape.GetType().Name}: area={shape.Area():F2}");
+
+List&lt;IShape&gt; shapes = new() { new Circle(3), new Square(4), new Circle(1) };
+foreach (var s in shapes)
+    PrintArea(s);</code></pre>
+    <t-b>
+      The <code>is</code> operator tests whether an object implements an interface at
+      runtime: <code>if (obj is IDisposable d) d.Dispose();</code>
+    </t-b>
+  </section>
+
+  <!-- 7.5 Common Built-in Interfaces -->
+  <section>
+    <h2>7.5 Common Built-in Interfaces</h2>
+    <t-b>
+      Implementing standard interfaces integrates your type with the .NET ecosystem:
+    </t-b>
+    <pre><code class="language-csharp">class Temperature : IComparable&lt;Temperature&gt;
+{
+    public double Celsius { get; }
+    public Temperature(double c) { Celsius = c; }
+
+    public int CompareTo(Temperature? other)
+    {
+        if (other is null) return 1;
+        return Celsius.CompareTo(other.Celsius);
+    }
+
+    public override string ToString() =&gt; $"{Celsius}°C";
+}
+
+var temps = new[] { new Temperature(100), new Temperature(0), new Temperature(37) };
+Array.Sort(temps);
+foreach (var t in temps) Console.Write($"{t} ");</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">0°C 37°C 100°C</code></pre>
+    <t-b>
+      Other frequently used interfaces: <code>IEnumerable&lt;T&gt;</code> (enables
+      <code>foreach</code>), <code>IDisposable</code> (enables <code>using</code>
+      statements), <code>IEquatable&lt;T&gt;</code> (typed equality).
+    </t-b>
+  </section>
+
+  <!-- 7.6 Explicit Interface Implementation -->
+  <section>
+    <h2>7.6 Explicit Interface Implementation</h2>
+    <t-b>
+      When two interfaces declare the same member name, use explicit implementation
+      to satisfy both without ambiguity:
+    </t-b>
+    <pre><code class="language-csharp">interface IA { void Do(); }
+interface IB { void Do(); }
+
+class Dual : IA, IB
+{
+    void IA.Do() =&gt; Console.WriteLine("IA.Do");
+    void IB.Do() =&gt; Console.WriteLine("IB.Do");
+}
+
+Dual d = new Dual();
+((IA)d).Do();  // IA.Do
+((IB)d).Do();  // IB.Do</code></pre>
+    <t-b>
+      Explicitly implemented members are only accessible through the interface type,
+      not through the class type. This is also useful to hide implementation details.
+    </t-b>
+  </section>
+
+  <!-- 7.7 Example -->
+  <section>
+    <h2>7.7 Example - All Together</h2>
+    <pre><code class="language-csharp">// Interfaces - pluggable serialization via interface.
+
+using System.Text.Json;
+
+ISerializer jsonSerializer = new JsonSerializer();
+ISerializer csvSerializer = new CsvSerializer();
+
+var data = new[] { ("Alice", 30), ("Bob", 25) };
+
+Console.WriteLine(jsonSerializer.Serialize(data));
+Console.WriteLine(csvSerializer.Serialize(data));
+
+interface ISerializer
+{
+    string Serialize(IEnumerable&lt;(string Name, int Age)&gt; rows);
+}
+
+class JsonSerializer : ISerializer
+{
+    public string Serialize(IEnumerable&lt;(string Name, int Age)&gt; rows)
+    {
+        var items = rows.Select(r =&gt; new { r.Name, r.Age });
+        return System.Text.Json.JsonSerializer.Serialize(items);
+    }
+}
+
+class CsvSerializer : ISerializer
+{
+    public string Serialize(IEnumerable&lt;(string Name, int Age)&gt; rows)
+    {
+        var lines = rows.Select(r =&gt; $"{r.Name},{r.Age}");
+        return "Name,Age\n" + string.Join("\n", lines);
+    }
+}</code></pre>
+  </section>
+
+  <!-- 7.8 Exercise -->
+  <section>
+    <h2>7.8 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Define an <code>ILogger</code> interface with <code>void Log(string message)</code>
+          and <code>string Name { get; }</code>.</li>
+        <li>Implement it in <code>ConsoleLogger</code> (prints to stdout) and
+          <code>ListLogger</code> (stores messages in a <code>List&lt;string&gt;</code>
+          and exposes them).</li>
+        <li>Write a method that accepts <code>ILogger</code> and logs three messages
+          through it. Call it with both implementations.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7.9 Common Mistakes -->
+  <section>
+    <h2>7.9 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Implementing the wrong method signature</h3>
+      <t-b>
+        If your implementation method has a slightly different signature (wrong return
+        type, extra parameter, wrong name), the compiler reports the interface is
+        not fully implemented. Compare the interface declaration and your method
+        signature character by character.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Casting to interface when is/as is safer</h3>
+      <pre><code class="language-csharp">IDisposable d = (IDisposable)obj;  // throws InvalidCastException if obj doesn't implement it
+if (obj is IDisposable id) id.Dispose();  // safe pattern matching - no exception</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Putting too much in an interface</h3>
+      <t-b>
+        Interfaces define contracts, not convenience. A bloated interface forces every
+        implementor to provide methods it may not need. Prefer small, focused interfaces
+        (Interface Segregation Principle).
+      </t-b>
+    </div>
+  </section>
+
+  <!-- 7.10 Key Terms -->
+  <section>
+    <h2>7.10 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>interface</td><td>Contract declaring members a class must implement; no fields, no state</td></tr>
+        <tr><td>implement</td><td>Provide a concrete body for each member declared by an interface</td></tr>
+        <tr><td>IComparable&lt;T&gt;</td><td>Interface enabling sorting; requires CompareTo method</td></tr>
+        <tr><td>IEnumerable&lt;T&gt;</td><td>Interface enabling foreach; requires GetEnumerator</td></tr>
+        <tr><td>IDisposable</td><td>Interface enabling using statements; requires Dispose method</td></tr>
+        <tr><td>default method</td><td>Interface member with a body (C# 8+); used for optional or shared behavior</td></tr>
+        <tr><td>explicit implementation</td><td>Qualifying a member with the interface name to resolve ambiguity</td></tr>
+        <tr><td>is / as</td><td>Safe runtime interface checks; is tests, as casts (returns null on failure)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  C# / Learn &nbsp;&bull;&nbsp; Tutorial 7 &nbsp;&bull;&nbsp; Interfaces
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CSharpTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

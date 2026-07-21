@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Streaming - Real-Time Responses</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Streaming &mdash; Real-Time Responses</h1>
+  <t-b>Tutorial 7.0 &nbsp;&bull;&nbsp; AI / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>7.0 What This Teaches</h2>
+    <t-b>
+      Streaming lets you display model output as it is generated instead of waiting
+      for the complete response. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Why streaming improves user experience for long responses</li>
+      <li>The <code>client.messages.stream()</code> context manager</li>
+      <li>Iterating over <code>stream.text_stream</code> to get chunks as they arrive</li>
+      <li>Using <code>stream.get_final_message()</code> to retrieve usage stats after streaming</li>
+      <li>When streaming adds unnecessary complexity</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>7.1 Why Streaming</h2>
+    <t-b>
+      Without streaming, <code>messages.create()</code> blocks until the model finishes
+      generating the entire response. A 500-token reply might take 3-5 seconds. During
+      that time the user sees nothing.
+    </t-b>
+    <t-b>
+      With streaming, the model sends tokens as it generates them. The first token
+      typically arrives within a few hundred milliseconds. For a user watching a
+      terminal or a UI, text appearing progressively feels much faster than a
+      multi-second blank wait followed by a sudden wall of text.
+    </t-b>
+    <t-b>
+      The tradeoff: streaming requires a context manager and a loop instead of a
+      single function call. For scripts that process output programmatically and
+      never display it to a user, the extra complexity is not worth it.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>7.2 The Streaming API</h2>
+    <t-b>
+      The SDK provides streaming through <code>client.messages.stream()</code>, used
+      as a Python context manager. Inside the <code>with</code> block, the
+      <code>stream</code> object gives you access to <code>text_stream</code> - an
+      iterator that yields each text chunk as it arrives from the API.
+    </t-b>
+    <pre><code class="language-python">with client.messages.stream(...) as stream:
+    for text in stream.text_stream:
+        # text is one chunk - usually a word or a few characters
+        print(text, end="", flush=True)</code></pre>
+    <t-b>
+      The parameters passed to <code>stream()</code> are the same as for
+      <code>messages.create()</code>: <code>model</code>, <code>max_tokens</code>,
+      <code>messages</code>, and optionally <code>system</code>.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>7.3 Basic Streaming Example</h2>
+    <pre><code class="language-python"># stream_hello.py - print tokens as they arrive.
+import anthropic
+
+client = anthropic.Anthropic()
+
+with client.messages.stream(
+    model="claude-sonnet-4-6",
+    max_tokens=256,
+    messages=[{"role": "user", "content": "Write a Python quicksort function."}]
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)
+
+print()  # newline after stream ends</code></pre>
+    <t-b>
+      Run this script and watch the function appear character by character.
+      Two details in the <code>print</code> call matter:
+    </t-b>
+    <ul>
+      <li>
+        <code>end=""</code> - suppresses Python's default newline after each print,
+        so all chunks print on the same line flow instead of each on its own line.
+      </li>
+      <li>
+        <code>flush=True</code> - forces Python to send each chunk to the terminal
+        immediately instead of buffering it. Without this, output may appear all at
+        once at the end, defeating the purpose of streaming.
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>7.4 Getting the Final Message Object</h2>
+    <t-b>
+      After the loop finishes, <code>stream.get_final_message()</code> returns the
+      complete <code>Message</code> object with all fields populated, including
+      <code>usage</code>. Call it after the loop, not inside it.
+    </t-b>
+    <pre><code class="language-python"># stream_with_usage.py - stream output then read usage stats.
+import anthropic
+
+client = anthropic.Anthropic()
+
+with client.messages.stream(
+    model="claude-sonnet-4-6",
+    max_tokens=256,
+    messages=[{"role": "user", "content": "Write a Python quicksort function."}]
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)
+    # get_final_message() is called after the loop, inside the with block
+    final = stream.get_final_message()
+
+print()  # newline after stream ends
+print(f"\nInput tokens : {final.usage.input_tokens}")
+print(f"Output tokens: {final.usage.output_tokens}")
+print(f"Stop reason  : {final.stop_reason}")</code></pre>
+    <t-b>
+      <code>get_final_message()</code> must be called inside the <code>with</code>
+      block, after the loop. Once the context manager exits, the stream connection
+      is closed and the final message is no longer accessible.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>7.5 Streaming with a System Prompt</h2>
+    <t-b>
+      The <code>system=</code> parameter works exactly the same way in streaming
+      calls as in non-streaming calls.
+    </t-b>
+    <pre><code class="language-python"># stream_system.py - streaming with a system prompt.
+import anthropic
+
+client = anthropic.Anthropic()
+
+with client.messages.stream(
+    model="claude-sonnet-4-6",
+    max_tokens=512,
+    system="You are a Python tutor. Always include type hints and a one-line docstring.",
+    messages=[{"role": "user", "content": "Write a function that merges two sorted lists."}]
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)
+
+print()</code></pre>
+  </section>
+
+  <section>
+    <h2>7.6 When Not to Stream</h2>
+    <t-b>
+      Streaming is the right choice when a user watches the terminal or a UI in
+      real time. It adds complexity without benefit in these situations:
+    </t-b>
+    <table>
+      <thead>
+        <tr><th>Situation</th><th>Use streaming?</th><th>Reason</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Displaying output to a user in real time</td>
+          <td>Yes</td>
+          <td>Reduces perceived latency</td>
+        </tr>
+        <tr>
+          <td>Batch processing: save output to a file</td>
+          <td>No</td>
+          <td>No display - <code>messages.create()</code> is simpler</td>
+        </tr>
+        <tr>
+          <td>Unit tests asserting on response content</td>
+          <td>No</td>
+          <td>Tests need the full string; streaming adds no value</td>
+        </tr>
+        <tr>
+          <td>Parsing JSON from the response</td>
+          <td>No</td>
+          <td>JSON must be complete before parsing; collect it all first</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>7.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Modify <code>stream_hello.py</code> to ask for a longer explanation:
+        change the user message to "Explain how Python's garbage collector works
+        in detail." Add a counter variable before the loop and increment it by 1
+        inside the loop on each iteration. After the loop (and after printing the
+        final newline), print the total chunk count. Run the script and observe how
+        many chunks a longer response produces compared to a short code snippet.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>7.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Using messages.create when you meant messages.stream</h3>
+      <t-b>
+        <code>client.messages.create()</code> returns the entire response at once as
+        a <code>Message</code> object. It does not return a stream. If you forget to
+        use <code>client.messages.stream()</code>, you get no incremental output - just
+        the usual blocking wait followed by the full response.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Forgetting end="" and flush=True in print()</h3>
+      <t-b>
+        Without <code>end=""</code>, Python appends a newline after each chunk and
+        the code appears one word per line. Without <code>flush=True</code>, Python
+        buffers output in memory and releases it in large blocks rather than
+        immediately - the terminal does not update until the buffer fills, which
+        defeats the purpose of streaming. Always use both.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Calling get_final_message() inside the loop</h3>
+      <t-b>
+        <code>get_final_message()</code> blocks until the stream is complete. Calling
+        it inside the <code>for text in stream.text_stream</code> loop on the first
+        iteration will consume the rest of the stream internally, causing the loop
+        to exit early after just one chunk. Call it after the loop finishes.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>7.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>streaming</td><td>Receiving model output incrementally as it is generated, rather than waiting for the complete response</td></tr>
+        <tr><td>text_stream</td><td>An iterator on the stream object that yields text chunks as they arrive</td></tr>
+        <tr><td>context manager</td><td>A Python <code>with</code> statement that manages setup and teardown; here it opens and closes the stream connection</td></tr>
+        <tr><td>chunk</td><td>One piece of text yielded by <code>text_stream</code>; typically a word or a few characters</td></tr>
+        <tr><td>flush</td><td>Forcing Python to send buffered output to the terminal immediately instead of waiting</td></tr>
+        <tr><td>get_final_message</td><td>Method on the stream object that returns the complete Message with usage stats after streaming ends</td></tr>
+        <tr><td>buffering</td><td>Python's default behavior of holding output in memory and writing it in batches; disabled per print() with flush=True</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn &nbsp;&bull;&nbsp; Tutorial 7 &nbsp;&bull;&nbsp; Streaming
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>File I/O - C# System.IO</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>File I/O &mdash; C# System.IO</h1>
+  <t-b>Tutorial S5 &nbsp;&bull;&nbsp; C# / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__StdLib_FileIO.html">Rust</a>
+    <a href="CppTutorial__StdLib_FileIO.html">C++</a>
+    <a href="CSharpTutorial__StdLib_FileIO.html">C#</a>
+    <a href="PythonTutorial__StdLib_FileIO.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- S5.0 What This Teaches -->
+  <section>
+    <h2>S5.0 What This Teaches</h2>
+    <t-b>This tutorial covers file and path operations in C#:</t-b>
+    <ul>
+      <li>Reading and writing text files with <code>File</code> convenience methods</li>
+      <li>Streaming reads and writes with <code>StreamReader</code> / <code>StreamWriter</code></li>
+      <li>Working with paths using <code>Path</code> and <code>DirectoryInfo</code></li>
+      <li>Directory enumeration</li>
+      <li>Reading and writing binary data</li>
+    </ul>
+  </section>
+
+  <!-- S5.1 File Convenience Methods -->
+  <section>
+    <h2>S5.1 File Convenience Methods</h2>
+    <pre><code class="language-csharp">using System.IO;
+
+// Write all text at once (creates or overwrites)
+File.WriteAllText("notes.txt", "Hello, file!");
+
+// Append text
+File.AppendAllText("notes.txt", "\nSecond line.");
+
+// Read all text
+string content = File.ReadAllText("notes.txt");
+Console.WriteLine(content);
+
+// Read all lines into an array
+string[] lines = File.ReadAllLines("notes.txt");
+foreach (string line in lines)
+    Console.WriteLine(line);
+
+// Write multiple lines
+File.WriteAllLines("list.txt", new[] { "alpha", "beta", "gamma" });</code></pre>
+    <t-b>
+      <code>File</code> convenience methods are best for small files that fit in memory.
+      They open, read/write, and close in one call. Use streaming APIs for large files.
+    </t-b>
+  </section>
+
+  <!-- S5.2 StreamReader and StreamWriter -->
+  <section>
+    <h2>S5.2 StreamReader and StreamWriter</h2>
+    <pre><code class="language-csharp">// Write line by line
+using var writer = new StreamWriter("output.txt");
+for (int i = 1; i &lt;= 5; i++)
+    writer.WriteLine($"Line {i}");
+// writer.Dispose() called automatically at end of scope
+
+// Read line by line - efficient for large files
+using var reader = new StreamReader("output.txt");
+string? line;
+while ((line = reader.ReadLine()) != null)
+    Console.WriteLine(line);
+
+// Append to existing file
+using var appender = new StreamWriter("output.txt", append: true);
+appender.WriteLine("Appended line");</code></pre>
+  </section>
+
+  <!-- S5.3 Path Operations -->
+  <section>
+    <h2>S5.3 Path and Directory Operations</h2>
+    <pre><code class="language-csharp">string full = Path.GetFullPath("notes.txt");
+string dir  = Path.GetDirectoryName(full)!;
+string name = Path.GetFileName(full);        // "notes.txt"
+string stem = Path.GetFileNameWithoutExtension(full);  // "notes"
+string ext  = Path.GetExtension(full);       // ".txt"
+
+// Build paths in a platform-safe way
+string path = Path.Combine(dir, "subdir", "file.txt");
+
+// Test existence
+bool fileExists = File.Exists("notes.txt");
+bool dirExists  = Directory.Exists("mydir");
+
+// Create and delete
+Directory.CreateDirectory("newdir");
+Directory.Delete("newdir", recursive: false);
+File.Delete("notes.txt");
+
+// Enumerate files
+foreach (string f in Directory.EnumerateFiles(".", "*.txt"))
+    Console.WriteLine(Path.GetFileName(f));</code></pre>
+  </section>
+
+  <!-- S5.4 Binary Files -->
+  <section>
+    <h2>S5.4 Binary Files</h2>
+    <pre><code class="language-csharp">// Write bytes
+byte[] data = { 1, 2, 3, 4, 5 };
+File.WriteAllBytes("data.bin", data);
+
+// Read bytes
+byte[] read = File.ReadAllBytes("data.bin");
+Console.WriteLine(read.Length);   // 5
+
+// BinaryWriter / BinaryReader for typed data
+using var bw = new BinaryWriter(File.OpenWrite("record.bin"));
+bw.Write(42);        // int (4 bytes)
+bw.Write(3.14);      // double (8 bytes)
+bw.Write("hello");   // length-prefixed string
+
+using var br = new BinaryReader(File.OpenRead("record.bin"));
+Console.WriteLine(br.ReadInt32());   // 42
+Console.WriteLine(br.ReadDouble());  // 3.14
+Console.WriteLine(br.ReadString());  // hello</code></pre>
+  </section>
+
+  <!-- S5.5 Example -->
+  <section>
+    <h2>S5.5 Example - All Together</h2>
+    <pre><code class="language-csharp">// File I/O - write CSV and read it back, counting lines.
+
+using System.IO;
+
+string csvPath = "scores.csv";
+
+// Write CSV
+var records = new[] { ("Alice", 92), ("Bob", 78), ("Carol", 95) };
+using (var w = new StreamWriter(csvPath))
+{
+    w.WriteLine("Name,Score");
+    foreach (var (name, score) in records)
+        w.WriteLine($"{name},{score}");
+}
+
+// Read and process
+int count = 0;
+int total = 0;
+using (var r = new StreamReader(csvPath))
+{
+    r.ReadLine();   // skip header
+    string? line;
+    while ((line = r.ReadLine()) != null)
+    {
+        var parts = line.Split(',');
+        total += int.Parse(parts[1]);
+        count++;
+    }
+}
+Console.WriteLine($"Average score: {total / (double)count:F1}");</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">Average score: 88.3</code></pre>
+  </section>
+
+  <!-- S5.6 Exercise -->
+  <section>
+    <h2>S5.6 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write a program that creates a file, writes 10 lines to it with
+          <code>StreamWriter</code>, then reads and prints each line with
+          <code>StreamReader</code>.</li>
+        <li>Use <code>Directory.EnumerateFiles</code> to list all <code>.cs</code>
+          files in the current directory (or a test directory). Print the total
+          line count across all files.</li>
+        <li>Write and read a binary file using <code>BinaryWriter</code> and
+          <code>BinaryReader</code> to store an array of <code>double</code> values.
+          Verify the round-trip is lossless.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S5.7 Common Mistakes -->
+  <section>
+    <h2>S5.7 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Forgetting to close or dispose file handles</h3>
+      <t-b>
+        Not wrapping streams in <code>using</code> leaves file handles open until
+        the GC finalizes the object, which is non-deterministic. On Windows this
+        prevents other processes from opening the file. Always use <code>using</code>.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Using + for path concatenation</h3>
+      <pre><code class="language-csharp">string path = dir + "\\" + name;   // breaks on Linux (different separator)
+string path = Path.Combine(dir, name);  // correct - portable</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Reading a huge file with ReadAllText</h3>
+      <t-b>
+        <code>File.ReadAllText</code> loads the entire file into a string. For files
+        larger than a few MB, use <code>StreamReader</code> to process line by line,
+        or <code>File.ReadLines</code> which returns an <code>IEnumerable&lt;string&gt;</code>
+        and reads lazily.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- S5.8 Key Terms -->
+  <section>
+    <h2>S5.8 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>File</td><td>Static class with convenience methods for common file operations</td></tr>
+        <tr><td>StreamReader</td><td>Reads characters from a byte stream; buffers for efficiency</td></tr>
+        <tr><td>StreamWriter</td><td>Writes characters to a byte stream; buffers writes</td></tr>
+        <tr><td>Path</td><td>Static class for manipulating path strings portably</td></tr>
+        <tr><td>Directory</td><td>Static class for directory creation, deletion, and enumeration</td></tr>
+        <tr><td>BinaryReader/Writer</td><td>Reads/writes primitive types as raw bytes</td></tr>
+        <tr><td>using</td><td>Ensures Dispose() on streams; guarantees handle is released</td></tr>
+        <tr><td>File.ReadLines</td><td>Lazy enumeration of lines; preferred over ReadAllLines for large files</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  C# / Learn &nbsp;&bull;&nbsp; Tutorial S5 &nbsp;&bull;&nbsp; File I/O
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CSharpTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

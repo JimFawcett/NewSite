@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dataclasses - Python Dataclasses</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Dataclasses &mdash; Python Dataclasses</h1>
+  <t-b>Tutorial S10 &nbsp;&bull;&nbsp; Python / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="#" class="disabled">Rust</a>
+    <a href="#" class="disabled">C++</a>
+    <a href="CSharpTutorial__Records.html">C#</a>
+    <a href="PythonTutorial__Dataclasses.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- S10.0 What This Teaches -->
+  <section>
+    <h2>S10.0 What This Teaches</h2>
+    <t-b>This tutorial covers Python's <code>dataclasses</code> module:</t-b>
+    <ul>
+      <li><code>@dataclass</code>: auto-generating <code>__init__</code>, <code>__repr__</code>, <code>__eq__</code></li>
+      <li><code>field()</code> for default values and factories</li>
+      <li><code>frozen=True</code> for immutable dataclasses</li>
+      <li><code>__post_init__</code> for validation and derived fields</li>
+      <li>Ordering with <code>order=True</code></li>
+      <li><code>slots=True</code> for memory-efficient instances</li>
+    </ul>
+  </section>
+
+  <!-- S10.1 Basic @dataclass -->
+  <section>
+    <h2>S10.1 Basic @dataclass</h2>
+    <t-b>
+      Decorating a class with <code>@dataclass</code> generates <code>__init__</code>,
+      <code>__repr__</code>, and <code>__eq__</code> from the annotated fields:
+    </t-b>
+    <pre><code class="language-python"># Dataclasses - auto-generated boilerplate from field annotations.
+
+from dataclasses import dataclass
+
+@dataclass
+class Person:
+    name: str
+    age: int
+
+alice = Person("Alice", 30)
+bob   = Person("Bob",   25)
+
+print(alice)            # Person(name='Alice', age=30)
+print(alice == Person("Alice", 30))  # True  - value equality
+print(alice == bob)     # False</code></pre>
+    <t-b>
+      Without <code>@dataclass</code>, you would write <code>__init__</code>,
+      <code>__repr__</code>, and <code>__eq__</code> by hand. The decorator generates
+      all three from the type-annotated class body.
+    </t-b>
+  </section>
+
+  <!-- S10.2 Default Values and field() -->
+  <section>
+    <h2>S10.2 Default Values and field()</h2>
+    <t-b>
+      Use <code>field()</code> when you need a factory for mutable defaults, or to
+      control which fields appear in <code>__repr__</code> and <code>__init__</code>:
+    </t-b>
+    <pre><code class="language-python">from dataclasses import dataclass, field
+
+@dataclass
+class Config:
+    host: str = "localhost"
+    port: int = 8080
+    tags: list = field(default_factory=list)   # new list per instance
+    _secret: str = field(default="", repr=False, compare=False)
+
+c1 = Config()
+c2 = Config()
+c1.tags.append("web")
+print(c1.tags)   # ['web']
+print(c2.tags)   # []  - independent list, not shared
+
+print(c1)   # Config(host='localhost', port=8080, tags=['web'])</code></pre>
+    <t-b>
+      Never use a mutable default directly (<code>tags: list = []</code>) - that
+      shares one list across all instances. Always use <code>field(default_factory=list)</code>.
+    </t-b>
+  </section>
+
+  <!-- S10.3 Frozen Dataclasses -->
+  <section>
+    <h2>S10.3 Frozen Dataclasses</h2>
+    <t-b>
+      <code>frozen=True</code> makes the dataclass immutable and hashable, so instances
+      can be used as dictionary keys or in sets:
+    </t-b>
+    <pre><code class="language-python">from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class Point:
+    x: float
+    y: float
+
+p = Point(3.0, 4.0)
+# p.x = 9.0   # FrozenInstanceError - cannot assign
+
+# Hashable - usable in sets and as dict keys
+points = {Point(0, 0), Point(1, 1), Point(0, 0)}
+print(points)   # {Point(x=0, y=0), Point(x=1, y=1)}
+
+lookup = {Point(1, 0): "east", Point(0, 1): "north"}
+print(lookup[Point(1, 0)])   # east</code></pre>
+  </section>
+
+  <!-- S10.4 __post_init__ -->
+  <section>
+    <h2>S10.4 __post_init__ for Validation</h2>
+    <t-b>
+      <code>__post_init__</code> runs after the generated <code>__init__</code>.
+      Use it for validation and for computing derived fields:
+    </t-b>
+    <pre><code class="language-python">from dataclasses import dataclass, field
+import math
+
+@dataclass
+class Circle:
+    radius: float
+
+    def __post_init__(self):
+        if self.radius &lt;= 0:
+            raise ValueError(f"radius must be positive, got {self.radius}")
+
+    @property
+    def area(self) -&gt; float:
+        return math.pi * self.radius ** 2
+
+c = Circle(5.0)
+print(f"area = {c.area:.2f}")   # area = 78.54
+
+try:
+    Circle(-1)
+except ValueError as e:
+    print(e)   # radius must be positive, got -1</code></pre>
+  </section>
+
+  <!-- S10.5 Ordering -->
+  <section>
+    <h2>S10.5 Ordering with order=True</h2>
+    <t-b>
+      <code>order=True</code> generates <code>__lt__</code>, <code>__le__</code>,
+      <code>__gt__</code>, and <code>__ge__</code> based on the field order:
+    </t-b>
+    <pre><code class="language-python">from dataclasses import dataclass
+
+@dataclass(order=True)
+class Version:
+    major: int
+    minor: int
+    patch: int
+
+versions = [Version(1, 10, 0), Version(2, 0, 0), Version(1, 9, 5)]
+print(sorted(versions))
+# [Version(major=1, minor=9, patch=5),
+#  Version(major=1, minor=10, patch=0),
+#  Version(major=2, minor=0, patch=0)]
+
+print(Version(1, 9, 5) &lt; Version(1, 10, 0))   # True</code></pre>
+    <t-b>
+      Fields are compared left to right - the first field is the most significant.
+      Combine with <code>frozen=True</code> to get an immutable, comparable, hashable type.
+    </t-b>
+  </section>
+
+  <!-- S10.6 slots=True -->
+  <section>
+    <h2>S10.6 slots=True for Efficiency</h2>
+    <t-b>
+      <code>slots=True</code> (Python 3.10+) adds <code>__slots__</code> to the class,
+      reducing memory per instance and speeding up attribute access:
+    </t-b>
+    <pre><code class="language-python">from dataclasses import dataclass
+import sys
+
+@dataclass
+class Normal:
+    x: float
+    y: float
+
+@dataclass(slots=True)
+class Slotted:
+    x: float
+    y: float
+
+n = Normal(1.0, 2.0)
+s = Slotted(1.0, 2.0)
+
+print(sys.getsizeof(n.__dict__))   # ~232 bytes (dict overhead)
+# Slotted has no __dict__ - attributes stored directly in slots
+print(n == s)   # True - same values</code></pre>
+    <t-b>
+      Use <code>slots=True</code> when creating many instances (data pipelines, game
+      entities) where memory and access speed matter.
+    </t-b>
+  </section>
+
+  <!-- S10.7 Example -->
+  <section>
+    <h2>S10.7 Example - All Together</h2>
+    <pre><code class="language-python"># Dataclasses - immutable order model with validation and ordering.
+
+from dataclasses import dataclass, field
+from datetime import date
+
+@dataclass(frozen=True, order=True)
+class Product:
+    sku: str
+    name: str
+    price: float
+
+    def __post_init__(self):
+        if self.price &lt; 0:
+            raise ValueError(f"price cannot be negative: {self.price}")
+
+@dataclass
+class Order:
+    customer: str
+    lines: list = field(default_factory=list)
+    date: date = field(default_factory=date.today)
+
+    def add(self, product: Product, qty: int):
+        self.lines.append((product, qty))
+
+    @property
+    def total(self) -&gt; float:
+        return sum(p.price * q for p, q in self.lines)
+
+widget = Product("W-01", "Widget", 9.99)
+gadget = Product("G-01", "Gadget", 49.95)
+
+order = Order("Alice")
+order.add(widget, 3)
+order.add(gadget, 1)
+
+for product, qty in order.lines:
+    print(f"  {product.name} x{qty}: ${product.price * qty:.2f}")
+print(f"Total: ${order.total:.2f}")</code></pre>
+  </section>
+
+  <!-- S10.8 Exercise -->
+  <section>
+    <h2>S10.8 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Define a <code>@dataclass(frozen=True)</code> called <code>RGB</code> with
+          fields <code>r</code>, <code>g</code>, <code>b</code> (all <code>int</code>).
+          Validate in <code>__post_init__</code> that all values are in 0-255. Add a
+          method <code>blend(other: RGB) -&gt; RGB</code> that averages the two colors.</li>
+        <li>Create a <code>@dataclass(order=True)</code> called <code>Student</code>
+          with <code>gpa: float</code> and <code>name: str</code>. Sort a list of
+          students by GPA descending, then by name ascending.</li>
+        <li>Write a <code>@dataclass</code> with a <code>list</code> field using
+          <code>field(default_factory=list)</code>. Show that two instances do not
+          share the same list (common bug without <code>field()</code>).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S10.9 Common Mistakes -->
+  <section>
+    <h2>S10.9 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Mutable default without field(default_factory=...)</h3>
+      <pre><code class="language-python">@dataclass
+class Bad:
+    items: list = []   # TypeError! Dataclass will refuse this at class definition time.
+
+@dataclass
+class Good:
+    items: list = field(default_factory=list)   # correct - new list per instance</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Expecting frozen to deep-freeze mutable contents</h3>
+      <pre><code class="language-python">@dataclass(frozen=True)
+class Bag:
+    contents: list
+
+b = Bag([1, 2, 3])
+b.contents.append(4)   # works! frozen only prevents reassigning b.contents
+print(b.contents)      # [1, 2, 3, 4]
+# Use a tuple instead of list for truly immutable contents</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Using order=True without frozen=True on a hashed class</h3>
+      <pre><code class="language-python">@dataclass(order=True)
+class Point:
+    x: float
+    y: float
+
+# Not hashable by default - can't use in sets or as dict key
+# s = {Point(0, 0)}   # TypeError: unhashable type: 'Point'
+# Add frozen=True to get both ordering and hashing</code></pre>
+    </div>
+  </section>
+
+  <!-- S10.10 Key Terms -->
+  <section>
+    <h2>S10.10 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>@dataclass</td><td>Decorator that generates __init__, __repr__, __eq__ from annotated fields</td></tr>
+        <tr><td>field()</td><td>Configures per-field behavior: default_factory, repr, compare, init</td></tr>
+        <tr><td>default_factory</td><td>Callable invoked to produce a fresh default value per instance</td></tr>
+        <tr><td>frozen=True</td><td>Makes instances immutable and hashable; raises FrozenInstanceError on mutation</td></tr>
+        <tr><td>__post_init__</td><td>Called after __init__; use for validation and derived field computation</td></tr>
+        <tr><td>order=True</td><td>Generates comparison methods (__lt__, __le__, etc.) based on field order</td></tr>
+        <tr><td>slots=True</td><td>Adds __slots__ to reduce memory and speed up attribute access (Python 3.10+)</td></tr>
+        <tr><td>value equality</td><td>Two instances are equal when all compared fields have equal values</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  Python / Learn &nbsp;&bull;&nbsp; Tutorial S10 &nbsp;&bull;&nbsp; Dataclasses
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/PythonTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

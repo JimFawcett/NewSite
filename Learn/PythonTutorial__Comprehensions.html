@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comprehensions - Python Comprehensions and Generators</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Comprehensions &mdash; Python Comprehensions and Generators</h1>
+  <t-b>Tutorial 10.0 &nbsp;&bull;&nbsp; Python / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__Iterators.html">Rust</a>
+    <a href="#" class="disabled">C++</a>
+    <a href="#" class="disabled">C#</a>
+    <a href="PythonTutorial__Comprehensions.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- 10.0 What This Teaches -->
+  <section>
+    <h2>10.0 What This Teaches</h2>
+    <t-b>This tutorial covers Python's concise collection-building syntax:</t-b>
+    <ul>
+      <li>List comprehensions: <code>[expr for item in iterable]</code></li>
+      <li>Filtering with <code>if</code> conditions</li>
+      <li>Nested comprehensions for multi-dimensional data</li>
+      <li>Dict and set comprehensions</li>
+      <li>Generator expressions: lazy evaluation with parentheses</li>
+      <li>When to use a comprehension vs a regular loop</li>
+    </ul>
+  </section>
+
+  <!-- 10.1 List Comprehensions -->
+  <section>
+    <h2>10.1 List Comprehensions</h2>
+    <t-b>
+      A list comprehension builds a new list by applying an expression to each
+      element of an iterable. The form is
+      <code>[expression for variable in iterable]</code>:
+    </t-b>
+    <pre><code class="language-python">squares = [x ** 2 for x in range(1, 6)]
+print(squares)   # [1, 4, 9, 16, 25]
+
+words = ["hello", "world", "python"]
+upper = [w.upper() for w in words]
+print(upper)     # ['HELLO', 'WORLD', 'PYTHON']
+
+lengths = [len(w) for w in words]
+print(lengths)   # [5, 5, 6]</code></pre>
+    <t-b>
+      Compared to an explicit <code>for</code> loop with <code>.append()</code>,
+      comprehensions are more concise and typically slightly faster because the
+      list is built in one step.
+    </t-b>
+  </section>
+
+  <!-- 10.2 Filtering -->
+  <section>
+    <h2>10.2 Filtering with if</h2>
+    <t-b>
+      Add an <code>if</code> clause after the <code>for</code> clause to include
+      only elements that satisfy a condition:
+    </t-b>
+    <pre><code class="language-python">numbers = range(20)
+evens = [n for n in numbers if n % 2 == 0]
+print(evens)   # [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+
+words = ["apple", "fig", "banana", "kiwi", "cherry"]
+long_words = [w for w in words if len(w) > 4]
+print(long_words)   # ['apple', 'banana', 'cherry']</code></pre>
+    <t-b>
+      The condition is not a ternary expression - it filters which items enter the
+      comprehension at all. A ternary in the expression part transforms items:
+      <code>[x if x &gt; 0 else 0 for x in values]</code> (clamp negatives to 0).
+    </t-b>
+  </section>
+
+  <!-- 10.3 Nested Comprehensions -->
+  <section>
+    <h2>10.3 Nested Comprehensions</h2>
+    <pre><code class="language-python"># Flatten a matrix
+matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+flat = [n for row in matrix for n in row]
+print(flat)   # [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+# Cartesian product
+pairs = [(x, y) for x in range(1, 4) for y in range(1, 4) if x != y]
+print(pairs[:4])   # [(1, 2), (1, 3), (2, 1), (2, 3)]
+
+# 3x3 identity matrix
+identity = [[1 if i == j else 0 for j in range(3)] for i in range(3)]
+print(identity)</code></pre>
+    <t-b>
+      Read nested comprehensions left to right: the outer <code>for</code> is listed
+      first, exactly as it would appear in nested <code>for</code> loops. Prefer
+      regular loops when nesting gets three or more levels deep.
+    </t-b>
+  </section>
+
+  <!-- 10.4 Dict Comprehensions -->
+  <section>
+    <h2>10.4 Dict Comprehensions</h2>
+    <pre><code class="language-python">words = ["apple", "banana", "cherry"]
+word_lengths = {w: len(w) for w in words}
+print(word_lengths)   # {'apple': 5, 'banana': 6, 'cherry': 6}
+
+# Invert a dict (assumes values are unique)
+grades = {"Alice": "A", "Bob": "B", "Carol": "A"}
+inverted = {v: k for k, v in grades.items()}
+print(inverted)   # {'A': 'Carol', 'B': 'Bob'}
+
+# Conditional - keep only passing grades
+passing = {name: g for name, g in grades.items() if g != "F"}
+print(passing)</code></pre>
+  </section>
+
+  <!-- 10.5 Set Comprehensions -->
+  <section>
+    <h2>10.5 Set Comprehensions</h2>
+    <pre><code class="language-python">sentence = "the quick brown fox jumps over the lazy dog"
+letters = {ch for ch in sentence if ch.isalpha()}
+print(sorted(letters))   # every unique letter in the alphabet (26)
+print(len(letters))      # 26 - the pangram contains every letter
+
+words = ["Cat", "cat", "Dog", "dog", "Bird"]
+unique_lower = {w.lower() for w in words}
+print(unique_lower)   # {'cat', 'dog', 'bird'}</code></pre>
+    <t-b>
+      Set comprehensions use curly braces like dict comprehensions but produce a
+      set (no duplicate values, unordered). Use them when you need uniqueness.
+    </t-b>
+  </section>
+
+  <!-- 10.6 Generator Expressions -->
+  <section>
+    <h2>10.6 Generator Expressions</h2>
+    <t-b>
+      Replace square brackets with parentheses to get a <em>generator</em> instead
+      of a list. Generators are lazy - they produce one value at a time and don't
+      build the entire collection in memory:
+    </t-b>
+    <pre><code class="language-python"># List comprehension - builds all million values in memory
+squares_list = [x ** 2 for x in range(1_000_000)]
+
+# Generator expression - computes one value at a time
+squares_gen = (x ** 2 for x in range(1_000_000))
+
+# sum() accepts any iterable - generator is fine here
+total = sum(x ** 2 for x in range(1001) if x % 2 == 0)
+print(total)   # sum of squares of even numbers 0..1000
+
+# any() / all() short-circuit on generators
+has_negative = any(x &lt; 0 for x in [1, 2, -3, 4])
+print(has_negative)   # True (stops at -3)</code></pre>
+    <t-b>
+      Pass a generator directly to functions like <code>sum</code>, <code>max</code>,
+      <code>min</code>, <code>any</code>, <code>all</code>, and <code>join</code>.
+      Don't wrap in a list unless you need to iterate it multiple times.
+    </t-b>
+  </section>
+
+  <!-- 10.7 Example -->
+  <section>
+    <h2>10.7 Example - All Together</h2>
+    <pre><code class="language-python"># Comprehensions - word frequency, matrix transpose, and prime sieve.
+
+# Word frequency dict
+text = "to be or not to be that is the question to be"
+freq = {word: text.split().count(word) for word in set(text.split())}
+top3 = sorted(freq.items(), key=lambda kv: kv[1], reverse=True)[:3]
+print(top3)
+
+# Matrix transpose with nested comprehension
+matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+transposed = [[row[i] for row in matrix] for i in range(3)]
+print(transposed)
+
+# Sieve of Eratosthenes - primes up to 50
+limit = 50
+composites = {j for i in range(2, int(limit**0.5) + 1) for j in range(i*2, limit+1, i)}
+primes = [n for n in range(2, limit + 1) if n not in composites]
+print(primes)</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">[('be', 3), ('to', 3), ('or', 1)]
+[[1, 4, 7], [2, 5, 8], [3, 6, 9]]
+[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]</code></pre>
+  </section>
+
+  <!-- 10.8 Exercise -->
+  <section>
+    <h2>10.8 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Use a list comprehension to generate the first 20 Fibonacci numbers
+          (hint: use a helper function or start from a seed list).</li>
+        <li>Use a dict comprehension to map each integer from 1 to 10 to its cube.</li>
+        <li>Use a generator expression inside <code>sum()</code> to compute the
+          sum of all integers from 1 to 1 000 000 that are divisible by 3 or 5.
+          Compare the result to the closed-form solution.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10.9 Common Mistakes -->
+  <section>
+    <h2>10.9 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Side effects inside a comprehension</h3>
+      <pre><code class="language-python">results = [print(x) for x in range(5)]   # works, but returns [None, None, ...]</code></pre>
+      <t-b>
+        Comprehensions are for building collections, not for side effects. Use a
+        regular <code>for</code> loop when you just want to call a function.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Iterating a generator twice</h3>
+      <pre><code class="language-python">gen = (x ** 2 for x in range(5))
+print(list(gen))   # [0, 1, 4, 9, 16]
+print(list(gen))   # [] - generator exhausted!</code></pre>
+      <t-b>
+        A generator can only be iterated once. Convert to a list if you need to
+        iterate it multiple times.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Overly complex comprehensions</h3>
+      <t-b>
+        Comprehensions with three or more nested loops, multiple conditions, and
+        complex expressions are hard to read. Prefer a regular loop with
+        comments when logic becomes complex.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- 10.10 Key Terms -->
+  <section>
+    <h2>10.10 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>list comprehension</td><td>[expr for x in iterable if cond] - builds a list</td></tr>
+        <tr><td>dict comprehension</td><td>{key: value for x in iterable} - builds a dict</td></tr>
+        <tr><td>set comprehension</td><td>{expr for x in iterable} - builds a set (no duplicates)</td></tr>
+        <tr><td>generator expression</td><td>(expr for x in iterable) - lazy; yields one value at a time</td></tr>
+        <tr><td>filter clause</td><td>if condition after for; controls which items are included</td></tr>
+        <tr><td>nested comprehension</td><td>Multiple for clauses flattening or combining iterables</td></tr>
+        <tr><td>lazy evaluation</td><td>Computing values on demand rather than all at once</td></tr>
+        <tr><td>exhausted generator</td><td>A generator that has yielded all its values; empty on re-iteration</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  Python / Learn &nbsp;&bull;&nbsp; Tutorial 10 &nbsp;&bull;&nbsp; Comprehensions
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/PythonTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

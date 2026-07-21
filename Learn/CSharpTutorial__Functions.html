@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Functions - C# Methods</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Functions &mdash; C# Methods</h1>
+  <t-b>Tutorial 4.0 &nbsp;&bull;&nbsp; C# / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__Functions.html">Rust</a>
+    <a href="CppTutorial__Functions.html">C++</a>
+    <a href="CSharpTutorial__Functions.html">C#</a>
+    <a href="PythonTutorial__Functions.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- 4.0 What This Teaches -->
+  <section>
+    <h2>4.0 What This Teaches</h2>
+    <t-b>This tutorial covers how C# defines and calls methods:</t-b>
+    <ul>
+      <li>Basic method syntax: return type, name, parameters, body</li>
+      <li>Parameter passing: by value, <code>ref</code>, and <code>out</code></li>
+      <li>Default parameter values and method overloading</li>
+      <li>Returning multiple values with tuples</li>
+      <li>Expression-bodied methods and local functions</li>
+    </ul>
+  </section>
+
+  <!-- 4.1 Method Syntax -->
+  <section>
+    <h2>4.1 Method Syntax</h2>
+    <t-b>
+      In top-level statement files, you define methods directly - no surrounding class needed:
+    </t-b>
+    <pre><code class="language-csharp">static int Add(int a, int b)
+{
+    return a + b;
+}
+
+static void Greet(string name)
+{
+    Console.WriteLine($"Hello, {name}!");
+}
+
+// calling them
+int result = Add(3, 4);
+Greet("Alice");</code></pre>
+    <t-b>
+      The return type comes first. <code>void</code> means the method returns nothing.
+      <code>static</code> is required in top-level statement context.
+    </t-b>
+  </section>
+
+  <!-- 4.2 Parameter Passing -->
+  <section>
+    <h2>4.2 Parameter Passing</h2>
+    <t-b>
+      Value types pass a copy by default - the caller's variable is not affected.
+      Use <code>ref</code> to pass by reference, or <code>out</code> to return a
+      value through a parameter:
+    </t-b>
+    <pre><code class="language-csharp">static void Double(ref int x)
+{
+    x *= 2;   // modifies caller's variable
+}
+
+static bool TryDivide(int a, int b, out double result)
+{
+    if (b == 0) { result = 0; return false; }
+    result = (double)a / b;
+    return true;
+}
+
+int n = 5;
+Double(ref n);
+Console.WriteLine(n);   // 10
+
+if (TryDivide(10, 3, out double quotient))
+    Console.WriteLine($"quotient = {quotient:F3}");</code></pre>
+    <t-b>
+      <code>out</code> parameters must be assigned before the method returns. The caller
+      does not need to initialize them before passing.
+    </t-b>
+  </section>
+
+  <!-- 4.3 Default Parameters and Named Arguments -->
+  <section>
+    <h2>4.3 Default Parameters and Named Arguments</h2>
+    <pre><code class="language-csharp">static void Log(string message, string level = "INFO", bool timestamp = false)
+{
+    string prefix = timestamp ? $"[{DateTime.Now:HH:mm}] " : "";
+    Console.WriteLine($"{prefix}[{level}] {message}");
+}
+
+Log("Server started");                         // uses defaults
+Log("Disk full", "WARN");                      // overrides level
+Log("Crash", level: "ERROR", timestamp: true); // named arguments</code></pre>
+    <t-b>
+      Named arguments let you specify parameters out of order and make call sites
+      more readable. Parameters with defaults must come after required ones.
+    </t-b>
+  </section>
+
+  <!-- 4.4 Overloading -->
+  <section>
+    <h2>4.4 Method Overloading</h2>
+    <t-b>
+      Multiple methods can share the same name as long as their parameter lists differ.
+      The compiler selects the right one based on argument types:
+    </t-b>
+    <pre><code class="language-csharp">static void Print(int x)    => Console.WriteLine($"int: {x}");
+static void Print(double x) => Console.WriteLine($"double: {x}");
+static void Print(string s) => Console.WriteLine($"string: {s}");
+
+Print(42);       // int: 42
+Print(3.14);     // double: 3.14
+Print("hello");  // string: hello</code></pre>
+  </section>
+
+  <!-- 4.5 Returning Multiple Values -->
+  <section>
+    <h2>4.5 Returning Multiple Values</h2>
+    <t-b>
+      Return a tuple to deliver multiple values. Callers can deconstruct it:
+    </t-b>
+    <pre><code class="language-csharp">static (int min, int max) MinMax(int a, int b)
+{
+    return a &lt; b ? (a, b) : (b, a);
+}
+
+var (lo, hi) = MinMax(9, 3);
+Console.WriteLine($"min={lo}, max={hi}");  // min=3, max=9</code></pre>
+    <t-b>
+      Named tuple elements (<code>min</code>, <code>max</code>) make the return type
+      self-documenting. Callers can also access elements by position: <code>.Item1</code>,
+      <code>.Item2</code>.
+    </t-b>
+  </section>
+
+  <!-- 4.6 Expression-Bodied Methods -->
+  <section>
+    <h2>4.6 Expression-Bodied Methods</h2>
+    <t-b>
+      When a method body is a single expression, use the <code>=&gt;</code> shorthand:
+    </t-b>
+    <pre><code class="language-csharp">static int Square(int x) => x * x;
+static bool IsEven(int n) => n % 2 == 0;
+static double CircleArea(double r) => Math.PI * r * r;</code></pre>
+    <t-b>
+      Expression-bodied methods are identical in behavior to the full form. Use them
+      when the logic is simple enough to read in one line.
+    </t-b>
+  </section>
+
+  <!-- 4.7 Local Functions -->
+  <section>
+    <h2>4.7 Local Functions</h2>
+    <t-b>
+      A local function is defined inside another method. It is only visible within
+      that method - useful for recursive helpers or validation logic:
+    </t-b>
+    <pre><code class="language-csharp">static long Factorial(int n)
+{
+    if (n &lt; 0) throw new ArgumentException("n must be non-negative");
+    return Compute(n);
+
+    long Compute(int k) => k &lt;= 1 ? 1 : k * Compute(k - 1);
+}
+
+Console.WriteLine(Factorial(10));  // 3628800</code></pre>
+  </section>
+
+  <!-- 4.8 Example -->
+  <section>
+    <h2>4.8 Example - All Together</h2>
+    <pre><code class="language-csharp">// Functions - method definitions and calling patterns.
+
+Console.WriteLine(Add(3, 4));
+Console.WriteLine(Describe(42));
+Console.WriteLine(Describe("hello"));
+
+var (lo, hi) = Bounds(-5, 12, 3, -1, 7);
+Console.WriteLine($"lo={lo}, hi={hi}");
+
+static int Add(int a, int b) => a + b;
+static string Describe(int x) => $"int: {x}";
+static string Describe(string s) => $"string: {s}";
+
+static (int lo, int hi) Bounds(params int[] values)
+{
+    int lo = values[0], hi = values[0];
+    foreach (int v in values)
+    {
+        if (v &lt; lo) lo = v;
+        if (v &gt; hi) hi = v;
+    }
+    return (lo, hi);
+}</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">7
+int: 42
+string: hello
+lo=-5, hi=12</code></pre>
+  </section>
+
+  <!-- 4.9 Exercise -->
+  <section>
+    <h2>4.9 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write a <code>Clamp(int value, int min, int max)</code> method that returns
+          <code>value</code> clamped to the range [min, max]. Write it as an expression-bodied
+          method.</li>
+        <li>Write overloads of <code>Clamp</code> for <code>double</code>.</li>
+        <li>Write a <code>Swap&lt;T&gt;(ref T a, ref T b)</code> method that swaps two values.
+          Test it with both <code>int</code> and <code>string</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 4.10 Common Mistakes -->
+  <section>
+    <h2>4.10 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Forgetting return in a non-void method</h3>
+      <t-b>
+        If a code path in a non-void method does not reach a <code>return</code> statement,
+        the compiler reports "not all code paths return a value". Every path through the
+        method must return a value of the declared type.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Expecting ref to work with value type copies</h3>
+      <pre><code class="language-csharp">static void Double(int x) { x *= 2; }  // modifies a copy, not the caller's variable
+int n = 5;
+Double(n);
+Console.WriteLine(n);  // still 5, not 10</code></pre>
+      <t-b>Add <code>ref</code> to both the method signature and the call site to modify the caller's variable.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Ambiguous overloads</h3>
+      <t-b>
+        If two overloads match equally well (e.g., one takes <code>int</code> and another
+        takes <code>long</code> and you pass a literal <code>0</code>), the compiler reports
+        an ambiguous call error. Make the call explicit with a cast: <code>Method((long)0)</code>.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- 4.11 Key Terms -->
+  <section>
+    <h2>4.11 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>method</td><td>A named block of code with a return type and parameters</td></tr>
+        <tr><td>void</td><td>Return type indicating the method returns no value</td></tr>
+        <tr><td>ref</td><td>Passes a variable by reference; caller and callee share the same location</td></tr>
+        <tr><td>out</td><td>Like ref but the parameter does not need to be initialized before calling</td></tr>
+        <tr><td>overloading</td><td>Multiple methods with the same name but different parameter lists</td></tr>
+        <tr><td>default parameter</td><td>A parameter with a fallback value used when the caller omits it</td></tr>
+        <tr><td>named argument</td><td>Specifying a parameter by name rather than position at the call site</td></tr>
+        <tr><td>tuple</td><td>A lightweight grouping of values with optional named fields</td></tr>
+        <tr><td>expression-bodied member</td><td>Method written as <code>=> expression</code> instead of a block</td></tr>
+        <tr><td>local function</td><td>A function defined inside another method; not visible outside it</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  C# / Learn &nbsp;&bull;&nbsp; Tutorial 4 &nbsp;&bull;&nbsp; Functions
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CSharpTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

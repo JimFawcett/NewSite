@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Threads - Python Threading and Concurrency</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Threads &mdash; Python Threading and Concurrency</h1>
+  <t-b>Tutorial S8 &nbsp;&bull;&nbsp; Python / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__StdLib_Threads.html">Rust</a>
+    <a href="CppTutorial__StdLib_Threads.html">C++</a>
+    <a href="#" class="disabled">C#</a>
+    <a href="PythonTutorial__StdLib_Threads.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- S8.0 What This Teaches -->
+  <section>
+    <h2>S8.0 What This Teaches</h2>
+    <t-b>This tutorial covers threading and concurrency in Python:</t-b>
+    <ul>
+      <li>Creating and joining threads with the <code>threading</code> module</li>
+      <li>Daemon threads and thread lifecycle</li>
+      <li>Race conditions and shared mutable state</li>
+      <li><code>Lock</code> and <code>RLock</code> for mutual exclusion</li>
+      <li>Thread-safe communication with <code>queue.Queue</code></li>
+      <li>The Global Interpreter Lock (GIL) and when threads help</li>
+      <li>When to prefer <code>multiprocessing</code> or <code>concurrent.futures</code></li>
+    </ul>
+  </section>
+
+  <!-- S8.1 Creating Threads -->
+  <section>
+    <h2>S8.1 Creating Threads</h2>
+    <t-b>
+      The <code>threading.Thread</code> class wraps a callable. Call <code>start()</code>
+      to launch the thread and <code>join()</code> to wait for it to finish:
+    </t-b>
+    <pre><code class="language-python"># Threads - creating and joining threads.
+import threading
+import time
+
+def worker(name: str, delay: float):
+    time.sleep(delay)
+    print(f"{name} done after {delay}s")
+
+t1 = threading.Thread(target=worker, args=("A", 0.5))
+t2 = threading.Thread(target=worker, args=("B", 0.2))
+
+t1.start()
+t2.start()
+
+t1.join()
+t2.join()
+print("all done")</code></pre>
+    <t-b>
+      <code>join()</code> blocks the calling thread until the target thread exits.
+      Without <code>join()</code>, the main thread may exit before the workers finish.
+    </t-b>
+  </section>
+
+  <!-- S8.2 Daemon Threads -->
+  <section>
+    <h2>S8.2 Daemon Threads</h2>
+    <t-b>
+      A daemon thread runs in the background and is killed automatically when the main
+      thread exits. Set <code>daemon=True</code> before starting:
+    </t-b>
+    <pre><code class="language-python">import threading, time
+
+def heartbeat():
+    while True:
+        print("ping")
+        time.sleep(1)
+
+monitor = threading.Thread(target=heartbeat, daemon=True)
+monitor.start()
+
+time.sleep(2.5)
+print("main exiting")   # daemon thread dies here automatically</code></pre>
+    <t-b>
+      Use daemon threads for background services (logging, monitoring) that should not
+      prevent the program from exiting. Never use them for work that must complete.
+    </t-b>
+  </section>
+
+  <!-- S8.3 Race Conditions -->
+  <section>
+    <h2>S8.3 Race Conditions</h2>
+    <t-b>
+      When two threads read and modify shared state without coordination, the result
+      is non-deterministic. This is a race condition:
+    </t-b>
+    <pre><code class="language-python">import threading
+
+counter = 0
+
+def increment(n: int):
+    global counter
+    for _ in range(n):
+        counter += 1   # read-modify-write is NOT atomic
+
+threads = [threading.Thread(target=increment, args=(100_000,)) for _ in range(5)]
+for t in threads: t.start()
+for t in threads: t.join()
+
+print(counter)   # expected 500_000, but often less due to lost updates</code></pre>
+    <t-b>
+      Even simple operations like <code>x += 1</code> involve multiple bytecode
+      instructions. The GIL reduces (but does not eliminate) the window for races
+      on CPython.
+    </t-b>
+  </section>
+
+  <!-- S8.4 Lock and RLock -->
+  <section>
+    <h2>S8.4 Lock and RLock</h2>
+    <t-b>
+      A <code>Lock</code> ensures only one thread executes a critical section at a time.
+      Always use it as a context manager to guarantee release even on exceptions:
+    </t-b>
+    <pre><code class="language-python">import threading
+
+counter = 0
+lock = threading.Lock()
+
+def safe_increment(n: int):
+    global counter
+    for _ in range(n):
+        with lock:         # acquire on enter, release on exit
+            counter += 1
+
+threads = [threading.Thread(target=safe_increment, args=(100_000,)) for _ in range(5)]
+for t in threads: t.start()
+for t in threads: t.join()
+
+print(counter)   # always 500_000</code></pre>
+    <t-b>
+      Use <code>RLock</code> (reentrant lock) when the same thread may acquire the lock
+      multiple times - for example, in recursive functions that need synchronization.
+    </t-b>
+  </section>
+
+  <!-- S8.5 Thread-Safe Queue -->
+  <section>
+    <h2>S8.5 Thread-Safe Queue</h2>
+    <t-b>
+      <code>queue.Queue</code> is the standard way to pass data between threads.
+      It handles all locking internally and supports producer-consumer patterns:
+    </t-b>
+    <pre><code class="language-python">import threading
+import queue
+
+def producer(q: queue.Queue, items: list):
+    for item in items:
+        q.put(item)
+    q.put(None)   # sentinel to signal completion
+
+def consumer(q: queue.Queue):
+    while True:
+        item = q.get()
+        if item is None:
+            break
+        print(f"processed {item}")
+        q.task_done()
+
+q = queue.Queue()
+p = threading.Thread(target=producer, args=(q, [1, 2, 3, 4, 5]))
+c = threading.Thread(target=consumer, args=(q,))
+
+p.start()
+c.start()
+p.join()
+c.join()</code></pre>
+  </section>
+
+  <!-- S8.6 The GIL -->
+  <section>
+    <h2>S8.6 The Global Interpreter Lock</h2>
+    <t-b>
+      CPython uses a Global Interpreter Lock (GIL) that prevents more than one thread
+      from executing Python bytecode at the same time. This means:
+    </t-b>
+    <ul>
+      <li>Threads do NOT run in parallel for CPU-bound work (no true parallelism)</li>
+      <li>Threads DO run concurrently for I/O-bound work - I/O releases the GIL</li>
+      <li>Use <code>multiprocessing</code> or <code>concurrent.futures.ProcessPoolExecutor</code> for CPU-bound parallelism</li>
+    </ul>
+    <pre><code class="language-python">from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+import time
+
+def cpu_work(n):
+    return sum(range(n))
+
+# ThreadPoolExecutor - good for I/O-bound tasks
+with ThreadPoolExecutor(max_workers=4) as ex:
+    results = list(ex.map(lambda url: fetch(url), urls))
+
+# ProcessPoolExecutor - good for CPU-bound tasks (bypasses GIL)
+with ProcessPoolExecutor(max_workers=4) as ex:
+    results = list(ex.map(cpu_work, [10_000_000] * 4))</code></pre>
+  </section>
+
+  <!-- S8.7 Example -->
+  <section>
+    <h2>S8.7 Example - All Together</h2>
+    <pre><code class="language-python"># Threads - worker pool with a Queue and Lock for safe result collection.
+
+import threading
+import queue
+
+results = []
+results_lock = threading.Lock()
+
+def worker(task_queue: queue.Queue):
+    while True:
+        item = task_queue.get()
+        if item is None:
+            task_queue.put(None)   # pass sentinel to next worker
+            break
+        result = item * item
+        with results_lock:
+            results.append(result)
+        task_queue.task_done()
+
+tasks = queue.Queue()
+for n in range(1, 11):
+    tasks.put(n)
+tasks.put(None)   # one sentinel triggers chain shutdown
+
+workers = [threading.Thread(target=worker, args=(tasks,)) for _ in range(3)]
+for w in workers: w.start()
+for w in workers: w.join()
+
+print(sorted(results))   # [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]</code></pre>
+  </section>
+
+  <!-- S8.8 Exercise -->
+  <section>
+    <h2>S8.8 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write a producer that puts 20 integers into a <code>queue.Queue</code> and
+          three consumers that each square the integers and print results. Use a sentinel
+          value to stop the consumers cleanly.</li>
+        <li>Demonstrate a race condition by incrementing a shared counter from 10 threads
+          without a lock. Then fix it with <code>threading.Lock</code> and verify the
+          correct result.</li>
+        <li>Use <code>concurrent.futures.ThreadPoolExecutor</code> to simulate downloading
+          5 URLs concurrently (use <code>time.sleep</code> for fake latency). Print each
+          result as it arrives using <code>as_completed()</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S8.9 Common Mistakes -->
+  <section>
+    <h2>S8.9 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Forgetting join() - silent data loss</h3>
+      <pre><code class="language-python">t = threading.Thread(target=worker)
+t.start()
+print("done")   # main exits before worker finishes!
+
+# Fix: always join threads you care about
+t.start()
+t.join()
+print("done")</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Using threads for CPU-bound work</h3>
+      <t-b>
+        The GIL limits threads to one active at a time for Python code. CPU-intensive
+        work (image processing, number crunching) gets no parallelism from threads.
+        Use <code>multiprocessing</code> or <code>ProcessPoolExecutor</code> instead.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Not using Queue for cross-thread data</h3>
+      <pre><code class="language-python"># Dangerous: sharing a list without locking
+shared = []
+def bad_append(x): shared.append(x)   # list.append is thread-safe by accident; dict access is not
+
+# Correct: use Queue
+q = queue.Queue()
+def safe_put(x): q.put(x)</code></pre>
+    </div>
+  </section>
+
+  <!-- S8.10 Key Terms -->
+  <section>
+    <h2>S8.10 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Thread</td><td>Lightweight unit of execution sharing memory with its creator</td></tr>
+        <tr><td>daemon thread</td><td>Thread that exits automatically when the main thread exits</td></tr>
+        <tr><td>race condition</td><td>Bug caused by uncoordinated access to shared mutable state</td></tr>
+        <tr><td>Lock</td><td>Mutual-exclusion primitive; only one thread holds it at a time</td></tr>
+        <tr><td>RLock</td><td>Reentrant lock; same thread can acquire multiple times without deadlock</td></tr>
+        <tr><td>queue.Queue</td><td>Thread-safe FIFO; the standard way to pass data between threads</td></tr>
+        <tr><td>GIL</td><td>Global Interpreter Lock; prevents parallel execution of Python bytecode in CPython</td></tr>
+        <tr><td>ProcessPoolExecutor</td><td>Runs callables in separate processes, bypassing the GIL</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  Python / Learn &nbsp;&bull;&nbsp; Tutorial S8 &nbsp;&bull;&nbsp; Threads
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/PythonTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Errors - Handling API Failures</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Errors &mdash; Handling API Failures</h1>
+  <t-b>Tutorial 9.0 &nbsp;&bull;&nbsp; AI / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>9.0 What This Teaches</h2>
+    <t-b>
+      API calls fail for many reasons: bad keys, network problems, rate limits, server
+      errors. An app that does not handle these crashes on the first failure. This tutorial
+      covers:
+    </t-b>
+    <ul>
+      <li>The <code>anthropic</code> exception hierarchy and what each class means</li>
+      <li>Catching specific error types with <code>try/except</code></li>
+      <li>Retry logic for rate-limit errors</li>
+      <li>Exponential backoff to avoid hammering the API</li>
+      <li>Detecting truncated responses via <code>stop_reason</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>9.1 The anthropic Exception Hierarchy</h2>
+    <t-b>
+      All errors raised by the SDK inherit from <code>anthropic.APIError</code>. The most
+      important subclasses are:
+    </t-b>
+    <table>
+      <thead>
+        <tr><th>Exception</th><th>Cause</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>AuthenticationError</code></td><td>API key is missing, wrong, or expired</td></tr>
+        <tr><td><code>PermissionDeniedError</code></td><td>Key exists but lacks access to the requested resource</td></tr>
+        <tr><td><code>RateLimitError</code></td><td>Too many requests per minute; slow down and retry</td></tr>
+        <tr><td><code>APIConnectionError</code></td><td>Network failure; the request never reached the server</td></tr>
+        <tr><td><code>APIStatusError</code></td><td>Server-side error (HTTP 5xx); may be transient</td></tr>
+        <tr><td><code>BadRequestError</code></td><td>Invalid parameters; fix the request before retrying</td></tr>
+      </tbody>
+    </table>
+    <t-b>
+      Catching the base <code>APIError</code> handles all of them at once, but you lose the
+      ability to react differently to each type.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>9.2 Catching Errors</h2>
+    <t-b>
+      Wrap every <code>messages.create</code> call in a <code>try/except</code> block.
+      Catch specific types first, then fall back to the base class:
+    </t-b>
+    <pre><code class="language-python"># catch_errors.py - basic error handling for a single API call.
+import anthropic
+
+client = anthropic.Anthropic()
+
+try:
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=256,
+        messages=[{"role": "user", "content": "Hello"}]
+    )
+    print(response.content[0].text)
+
+except anthropic.AuthenticationError:
+    print("ERROR: API key is invalid or missing. Check ANTHROPIC_API_KEY.")
+
+except anthropic.RateLimitError:
+    print("ERROR: Rate limit hit. Wait a moment and try again.")
+
+except anthropic.APIConnectionError:
+    print("ERROR: Network problem. Check your internet connection.")
+
+except anthropic.APIError as e:
+    # Catch-all for any other Anthropic API error
+    print(f"API error: {e}")</code></pre>
+  </section>
+
+  <section>
+    <h2>9.3 RateLimitError and Retry</h2>
+    <t-b>
+      Rate limits are counted per minute. If you exceed them, the API returns a
+      <code>RateLimitError</code>. The simplest fix is to sleep 60 seconds and retry.
+      Limit retries so the script does not loop forever:
+    </t-b>
+    <pre><code class="language-python"># retry_simple.py - retry up to 3 times on rate limit.
+import anthropic
+import time
+
+client = anthropic.Anthropic()
+
+def call_with_simple_retry(prompt, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            response = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=256,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.content[0].text
+
+        except anthropic.RateLimitError:
+            if attempt &lt; max_retries - 1:
+                print(f"Rate limit hit. Waiting 60 seconds (attempt {attempt + 1})...")
+                time.sleep(60)
+            else:
+                print("Rate limit hit. No more retries.")
+                raise
+
+result = call_with_simple_retry("What is a Python generator?")
+print(result)</code></pre>
+  </section>
+
+  <section>
+    <h2>9.4 Exponential Backoff</h2>
+    <t-b>
+      A fixed 60-second sleep is often too long for the first retry and may still be too
+      short after many failures. Exponential backoff doubles the wait time on each attempt:
+      1 second, then 2, then 4. This reduces load on the API while still recovering quickly
+      from brief rate-limit spikes:
+    </t-b>
+    <pre><code class="language-python"># retry_backoff.py - exponential backoff retry.
+import anthropic
+import time
+
+client = anthropic.Anthropic()
+
+def call_with_retry(prompt, max_retries=3):
+    """Call the API with exponential backoff on RateLimitError."""
+    for attempt in range(max_retries):
+        try:
+            response = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=256,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.content[0].text
+
+        except anthropic.RateLimitError:
+            wait = 2 ** attempt  # 1s, 2s, 4s
+            if attempt &lt; max_retries - 1:
+                print(f"Rate limit. Retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
+
+        except anthropic.AuthenticationError:
+            raise  # no point retrying a bad key
+
+result = call_with_retry("Explain Python list comprehensions.")
+print(result)</code></pre>
+    <t-b>
+      Note that <code>AuthenticationError</code> re-raises immediately. There is no value
+      in waiting when the key itself is the problem.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>9.5 AuthenticationError</h2>
+    <t-b>
+      An <code>AuthenticationError</code> means the key is absent, wrong, or expired.
+      Retrying will not help - fix the key first. Give the user a clear message that
+      tells them what to check:
+    </t-b>
+    <pre><code class="language-python"># auth_check.py - handle a bad key with a helpful message.
+import anthropic
+
+client = anthropic.Anthropic()
+
+try:
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=64,
+        messages=[{"role": "user", "content": "Hello"}]
+    )
+    print(response.content[0].text)
+
+except anthropic.AuthenticationError:
+    print("Authentication failed.")
+    print("Check that ANTHROPIC_API_KEY is set and contains a valid key.")
+    print("Get a key at https://console.anthropic.com")</code></pre>
+  </section>
+
+  <section>
+    <h2>9.6 Handling Incomplete Responses</h2>
+    <t-b>
+      If <code>max_tokens</code> is too small, the model stops mid-response. The
+      <code>stop_reason</code> field tells you why the model stopped:
+    </t-b>
+    <ul>
+      <li><code>"end_turn"</code> - the model finished naturally</li>
+      <li><code>"max_tokens"</code> - the output was cut off by the token limit</li>
+    </ul>
+    <pre><code class="language-python"># check_truncation.py - detect and report truncated output.
+import anthropic
+
+client = anthropic.Anthropic()
+
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=32,           # intentionally small to trigger truncation
+    messages=[{"role": "user", "content": "Write a long explanation of recursion."}]
+)
+
+text = response.content[0].text
+print(text)
+
+if response.stop_reason == "max_tokens":
+    print("\n[Response was truncated. Increase max_tokens to get the full answer.]")</code></pre>
+    <t-b>
+      Always check <code>stop_reason</code> when completeness matters, such as when
+      generating code or structured data.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>9.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Take the verify script from Tutorial 2 (or write a simple one-turn API call) and
+        wrap it in the <code>call_with_retry</code> function from section 9.4. Then
+        temporarily set <code>ANTHROPIC_API_KEY</code> to an invalid value (e.g.
+        <code>sk-bad-key</code>) and run the script. Confirm that it raises
+        <code>AuthenticationError</code> immediately without waiting. Restore the correct
+        key and confirm the call succeeds.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>9.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Not catching errors at all</h3>
+      <pre><code class="language-python"># Bad - any API failure crashes the app with an unhandled exception.
+response = client.messages.create(model="claude-sonnet-4-6", max_tokens=256,
+    messages=[{"role": "user", "content": "Hello"}])
+print(response.content[0].text)</code></pre>
+      <t-b>
+        An unhandled <code>APIError</code> prints a stack trace and exits. Wrap calls in
+        <code>try/except</code> so the app can report a clean error or retry.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Retrying AuthenticationError</h3>
+      <pre><code class="language-python"># Bad - retrying a bad key wastes time and always fails.
+for attempt in range(3):
+    try:
+        response = client.messages.create(...)
+        break
+    except anthropic.APIError:   # catches AuthenticationError too
+        time.sleep(2 ** attempt)</code></pre>
+      <t-b>
+        Catch <code>AuthenticationError</code> separately and re-raise it immediately.
+        No amount of waiting fixes a wrong key.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Using a fixed sleep time instead of backoff</h3>
+      <pre><code class="language-python"># Bad - fixed sleep may still hit the rate limit on the retry.
+except anthropic.RateLimitError:
+    time.sleep(5)   # always 5 seconds, regardless of how many retries
+
+# Good - double the wait on each attempt.
+except anthropic.RateLimitError:
+    time.sleep(2 ** attempt)</code></pre>
+      <t-b>
+        A fixed wait that is too short will fail again on the next retry. Exponential
+        backoff gives the API time to recover.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>9.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>APIError</td><td>Base class for all errors raised by the anthropic SDK</td></tr>
+        <tr><td>AuthenticationError</td><td>Raised when the API key is missing, wrong, or expired</td></tr>
+        <tr><td>RateLimitError</td><td>Raised when the request rate exceeds the per-minute limit</td></tr>
+        <tr><td>retry</td><td>Attempting the same API call again after a failure</td></tr>
+        <tr><td>exponential backoff</td><td>Doubling the wait time between each retry attempt</td></tr>
+        <tr><td>stop_reason</td><td>Field on the response indicating why generation stopped ("end_turn" or "max_tokens")</td></tr>
+        <tr><td>max_retries</td><td>The maximum number of retry attempts before giving up</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn &nbsp;&bull;&nbsp; Tutorial 9 &nbsp;&bull;&nbsp; Errors
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

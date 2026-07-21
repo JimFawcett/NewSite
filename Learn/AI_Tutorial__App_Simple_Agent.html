@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>App: Simple Agent - File-Reading Agent</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>App: Simple Agent &mdash; File-Reading Agent</h1>
+  <t-b>Tutorial A10.0 &nbsp;&bull;&nbsp; AI / Learn / Applications</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>A10.0 What This Teaches</h2>
+    <t-b>
+      This tutorial builds an agent loop: the model calls <code>list_files</code> and
+      <code>read_file</code> tools repeatedly until it can answer a question about the
+      project. It covers:
+    </t-b>
+    <ul>
+      <li>The agent loop pattern - call, tool, result, repeat</li>
+      <li>Handling multiple tool calls in a single response</li>
+      <li>Setting a <code>max_iterations</code> safety limit</li>
+      <li>Combining tools to answer multi-step questions</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>A10.1 What an Agent Is</h2>
+    <t-b>
+      An agent runs in a loop. Each iteration:
+    </t-b>
+    <ol>
+      <li>Call the model with the current message history and available tools</li>
+      <li>If <code>stop_reason == "end_turn"</code>, return the final answer and stop</li>
+      <li>If <code>stop_reason == "tool_use"</code>, find all tool calls in the response,
+          execute each one, collect the results</li>
+      <li>Append the assistant message and the tool results to the history</li>
+      <li>Go back to step 1</li>
+    </ol>
+    <t-b>
+      The model decides how many tool calls to make. A simple question might need one;
+      a complex question might need five. The loop runs until the model says it is done.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A10.2 The Tools</h2>
+    <t-b>
+      Two tools give the agent read-only access to the local file system.
+    </t-b>
+    <pre><code class="language-python"># agent_tools.py - file-system tools for the agent.
+import os
+
+def list_files(directory: str) -&gt; str:
+    # returns filenames as a comma-separated string
+    try:
+        names = os.listdir(directory)
+        return ", ".join(names) if names else "(empty directory)"
+    except FileNotFoundError:
+        return f"Error: directory not found: {directory}"
+
+def read_file(path: str) -&gt; str:
+    # returns first 500 chars to keep token usage manageable
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read(500)
+        return content if content else "(empty file)"
+    except FileNotFoundError:
+        return f"Error: file not found: {path}"
+
+TOOLS = [
+    {
+        "name": "list_files",
+        "description": "List the files in a directory. Returns filenames as a comma-separated string.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "directory": {"type": "string", "description": "Directory path to list"}
+            },
+            "required": ["directory"],
+        },
+    },
+    {
+        "name": "read_file",
+        "description": "Read the first 500 characters of a text file.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "File path to read"}
+            },
+            "required": ["path"],
+        },
+    },
+]
+
+FUNCTION_MAP = {"list_files": list_files, "read_file": read_file}</code></pre>
+  </section>
+
+  <section>
+    <h2>A10.3 The Agent Loop</h2>
+    <t-b>
+      The loop runs until the model reaches <code>end_turn</code> or the iteration
+      limit is hit. When the model calls multiple tools in one response, collect all
+      results before sending them back.
+    </t-b>
+    <pre><code class="language-python"># Agent loop skeleton.
+MAX_ITERATIONS = 10
+
+def run_agent(question: str) -&gt; str:
+    messages = [{"role": "user", "content": question}]
+
+    for iteration in range(MAX_ITERATIONS):
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1024,
+            tools=TOOLS,
+            messages=messages,
+        )
+
+        if response.stop_reason == "end_turn":
+            return response.content[0].text
+
+        if response.stop_reason != "tool_use":
+            return f"Unexpected stop_reason: {response.stop_reason}"
+
+        # collect all tool results from this turn
+        tool_results = []
+        for block in response.content:
+            if block.type == "tool_use":
+                result = FUNCTION_MAP[block.name](**block.input)
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": result,
+                })
+
+        messages.append({"role": "assistant", "content": response.content})
+        messages.append({"role": "user",      "content": tool_results})
+
+    return "Stopped: max_iterations reached without a final answer."</code></pre>
+  </section>
+
+  <section>
+    <h2>A10.4 Complete Implementation</h2>
+    <pre><code class="language-python"># simple_agent.py - file-reading agent using Claude.
+# Usage: python simple_agent.py
+
+import os
+import anthropic
+
+client = anthropic.Anthropic()
+MAX_ITERATIONS = 10
+
+def list_files(directory: str) -&gt; str:
+    try:
+        names = os.listdir(directory)
+        return ", ".join(names) if names else "(empty directory)"
+    except FileNotFoundError:
+        return f"Error: directory not found: {directory}"
+
+def read_file(path: str) -&gt; str:
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read(500)
+        return content if content else "(empty file)"
+    except FileNotFoundError:
+        return f"Error: file not found: {path}"
+
+TOOLS = [
+    {
+        "name": "list_files",
+        "description": "List the files in a directory. Returns filenames as a comma-separated string.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "directory": {"type": "string", "description": "Directory path"}
+            },
+            "required": ["directory"],
+        },
+    },
+    {
+        "name": "read_file",
+        "description": "Read the first 500 characters of a text file.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "File path"}
+            },
+            "required": ["path"],
+        },
+    },
+]
+
+FUNCTION_MAP = {"list_files": list_files, "read_file": read_file}
+
+def run_agent(question: str) -&gt; str:
+    messages = [{"role": "user", "content": question}]
+
+    for iteration in range(MAX_ITERATIONS):
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1024,
+            tools=TOOLS,
+            messages=messages,
+        )
+
+        if response.stop_reason == "end_turn":
+            return response.content[0].text
+
+        if response.stop_reason != "tool_use":
+            return f"Unexpected stop_reason: {response.stop_reason}"
+
+        tool_results = []
+        for block in response.content:
+            if block.type == "tool_use":
+                result = FUNCTION_MAP[block.name](**block.input)
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": result,
+                })
+
+        messages.append({"role": "assistant", "content": response.content})
+        messages.append({"role": "user",      "content": tool_results})
+
+    return "Stopped: max_iterations reached."
+
+if __name__ == "__main__":
+    question = "What Python files are in the current directory and what does the first one do?"
+    print(run_agent(question))</code></pre>
+  </section>
+
+  <section>
+    <h2>A10.5 Safety Limits</h2>
+    <t-b>
+      An agent without a limit can loop indefinitely. This happens when:
+    </t-b>
+    <ul>
+      <li>A tool always returns new data that triggers another tool call</li>
+      <li>A bug in a tool returns an error that the model keeps retrying</li>
+      <li>The question is unanswerable with the tools provided</li>
+    </ul>
+    <t-b>
+      Always set <code>max_iterations</code> before running an agent loop. Ten is
+      reasonable for simple file tasks. Complex agents may need more, but start low
+      and raise only when needed - each iteration costs tokens.
+    </t-b>
+    <pre><code class="language-python"># Safety guard at the top of the loop.
+for iteration in range(MAX_ITERATIONS):
+    ...
+
+return "Stopped: max_iterations reached without a final answer."</code></pre>
+  </section>
+
+  <section>
+    <h2>A10.6 Sample Session</h2>
+    <pre><code class="language-terminal">$ python simple_agent.py
+
+[Agent calls list_files(".")]
+  -&gt; app.py, requirements.txt, simple_agent.py
+
+[Agent calls read_file("app.py")]
+  -&gt; # app.py - Flask chat server backed by Claude. ...
+
+The current directory contains three Python-related files:
+- app.py: A Flask web server that provides a chat interface backed by Claude.
+  It defines two routes: GET / serves the chat page and POST /chat accepts
+  a message, calls Claude, and returns the reply as JSON.
+- requirements.txt: Lists the project dependencies (flask, anthropic).
+- simple_agent.py: The agent script itself.</code></pre>
+    <t-b>
+      The agent made two tool calls - one to list files and one to read the first file -
+      then composed an answer from the results.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A10.7 Extending the Agent</h2>
+    <t-b>
+      Add more tools to give the agent more capabilities:
+    </t-b>
+    <ul>
+      <li><code>write_file(path, content)</code> - lets the agent create or update files.
+          Add a confirmation prompt before executing: writing the wrong file can destroy
+          work.</li>
+      <li><code>run_python(code)</code> - lets the agent execute code snippets. Dangerous
+          without sandboxing; never run this on untrusted input.</li>
+      <li><code>search_file(path, pattern)</code> - returns lines matching a regex.
+          Useful for finding function definitions or TODO comments.</li>
+    </ul>
+    <t-b>
+      Tools with side effects (write, run, delete) need explicit safety checks.
+      Read-only tools (list, read, search) are safe to expose freely.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A10.8 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Add a <code>word_count(path)</code> tool that returns the number of words in a
+        file. Then ask the agent: "Which file in the current directory has the most words?"
+      </t-b>
+      <ol>
+        <li>Define <code>word_count(path)</code> using <code>open()</code> and
+            <code>len(content.split())</code>.</li>
+        <li>Add the tool schema and add it to <code>FUNCTION_MAP</code>.</li>
+        <li>Run the agent with the question above.</li>
+      </ol>
+      <t-b>
+        The agent should call <code>list_files(".")</code> to get the filenames, then
+        call <code>word_count</code> on each one, then report which file has the highest
+        count.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>A10.9 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>No max_iterations limit</h3>
+      <t-b>
+        Without a limit, a buggy tool or an unanswerable question can cause the agent to
+        loop for hundreds of iterations. Each iteration makes two API calls (or more with
+        multiple tools) and costs real money. Always set the limit before testing.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Returning only one tool_result when multiple tools were called</h3>
+      <t-b>
+        If the model calls two tools in one response, you must return a
+        <code>tool_result</code> for each one. The API validates that every
+        <code>tool_use_id</code> in the assistant message has a matching
+        <code>tool_result</code> in the next user message. Missing one causes a
+        validation error.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Giving the agent write or delete tools without safety checks</h3>
+      <t-b>
+        An agent with a <code>delete_file</code> tool and a misunderstood question can
+        delete files you did not intend to remove. For any tool with a destructive side
+        effect, print what the agent intends to do and require confirmation before
+        executing.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>A10.10 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>agent loop</td><td>A while/for loop that repeatedly calls the model, executes tools, and feeds results back until the model finishes</td></tr>
+        <tr><td>tool call</td><td>A request from the model to execute a named function with specific arguments</td></tr>
+        <tr><td>tool result</td><td>The return value of the executed function, sent back to the model as a <code>tool_result</code> content block</td></tr>
+        <tr><td>max_iterations</td><td>An upper bound on how many times the agent loop may run; prevents runaway loops</td></tr>
+        <tr><td>stop_reason</td><td>"end_turn" means the model is done; "tool_use" means it wants to call a function</td></tr>
+        <tr><td>end_turn</td><td>The <code>stop_reason</code> value that signals the model has finished and produced its final answer</td></tr>
+        <tr><td>multi-step reasoning</td><td>The model answering a question by chaining multiple tool calls, each using the result of the previous one</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn / Applications &nbsp;&bull;&nbsp; Tutorial A10 &nbsp;&bull;&nbsp; Simple Agent
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Classes - Python Classes and Objects</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Classes &mdash; Python Classes and Objects</h1>
+  <t-b>Tutorial 6.0 &nbsp;&bull;&nbsp; Python / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__Structs.html">Rust</a>
+    <a href="CppTutorial__Classes.html">C++</a>
+    <a href="CSharpTutorial__Classes.html">C#</a>
+    <a href="PythonTutorial__Classes.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- 6.0 What This Teaches -->
+  <section>
+    <h2>6.0 What This Teaches</h2>
+    <t-b>This tutorial covers how Python defines and uses classes:</t-b>
+    <ul>
+      <li><code>class</code> syntax and the <code>__init__</code> initializer</li>
+      <li>Instance attributes and the <code>self</code> parameter</li>
+      <li>Instance methods, class methods (<code>@classmethod</code>), and static methods</li>
+      <li>Class attributes vs instance attributes</li>
+      <li>Inheritance and <code>super()</code></li>
+      <li>Special methods: <code>__str__</code>, <code>__repr__</code>, <code>__eq__</code></li>
+    </ul>
+  </section>
+
+  <!-- 6.1 Class Syntax -->
+  <section>
+    <h2>6.1 Class Syntax</h2>
+    <t-b>
+      A class groups related data and behavior. The <code>class</code> keyword followed
+      by an indented body defines the class. Python classes don't need forward declarations
+      or header files:
+    </t-b>
+    <pre><code class="language-python">class Point:
+    def __init__(self, x: float, y: float):
+        self.x = x
+        self.y = y
+
+    def distance(self) -> float:
+        return (self.x ** 2 + self.y ** 2) ** 0.5
+
+p = Point(3, 4)
+print(p.distance())  # 5.0
+print(p.x, p.y)      # 3 4</code></pre>
+    <t-b>
+      Every instance method receives the instance as its first argument, named
+      <code>self</code> by convention. You write it in the definition but never pass
+      it explicitly at the call site.
+    </t-b>
+  </section>
+
+  <!-- 6.2 Instance Attributes -->
+  <section>
+    <h2>6.2 Instance Attributes and __init__</h2>
+    <t-b>
+      Instance attributes are created by assigning to <code>self.name</code> inside
+      any method, though <code>__init__</code> is the right place to create them all.
+      Each instance gets its own independent copy:
+    </t-b>
+    <pre><code class="language-python">class Person:
+    def __init__(self, name: str, age: int):
+        self.name = name
+        self.age = age
+
+    def greet(self) -> str:
+        return f"Hi, I'm {self.name}, age {self.age}."
+
+alice = Person("Alice", 30)
+bob = Person("Bob", 25)
+
+print(alice.greet())   # Hi, I'm Alice, age 30.
+alice.age = 31         # attributes are public by default
+print(alice.age)       # 31</code></pre>
+    <t-b>
+      Python doesn't have private attributes - convention uses a leading underscore
+      (<code>_name</code>) to signal "internal use only."
+    </t-b>
+  </section>
+
+  <!-- 6.3 Methods -->
+  <section>
+    <h2>6.3 Methods</h2>
+    <t-b>
+      Regular methods take <code>self</code>. Class methods receive the class as
+      <code>cls</code> and are used as alternative constructors. Static methods
+      receive neither and are just functions grouped in the class namespace:
+    </t-b>
+    <pre><code class="language-python">class Temperature:
+    def __init__(self, celsius: float):
+        self.celsius = celsius
+
+    def to_fahrenheit(self) -> float:
+        return self.celsius * 9 / 5 + 32
+
+    @classmethod
+    def from_fahrenheit(cls, f: float) -> "Temperature":
+        return cls((f - 32) * 5 / 9)
+
+    @staticmethod
+    def absolute_zero() -> float:
+        return -273.15
+
+t = Temperature(100)
+print(t.to_fahrenheit())                        # 212.0
+print(Temperature.from_fahrenheit(32).celsius)  # 0.0
+print(Temperature.absolute_zero())              # -273.15</code></pre>
+  </section>
+
+  <!-- 6.4 Class Attributes -->
+  <section>
+    <h2>6.4 Class Attributes</h2>
+    <t-b>
+      Class attributes are defined in the class body outside any method. All instances
+      share the same class attribute unless an instance shadows it with its own:
+    </t-b>
+    <pre><code class="language-python">class Counter:
+    count = 0   # class attribute
+
+    def __init__(self, name: str):
+        self.name = name
+        Counter.count += 1   # modify via class name, not self
+        self.id = Counter.count
+
+c1 = Counter("first")
+c2 = Counter("second")
+print(Counter.count)   # 2
+print(c1.id, c2.id)    # 1 2</code></pre>
+    <t-b>
+      Use class attributes for shared constants or counters. Never use a mutable
+      class attribute (list, dict) as a per-instance default - it will be shared
+      across all instances (see Common Mistakes).
+    </t-b>
+  </section>
+
+  <!-- 6.5 Inheritance -->
+  <section>
+    <h2>6.5 Inheritance</h2>
+    <t-b>
+      List the parent class in parentheses. Call <code>super().__init__()</code>
+      to initialize the base class. Overriding a method just means defining one
+      with the same name - no keyword required:
+    </t-b>
+    <pre><code class="language-python">class Animal:
+    def __init__(self, name: str):
+        self.name = name
+
+    def sound(self) -> str:
+        return "..."
+
+    def describe(self) -> str:
+        return f"{self.name} says {self.sound()}"
+
+class Dog(Animal):
+    def sound(self) -> str:
+        return "Woof"
+
+class Cat(Animal):
+    def sound(self) -> str:
+        return "Meow"
+
+animals = [Dog("Rex"), Cat("Whiskers")]
+for a in animals:
+    print(a.describe())</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">Rex says Woof
+Whiskers says Meow</code></pre>
+  </section>
+
+  <!-- 6.6 Special Methods -->
+  <section>
+    <h2>6.6 Special Methods</h2>
+    <t-b>
+      <em>Dunder</em> (double-underscore) methods let your class integrate with
+      Python's built-in operations. <code>__str__</code> is called by <code>str()</code>
+      and <code>print()</code>; <code>__repr__</code> is called by <code>repr()</code>
+      and the REPL:
+    </t-b>
+    <pre><code class="language-python">class Vector:
+    def __init__(self, x: float, y: float):
+        self.x = x
+        self.y = y
+
+    def __repr__(self) -> str:
+        return f"Vector({self.x}, {self.y})"
+
+    def __str__(self) -> str:
+        return f"({self.x}, {self.y})"
+
+    def __add__(self, other: "Vector") -> "Vector":
+        return Vector(self.x + other.x, self.y + other.y)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Vector):
+            return NotImplemented
+        return self.x == other.x and self.y == other.y
+
+v1, v2 = Vector(1, 2), Vector(3, 4)
+print(v1 + v2)          # (4, 6) - calls __str__
+print(repr(v1))         # Vector(1, 2)
+print(v1 == Vector(1, 2))  # True</code></pre>
+  </section>
+
+  <!-- 6.7 Example -->
+  <section>
+    <h2>6.7 Example - All Together</h2>
+    <pre><code class="language-python"># Classes - shapes hierarchy with area and describe methods.
+
+import math
+
+class Shape:
+    def area(self) -> float:
+        raise NotImplementedError
+
+    def describe(self) -> str:
+        return f"{type(self).__name__} area={self.area():.2f}"
+
+class Circle(Shape):
+    def __init__(self, radius: float):
+        self.radius = radius
+
+    def area(self) -> float:
+        return math.pi * self.radius ** 2
+
+class Rectangle(Shape):
+    def __init__(self, width: float, height: float):
+        self.width = width
+        self.height = height
+
+    def area(self) -> float:
+        return self.width * self.height
+
+shapes: list[Shape] = [Circle(3), Rectangle(4, 5), Circle(1)]
+for s in shapes:
+    print(s.describe())</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">Circle area=28.27
+Rectangle area=20.00
+Circle area=3.14</code></pre>
+  </section>
+
+  <!-- 6.8 Exercise -->
+  <section>
+    <h2>6.8 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Define a <code>Student</code> class with <code>name</code> and <code>grade</code>
+          (int) attributes. Add a <code>letter_grade</code> property that returns A/B/C/D/F.</li>
+        <li>Add a class attribute <code>roster</code> (list) and a class method
+          <code>register(cls, student)</code> that appends to it.</li>
+        <li>Implement <code>__str__</code> to return a readable summary.
+          Print all students in the roster.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6.9 Common Mistakes -->
+  <section>
+    <h2>6.9 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Forgetting self in method definition</h3>
+      <pre><code class="language-python">class Foo:
+    def greet():   # missing self
+        print("hi")
+
+Foo().greet()   # TypeError: greet() takes 0 positional arguments but 1 was given</code></pre>
+      <t-b>Every instance method must have <code>self</code> as its first parameter.</t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Mutable class attribute shared across all instances</h3>
+      <pre><code class="language-python">class Team:
+    members = []   # shared by ALL Team instances
+
+t1 = Team()
+t2 = Team()
+t1.members.append("Alice")
+print(t2.members)   # ['Alice'] - unexpected!</code></pre>
+      <t-b>
+        Define mutable attributes in <code>__init__</code>:
+        <code>self.members = []</code>
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>type() instead of isinstance() for type checks</h3>
+      <pre><code class="language-python">if type(x) == Animal:      # True only for Animal exactly
+    ...
+if isinstance(x, Animal):  # True for Animal and all subclasses - usually correct
+    ...</code></pre>
+    </div>
+  </section>
+
+  <!-- 6.10 Key Terms -->
+  <section>
+    <h2>6.10 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>class</td><td>Blueprint for creating objects that group data and behavior</td></tr>
+        <tr><td>__init__</td><td>Initializer called when an instance is created; sets up instance attributes</td></tr>
+        <tr><td>self</td><td>Conventional name for the instance passed as first argument to methods</td></tr>
+        <tr><td>instance attribute</td><td>Data stored on each individual object via self.name</td></tr>
+        <tr><td>class attribute</td><td>Data shared by all instances; defined at class body level</td></tr>
+        <tr><td>@classmethod</td><td>Method receiving the class (cls) instead of an instance; used for factory constructors</td></tr>
+        <tr><td>@staticmethod</td><td>Method receiving neither self nor cls; a plain function in class scope</td></tr>
+        <tr><td>dunder method</td><td>Special method named with double underscores; hooks into Python built-ins</td></tr>
+        <tr><td>inheritance</td><td>Creating a class that extends another: class Dog(Animal)</td></tr>
+        <tr><td>super()</td><td>Proxy to the parent class; used to call parent __init__ and overridden methods</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  Python / Learn &nbsp;&bull;&nbsp; Tutorial 6 &nbsp;&bull;&nbsp; Classes
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/PythonTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

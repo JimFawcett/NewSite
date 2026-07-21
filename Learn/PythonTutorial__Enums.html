@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Enums - Python Enumeration Types</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Enums &mdash; Python Enumeration Types</h1>
+  <t-b>Tutorial 8.0 &nbsp;&bull;&nbsp; Python / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__Enums.html">Rust</a>
+    <a href="CppTutorial__Enums.html">C++</a>
+    <a href="CSharpTutorial__Enums.html">C#</a>
+    <a href="PythonTutorial__Enums.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- 8.0 What This Teaches -->
+  <section>
+    <h2>8.0 What This Teaches</h2>
+    <t-b>This tutorial covers Python's <code>enum</code> module:</t-b>
+    <ul>
+      <li>Basic <code>Enum</code> class syntax</li>
+      <li><code>IntEnum</code> and <code>StrEnum</code> for interoperability</li>
+      <li><code>Flag</code> for bit-field enums</li>
+      <li><code>auto()</code> for automatic value assignment</li>
+      <li>Enum methods and iteration</li>
+      <li>Using enums with <code>match</code> statements</li>
+    </ul>
+    <t-b>
+      Python enums are full objects with names, values, and methods. Rust enums
+      can carry associated data per variant. C# enums are typed integer constants.
+    </t-b>
+  </section>
+
+  <!-- 8.1 Basic Enum -->
+  <section>
+    <h2>8.1 Basic Enum</h2>
+    <pre><code class="language-python">from enum import Enum
+
+class Direction(Enum):
+    NORTH = 1
+    SOUTH = 2
+    EAST  = 3
+    WEST  = 4
+
+d = Direction.NORTH
+print(d)         # Direction.NORTH
+print(d.name)    # NORTH
+print(d.value)   # 1
+print(d is Direction.NORTH)   # True</code></pre>
+    <t-b>
+      Enum members are instances of the class. Access them by name through the class.
+      Two references to the same member are always identical (<code>is</code>).
+    </t-b>
+  </section>
+
+  <!-- 8.2 IntEnum and StrEnum -->
+  <section>
+    <h2>8.2 IntEnum and StrEnum</h2>
+    <t-b>
+      <code>IntEnum</code> members compare equal to integers of the same value.
+      <code>StrEnum</code> members compare equal to their string values. Use these
+      when you need to interoperate with APIs expecting plain ints or strings:
+    </t-b>
+    <pre><code class="language-python">from enum import IntEnum, StrEnum
+
+class HttpStatus(IntEnum):
+    OK          = 200
+    CREATED     = 201
+    NOT_FOUND   = 404
+    SERVER_ERROR = 500
+
+print(HttpStatus.OK == 200)      # True (IntEnum)
+print(HttpStatus.NOT_FOUND > 400)  # True
+
+class Color(StrEnum):
+    RED   = "red"
+    GREEN = "green"
+    BLUE  = "blue"
+
+print(Color.RED == "red")   # True
+print(f"color is {Color.BLUE}")  # color is blue</code></pre>
+  </section>
+
+  <!-- 8.3 auto() -->
+  <section>
+    <h2>8.3 auto() for Automatic Values</h2>
+    <t-b>
+      <code>auto()</code> assigns values automatically. For plain <code>Enum</code>
+      it assigns 1, 2, 3 … For <code>StrEnum</code> it uses the lowercase member name:
+    </t-b>
+    <pre><code class="language-python">from enum import Enum, auto
+
+class Season(Enum):
+    SPRING = auto()
+    SUMMER = auto()
+    AUTUMN = auto()
+    WINTER = auto()
+
+for s in Season:
+    print(s.name, s.value)
+# SPRING 1, SUMMER 2, AUTUMN 3, WINTER 4</code></pre>
+  </section>
+
+  <!-- 8.4 Flag Enums -->
+  <section>
+    <h2>8.4 Flag Enums</h2>
+    <t-b>
+      <code>Flag</code> members represent bits. Combine them with <code>|</code>
+      and test membership with <code>in</code>:
+    </t-b>
+    <pre><code class="language-python">from enum import Flag, auto
+
+class Permission(Flag):
+    READ    = auto()   # 1
+    WRITE   = auto()   # 2
+    EXECUTE = auto()   # 4
+    ALL     = READ | WRITE | EXECUTE
+
+p = Permission.READ | Permission.WRITE
+print(p)                         # Permission.READ|WRITE
+print(Permission.READ in p)      # True
+print(Permission.EXECUTE in p)   # False
+
+p |= Permission.EXECUTE
+print(p)                         # Permission.READ|WRITE|EXECUTE</code></pre>
+  </section>
+
+  <!-- 8.5 Iteration and Lookup -->
+  <section>
+    <h2>8.5 Iteration and Lookup</h2>
+    <pre><code class="language-python">from enum import Enum
+
+class Planet(Enum):
+    MERCURY = 3.3e23
+    VENUS   = 4.87e24
+    EARTH   = 5.97e24
+    MARS    = 6.39e23
+
+# Iterate all members
+for p in Planet:
+    print(f"{p.name}: mass={p.value:.2e} kg")
+
+# Look up by value
+print(Planet(5.97e24))   # Planet.EARTH
+
+# Look up by name
+print(Planet["MARS"])    # Planet.MARS</code></pre>
+  </section>
+
+  <!-- 8.6 Example -->
+  <section>
+    <h2>8.6 Example - All Together</h2>
+    <pre><code class="language-python"># Enums - traffic light state machine with match statement.
+
+from enum import Enum, auto
+
+class TrafficLight(Enum):
+    RED    = auto()
+    YELLOW = auto()
+    GREEN  = auto()
+
+def describe(light: TrafficLight) -> str:
+    match light:
+        case TrafficLight.RED:    return "STOP"
+        case TrafficLight.YELLOW: return "CAUTION"
+        case TrafficLight.GREEN:  return "GO"
+
+def next_light(light: TrafficLight) -> TrafficLight:
+    match light:
+        case TrafficLight.RED:    return TrafficLight.GREEN
+        case TrafficLight.GREEN:  return TrafficLight.YELLOW
+        case TrafficLight.YELLOW: return TrafficLight.RED
+
+light = TrafficLight.RED
+for _ in range(6):
+    print(describe(light))
+    light = next_light(light)</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">STOP
+GO
+CAUTION
+STOP
+GO
+CAUTION</code></pre>
+  </section>
+
+  <!-- 8.7 Exercise -->
+  <section>
+    <h2>8.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Define a <code>Season</code> enum with <code>auto()</code> values.
+          Use a <code>match</code> statement to map each season to a weather description.</li>
+        <li>Define a <code>Permission</code> Flag enum with READ, WRITE, and EXECUTE.
+          Create several permission combinations and test whether each includes READ.</li>
+        <li>Iterate all members of a <code>Planet</code> IntEnum and print each
+          planet's name and integer value.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 8.8 Common Mistakes -->
+  <section>
+    <h2>8.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Comparing enum members with ==</h3>
+      <pre><code class="language-python">from enum import Enum
+
+class Color(Enum):
+    RED = 1
+
+print(Color.RED == 1)   # False for plain Enum (use IntEnum if you need this)
+print(Color.RED is Color.RED)  # True - use identity for same-member tests</code></pre>
+      <t-b>
+        Plain <code>Enum</code> members are not equal to their values. Use <code>IntEnum</code>
+        or <code>StrEnum</code> when comparison with raw values is needed.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Using plain integers for bit flags instead of Flag</h3>
+      <t-b>
+        Combining plain integer constants loses the type name in printed output and
+        makes code less readable. Use <code>Flag</code> for bit-field values.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Reusing an enum value by accident</h3>
+      <pre><code class="language-python">class Status(Enum):
+    PENDING  = 1
+    ACTIVE   = 1   # not a new member - it's an alias for PENDING!
+
+print(list(Status))  # [&lt;Status.PENDING: 1&gt;] - ACTIVE is not listed</code></pre>
+      <t-b>
+        Duplicate values create aliases, not new members. Use <code>auto()</code>
+        or <code>@unique</code> decorator to prevent accidental aliases.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- 8.9 Key Terms -->
+  <section>
+    <h2>8.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Enum</td><td>Base class for enumerations; members are instances with .name and .value</td></tr>
+        <tr><td>IntEnum</td><td>Enum subtype whose members compare equal to integers</td></tr>
+        <tr><td>StrEnum</td><td>Enum subtype whose members compare equal to their string values</td></tr>
+        <tr><td>Flag</td><td>Enum subtype supporting bitwise combination with | and in</td></tr>
+        <tr><td>auto()</td><td>Assigns the next sequential value automatically</td></tr>
+        <tr><td>.name</td><td>String name of an enum member</td></tr>
+        <tr><td>.value</td><td>The value assigned to an enum member</td></tr>
+        <tr><td>alias</td><td>Two enum members with the same value; only the first is listed</td></tr>
+        <tr><td>@unique</td><td>Decorator that raises ValueError if any duplicate values exist</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  Python / Learn &nbsp;&bull;&nbsp; Tutorial 8 &nbsp;&bull;&nbsp; Enums
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/PythonTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

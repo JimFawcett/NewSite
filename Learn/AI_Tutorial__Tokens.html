@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tokens - Context Windows and Cost</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Tokens &mdash; Context Windows and Cost</h1>
+  <t-b>Tutorial 4.0 &nbsp;&bull;&nbsp; AI / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>4.0 What This Teaches</h2>
+    <t-b>
+      This tutorial explains how LLMs measure and meter text. It covers:
+    </t-b>
+    <ul>
+      <li>What a token is and how words map to tokens</li>
+      <li>Why tokens matter for billing and output limits</li>
+      <li>The context window and how big it is for current Claude models</li>
+      <li>Reading <code>response.usage</code> to count tokens after a call</li>
+      <li>Estimating token count before making a call</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>4.1 What a Token Is</h2>
+    <t-b>
+      LLMs do not work with individual characters or whole words. They work with
+      <em>tokens</em> - fragments produced by a tokenizer that was trained alongside
+      the model. A token averages roughly 0.75 words in English prose, but the
+      exact mapping depends on the word and the model.
+    </t-b>
+    <t-b>Some approximate examples:</t-b>
+    <table>
+      <thead>
+        <tr><th>Text</th><th>Approximate tokens</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>"Hello"</code></td><td>1</td></tr>
+        <tr><td><code>"Hello world"</code></td><td>2</td></tr>
+        <tr><td><code>"anthropic"</code></td><td>1</td></tr>
+        <tr><td><code>"Hello, how are you?"</code></td><td>5</td></tr>
+        <tr><td><code>"def add(a, b):"</code></td><td>7 (code tokens tend to be shorter)</td></tr>
+      </tbody>
+    </table>
+    <t-b>
+      Tokenization is not an exact science from the user's perspective. Different
+      models use different tokenizers, and punctuation, whitespace, and rare words
+      all affect the count. The numbers above are illustrative, not guaranteed.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>4.2 Why Tokens Matter</h2>
+    <t-b>Tokens affect your work in three concrete ways:</t-b>
+    <ul>
+      <li>
+        <strong>Billing.</strong> Anthropic charges per input token and per output token.
+        Sending a 10,000-token prompt costs more than a 100-token prompt.
+      </li>
+      <li>
+        <strong>Context window.</strong> Every model has a hard limit on the total number
+        of tokens it can process in one call (input + output combined). Exceed that limit
+        and the API returns an error.
+      </li>
+      <li>
+        <strong><code>max_tokens</code> cap.</strong> The <code>max_tokens</code> parameter
+        you pass limits how many tokens the model may generate in its reply. If the model
+        reaches that limit before finishing, it stops and sets <code>stop_reason</code>
+        to <code>"max_tokens"</code>.
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>4.3 The Context Window</h2>
+    <t-b>
+      The context window is the total token budget for a single API call: every token
+      in your system prompt, every message in the conversation history, the current user
+      message, and the model's reply all count against it.
+    </t-b>
+    <table>
+      <thead>
+        <tr><th>Model</th><th>Max input tokens</th><th>Default max output</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>claude-haiku-4-5-20251001</td><td>200,000</td><td>8,192</td></tr>
+        <tr><td>claude-sonnet-4-6</td><td>200,000</td><td>8,192</td></tr>
+        <tr><td>claude-opus-4-7</td><td>200,000</td><td>8,192</td></tr>
+      </tbody>
+    </table>
+    <t-b>
+      200K tokens is roughly 150,000 words - enough for an entire novel. For most
+      coding tasks you will never approach this limit. However, long conversation
+      histories grow token counts fast; see section 4.6.
+    </t-b>
+    <t-b>
+      You can raise <code>max_tokens</code> above 8,192 for models that support
+      extended output, but the default is sufficient for nearly all code generation
+      tasks. Check the Anthropic documentation for the per-model ceiling.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>4.4 The usage Field</h2>
+    <t-b>
+      Every response object includes a <code>usage</code> field with the actual token
+      counts for that call. Reading it is the most reliable way to track cost.
+    </t-b>
+    <pre><code class="language-python"># token_usage.py - print token counts after every API call.
+import anthropic
+
+client = anthropic.Anthropic()
+
+def ask(prompt: str) -&gt; str:
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=256,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    print(f"  input tokens : {response.usage.input_tokens}")
+    print(f"  output tokens: {response.usage.output_tokens}")
+    print(f"  stop reason  : {response.stop_reason}")
+    return response.content[0].text
+
+result = ask("Write a Python function that reverses a string.")
+print(result)</code></pre>
+    <t-b>
+      <code>response.usage.input_tokens</code> counts every token the model read,
+      including your prompt. <code>response.usage.output_tokens</code> counts every
+      token the model generated.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>4.5 Estimating Token Count Before a Call</h2>
+    <t-b>
+      Before sending a large request you may want to estimate whether it fits in the
+      context window or how much it will cost. A rough rule: divide the character count
+      by 4.
+    </t-b>
+    <pre><code class="language-python"># estimate_tokens.py - rough pre-call token estimate.
+import anthropic
+
+def estimate_tokens(text: str) -&gt; int:
+    # Rough rule: ~4 characters per token for English text.
+    return len(text) // 4
+
+system_prompt = "You are a helpful Python tutor."
+user_message  = "Explain how Python's list comprehension works with a detailed example."
+
+total_text    = system_prompt + user_message
+estimate      = estimate_tokens(total_text)
+print(f"Estimated input tokens: {estimate}")
+
+client   = anthropic.Anthropic()
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=256,
+    system=system_prompt,
+    messages=[{"role": "user", "content": user_message}]
+)
+print(f"Actual input tokens   : {response.usage.input_tokens}")</code></pre>
+    <t-b>
+      The estimate is intentionally approximate. Code, JSON, and non-English text
+      tokenize differently from English prose. Use it for rough budget planning, not
+      for precise billing predictions.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>4.6 What Counts as Input Tokens</h2>
+    <t-b>
+      Every token the model reads on a call counts as input. In a multi-turn
+      conversation that means:
+    </t-b>
+    <ul>
+      <li>The <code>system</code> prompt (if any)</li>
+      <li>Every prior user message in the <code>messages</code> list</li>
+      <li>Every prior assistant message in the <code>messages</code> list</li>
+      <li>The new user message you are sending now</li>
+    </ul>
+    <pre><code class="language-python"># conversation_cost.py - show how history grows input tokens.
+import anthropic
+
+client   = anthropic.Anthropic()
+messages = []
+
+def turn(user_text: str) -&gt; str:
+    messages.append({"role": "user", "content": user_text})
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=128,
+        messages=messages
+    )
+    reply = response.content[0].text
+    messages.append({"role": "assistant", "content": reply})
+    print(f"  input tokens this turn: {response.usage.input_tokens}")
+    return reply
+
+turn("What is a Python list?")
+turn("How do I append to one?")
+turn("What about removing duplicates?")</code></pre>
+    <t-b>
+      Watch the input token count grow with each turn even though each new user
+      message is short. The entire history is re-sent on every call.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>4.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Write a script that sends the same prompt - "Write a Python function that
+        computes the Fibonacci sequence" - three times, each time with a different
+        <code>max_tokens</code> value: 32, 128, and 512. After each call, print the
+        <code>stop_reason</code>. Observe when the stop reason is
+        <code>"max_tokens"</code> versus <code>"end_turn"</code>. Note which
+        <code>max_tokens</code> value is just barely enough to complete the function.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>4.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Setting max_tokens too low for code generation</h3>
+      <t-b>
+        Code is verbose. A function with a docstring, type hints, and a few lines of
+        logic can easily require 150-300 tokens. Setting <code>max_tokens=64</code>
+        for a code request almost always produces truncated output. Start with at
+        least 512 for code tasks and adjust downward only after measuring actual usage.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Forgetting that the full conversation history counts as input tokens</h3>
+      <t-b>
+        Each turn in a multi-turn conversation re-sends all prior messages. A
+        10-turn conversation where each turn averages 200 tokens accumulates roughly
+        2,000 input tokens by the last turn - even if you only typed a short question.
+        Long histories add up and raise both latency and cost.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Confusing max_tokens with the context window limit</h3>
+      <t-b>
+        <code>max_tokens</code> caps the model's output. The context window caps the
+        total of input plus output. You can hit the context window limit even with a
+        small <code>max_tokens</code> if your input is very large. The two limits are
+        independent constraints.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>4.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>token</td><td>The basic unit an LLM reads and generates; roughly 0.75 words on average</td></tr>
+        <tr><td>context window</td><td>The total token budget (input + output) for a single API call</td></tr>
+        <tr><td>max_tokens</td><td>Parameter that caps how many tokens the model may generate in its reply</td></tr>
+        <tr><td>input_tokens</td><td>Token count of everything the model read: system prompt + all messages</td></tr>
+        <tr><td>output_tokens</td><td>Token count of the text the model generated</td></tr>
+        <tr><td>stop_reason</td><td>"end_turn" means the model finished; "max_tokens" means it hit the cap</td></tr>
+        <tr><td>cost per token</td><td>The per-token price charged for input and output; check Anthropic pricing page for current rates</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn &nbsp;&bull;&nbsp; Tutorial 4 &nbsp;&bull;&nbsp; Tokens
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

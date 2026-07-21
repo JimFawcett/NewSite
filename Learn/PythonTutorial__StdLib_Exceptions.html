@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exceptions - Python Exception Handling</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Exceptions &mdash; Python Exception Handling</h1>
+  <t-b>Tutorial S4 &nbsp;&bull;&nbsp; Python / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__StdLib_Result.html">Rust</a>
+    <a href="CppTutorial__StdLib_Exceptions.html">C++</a>
+    <a href="CSharpTutorial__StdLib_Exceptions.html">C#</a>
+    <a href="PythonTutorial__StdLib_Exceptions.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- S4.0 What This Teaches -->
+  <section>
+    <h2>S4.0 What This Teaches</h2>
+    <t-b>This tutorial covers Python exception handling:</t-b>
+    <ul>
+      <li><code>try</code> / <code>except</code> / <code>else</code> / <code>finally</code></li>
+      <li>Built-in exception types and the exception hierarchy</li>
+      <li>Raising exceptions with <code>raise</code></li>
+      <li>Custom exception classes</li>
+      <li>Exception chaining with <code>raise ... from</code></li>
+      <li>Context managers and <code>with</code> for cleanup</li>
+    </ul>
+    <t-b>
+      Rust uses <code>Result&lt;T, E&gt;</code> and <code>?</code> for recoverable errors
+      instead of exceptions. Python's philosophy ("Easier to Ask Forgiveness than
+      Permission", or EAFP) embraces try/except more readily than C#.
+    </t-b>
+  </section>
+
+  <!-- S4.1 try/except/finally -->
+  <section>
+    <h2>S4.1 try / except / else / finally</h2>
+    <pre><code class="language-python">try:
+    x = int("abc")      # raises ValueError
+    y = 10 // 0         # raises ZeroDivisionError
+except ValueError as e:
+    print(f"Value error: {e}")
+except ZeroDivisionError:
+    print("Cannot divide by zero")
+except Exception as e:          # catch-all for unexpected exceptions
+    print(f"Unexpected: {type(e).__name__}")
+else:
+    print("no exception occurred")   # only runs if no exception was raised
+finally:
+    print("always runs")</code></pre>
+    <t-b>
+      The <code>else</code> clause runs when the <code>try</code> block completed
+      without raising - useful to separate success logic from error handling.
+    </t-b>
+  </section>
+
+  <!-- S4.2 Exception Hierarchy -->
+  <section>
+    <h2>S4.2 Built-in Exception Types</h2>
+    <table>
+      <thead>
+        <tr><th>Exception</th><th>Common cause</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>ValueError</code></td><td>Argument has right type but bad value</td></tr>
+        <tr><td><code>TypeError</code></td><td>Wrong type passed to an operation</td></tr>
+        <tr><td><code>KeyError</code></td><td>Dict key not found</td></tr>
+        <tr><td><code>IndexError</code></td><td>List or string index out of range</td></tr>
+        <tr><td><code>AttributeError</code></td><td>Object doesn't have the requested attribute</td></tr>
+        <tr><td><code>FileNotFoundError</code></td><td>File or directory doesn't exist</td></tr>
+        <tr><td><code>ZeroDivisionError</code></td><td>Division or modulo by zero</td></tr>
+        <tr><td><code>StopIteration</code></td><td>Iterator has no more items</td></tr>
+        <tr><td><code>OSError</code></td><td>OS-level error (file, network, permissions)</td></tr>
+        <tr><td><code>RuntimeError</code></td><td>General-purpose error when no better type fits</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- S4.3 raise -->
+  <section>
+    <h2>S4.3 Raising Exceptions</h2>
+    <pre><code class="language-python">def square_root(x: float) -> float:
+    if x &lt; 0:
+        raise ValueError(f"square_root requires x >= 0, got {x}")
+    return x ** 0.5
+
+# Re-raise the current exception
+try:
+    do_work()
+except SomeError:
+    log("error occurred")
+    raise   # re-raises without losing the original traceback
+
+# Exception chaining
+try:
+    data = json.loads(raw)
+except json.JSONDecodeError as e:
+    raise ValueError("bad config file") from e</code></pre>
+  </section>
+
+  <!-- S4.4 Custom Exceptions -->
+  <section>
+    <h2>S4.4 Custom Exception Classes</h2>
+    <pre><code class="language-python">class InsufficientFundsError(Exception):
+    def __init__(self, amount: float, balance: float):
+        self.amount = amount
+        self.balance = balance
+        super().__init__(
+            f"Cannot withdraw {amount:.2f}; balance is {balance:.2f}"
+        )
+
+# Usage
+try:
+    raise InsufficientFundsError(100.0, 50.0)
+except InsufficientFundsError as e:
+    print(e)                          # Cannot withdraw 100.00; balance is 50.00
+    print(f"Short by {e.amount - e.balance:.2f}")</code></pre>
+    <t-b>
+      Derive custom exceptions from <code>Exception</code> (not <code>BaseException</code>).
+      Give them a descriptive name ending in <code>Error</code>.
+    </t-b>
+  </section>
+
+  <!-- S4.5 Context Managers -->
+  <section>
+    <h2>S4.5 Context Managers and with</h2>
+    <t-b>
+      The <code>with</code> statement calls <code>__exit__</code> on the context manager
+      when the block ends - even if an exception is raised. This guarantees cleanup:
+    </t-b>
+    <pre><code class="language-python"># File opened and closed even if an exception occurs
+with open("data.txt") as f:
+    for line in f:
+        print(line.strip())
+
+# Multiple context managers on one line
+with open("input.txt") as src, open("output.txt", "w") as dst:
+    dst.write(src.read().upper())
+
+# contextlib.contextmanager for custom context managers
+from contextlib import contextmanager
+
+@contextmanager
+def timer():
+    import time
+    start = time.monotonic()
+    yield
+    print(f"elapsed: {time.monotonic() - start:.3f}s")
+
+with timer():
+    sum(range(10_000_000))</code></pre>
+  </section>
+
+  <!-- S4.6 Example -->
+  <section>
+    <h2>S4.6 Example - All Together</h2>
+    <pre><code class="language-python"># Exceptions - safe integer parsing and custom validation error.
+
+class ValidationError(ValueError):
+    def __init__(self, field: str, message: str):
+        self.field = field
+        super().__init__(f"{field}: {message}")
+
+def parse_age(text: str) -> int:
+    try:
+        age = int(text)
+    except ValueError:
+        raise ValidationError("age", f"'{text}' is not an integer") from None
+    if not 0 &lt;= age &lt;= 150:
+        raise ValidationError("age", f"{age} is outside valid range 0-150")
+    return age
+
+for value in ["25", "abc", "200"]:
+    try:
+        print(f"age: {parse_age(value)}")
+    except ValidationError as e:
+        print(f"error [{e.field}]: {e}")</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">age: 25
+error [age]: age: 'abc' is not an integer
+error [age]: age: 200 is outside valid range 0-150</code></pre>
+  </section>
+
+  <!-- S4.7 Exercise -->
+  <section>
+    <h2>S4.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write a function <code>safe_divide(a, b)</code> that returns <code>None</code>
+          instead of raising <code>ZeroDivisionError</code>.</li>
+        <li>Create a custom <code>ConfigError</code> exception. Write a function that
+          reads a config dict and raises <code>ConfigError</code> when a required key
+          is missing.</li>
+        <li>Use <code>try/except/else/finally</code> to open a file: print its line
+          count in <code>else</code>, handle <code>FileNotFoundError</code> in
+          <code>except</code>, and print "done" in <code>finally</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S4.8 Common Mistakes -->
+  <section>
+    <h2>S4.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Bare except: catches everything including KeyboardInterrupt</h3>
+      <pre><code class="language-python">try:
+    do_work()
+except:                  # catches SystemExit, KeyboardInterrupt, etc!
+    pass
+
+except Exception:        # correct - catches application-level exceptions only
+    pass</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Silencing exceptions with pass</h3>
+      <pre><code class="language-python">try:
+    result = risky()
+except Exception:
+    pass   # error swallowed - caller never knows it failed</code></pre>
+      <t-b>
+        At minimum log the exception. Only silence it if you have a concrete reason
+        the error is expected and harmless.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Raising a new exception instead of re-raising</h3>
+      <pre><code class="language-python">except ValueError as e:
+    raise ValueError(str(e))   # creates new exception, loses original traceback
+    raise                       # correct: re-raises with original context</code></pre>
+    </div>
+  </section>
+
+  <!-- S4.9 Key Terms -->
+  <section>
+    <h2>S4.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>try / except</td><td>Block pair catching exceptions of a specified type</td></tr>
+        <tr><td>else</td><td>Runs after try only if no exception was raised</td></tr>
+        <tr><td>finally</td><td>Runs always; used for cleanup independent of exception status</td></tr>
+        <tr><td>raise</td><td>Throws an exception; bare raise re-raises the current one</td></tr>
+        <tr><td>raise ... from</td><td>Chains exceptions: new exception records the cause</td></tr>
+        <tr><td>Exception</td><td>Base class for application-level exceptions; all built-ins derive from it</td></tr>
+        <tr><td>context manager</td><td>Object implementing __enter__/__exit__; used with with statement</td></tr>
+        <tr><td>with</td><td>Ensures __exit__ (cleanup) is called even if an exception occurs</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  Python / Learn &nbsp;&bull;&nbsp; Tutorial S4 &nbsp;&bull;&nbsp; Exceptions
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/PythonTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

@@ -11,9 +11,17 @@
 </head>
 <body>
 
-<button id="pages-btn" type="button">Pages</button>
-<a id="site-btn" href="../Site/SiteHome.html">Site</a>
-<div id="pages-dropdown"></div>
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
 
 <header>
   <h1>Strings &mdash; std::string and string_view</h1>
@@ -24,8 +32,9 @@
     <a href="Learn_intro.html">Index</a>
     <a href="RustTutorial__Hello.html">Rust</a>
     <a href="CppTutorial__Hello.html">C++</a>
-    <a href="#" class="disabled">C#</a>
-    <a href="#" class="disabled">Python</a>
+    <a href="CSharpTutorial__StdLib_Strings.html">C#</a>
+    <a href="PythonTutorial__StdLib_Strings.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
   </div>
   <div id="lang-nav">
     <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
@@ -258,13 +267,37 @@ std::string sub = s.substr(pos, 3);   // undefined behavior if find returned npo
 
 </main>
 
-<footer>
+<footer id="page-bottom">
   C++ / Learn / StdLib &nbsp;&bull;&nbsp; Tutorial S1 &nbsp;&bull;&nbsp; Strings
 </footer>
 
   <script src="../js/prism.js"></script>
   <script src="js/CppTutorialPages.js"></script>
   <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
     const btn = document.getElementById('pages-btn');
     const dropdown = document.getElementById('pages-dropdown');
     tutorialPages.forEach(p => {
@@ -273,18 +306,58 @@ std::string sub = s.substr(pos, 3);   // undefined behavior if find returned npo
       a.textContent = p.name;
       dropdown.appendChild(a);
     });
+    const _mlClose = () => dropdown.classList.remove('open');
     btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
       dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
       e.stopPropagation();
     });
-    document.addEventListener('click', () => dropdown.classList.remove('open'));
-    dropdown.addEventListener('mouseleave', () => dropdown.classList.remove('open'));
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
     const cur = location.href.split('/').pop().split('?')[0];
     const idx = tutorialPages.findIndex(p => p.url === cur);
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
     if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
     if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
   </script>
 </body>
 </html>

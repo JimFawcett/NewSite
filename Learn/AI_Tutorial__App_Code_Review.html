@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>App: Code Review - Automated Review</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>App: Code Review &mdash; Automated Review</h1>
+  <t-b>Tutorial A3.0 &nbsp;&bull;&nbsp; AI / Learn / Applications</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>A3.0 What This Teaches</h2>
+    <t-b>
+      This tutorial builds a tool that reads a Python file and produces a structured
+      code review organized by category. It covers:
+    </t-b>
+    <ul>
+      <li>Using a system prompt to enforce structured output across specific review categories</li>
+      <li>Reviewing for bugs, security, error handling, type hints, and style</li>
+      <li>Writing review results to a <code>.review.txt</code> file with pathlib</li>
+      <li>Reviewing multiple files in one run by looping over <code>sys.argv</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>A3.1 Review Categories</h2>
+    <t-b>
+      The tool checks six categories that commonly matter in production Python code:
+    </t-b>
+    <ul>
+      <li><strong>Bugs / logic errors</strong> - off-by-one, wrong operator, unreachable code</li>
+      <li><strong>Security issues</strong> - shell injection, unsafe <code>eval()</code>, hardcoded credentials</li>
+      <li><strong>Missing error handling</strong> - uncaught exceptions that will crash in production</li>
+      <li><strong>Missing type hints</strong> - function signatures without <code>int</code>, <code>str</code>, etc.</li>
+      <li><strong>Style / readability</strong> - PEP 8 violations, unclear names, overly long lines</li>
+      <li><strong>Performance</strong> - quadratic loops, unnecessary copies, repeated lookups</li>
+    </ul>
+    <t-b>
+      AI is useful here because it can scan all six categories in one pass without
+      fatigue. It is not authoritative - it misses subtle bugs and sometimes flags
+      correct code incorrectly. Treat the output as a starting point for human review,
+      not a verdict.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A3.2 The System Prompt</h2>
+    <t-b>
+      The system prompt names each category explicitly and requires a consistent format.
+      "If no issues, write 'None found.'" prevents the model from skipping categories
+      silently.
+    </t-b>
+    <pre><code class="language-python"># review_system.py - the review format.
+SYSTEM = (
+    "You are a strict Python code reviewer. "
+    "Review the code for:\n"
+    "BUGS (logic errors)\n"
+    "SECURITY (injection, unsafe operations)\n"
+    "ERROR HANDLING (missing try/except)\n"
+    "TYPE HINTS (missing annotations)\n"
+    "STYLE (PEP 8 violations)\n"
+    "For each category, list findings as bullet points. "
+    "If no issues, write 'None found.'"
+)</code></pre>
+    <t-b>
+      Using uppercase category labels makes parsing easier if you later want to split
+      the output programmatically.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A3.3 Complete Implementation</h2>
+    <pre><code class="language-python"># review.py - automated code review using Claude.
+# Usage: python review.py &lt;file1.py&gt; [file2.py ...]
+
+import sys
+from pathlib import Path
+import anthropic
+
+SYSTEM = (
+    "You are a strict Python code reviewer. "
+    "Review the code for:\n"
+    "BUGS (logic errors)\n"
+    "SECURITY (injection, unsafe operations)\n"
+    "ERROR HANDLING (missing try/except)\n"
+    "TYPE HINTS (missing annotations)\n"
+    "STYLE (PEP 8 violations)\n"
+    "For each category, list findings as bullet points. "
+    "If no issues, write 'None found.'"
+)
+
+def review_file(client: anthropic.Anthropic, path: str) -&gt; str:
+    try:
+        code = Path(path).read_text(encoding="utf-8")
+    except FileNotFoundError:
+        print(f"Error: file not found: {path}")
+        sys.exit(1)
+
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        system=SYSTEM,
+        messages=[{"role": "user", "content": f"Review this Python code:\n\n```python\n{code}\n```"}],
+    )
+    return response.content[0].text
+
+def main():
+    if len(sys.argv) &lt; 2:
+        print("Usage: python review.py &lt;file1.py&gt; [file2.py ...]")
+        sys.exit(1)
+
+    client = anthropic.Anthropic()
+
+    for path in sys.argv[1:]:
+        print(f"\n=== Review: {path} ===")
+        review = review_file(client, path)
+        print(review)
+
+        out_path = Path(path).with_suffix(".review.txt")
+        out_path.write_text(review, encoding="utf-8")
+        print(f"\nSaved to {out_path}")
+
+if __name__ == "__main__":
+    main()</code></pre>
+  </section>
+
+  <section>
+    <h2>A3.4 Writing the Review to a File</h2>
+    <t-b>
+      <code>pathlib.Path.with_suffix()</code> replaces the extension cleanly without
+      string manipulation. Writing immediately after each review means you lose nothing
+      if the script crashes partway through a multi-file run.
+    </t-b>
+    <pre><code class="language-python"># save_review.py - write review output alongside the source file.
+from pathlib import Path
+
+def save_review(source_path: str, review_text: str) -&gt; Path:
+    out = Path(source_path).stem + ".review.txt"
+    out_path = Path(source_path).parent / out
+    out_path.write_text(review_text, encoding="utf-8")
+    return out_path</code></pre>
+    <t-b>
+      Using <code>.stem</code> gives just the filename without any extension, so
+      <code>utils.py</code> becomes <code>utils.review.txt</code>.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A3.5 Sample Review Output</h2>
+    <t-b>
+      Running the tool on a small function that is missing type hints and error handling:
+    </t-b>
+    <pre class="output"><code class="language-terminal">$ python review.py loader.py
+
+=== Review: loader.py ===
+
+BUGS
+- None found.
+
+SECURITY
+- None found.
+
+ERROR HANDLING
+- load_data() calls open() without a try/except; a missing file will crash the caller
+  with an unhandled FileNotFoundError.
+
+TYPE HINTS
+- load_data(filename) has no parameter type annotation (expected str).
+- Return type is not annotated (expected list[str]).
+
+STYLE
+- Line 14 exceeds 79 characters (PEP 8 E501).
+
+Saved to loader.review.txt</code></pre>
+  </section>
+
+  <section>
+    <h2>A3.6 Reviewing Multiple Files</h2>
+    <t-b>
+      Because <code>sys.argv[1:]</code> is already a list, iterating over it handles
+      one file or ten files with no extra logic.
+    </t-b>
+    <pre><code class="language-python"># multi_review.py - loop over every argument.
+for path in sys.argv[1:]:
+    review = review_file(client, path)
+    print(f"\n=== {path} ===\n{review}")
+    Path(path).with_suffix(".review.txt").write_text(review, encoding="utf-8")</code></pre>
+    <t-b>
+      Each file generates one API call, so ten files cost ten calls. If cost is a concern,
+      concatenate small files into one prompt - but keep total content under about 50 KB
+      to maintain review quality.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A3.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Add a <code>--summary</code> flag using <code>argparse</code>. When present, after
+        reviewing all files make one more API call with all the review texts concatenated
+        and ask Claude to write a one-paragraph executive summary of the most critical
+        issues across all files.
+      </t-b>
+      <pre><code class="language-python">import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("files", nargs="+")
+parser.add_argument("--summary", action="store_true")
+args = parser.parse_args()
+
+reviews = []
+for path in args.files:
+    review = review_file(client, path)
+    reviews.append(f"--- {path} ---\n{review}")
+    print(review)
+
+if args.summary:
+    combined = "\n\n".join(reviews)
+    summary_response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=256,
+        messages=[{
+            "role": "user",
+            "content": (
+                "Write a one-paragraph executive summary of the most critical issues "
+                f"found across these code reviews:\n\n{combined}"
+            ),
+        }],
+    )
+    print("\n=== Executive Summary ===")
+    print(summary_response.content[0].text)</code></pre>
+    </div>
+  </section>
+
+  <section>
+    <h2>A3.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Trusting the review blindly</h3>
+      <t-b>
+        AI misses subtle bugs - especially logic errors that depend on runtime state or
+        domain knowledge - and occasionally flags correct code as wrong. Treat the output
+        as a checklist of things to investigate, not a list of confirmed defects. Every
+        flagged item needs a human to confirm it before any fix is made.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Reviewing minified or auto-generated code</h3>
+      <t-b>
+        Running the tool on a minified JavaScript bundle, a generated protobuf file, or
+        a compiled migration script produces meaningless output - the model sees patterns
+        that don't exist in hand-written code. Review only code that a human wrote and
+        intends to maintain.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Not saving results</h3>
+      <t-b>
+        Each API call costs money. If you print the review and do not save it, and then
+        close the terminal, the output is gone. The tool already writes a
+        <code>.review.txt</code> file - do not remove that step to "simplify" the script.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>PEP 8</td><td>Python's official style guide; defines naming, spacing, and line length conventions</td></tr>
+        <tr><td>type hint</td><td>Optional annotation on a function parameter or return value, e.g. def f(x: int) -&gt; str</td></tr>
+        <tr><td>pathlib.Path.with_suffix()</td><td>Returns a new Path with the file extension replaced; avoids manual string slicing</td></tr>
+        <tr><td>argparse</td><td>Standard library module for parsing command-line flags and positional arguments</td></tr>
+        <tr><td>sys.argv[1:]</td><td>All command-line arguments after the script name, as a list of strings</td></tr>
+        <tr><td>executive summary</td><td>A short high-level overview aimed at someone who needs the key points without details</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn / Applications &nbsp;&bull;&nbsp; Tutorial A3 &nbsp;&bull;&nbsp; Code Review
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

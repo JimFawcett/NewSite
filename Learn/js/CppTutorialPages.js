@@ -21,5 +21,6 @@ const tutorialPages = [
   { name: "Lambdas - Anonymous Functions", url: "CppTutorial__StdLib_Lambdas.html" },
   { name: "Smart Pointers - unique_ptr, shared_ptr", url: "CppTutorial__StdLib_SmartPointers.html" },
   { name: "Threads - std::thread and mutex", url: "CppTutorial__StdLib_Threads.html" },
-  { name: "Formatting - std::format and ostream", url: "CppTutorial__StdLib_Formatting.html" }
+  { name: "Formatting - std::format and ostream", url: "CppTutorial__StdLib_Formatting.html" },
+  { name: "Demonstrations - CMake demo executables", url: "CppTutorial__Demonstrations.html" }
 ];

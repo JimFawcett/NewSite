@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Models - Choosing the Right Model</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Models &mdash; Choosing the Right Model</h1>
+  <t-b>Tutorial 8.0 &nbsp;&bull;&nbsp; AI / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>8.0 What This Teaches</h2>
+    <t-b>
+      The Anthropic API offers several Claude models at different capability and cost levels.
+      Picking the right one for each task saves money and improves response speed without
+      sacrificing quality. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>The three Claude model tiers and what each is good for</li>
+      <li>How to choose a model based on task complexity</li>
+      <li>The <code>model</code> parameter and how to switch models in code</li>
+      <li>The <code>max_tokens</code> parameter and per-model output limits</li>
+      <li>The <code>temperature</code> parameter and why to set it to 0 for code tasks</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>8.1 The Claude Model Family</h2>
+    <t-b>
+      Claude models come in three tiers. Each tier has a distinct speed/cost/capability
+      trade-off:
+    </t-b>
+    <table>
+      <thead>
+        <tr><th>Tier</th><th>Model ID</th><th>Best For</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Haiku</strong></td>
+          <td><code>claude-haiku-4-5-20251001</code></td>
+          <td>Fast, cheap, simple tasks: classification, short summaries, simple Q&amp;A</td>
+        </tr>
+        <tr>
+          <td><strong>Sonnet</strong></td>
+          <td><code>claude-sonnet-4-6</code></td>
+          <td>Balanced performance: most code tasks, moderate reasoning, everyday use</td>
+        </tr>
+        <tr>
+          <td><strong>Opus</strong></td>
+          <td><code>claude-opus-4-7</code></td>
+          <td>Complex reasoning, architecture design, hard debugging, nuanced writing</td>
+        </tr>
+      </tbody>
+    </table>
+    <t-b>
+      Haiku is the fastest and least expensive. Opus is the most capable but slowest and
+      most expensive. Sonnet sits in the middle and handles the majority of real-world tasks.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>8.2 Choosing by Task</h2>
+    <t-b>
+      Use this table as a starting point. When in doubt, try Sonnet first and move up to
+      Opus only if quality is insufficient.
+    </t-b>
+    <table>
+      <thead>
+        <tr><th>Task</th><th>Recommended Model</th><th>Reason</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Simple Q&amp;A</td><td>Haiku</td><td>Short prompt, short answer - no heavy reasoning needed</td></tr>
+        <tr><td>Code generation</td><td>Sonnet</td><td>Good code quality at reasonable cost</td></tr>
+        <tr><td>Complex architecture design</td><td>Opus</td><td>Requires deep multi-step reasoning</td></tr>
+        <tr><td>Batch classification</td><td>Haiku</td><td>High volume, low complexity - cost matters</td></tr>
+        <tr><td>Debugging hard bugs</td><td>Opus</td><td>Needs careful multi-file reasoning</td></tr>
+        <tr><td>Unit test generation</td><td>Sonnet</td><td>Repetitive structured output - Sonnet handles it well</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>8.3 The model Parameter</h2>
+    <t-b>
+      Switching models requires changing only one string. The following script sends the
+      same prompt to all three models and prints each response along with token usage:
+    </t-b>
+    <pre><code class="language-python"># compare_models.py - send one prompt to all three Claude tiers.
+import anthropic
+
+client = anthropic.Anthropic()
+
+MODELS = [
+    "claude-haiku-4-5-20251001",
+    "claude-sonnet-4-6",
+    "claude-opus-4-7",
+]
+
+PROMPT = "Explain what a Python decorator is in two sentences."
+
+for model_id in MODELS:
+    response = client.messages.create(
+        model=model_id,
+        max_tokens=256,
+        messages=[{"role": "user", "content": PROMPT}]
+    )
+    usage = response.usage
+    print(f"--- {model_id} ---")
+    print(response.content[0].text)
+    print(f"Input tokens: {usage.input_tokens}  Output tokens: {usage.output_tokens}")
+    print()</code></pre>
+    <t-b>
+      Run this and compare the three responses side by side. You will often find Haiku
+      gives a usable answer in a fraction of the time.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>8.4 The max_tokens Parameter</h2>
+    <t-b>
+      <code>max_tokens</code> caps how many tokens the model may generate in one response.
+      Each model has its own maximum output limit - Haiku's ceiling is lower than Opus's.
+      Always set <code>max_tokens</code> explicitly so the API does not use an unpredictable
+      default. A good rule of thumb:
+    </t-b>
+    <ul>
+      <li>Short answers or classifications: 64 to 256</li>
+      <li>Code snippets or explanations: 512 to 1024</li>
+      <li>Long documents or full programs: 2048 or higher</li>
+    </ul>
+    <pre><code class="language-python"># Always set max_tokens - never rely on the default.
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=512,          # explicit limit
+    messages=[{"role": "user", "content": "Write a Python sort function."}]
+)</code></pre>
+    <t-b>
+      If the response is cut off, check <code>response.stop_reason</code>. A value of
+      <code>"max_tokens"</code> means the output was truncated - raise the limit and retry.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>8.5 The temperature Parameter</h2>
+    <t-b>
+      <code>temperature</code> controls how random the model's output is. It ranges from
+      0.0 to 1.0:
+    </t-b>
+    <ul>
+      <li><strong>0.0</strong> - most deterministic; the model picks the highest-probability token each time</li>
+      <li><strong>1.0</strong> - most creative; the model samples more broadly from less-likely tokens</li>
+    </ul>
+    <t-b>
+      For code generation, use <code>temperature=0</code>. Random variation in code causes
+      inconsistent output and makes automated testing unreliable. For creative writing or
+      brainstorming, a higher temperature produces more varied results.
+    </t-b>
+    <pre><code class="language-python"># code_gen.py - temperature=0 for deterministic code output.
+import anthropic
+
+client = anthropic.Anthropic()
+
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=512,
+    temperature=0,           # deterministic output for code tasks
+    messages=[
+        {"role": "user", "content": "Write a Python function that reverses a string."}
+    ]
+)
+
+print(response.content[0].text)</code></pre>
+  </section>
+
+  <section>
+    <h2>8.6 Switching Models in Code</h2>
+    <t-b>
+      Hardcoding model strings at every call site makes them hard to update when a new
+      version ships. Wrap the call in a function with a default model parameter instead:
+    </t-b>
+    <pre><code class="language-python"># call_model.py - encapsulate model choice so callers stay clean.
+import anthropic
+
+client = anthropic.Anthropic()
+
+def call_model(prompt, model="claude-sonnet-4-6", max_tokens=512, temperature=0):
+    """Send a single-turn prompt and return the response text."""
+    response = client.messages.create(
+        model=model,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.content[0].text
+
+# Normal use - Sonnet with defaults
+answer = call_model("What is a Python list comprehension?")
+print(answer)
+
+# Escalate to Opus for a harder question
+design = call_model(
+    "Design a thread-safe task queue in Python.",
+    model="claude-opus-4-7",
+    max_tokens=1024
+)
+print(design)</code></pre>
+    <t-b>
+      Callers never see a model string. To upgrade the default across the whole app, change
+      one line in <code>call_model</code>.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>8.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Write a script that sends the prompt <em>"Write a Python function to check if a
+        number is prime"</em> to both <code>claude-haiku-4-5-20251001</code> and
+        <code>claude-sonnet-4-6</code>. For each model, print the full response and then
+        print the input token count, the output token count, and the total tokens used.
+        Compare the two responses: does Haiku's answer look correct? Is there a quality
+        difference worth the cost difference?
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>8.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Always using Opus when Haiku or Sonnet would do</h3>
+      <t-b>
+        Opus costs significantly more and responds more slowly than the other tiers.
+        Using it for simple Q&amp;A or classification wastes money and adds latency.
+        Start with Haiku or Sonnet and move up only when output quality is insufficient.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Not setting temperature=0 for code tasks</h3>
+      <pre><code class="language-python"># Bad - default temperature introduces randomness in code output.
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=512,
+    messages=[{"role": "user", "content": "Write a sort function."}]
+)
+
+# Good - pin temperature for reproducible code.
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=512,
+    temperature=0,
+    messages=[{"role": "user", "content": "Write a sort function."}]
+)</code></pre>
+      <t-b>
+        Random variation in code output causes different runs to produce structurally
+        different functions, making automated testing unreliable.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Hardcoding model strings throughout your app</h3>
+      <pre><code class="language-python"># Bad - model string scattered at every call site.
+client.messages.create(model="claude-sonnet-4-6", ...)
+client.messages.create(model="claude-sonnet-4-6", ...)
+
+# Good - one constant or function, updated in one place.
+DEFAULT_MODEL = "claude-sonnet-4-6"
+client.messages.create(model=DEFAULT_MODEL, ...)</code></pre>
+      <t-b>
+        When a model version is deprecated, you will need to update every scattered
+        reference. Use a constant or wrapper function.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>8.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>model family</td><td>The set of related Claude models sharing an architecture generation</td></tr>
+        <tr><td>Haiku</td><td>The fast, low-cost Claude tier for simple tasks</td></tr>
+        <tr><td>Sonnet</td><td>The balanced Claude tier suited to most everyday and code tasks</td></tr>
+        <tr><td>Opus</td><td>The most capable Claude tier for complex reasoning and architecture</td></tr>
+        <tr><td>temperature</td><td>A 0.0-1.0 parameter controlling output randomness; 0 = most deterministic</td></tr>
+        <tr><td>deterministic</td><td>Producing the same output for the same input; temperature=0 approaches this</td></tr>
+        <tr><td>max output tokens</td><td>The per-model ceiling on how many tokens one response may contain</td></tr>
+        <tr><td>model ID</td><td>The exact string passed to the <code>model</code> parameter, e.g. <code>claude-sonnet-4-6</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn &nbsp;&bull;&nbsp; Tutorial 8 &nbsp;&bull;&nbsp; Models
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

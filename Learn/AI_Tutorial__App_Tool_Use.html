@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>App: Tool Use - Function Calling</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>App: Tool Use &mdash; Function Calling</h1>
+  <t-b>Tutorial A9.0 &nbsp;&bull;&nbsp; AI / Learn / Applications</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>A9.0 What This Teaches</h2>
+    <t-b>
+      This tutorial shows how Claude can call Python functions you define, by declaring
+      tool schemas. It covers:
+    </t-b>
+    <ul>
+      <li>Tool schemas - how to describe a function to the model</li>
+      <li>The <code>tools</code> parameter in <code>messages.create()</code></li>
+      <li>Detecting a <code>tool_use</code> content block in the response</li>
+      <li>Calling the actual Python function with the model's arguments</li>
+      <li>Returning a <code>tool_result</code> block so the model can continue</li>
+      <li>The two-step call pattern that tool use requires</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>A9.1 What Tool Use Is</h2>
+    <t-b>
+      The model cannot run code. But it can emit a structured "call this function with
+      these arguments" block when it needs data it cannot produce itself. Your code:
+    </t-b>
+    <ol>
+      <li>Detects the tool call in the response</li>
+      <li>Calls the actual Python function</li>
+      <li>Sends the result back to the model</li>
+      <li>Receives the model's final answer</li>
+    </ol>
+    <t-b>
+      This lets Claude answer questions that require live data - file sizes, database
+      queries, API calls, or anything else your code can compute.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A9.2 Defining a Tool Schema</h2>
+    <t-b>
+      A tool schema is a Python dict with three fields: <code>name</code>,
+      <code>description</code>, and <code>input_schema</code>. The description tells
+      the model what the function does and when to call it.
+      The input_schema uses JSON Schema to describe the arguments.
+    </t-b>
+    <pre><code class="language-python"># tool_schema.py - describe a file-size tool to the model.
+tools = [
+    {
+        "name": "get_file_size",
+        "description": "Return the size in bytes of a file on disk.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Absolute or relative file path"
+                }
+            },
+            "required": ["path"]
+        }
+    }
+]</code></pre>
+    <t-b>
+      Write the description as if explaining to a colleague what the function does and
+      when they should call it. The model uses the description to decide whether to call
+      the tool.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A9.3 Sending Tools to the API</h2>
+    <t-b>
+      Pass the tool list to <code>messages.create()</code> as the <code>tools</code>
+      parameter. If the model decides to call a tool, the response has
+      <code>stop_reason == "tool_use"</code> and the <code>content</code> list contains
+      a <code>ToolUseBlock</code>.
+    </t-b>
+    <pre><code class="language-python"># First API call - ask a question and provide the tool.
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    tools=tools,
+    messages=[
+        {"role": "user", "content": "How large is requirements.txt?"}
+    ],
+)
+
+print(response.stop_reason)  # "tool_use" if the model wants to call a function</code></pre>
+  </section>
+
+  <section>
+    <h2>A9.4 Detecting a Tool Call</h2>
+    <t-b>
+      When <code>stop_reason</code> is <code>"tool_use"</code>, find the
+      <code>ToolUseBlock</code> in <code>response.content</code>. It has a
+      <code>name</code> (function to call) and an <code>input</code> dict (arguments).
+    </t-b>
+    <pre><code class="language-python"># Detect and extract the tool call.
+if response.stop_reason == "tool_use":
+    tool_use_block = next(
+        block for block in response.content
+        if block.type == "tool_use"
+    )
+    tool_name  = tool_use_block.name    # "get_file_size"
+    tool_input = tool_use_block.input   # {"path": "requirements.txt"}
+    tool_id    = tool_use_block.id      # needed for the tool_result block</code></pre>
+    <t-b>
+      Save the <code>id</code> - you must echo it back in the <code>tool_result</code>
+      message so the API knows which call the result belongs to.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A9.5 Calling the Function and Returning the Result</h2>
+    <t-b>
+      Call the real Python function with the extracted arguments. Then make a second API
+      call with the original messages, the assistant's tool_use block, and a new user
+      message containing a <code>tool_result</code> block.
+    </t-b>
+    <pre><code class="language-python"># Call the function and send the result back.
+import os
+
+result = str(os.path.getsize(tool_input["path"]))   # e.g. "342"
+
+second_response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    tools=tools,
+    messages=[
+        {"role": "user",      "content": "How large is requirements.txt?"},
+        {"role": "assistant", "content": response.content},   # the tool_use block
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "tool_result",
+                    "tool_use_id": tool_id,
+                    "content": result,
+                }
+            ],
+        },
+    ],
+)
+print(second_response.content[0].text)</code></pre>
+  </section>
+
+  <section>
+    <h2>A9.6 Complete Implementation</h2>
+    <pre><code class="language-python"># tool_use.py - ask Claude about a file; it calls get_file_size to answer.
+# Usage: python tool_use.py
+
+import os
+import anthropic
+
+client = anthropic.Anthropic()
+
+def get_file_size(path: str) -&gt; str:
+    # returns size as a string so it fits cleanly in tool_result content
+    try:
+        size = os.path.getsize(path)
+        return f"{size} bytes"
+    except FileNotFoundError:
+        return f"Error: file not found: {path}"
+
+tools = [
+    {
+        "name": "get_file_size",
+        "description": "Return the size in bytes of a file on disk.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "File path to check"}
+            },
+            "required": ["path"],
+        },
+    }
+]
+
+FUNCTION_MAP = {"get_file_size": get_file_size}
+
+def run(user_question: str) -&gt; str:
+    messages = [{"role": "user", "content": user_question}]
+
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        tools=tools,
+        messages=messages,
+    )
+
+    if response.stop_reason == "end_turn":
+        return response.content[0].text
+
+    # handle tool_use
+    tool_block = next(b for b in response.content if b.type == "tool_use")
+    fn_result  = FUNCTION_MAP[tool_block.name](**tool_block.input)
+
+    messages.append({"role": "assistant", "content": response.content})
+    messages.append({
+        "role": "user",
+        "content": [{"type": "tool_result", "tool_use_id": tool_block.id,
+                     "content": fn_result}],
+    })
+
+    final = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        tools=tools,
+        messages=messages,
+    )
+    return final.content[0].text
+
+if __name__ == "__main__":
+    answer = run("How large is requirements.txt?")
+    print(answer)</code></pre>
+  </section>
+
+  <section>
+    <h2>A9.7 Adding a Second Tool</h2>
+    <t-b>
+      Add more tools to the list. The model picks the right one based on the question.
+    </t-b>
+    <pre><code class="language-python"># Add list_directory alongside get_file_size.
+tools = [
+    {
+        "name": "get_file_size",
+        "description": "Return the size in bytes of a file on disk.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "File path to check"}
+            },
+            "required": ["path"],
+        },
+    },
+    {
+        "name": "list_directory",
+        "description": "List the files in a directory. Returns filenames separated by commas.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "directory": {"type": "string", "description": "Directory path to list"}
+            },
+            "required": ["directory"],
+        },
+    },
+]
+
+def list_directory(directory: str) -&gt; str:
+    try:
+        return ", ".join(os.listdir(directory))
+    except FileNotFoundError:
+        return f"Error: directory not found: {directory}"
+
+FUNCTION_MAP = {
+    "get_file_size":   get_file_size,
+    "list_directory":  list_directory,
+}</code></pre>
+    <t-b>
+      Ask "What files are in the current directory?" and the model calls
+      <code>list_directory</code> automatically. Ask "How big is app.py?" and it calls
+      <code>get_file_size</code>.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A9.8 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Add a <code>read_first_line(path)</code> tool that returns the first line of a
+        text file.
+      </t-b>
+      <ol>
+        <li>Define the Python function using <code>open()</code> and
+            <code>readline()</code>.</li>
+        <li>Add the tool schema to the <code>tools</code> list with an appropriate
+            description.</li>
+        <li>Add it to <code>FUNCTION_MAP</code>.</li>
+        <li>Run the script and ask: <em>"What is the first line of requirements.txt?"</em></li>
+      </ol>
+      <t-b>
+        The model should call <code>read_first_line</code> automatically and use the
+        result to answer.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>A9.9 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Forgetting to append the assistant's tool_use block before tool_result</h3>
+      <t-b>
+        The API requires that the <code>tool_result</code> message is preceded by the
+        assistant's message that requested the tool call. If you skip appending
+        <code>response.content</code> to <code>messages</code>, the API rejects the
+        request with a validation error about message ordering.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Returning tool results as a user text message</h3>
+      <t-b>
+        Sending the function result as <code>{"role": "user", "content": "The size is 342 bytes"}</code>
+        instead of a proper <code>tool_result</code> block confuses the model. It does not
+        know the text is the answer to its tool call. Always use the
+        <code>tool_result</code> content type with the matching <code>tool_use_id</code>.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Not checking stop_reason after the second call</h3>
+      <t-b>
+        After sending the tool result, the model may call another tool or may return its
+        final answer. Always check <code>stop_reason</code> again after the second API
+        call. A well-written agent loops until <code>stop_reason == "end_turn"</code>.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>A9.10 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>tool schema</td><td>A dict describing a function: its name, what it does, and what arguments it accepts</td></tr>
+        <tr><td>input_schema</td><td>JSON Schema object inside a tool schema that describes the function's parameters</td></tr>
+        <tr><td>tool_use block</td><td>A content block in the API response containing the function name and arguments the model wants to call</td></tr>
+        <tr><td>tool_result block</td><td>A content block in a user message returning the actual result of a called function</td></tr>
+        <tr><td>stop_reason</td><td>String in the API response indicating why generation stopped: "end_turn" or "tool_use"</td></tr>
+        <tr><td>function calling</td><td>Another name for tool use - letting the model request that your code call a specific function</td></tr>
+        <tr><td>two-step call pattern</td><td>Call the API once to get a tool request, call the function, then call the API again with the result</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn / Applications &nbsp;&bull;&nbsp; Tutorial A9 &nbsp;&bull;&nbsp; Tool Use
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

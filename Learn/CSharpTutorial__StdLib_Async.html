@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Async - C# async/await and Task</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Async &mdash; C# async/await and Task</h1>
+  <t-b>Tutorial S8 &nbsp;&bull;&nbsp; C# / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="#" class="disabled">Rust</a>
+    <a href="#" class="disabled">C++</a>
+    <a href="CSharpTutorial__StdLib_Async.html">C#</a>
+    <a href="#" class="disabled">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- S8.0 What This Teaches -->
+  <section>
+    <h2>S8.0 What This Teaches</h2>
+    <t-b>This tutorial covers asynchronous programming in C#:</t-b>
+    <ul>
+      <li><code>Task</code> and <code>Task&lt;T&gt;</code> as promises</li>
+      <li><code>async</code> / <code>await</code> for non-blocking code</li>
+      <li>Running tasks concurrently with <code>Task.WhenAll</code> and <code>Task.WhenAny</code></li>
+      <li>Cancellation with <code>CancellationToken</code></li>
+      <li>CPU-bound work with <code>Task.Run</code></li>
+      <li>Common pitfalls: deadlocks and fire-and-forget</li>
+    </ul>
+  </section>
+
+  <!-- S8.1 Task and async/await -->
+  <section>
+    <h2>S8.1 Task and async/await</h2>
+    <t-b>
+      An <code>async</code> method returns a <code>Task</code> or <code>Task&lt;T&gt;</code>.
+      <code>await</code> suspends the method until the task completes, releasing the
+      thread to do other work:
+    </t-b>
+    <pre><code class="language-csharp">static async Task&lt;string&gt; FetchGreeting(string name)
+{
+    await Task.Delay(100);   // simulate async I/O (non-blocking)
+    return $"Hello, {name}!";
+}
+
+// Top-level await (C# 9+)
+string msg = await FetchGreeting("Alice");
+Console.WriteLine(msg);
+
+// Void-returning async entry point
+async Task Main()
+{
+    string result = await FetchGreeting("Bob");
+    Console.WriteLine(result);
+}</code></pre>
+    <t-b>
+      The method pauses at each <code>await</code> without blocking a thread.
+      When the awaited task completes, execution resumes from that point.
+    </t-b>
+  </section>
+
+  <!-- S8.2 Concurrent Tasks -->
+  <section>
+    <h2>S8.2 Running Tasks Concurrently</h2>
+    <pre><code class="language-csharp">static async Task&lt;int&gt; ComputeAsync(int n)
+{
+    await Task.Delay(n * 100);  // simulate variable-length work
+    return n * n;
+}
+
+// Sequential - each awaits before next starts (slow)
+int a = await ComputeAsync(1);
+int b = await ComputeAsync(2);
+int c = await ComputeAsync(3);
+
+// Concurrent - all start immediately, wait for all to finish
+int[] results = await Task.WhenAll(
+    ComputeAsync(1),
+    ComputeAsync(2),
+    ComputeAsync(3)
+);
+Console.WriteLine(results.Sum());   // 1 + 4 + 9 = 14
+
+// WhenAny - continue as soon as the first finishes
+Task&lt;int&gt; winner = await Task.WhenAny(ComputeAsync(3), ComputeAsync(1), ComputeAsync(2));
+Console.WriteLine(await winner);    // 1 (finished first)</code></pre>
+  </section>
+
+  <!-- S8.3 CancellationToken -->
+  <section>
+    <h2>S8.3 CancellationToken</h2>
+    <pre><code class="language-csharp">using var cts = new CancellationTokenSource(timeout: TimeSpan.FromSeconds(2));
+
+try
+{
+    await DoLongWorkAsync(cts.Token);
+    Console.WriteLine("Done");
+}
+catch (OperationCanceledException)
+{
+    Console.WriteLine("Cancelled after timeout");
+}
+
+static async Task DoLongWorkAsync(CancellationToken ct)
+{
+    for (int i = 0; i &lt; 10; i++)
+    {
+        ct.ThrowIfCancellationRequested();   // cooperative cancellation
+        await Task.Delay(500, ct);
+        Console.Write($"{i} ");
+    }
+}</code></pre>
+  </section>
+
+  <!-- S8.4 Task.Run for CPU-Bound Work -->
+  <section>
+    <h2>S8.4 CPU-Bound Work with Task.Run</h2>
+    <t-b>
+      <code>async/await</code> shines for I/O-bound operations. For CPU-bound work
+      (computation), use <code>Task.Run</code> to move it off the main thread:
+    </t-b>
+    <pre><code class="language-csharp">static int ExpensiveCompute(int n)
+{
+    // Simulate heavy CPU work
+    return Enumerable.Range(1, n).Sum();
+}
+
+// Run on thread pool, keep UI/main thread free
+int result = await Task.Run(() =&gt; ExpensiveCompute(10_000_000));
+Console.WriteLine(result);</code></pre>
+    <t-b>
+      Don't use <code>Task.Run</code> inside library code - let callers decide whether
+      to offload. It is mainly for top-level application code keeping a UI responsive.
+    </t-b>
+  </section>
+
+  <!-- S8.5 Example -->
+  <section>
+    <h2>S8.5 Example - All Together</h2>
+    <pre><code class="language-csharp">// Async - parallel HTTP-like fetches with timeout and cancellation.
+
+using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+var ct = cts.Token;
+
+var tasks = new[] { "Alice", "Bob", "Carol" }
+    .Select(name =&gt; FetchAsync(name, ct))
+    .ToList();
+
+try
+{
+    string[] results = await Task.WhenAll(tasks);
+    foreach (string r in results)
+        Console.WriteLine(r);
+}
+catch (OperationCanceledException)
+{
+    Console.WriteLine("One or more fetches cancelled");
+}
+
+static async Task&lt;string&gt; FetchAsync(string name, CancellationToken ct)
+{
+    int delay = name.Length * 200;   // simulate different latencies
+    await Task.Delay(delay, ct);
+    return $"Data for {name} (took {delay}ms)";
+}</code></pre>
+  </section>
+
+  <!-- S8.6 Exercise -->
+  <section>
+    <h2>S8.6 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write an async method <code>DownloadAsync(string url)</code> that simulates
+          downloading data with a random delay. Run three downloads concurrently
+          with <code>Task.WhenAll</code> and print the total time.</li>
+        <li>Add a <code>CancellationToken</code> with a 1-second timeout. Handle
+          <code>OperationCanceledException</code> and print which downloads completed.</li>
+        <li>Use <code>Task.Run</code> to compute the sum of squares of 1-1,000,000
+          without blocking, then <code>await</code> the result.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S8.7 Common Mistakes -->
+  <section>
+    <h2>S8.7 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>async void - fire-and-forget</h3>
+      <pre><code class="language-csharp">async void DoWork() { ... }   // exceptions are unobserved - crash the process!
+async Task DoWork() { ... }   // correct - exceptions propagate via Task</code></pre>
+      <t-b>
+        Only use <code>async void</code> for event handlers where the signature is forced.
+        All other async methods should return <code>Task</code> or <code>Task&lt;T&gt;</code>.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>.Result or .Wait() on a task (deadlock risk)</h3>
+      <pre><code class="language-csharp">string data = GetDataAsync().Result;    // blocks; can deadlock in ASP.NET
+string data = await GetDataAsync();     // non-blocking - correct</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Awaiting in a loop instead of concurrently</h3>
+      <pre><code class="language-csharp">// Sequential - slow; each waits for the previous to finish
+foreach (var url in urls)
+    await FetchAsync(url);
+
+// Concurrent - fast; all run at the same time
+await Task.WhenAll(urls.Select(FetchAsync));</code></pre>
+    </div>
+  </section>
+
+  <!-- S8.8 Key Terms -->
+  <section>
+    <h2>S8.8 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Task</td><td>Represents an ongoing or completed operation; a promise</td></tr>
+        <tr><td>Task&lt;T&gt;</td><td>Task that eventually produces a value of type T</td></tr>
+        <tr><td>async</td><td>Marks a method as asynchronous; enables use of await inside</td></tr>
+        <tr><td>await</td><td>Suspends the method until the awaited task completes; releases the thread</td></tr>
+        <tr><td>Task.WhenAll</td><td>Returns a task that completes when all supplied tasks complete</td></tr>
+        <tr><td>Task.WhenAny</td><td>Returns a task that completes when the first supplied task completes</td></tr>
+        <tr><td>CancellationToken</td><td>Signals cooperative cancellation to async methods</td></tr>
+        <tr><td>Task.Run</td><td>Schedules CPU-bound work on the thread pool</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  C# / Learn &nbsp;&bull;&nbsp; Tutorial S8 &nbsp;&bull;&nbsp; Async
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CSharpTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

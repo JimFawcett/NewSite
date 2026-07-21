@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demonstrations - Running Demo Scripts from a Package</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Demonstrations &mdash; Running Demo Scripts from a Package</h1>
+  <t-b>Tutorial D1.0 &nbsp;&bull;&nbsp; Python / Learn / Demonstrations</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__Demonstrations.html">Rust</a>
+    <a href="CppTutorial__Demonstrations.html">C++</a>
+    <a href="CSharpTutorial__Demonstrations.html">C#</a>
+    <a href="PythonTutorial__Demonstrations.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- D1.0 What This Teaches -->
+  <section>
+    <h2>D1.0 What This Teaches</h2>
+    <t-b>
+      Python's module system lets you place shared library code in a package and write
+      small demo scripts that import from it. Running each demo with
+      <code>python -m</code> keeps the project root on the import path automatically.
+      This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Structuring a library as a Python package with <code>__init__.py</code></li>
+      <li>Writing demo scripts in a <code>demos/</code> subdirectory</li>
+      <li>Using <code>python -m demos.basic</code> to run a demo from the project root</li>
+      <li>Why <code>python -m</code> is preferred over running the script directly</li>
+    </ul>
+  </section>
+
+  <!-- D1.1 Why a demos/ Directory? -->
+  <section>
+    <h2>D1.1 Why a demos/ Directory?</h2>
+    <t-b>
+      A library module defines functions and classes but has no main entry point. A
+      <code>demos/</code> directory holds short scripts that import from the library and
+      show how to use it. Keeping demonstrations separate from the library code and from
+      the test suite makes each role clear.
+    </t-b>
+    <t-b>
+      The pattern mirrors what Cargo's <code>examples/</code> directory does for Rust
+      and what a CMake <code>demos/</code> subdirectory does for C++: each demo is
+      self-contained and run individually.
+    </t-b>
+  </section>
+
+  <!-- D1.2 Project Layout -->
+  <section>
+    <h2>D1.2 Project Layout</h2>
+    <pre><code class="language-terminal">Demonstrations/
+├── demo_lib/
+│   └── __init__.py     ← library package: functions and classes
+└── demos/
+    ├── __init__.py     ← makes demos/ a package (required for -m)
+    ├── basic.py
+    ├── words.py
+    └── shapes.py</code></pre>
+    <t-b>
+      Both <code>demo_lib/</code> and <code>demos/</code> have <code>__init__.py</code>
+      so Python treats each as a package. Running with <code>python -m</code> from
+      <code>Demonstrations/</code> places that directory on <code>sys.path</code>,
+      making <code>import demo_lib</code> resolve correctly.
+    </t-b>
+  </section>
+
+  <!-- D1.3 The Library Package -->
+  <section>
+    <h2>D1.3 The Library Package - demo_lib/__init__.py</h2>
+    <pre><code class="language-python"># demo_lib/__init__.py - public API for the Demonstrations package.
+import math
+
+
+def add(a, b):
+    return a + b
+
+
+def clamp(value, lo, hi):
+    if value &lt; lo:
+        return lo
+    if value &gt; hi:
+        return hi
+    return value
+
+
+def word_count(s):
+    return len(s.split())
+
+
+class Circle:
+    def __init__(self, radius):
+        self.radius = radius
+
+    def area(self):
+        return math.pi * self.radius ** 2
+
+    def circumference(self):
+        return 2 * math.pi * self.radius
+
+    def __repr__(self):
+        return f"Circle(r={self.radius})"
+
+
+class Rectangle:
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+
+    def area(self):
+        return self.width * self.height
+
+    def perimeter(self):
+        return 2 * (self.width + self.height)
+
+    def is_square(self):
+        return self.width == self.height
+
+    def __repr__(self):
+        return f"Rectangle({self.width}x{self.height})"</code></pre>
+    <t-b>
+      Placing all public names in <code>__init__.py</code> means importers write
+      <code>from demo_lib import add</code> rather than navigating a deeper module path.
+    </t-b>
+  </section>
+
+  <!-- D1.4 Demo: basic.py -->
+  <section>
+    <h2>D1.4 Demo: demos/basic.py</h2>
+    <pre><code class="language-python"># basic.py - demonstrates add and clamp from demo_lib.
+# Run from Demonstrations/ with: python -m demos.basic
+from demo_lib import add, clamp
+
+
+def main():
+    print("=== basic demo ===")
+    print(f"add(7, 3)        = {add(7, 3)}")
+    print(f"clamp(25, 0, 20) = {clamp(25, 0, 20)}")
+    print(f"clamp(-5, 0, 20) = {clamp(-5, 0, 20)}")
+    print(f"clamp(10, 0, 20) = {clamp(10, 0, 20)}")
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+    <t-b>
+      The <code>if __name__ == "__main__"</code> guard runs <code>main()</code> only when
+      the script is executed directly. If another module imports <code>demos.basic</code>,
+      the guard prevents the output from appearing at import time.
+    </t-b>
+  </section>
+
+  <!-- D1.5 Demo: words.py -->
+  <section>
+    <h2>D1.5 Demo: demos/words.py</h2>
+    <pre><code class="language-python"># words.py - demonstrates word_count from demo_lib.
+# Run from Demonstrations/ with: python -m demos.words
+from demo_lib import word_count
+
+
+def main():
+    text = "the quick brown fox jumps over the lazy dog the fox"
+    print("=== words demo ===")
+    print(f"text:       \"{text}\"")
+    print(f"word_count: {word_count(text)}")
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+  </section>
+
+  <!-- D1.6 Demo: shapes.py -->
+  <section>
+    <h2>D1.6 Demo: demos/shapes.py</h2>
+    <pre><code class="language-python"># shapes.py - demonstrates Circle and Rectangle from demo_lib.
+# Run from Demonstrations/ with: python -m demos.shapes
+from demo_lib import Circle, Rectangle
+
+
+def main():
+    print("=== shapes demo ===")
+
+    c = Circle(5.0)
+    print("Circle r=5:")
+    print(f"  area          = {c.area():.4f}")
+    print(f"  circumference = {c.circumference():.4f}")
+
+    r = Rectangle(4.0, 6.0)
+    print("Rectangle 4x6:")
+    print(f"  area      = {r.area():.1f}")
+    print(f"  perimeter = {r.perimeter():.1f}")
+    print(f"  is_square = {r.is_square()}")
+
+    sq = Rectangle(5.0, 5.0)
+    print("Rectangle 5x5:")
+    print(f"  is_square = {sq.is_square()}")
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+    <t-b>
+      <code>:.4f</code> inside an f-string formats a float to four decimal places.
+      This is the same mini-language used by <code>format()</code> and
+      <code>str.format()</code>.
+    </t-b>
+  </section>
+
+  <!-- D1.7 Running the Demos -->
+  <section>
+    <h2>D1.7 Running the Demos</h2>
+    <t-b>Run all demos from the <code>Demonstrations/</code> directory:</t-b>
+    <pre><code class="language-terminal">python -m demos.basic
+python -m demos.words
+python -m demos.shapes</code></pre>
+    <t-b>
+      The <code>-m</code> flag tells Python to run a module by dotted name rather than a
+      file path. Python adds the current working directory to <code>sys.path</code> before
+      executing the module, so <code>import demo_lib</code> resolves to
+      <code>Demonstrations/demo_lib/</code>.
+    </t-b>
+    <t-b>
+      Running with a file path instead (<code>python demos/basic.py</code>) adds
+      <code>Demonstrations/demos/</code> to <code>sys.path</code> - the script's own
+      directory - so <code>import demo_lib</code> would not resolve unless you also
+      manipulate <code>sys.path</code> manually. The <code>-m</code> form avoids that
+      problem.
+    </t-b>
+    <table>
+      <thead>
+        <tr><th>Command</th><th>What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>python -m demos.basic</code></td><td>Run basic.py with Demonstrations/ on sys.path</td></tr>
+        <tr><td><code>python -m demos.words</code></td><td>Run words.py</td></tr>
+        <tr><td><code>python -m demos.shapes</code></td><td>Run shapes.py</td></tr>
+        <tr><td><code>python demos/basic.py</code></td><td>Run basic.py directly - import demo_lib will fail without sys.path fix</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- D1.8 Expected Outputs -->
+  <section>
+    <h2>D1.8 Expected Outputs</h2>
+    <t-b><code>python -m demos.basic</code></t-b>
+    <pre class="output"><code class="language-terminal">=== basic demo ===
+add(7, 3)        = 10
+clamp(25, 0, 20) = 20
+clamp(-5, 0, 20) = 0
+clamp(10, 0, 20) = 10</code></pre>
+
+    <t-b><code>python -m demos.words</code></t-b>
+    <pre class="output"><code class="language-terminal">=== words demo ===
+text:       "the quick brown fox jumps over the lazy dog the fox"
+word_count: 11</code></pre>
+
+    <t-b><code>python -m demos.shapes</code></t-b>
+    <pre class="output"><code class="language-terminal">=== shapes demo ===
+Circle r=5:
+  area          = 78.5398
+  circumference = 31.4159
+Rectangle 4x6:
+  area      = 24.0
+  perimeter = 20.0
+  is_square = False
+Rectangle 5x5:
+  is_square = True</code></pre>
+  </section>
+
+  <!-- D1.9 Exercise -->
+  <section>
+    <h2>D1.9 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Add a <code>unique_words(s)</code> function to <code>demo_lib/__init__.py</code>
+          that returns a sorted list of distinct words from the string.</li>
+        <li>Create <code>demos/stats.py</code> that calls both <code>word_count</code>
+          and <code>unique_words</code> on several strings and prints both results.</li>
+        <li>Run the new demo with <code>python -m demos.stats</code> and verify the
+          output.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- D1.10 Common Mistakes -->
+  <section>
+    <h2>D1.10 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Running with python demos/basic.py instead of python -m demos.basic</h3>
+      <t-b>
+        Running via file path places <code>demos/</code> on <code>sys.path</code>, not
+        <code>Demonstrations/</code>. The <code>import demo_lib</code> statement then fails
+        with <code>ModuleNotFoundError</code>. Always use <code>python -m demos.basic</code>
+        from <code>Demonstrations/</code>.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Missing __init__.py in demos/</h3>
+      <t-b>
+        Without <code>demos/__init__.py</code>, Python does not treat <code>demos/</code>
+        as a package and <code>python -m demos.basic</code> fails with
+        <code>No module named demos</code>. The file can be empty - its presence is enough.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Forgetting the if __name__ == "__main__" guard</h3>
+      <t-b>
+        Without the guard, any code at module level runs when the file is imported. If
+        another script imports <code>demos.basic</code> to reuse a helper function, all
+        the print statements execute immediately. The guard limits execution to direct runs.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Importing from the wrong level</h3>
+      <pre><code class="language-python">from __init__ import add     # error: not a valid import path
+from demo_lib import add     # correct</code></pre>
+      <t-b>
+        You never import from <code>__init__</code> by name. The package directory name
+        (<code>demo_lib</code>) is the import path.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- D1.11 Key Terms -->
+  <section>
+    <h2>D1.11 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>package</td><td>A directory with <code>__init__.py</code>; importable as a module by its directory name</td></tr>
+        <tr><td>__init__.py</td><td>Marks a directory as a Python package; code in it runs on first import</td></tr>
+        <tr><td>python -m</td><td>Run a module by dotted name; adds the current directory to sys.path</td></tr>
+        <tr><td>sys.path</td><td>List of directories Python searches when resolving import statements</td></tr>
+        <tr><td>if __name__ == "__main__"</td><td>Guard that runs a block only when the file is executed directly, not imported</td></tr>
+        <tr><td>f-string format spec</td><td>Suffix after : in an f-string placeholder, e.g. <code>:.4f</code> for 4 decimal places</td></tr>
+        <tr><td>__repr__</td><td>Dunder method that returns a developer-readable string; used by <code>repr()</code> and in the REPL</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  Python / Learn / Demonstrations &nbsp;&bull;&nbsp; Tutorial D1 &nbsp;&bull;&nbsp; Demonstrations
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/PythonTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

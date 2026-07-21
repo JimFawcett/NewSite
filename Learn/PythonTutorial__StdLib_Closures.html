@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Closures - Python Closures and Decorators</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Closures &mdash; Python Closures and Decorators</h1>
+  <t-b>Tutorial S7 &nbsp;&bull;&nbsp; Python / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__StdLib_Closures.html">Rust</a>
+    <a href="CppTutorial__StdLib_Lambdas.html">C++</a>
+    <a href="CSharpTutorial__StdLib_Delegates.html">C#</a>
+    <a href="PythonTutorial__StdLib_Closures.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- S7.0 What This Teaches -->
+  <section>
+    <h2>S7.0 What This Teaches</h2>
+    <t-b>This tutorial covers closures, higher-order functions, and decorators in Python:</t-b>
+    <ul>
+      <li>First-class functions and higher-order functions</li>
+      <li>Closures: nested functions capturing outer variables</li>
+      <li>Decorators: transforming functions with <code>@syntax</code></li>
+      <li><code>functools.partial</code> for partial application</li>
+      <li><code>functools.wraps</code> for preserving metadata</li>
+      <li>Lambda expressions</li>
+    </ul>
+  </section>
+
+  <!-- S7.1 First-Class Functions -->
+  <section>
+    <h2>S7.1 First-Class Functions</h2>
+    <t-b>
+      Functions in Python are objects. You can assign them to variables, pass them
+      as arguments, and return them from other functions:
+    </t-b>
+    <pre><code class="language-python">def double(x: int) -> int:
+    return x * 2
+
+def apply(func, values: list) -> list:
+    return [func(v) for v in values]
+
+print(apply(double, [1, 2, 3, 4]))   # [2, 4, 6, 8]
+print(apply(str, [1, 2, 3]))          # ['1', '2', '3']
+print(apply(abs, [-1, -2, 3]))        # [1, 2, 3]
+
+# Functions as dict values
+ops = {"+": lambda a, b: a + b, "-": lambda a, b: a - b}
+print(ops["+"](3, 4))   # 7</code></pre>
+  </section>
+
+  <!-- S7.2 Closures -->
+  <section>
+    <h2>S7.2 Closures</h2>
+    <t-b>
+      A closure is an inner function that captures variables from the enclosing scope.
+      The captured variables persist as long as the closure is alive:
+    </t-b>
+    <pre><code class="language-python">def make_adder(delta: int):
+    def adder(x: int) -> int:
+        return x + delta   # captures delta from outer scope
+    return adder
+
+add5  = make_adder(5)
+add10 = make_adder(10)
+
+print(add5(3))    # 8
+print(add10(3))   # 13
+
+# Counter using a closure with mutable state
+def make_counter(start: int = 0):
+    count = [start]   # list to allow mutation in inner scope
+    def increment():
+        count[0] += 1
+        return count[0]
+    return increment
+
+counter = make_counter()
+print(counter())   # 1
+print(counter())   # 2</code></pre>
+  </section>
+
+  <!-- S7.3 Decorators -->
+  <section>
+    <h2>S7.3 Decorators</h2>
+    <t-b>
+      A decorator is a function that takes a function and returns a new function.
+      The <code>@decorator</code> syntax is shorthand for
+      <code>func = decorator(func)</code>:
+    </t-b>
+    <pre><code class="language-python">import time
+from functools import wraps
+
+def timer(func):
+    @wraps(func)                # preserves func.__name__, __doc__, etc.
+    def wrapper(*args, **kwargs):
+        start = time.monotonic()
+        result = func(*args, **kwargs)
+        elapsed = time.monotonic() - start
+        print(f"{func.__name__} took {elapsed:.4f}s")
+        return result
+    return wrapper
+
+@timer
+def slow_sum(n: int) -> int:
+    return sum(range(n))
+
+print(slow_sum(1_000_000))  # prints timing and result</code></pre>
+  </section>
+
+  <!-- S7.4 Stacking Decorators -->
+  <section>
+    <h2>S7.4 Stacking and Parameterized Decorators</h2>
+    <pre><code class="language-python">from functools import wraps
+
+def repeat(n: int):
+    """Decorator factory that runs the function n times."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for _ in range(n):
+                result = func(*args, **kwargs)
+            return result
+        return wrapper
+    return decorator
+
+def log(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        print(f"calling {func.__name__}")
+        return func(*args, **kwargs)
+    return wrapper
+
+@log
+@repeat(3)    # applied bottom-up: repeat first, then log
+def greet(name: str):
+    print(f"Hello, {name}!")
+
+greet("Alice")</code></pre>
+  </section>
+
+  <!-- S7.5 functools -->
+  <section>
+    <h2>S7.5 functools Utilities</h2>
+    <pre><code class="language-python">from functools import partial, reduce
+
+# partial - freeze some arguments
+def power(base: float, exp: float) -> float:
+    return base ** exp
+
+square = partial(power, exp=2)
+cube   = partial(power, exp=3)
+print(square(4))   # 16.0
+print(cube(3))     # 27.0
+
+# reduce - fold a sequence to a single value
+product = reduce(lambda acc, x: acc * x, [1, 2, 3, 4, 5])
+print(product)   # 120
+
+# lru_cache - memoize with Least Recently Used eviction
+from functools import lru_cache
+
+@lru_cache(maxsize=None)
+def fib(n: int) -> int:
+    if n &lt; 2: return n
+    return fib(n - 1) + fib(n - 2)
+
+print(fib(40))   # fast due to caching</code></pre>
+  </section>
+
+  <!-- S7.6 Example -->
+  <section>
+    <h2>S7.6 Example - All Together</h2>
+    <pre><code class="language-python"># Closures - validation decorator and pipeline composition.
+
+from functools import wraps, reduce
+
+def validate(*predicates):
+    """Decorator that checks all predicates before calling the function."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for pred in predicates:
+                if not pred(*args, **kwargs):
+                    raise ValueError(f"validation failed: {pred.__name__}")
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+def positive(x): return x &gt; 0
+def less_than_100(x): return x &lt; 100
+
+@validate(positive, less_than_100)
+def process(x: float) -> float:
+    return x * 2
+
+print(process(42))    # 84.0
+try:
+    print(process(-1))  # raises ValueError
+except ValueError as e:
+    print(e)</code></pre>
+  </section>
+
+  <!-- S7.7 Exercise -->
+  <section>
+    <h2>S7.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write a <code>memoize</code> decorator that caches results in a dict.
+          Apply it to a recursive Fibonacci function and compare performance with
+          and without the decorator.</li>
+        <li>Write a <code>retry(n)</code> parameterized decorator that retries a
+          function up to n times on exception. Test it with a function that fails
+          randomly.</li>
+        <li>Use <code>functools.partial</code> to create specialized versions of a
+          generic <code>format_number(value, width, decimal_places)</code> function.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S7.8 Common Mistakes -->
+  <section>
+    <h2>S7.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Forgetting @wraps on a decorator</h3>
+      <pre><code class="language-python">def my_decorator(func):
+    def wrapper(*args, **kwargs):     # missing @wraps(func)
+        return func(*args, **kwargs)
+    return wrapper
+
+@my_decorator
+def greet(): pass
+print(greet.__name__)   # "wrapper" - lost the original name!</code></pre>
+      <t-b>
+        Always use <code>@functools.wraps(func)</code> inside a decorator so that
+        <code>__name__</code>, <code>__doc__</code>, and other metadata are preserved.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Late binding in closures</h3>
+      <pre><code class="language-python">adders = [lambda x: x + i for i in range(5)]
+print(adders[0](0))   # 4, not 0! All lambdas capture the same i=4
+
+# Fix: capture current value with a default argument
+adders = [lambda x, i=i: x + i for i in range(5)]
+print(adders[0](0))   # 0</code></pre>
+    </div>
+  </section>
+
+  <!-- S7.9 Key Terms -->
+  <section>
+    <h2>S7.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>first-class function</td><td>Function that can be assigned, passed, and returned like any value</td></tr>
+        <tr><td>closure</td><td>Inner function that captures and remembers variables from its enclosing scope</td></tr>
+        <tr><td>decorator</td><td>Function that wraps another function, typically added with @syntax</td></tr>
+        <tr><td>@wraps</td><td>Copies __name__, __doc__, etc. from the wrapped function to the wrapper</td></tr>
+        <tr><td>partial</td><td>Creates a new function with some arguments pre-filled</td></tr>
+        <tr><td>reduce</td><td>Folds a sequence to a single value by applying a two-argument function</td></tr>
+        <tr><td>lru_cache</td><td>Memoization decorator with configurable cache size; caches recent results</td></tr>
+        <tr><td>late binding</td><td>Closures capture variable references, not values - value resolved at call time</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  Python / Learn &nbsp;&bull;&nbsp; Tutorial S7 &nbsp;&bull;&nbsp; Closures
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/PythonTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

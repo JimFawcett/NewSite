@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>App: Diff Reviewer - Compare Versions</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>App: Diff Reviewer &mdash; Compare Versions</h1>
+  <t-b>Tutorial A5.0 &nbsp;&bull;&nbsp; AI / Learn / Applications</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>A5.0 What This Teaches</h2>
+    <t-b>
+      This tutorial builds a tool that compares two versions of a file and asks Claude
+      to explain the changes and flag risks. It covers:
+    </t-b>
+    <ul>
+      <li>Generating a unified diff with Python's standard library <code>difflib</code></li>
+      <li>Embedding the diff in a prompt for risk assessment</li>
+      <li>Short-circuiting the API call when the files are identical</li>
+      <li>Combining stdlib tools with LLMs to get insights that neither provides alone</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>A5.1 What a Diff Shows</h2>
+    <t-b>
+      A unified diff is a compact representation of how one text file changed into another.
+      Each line is prefixed to show what happened to it:
+    </t-b>
+    <ul>
+      <li>Lines starting with <code>-</code> were in the old file and removed</li>
+      <li>Lines starting with <code>+</code> are in the new file and added</li>
+      <li>Lines with no prefix are context - unchanged lines that appear on both sides</li>
+    </ul>
+    <pre class="output"><code class="language-terminal">--- old.py
++++ new.py
+@@ -4,7 +4,10 @@
+ def load_data(filename):
+-    with open(filename) as f:
+-        return f.read()
++    try:
++        with open(filename, encoding="utf-8") as f:
++            return f.read()
++    except FileNotFoundError:
++        return None</code></pre>
+    <t-b>
+      The <code>@@</code> line shows which line numbers changed. This format is the same
+      one used by <code>git diff</code> - learning to read it here also teaches you to
+      read git output.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A5.2 Generating the Diff with difflib</h2>
+    <t-b>
+      <code>difflib.unified_diff()</code> takes two lists of lines and produces a generator
+      of diff lines. Join them into a single string to embed in a prompt.
+    </t-b>
+    <pre><code class="language-python"># gen_diff.py - compute a unified diff between two files.
+import difflib
+from pathlib import Path
+
+def compute_diff(old_path: str, new_path: str) -&gt; str:
+    old_lines = Path(old_path).read_text(encoding="utf-8").splitlines(keepends=True)
+    new_lines = Path(new_path).read_text(encoding="utf-8").splitlines(keepends=True)
+
+    diff = difflib.unified_diff(
+        old_lines,
+        new_lines,
+        fromfile=old_path,
+        tofile=new_path,
+        lineterm="",
+    )
+    return "".join(diff)</code></pre>
+    <t-b>
+      <code>keepends=True</code> preserves the newline character at the end of each line,
+      which <code>unified_diff</code> requires to produce correct output.
+      <code>lineterm=""</code> prevents it from adding an extra newline to each diff line.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A5.3 The Review Prompt</h2>
+    <t-b>
+      The prompt asks three specific questions in order. Numbered questions produce
+      numbered answers, which makes the output easier to scan.
+    </t-b>
+    <pre><code class="language-python"># diff_prompt.py - build the review prompt.
+def build_review_prompt(diff_text: str) -&gt; str:
+    return (
+        "Review this unified diff. Explain:\n"
+        "(1) What changed and why it likely changed.\n"
+        "(2) Any risks introduced (bugs, security issues, breaking changes).\n"
+        "(3) Whether the change looks complete or if anything is missing.\n\n"
+        f"```diff\n{diff_text}\n```"
+    )</code></pre>
+    <t-b>
+      The <code>diff</code> fence label tells the model to interpret the content as a
+      diff rather than as source code, which improves how it reasons about the
+      <code>-</code> and <code>+</code> prefixes.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A5.4 Complete Implementation</h2>
+    <pre><code class="language-python"># diff_review.py - compare two files and review the changes with Claude.
+# Usage: python diff_review.py old.py new.py
+
+import sys
+import difflib
+from pathlib import Path
+import anthropic
+
+def read_file(path: str) -&gt; list[str]:
+    try:
+        return Path(path).read_text(encoding="utf-8").splitlines(keepends=True)
+    except FileNotFoundError:
+        print(f"Error: file not found: {path}")
+        sys.exit(1)
+
+def compute_diff(old_path: str, new_path: str) -&gt; str:
+    old_lines = read_file(old_path)
+    new_lines = read_file(new_path)
+    return "".join(difflib.unified_diff(
+        old_lines, new_lines,
+        fromfile=old_path, tofile=new_path, lineterm="",
+    ))
+
+def main():
+    if len(sys.argv) &lt; 3:
+        print("Usage: python diff_review.py old.py new.py")
+        sys.exit(1)
+
+    old_path, new_path = sys.argv[1], sys.argv[2]
+    diff = compute_diff(old_path, new_path)
+
+    if not diff:
+        print("Files are identical.")
+        sys.exit(0)
+
+    prompt = (
+        "Review this unified diff. Explain:\n"
+        "(1) What changed and why it likely changed.\n"
+        "(2) Any risks introduced (bugs, security issues, breaking changes).\n"
+        "(3) Whether the change looks complete or if anything is missing.\n\n"
+        f"```diff\n{diff}\n```"
+    )
+
+    client = anthropic.Anthropic()
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    print(response.content[0].text)
+
+if __name__ == "__main__":
+    main()</code></pre>
+  </section>
+
+  <section>
+    <h2>A5.5 Sample Output</h2>
+    <t-b>
+      Running the tool on a diff where a function gained a type hint and a try/except block:
+    </t-b>
+    <pre class="output"><code class="language-terminal">$ python diff_review.py old.py new.py
+
+(1) What changed and why it likely changed.
+The load_data function gained an explicit encoding argument ("utf-8") and a
+try/except block that returns None when the file is not found. This is a
+defensive improvement - the original would raise an unhandled FileNotFoundError
+on a missing file.
+
+(2) Risks introduced.
+Returning None on error means callers must now check the return value before
+using it. Any code that does `data.split(...)` on the result will raise
+AttributeError if the file is missing. The change shifts responsibility for
+error handling to the caller without documenting that contract.
+
+(3) Completeness.
+The change looks complete for the stated goal of avoiding a crash. A type hint
+on the return value (str | None) would make the None case explicit and would
+help tools like mypy catch callers that forget to check.</code></pre>
+  </section>
+
+  <section>
+    <h2>A5.6 Handling Empty Diffs</h2>
+    <t-b>
+      When the two files are byte-for-byte identical, <code>unified_diff</code> returns
+      an empty generator and <code>"".join(...)</code> produces an empty string. Check
+      for this before calling the API.
+    </t-b>
+    <pre><code class="language-python"># empty_diff_guard.py - avoid an unnecessary API call.
+diff = compute_diff(old_path, new_path)
+
+if not diff:
+    print("Files are identical.")
+    sys.exit(0)
+
+# only reaches here if there are actual changes
+response = client.messages.create(...)</code></pre>
+    <t-b>
+      Skipping the API call saves both money and latency. It also makes the tool's output
+      clearer - "Files are identical" is more informative than a response that says
+      "No changes were made."
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A5.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Add a <code>--risk</code> flag using <code>argparse</code>. When present, append
+        this sentence to the prompt:
+      </t-b>
+      <pre><code class="language-python">risk_instruction = (
+    "Rate the overall risk of this change on a scale of 1-5 "
+    "where 1 is trivial and 5 is high-risk. "
+    "Give one sentence justification."
+)</code></pre>
+      <t-b>
+        After printing the full review, scan the response text for the rating and print
+        it on its own line labeled <code>Risk rating:</code>. A simple approach: look
+        for the pattern <code>"Risk: N"</code> or <code>"N/5"</code> in the response using
+        a regular expression, or just print the last paragraph separately.
+      </t-b>
+      <pre><code class="language-terminal">python diff_review.py old.py new.py --risk</code></pre>
+    </div>
+  </section>
+
+  <section>
+    <h2>A5.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Sending very large diffs</h3>
+      <t-b>
+        Diffs over a few hundred lines push the model toward summarizing rather than
+        reasoning carefully about each change. Quality drops noticeably around 500 lines.
+        If a diff is large, split it by function: extract the changed functions individually
+        and review each one in a separate call.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Not handling the case where one file does not exist</h3>
+      <t-b>
+        If <code>old.py</code> does not exist, <code>read_text()</code> raises
+        <code>FileNotFoundError</code>. The tool wraps each read in a try/except and calls
+        <code>sys.exit(1)</code> with a clear message. If you remove that guard to simplify
+        the code, a typo in a filename produces a confusing Python traceback instead of
+        a usable error.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Comparing binary files</h3>
+      <t-b>
+        <code>difflib</code> operates on text. Passing a compiled <code>.pyc</code> file,
+        a PNG, or any other binary file causes <code>read_text()</code> to raise
+        <code>UnicodeDecodeError</code> or produce garbage output. Add a check on the
+        file extension, or catch <code>UnicodeDecodeError</code> and print an error
+        before any diff is computed.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>unified diff</td><td>A standard format showing removed lines with -, added lines with +, and unchanged context lines</td></tr>
+        <tr><td>difflib</td><td>Python standard library module for computing differences between sequences</td></tr>
+        <tr><td>unified_diff()</td><td>difflib function that produces a unified diff as a generator of strings</td></tr>
+        <tr><td>keepends=True</td><td>splitlines() option that preserves the newline at the end of each line</td></tr>
+        <tr><td>lineterm=""</td><td>unified_diff() option that suppresses the extra newline it would otherwise add per line</td></tr>
+        <tr><td>breaking change</td><td>A change that alters a public interface in a way that requires callers to update their code</td></tr>
+        <tr><td>UnicodeDecodeError</td><td>Exception raised when read_text() encounters bytes that cannot be decoded as UTF-8 text</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn / Applications &nbsp;&bull;&nbsp; Tutorial A5 &nbsp;&bull;&nbsp; Diff Reviewer
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

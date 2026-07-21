@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>System Prompts - Controlling Model Behavior</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>System Prompts &mdash; Controlling Model Behavior</h1>
+  <t-b>Tutorial 6.0 &nbsp;&bull;&nbsp; AI / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>6.0 What This Teaches</h2>
+    <t-b>
+      The <code>system</code> parameter gives you a way to set ground rules that persist
+      across an entire conversation. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>What a system prompt is and where it sits in the API call</li>
+      <li>How to set a persona that changes tone and detail level</li>
+      <li>Enforcing output format constraints across multiple turns</li>
+      <li>The difference between system-level and user-level instructions</li>
+      <li>A full working example using a code reviewer persona</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>6.1 What a System Prompt Is</h2>
+    <t-b>
+      The <code>system</code> parameter in <code>messages.create()</code> sets persistent
+      instructions that apply to every turn of the conversation. Unlike the
+      <code>messages</code> list, the system prompt is not part of the alternating
+      user/assistant role structure - it is separate, and the model treats it as a
+      higher-level directive.
+    </t-b>
+    <t-b>
+      Think of the system prompt as a contract you establish before the conversation
+      starts: "you are this kind of assistant, you always output this format, you
+      never do these things." The <code>messages</code> list then carries the actual
+      conversation within that contract.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>6.2 Setting a System Prompt</h2>
+    <pre><code class="language-python"># system_basic.py - compare output with and without a system prompt.
+import anthropic
+
+client = anthropic.Anthropic()
+
+user_message = "Write a function that reads a JSON file."
+
+# Without system prompt - model chooses its own style.
+r1 = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=256,
+    messages=[{"role": "user", "content": user_message}]
+)
+print("--- No system prompt ---")
+print(r1.content[0].text)
+
+# With system prompt - model follows the constraints.
+r2 = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=256,
+    system=(
+        "You are a senior Python developer. "
+        "Always include type hints. "
+        "Return only code with no prose."
+    ),
+    messages=[{"role": "user", "content": user_message}]
+)
+print("--- With system prompt ---")
+print(r2.content[0].text)</code></pre>
+    <t-b>
+      The second response should be shorter, contain type hints, and have no surrounding
+      explanation. The exact same user message produces different output because the
+      system prompt changed the model's defaults.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>6.3 Persona Setting</h2>
+    <t-b>
+      The system prompt can establish a persona that changes how the model communicates:
+      technical depth, level of assumed knowledge, tone, and vocabulary all shift.
+    </t-b>
+    <pre><code class="language-python"># persona.py - two personas, same question, different outputs.
+import anthropic
+
+client = anthropic.Anthropic()
+
+question = "What is a pointer?"
+
+expert_system = (
+    "You are a C++ expert focused on performance and undefined behavior. "
+    "Assume the reader is an experienced systems programmer."
+)
+
+beginner_system = (
+    "You are a patient teacher explaining programming concepts to beginners "
+    "who have no prior experience with low-level languages. "
+    "Use analogies and avoid jargon."
+)
+
+for label, system in [("Expert", expert_system), ("Beginner", beginner_system)]:
+    r = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=256,
+        system=system,
+        messages=[{"role": "user", "content": question}]
+    )
+    print(f"--- {label} persona ---")
+    print(r.content[0].text)
+    print()</code></pre>
+    <t-b>
+      The expert persona will discuss memory addresses, alignment, and undefined behavior.
+      The beginner persona will use an analogy like "a pointer is like a street address
+      for your data." Same model, same question, fundamentally different output because
+      the audience expectation is different.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>6.4 Output Format Constraints</h2>
+    <t-b>
+      When you need structured output consistently across multiple turns, put the
+      format requirement in the system prompt rather than repeating it in every user
+      message.
+    </t-b>
+    <pre><code class="language-python"># json_system.py - enforce JSON output via system prompt.
+import anthropic
+import json
+
+client = anthropic.Anthropic()
+
+system = (
+    "Always respond with valid JSON. No other text before or after the JSON. "
+    "Every response must have exactly two keys: "
+    "'answer' (a string) and 'confidence' ('high', 'medium', or 'low')."
+)
+
+questions = [
+    "What does the `with` statement do in Python?",
+    "Is Python dynamically typed?",
+]
+
+for q in questions:
+    r = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=256,
+        system=system,
+        messages=[{"role": "user", "content": q}]
+    )
+    data = json.loads(r.content[0].text)
+    print(f"Q: {q}")
+    print(f"A: {data['answer']}")
+    print(f"Confidence: {data['confidence']}")
+    print()</code></pre>
+    <t-b>
+      Without the system prompt, the model might return JSON for the first question and
+      plain prose for the second. The system prompt makes the format consistent across
+      every turn.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>6.5 Scope: System vs User</h2>
+    <t-b>
+      The system prompt sets ground rules; user messages make individual requests within
+      those rules. The model treats system instructions as higher-priority than user
+      requests in most cases.
+    </t-b>
+    <table>
+      <thead>
+        <tr><th>Layer</th><th>Purpose</th><th>Persists across turns?</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>system</td>
+          <td>Persona, output format, behavioral guardrails</td>
+          <td>Yes - set once, applies to the whole conversation</td>
+        </tr>
+        <tr>
+          <td>user message</td>
+          <td>The specific task for this turn</td>
+          <td>No - each message is a new request</td>
+        </tr>
+        <tr>
+          <td>assistant message</td>
+          <td>The model's previous reply (for context in multi-turn)</td>
+          <td>Only if you include it in the messages list</td>
+        </tr>
+      </tbody>
+    </table>
+    <t-b>
+      If a user message contradicts the system prompt - for example, the system prompt
+      says "return only code" but the user says "explain what the code does" - the model
+      usually follows the user message. Guardrails work best for format and persona, not
+      for preventing the user from overriding them.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>6.6 Example: Code Reviewer Persona</h2>
+    <pre><code class="language-python"># code_reviewer.py - system prompt makes Claude act as a strict code reviewer.
+import anthropic
+
+client = anthropic.Anthropic()
+
+system = """\
+You are a strict Python code reviewer. When shown code, you always check for:
+1. Security issues (e.g., shell injection, hardcoded secrets)
+2. Missing type hints on function parameters and return values
+3. Missing error handling for I/O operations
+For each issue found, state the line number (if visible), the problem, and a fix.
+If no issues are found in a category, say "None found."
+"""
+
+code_to_review = """\
+def load_config(path):
+    import json
+    f = open(path)
+    return json.load(f)
+"""
+
+r = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=512,
+    system=system,
+    messages=[{"role": "user", "content": f"Review this code:\n\n{code_to_review}"}]
+)
+
+print(r.content[0].text)</code></pre>
+    <t-b>
+      The reviewer will flag: missing type hints on <code>path</code> and the return
+      type, the file handle that is never closed (no <code>with</code> statement), and
+      the absence of a <code>FileNotFoundError</code> handler. All of these come from
+      the system prompt's checklist, not from a user request.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>6.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Write a script that sends the same user message - "Write a function to read
+        a JSON file" - twice: once with no system prompt, and once with:
+        <code>system="You are a security-conscious Python developer. Always validate
+        inputs and handle FileNotFoundError."</code>
+        Print both responses and compare them. Note whether the second response
+        includes input validation, a <code>with</code> statement for the file, and
+        a <code>try/except</code> block that catches <code>FileNotFoundError</code>.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>6.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Putting format instructions in the user message instead of system</h3>
+      <t-b>
+        If you write "return only JSON" in the user message on turn 1, the model
+        follows it. On turn 2, you send a new user message without that instruction
+        and the model may revert to prose. Format constraints belong in the system
+        prompt so they apply to every turn automatically.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Contradicting the system prompt in user messages</h3>
+      <t-b>
+        If the system prompt says "return only code" and the user message says
+        "explain this code line by line", the model faces a conflict. Behavior
+        varies: sometimes the system prompt wins, sometimes the user message does.
+        Keep user messages consistent with the system prompt to get predictable results.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Making the system prompt so long it eats into the context window</h3>
+      <t-b>
+        The system prompt counts as input tokens on every single call. A 2,000-token
+        system prompt in a 10-turn conversation adds 20,000 tokens to your total
+        input cost. Keep system prompts concise - three to five clear sentences is
+        usually enough to establish persona and format.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>6.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>system prompt</td><td>The text passed in the <code>system</code> parameter; sets persistent instructions for the whole conversation</td></tr>
+        <tr><td>system parameter</td><td>The <code>system=</code> argument in <code>messages.create()</code></td></tr>
+        <tr><td>persona</td><td>A role description in the system prompt that changes how the model communicates</td></tr>
+        <tr><td>output constraint</td><td>A format rule in the system prompt, such as "always return valid JSON"</td></tr>
+        <tr><td>behavioral guardrail</td><td>An instruction that restricts what the model will or will not do</td></tr>
+        <tr><td>context window budget</td><td>The portion of the context window consumed by the system prompt on every call</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn &nbsp;&bull;&nbsp; Tutorial 6 &nbsp;&bull;&nbsp; System Prompts
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>App: Chat Loop - Console Chat</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>App: Chat Loop &mdash; Console Chat</h1>
+  <t-b>Tutorial A1.0 &nbsp;&bull;&nbsp; AI / Learn / Applications</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>A1.0 What This Teaches</h2>
+    <t-b>
+      The tutorials so far have all made single API calls and exited. A real chat
+      application runs in a loop, reads user input repeatedly, and builds up a conversation
+      history across turns. This tutorial builds that application from scratch. Topics
+      covered:
+    </t-b>
+    <ul>
+      <li>The <code>input()</code> loop that drives an interactive console app</li>
+      <li>Maintaining conversation history across turns with the <code>messages</code> list</li>
+      <li>The <code>/quit</code> command to exit cleanly</li>
+      <li>Appending both user and assistant messages to preserve context</li>
+      <li>Adding a system prompt to specialize the chat session</li>
+      <li>Context window limits and what to do when history grows large</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>A1.1 Application Design</h2>
+    <t-b>
+      The chat loop follows eight steps on every iteration:
+    </t-b>
+    <ol>
+      <li>Print the <code>You: </code> prompt and wait for input</li>
+      <li>Read the user's text with <code>input()</code></li>
+      <li>If the input is <code>/quit</code>, print a goodbye message and break</li>
+      <li>Append a <code>{"role": "user", "content": ...}</code> dict to the history list</li>
+      <li>Call <code>client.messages.create</code> with the full history</li>
+      <li>Extract the reply text from <code>response.content[0].text</code></li>
+      <li>Print the reply</li>
+      <li>Append a <code>{"role": "assistant", "content": reply}</code> dict to the history list</li>
+    </ol>
+    <t-b>
+      Steps 4 and 8 are where beginners commonly make mistakes - forgetting either one
+      breaks the conversation context on the next turn.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A1.2 Complete Implementation</h2>
+    <pre><code class="language-python"># chat_loop.py - interactive console chat with conversation history.
+import anthropic
+
+client = anthropic.Anthropic()
+messages = []
+
+print("Claude Chat - type /quit to exit")
+print("-" * 40)
+
+while True:
+    user_input = input("You: ").strip()
+    if not user_input:
+        continue
+    if user_input.lower() == "/quit":
+        print("Goodbye.")
+        break
+
+    messages.append({"role": "user", "content": user_input})
+
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        messages=messages
+    )
+
+    reply = response.content[0].text
+    messages.append({"role": "assistant", "content": reply})
+
+    print(f"Claude: {reply}")
+    print()</code></pre>
+    <t-b>
+      This is a complete, runnable script. Save it as <code>chat_loop.py</code> and run
+      it. Each call passes the full <code>messages</code> list, so the model always sees
+      the complete conversation.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A1.3 How Conversation History Works</h2>
+    <t-b>
+      Every call to <code>messages.create</code> includes every prior turn. After 10
+      exchanges the list has 20 entries; after 20 exchanges it has 40. All of that text
+      is sent to the API on each call and counts against the model's context window.
+    </t-b>
+    <t-b>
+      When the history grows very long, the API will eventually return an error because the
+      combined prompt exceeds the context limit. A simple guard warns the user before that
+      happens:
+    </t-b>
+    <pre><code class="language-python"># Add this check inside the loop, after appending the user message.
+if len(messages) &gt; 40:
+    print("[Warning: conversation is getting long. Consider /clear to reset history.]")</code></pre>
+    <t-b>
+      For a more sophisticated app, you could trim the oldest messages automatically.
+      For this tutorial, a warning is sufficient.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A1.4 Adding a System Prompt</h2>
+    <t-b>
+      A system prompt sets the model's persona and constraints for the entire session.
+      Add it to the <code>create</code> call as the <code>system</code> parameter:
+    </t-b>
+    <pre><code class="language-python"># chat_loop_system.py - specialize the assistant with a system prompt.
+import anthropic
+
+client = anthropic.Anthropic()
+messages = []
+
+SYSTEM = "You are a Python coding assistant. Keep answers concise and include code examples."
+
+print("Python Coding Assistant - type /quit to exit")
+print("-" * 40)
+
+while True:
+    user_input = input("You: ").strip()
+    if not user_input:
+        continue
+    if user_input.lower() == "/quit":
+        print("Goodbye.")
+        break
+
+    messages.append({"role": "user", "content": user_input})
+
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        system=SYSTEM,        # applied to every turn automatically
+        messages=messages
+    )
+
+    reply = response.content[0].text
+    messages.append({"role": "assistant", "content": reply})
+
+    print(f"Claude: {reply}")
+    print()</code></pre>
+    <t-b>
+      The <code>system</code> string is not part of the <code>messages</code> list. Pass
+      it as a separate keyword argument. It applies to the entire conversation.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A1.5 Adding a /clear Command</h2>
+    <t-b>
+      Let users reset the conversation without restarting the script. Add one check inside
+      the loop before the API call:
+    </t-b>
+    <pre><code class="language-python"># Inside the while loop, before appending the user message:
+if user_input.lower() == "/clear":
+    messages = []
+    print("[History cleared. Starting fresh.]")
+    continue</code></pre>
+    <t-b>
+      After <code>/clear</code>, <code>messages</code> is an empty list. The next user
+      turn starts a brand-new conversation with no prior context.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A1.6 Running the Application</h2>
+    <pre><code class="language-terminal">python chat_loop.py</code></pre>
+    <t-b>
+      A sample session:
+    </t-b>
+    <pre><code class="language-terminal">Claude Chat - type /quit to exit
+----------------------------------------
+You: What is a Python list?
+Claude: A Python list is an ordered, mutable collection of items. You create one
+with square brackets: my_list = [1, 2, 3]. Items can be any type and the list
+grows or shrinks as you add or remove elements.
+
+You: How do I add an item?
+Claude: Use .append() to add to the end: my_list.append(4). Use .insert(index, item)
+to add at a specific position.
+
+You: /quit
+Goodbye.</code></pre>
+    <t-b>
+      Notice the second question uses "an item" without specifying what kind - the model
+      knows from context it means a list item because it saw the first exchange.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A1.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Extend <code>chat_loop.py</code> with two new commands:
+      </t-b>
+      <ul>
+        <li>
+          <strong>/history</strong> - print every message in the <code>messages</code>
+          list. For each entry, print the role and the first 60 characters of the content
+          on one line, for example: <code>user: What is a Python list?</code>
+        </li>
+        <li>
+          <strong>/tokens</strong> - print an estimated total token count for the current
+          history. Use <code>len(m["content"]) // 4</code> as a rough estimate per
+          message, and sum across all messages.
+        </li>
+      </ul>
+      <t-b>
+        Handle both commands before the API call so they do not add anything to the
+        <code>messages</code> list.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>A1.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Not appending the assistant reply to messages</h3>
+      <pre><code class="language-python"># Bad - the loop appends user messages but not assistant replies.
+while True:
+    user_input = input("You: ").strip()
+    messages.append({"role": "user", "content": user_input})
+    response = client.messages.create(model="claude-sonnet-4-6",
+        max_tokens=1024, messages=messages)
+    reply = response.content[0].text
+    # Missing: messages.append({"role": "assistant", "content": reply})
+    print(f"Claude: {reply}")</code></pre>
+      <t-b>
+        Without the assistant append, the next user turn sends two consecutive user messages,
+        which is an API error. Always append both sides of each exchange.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Growing history without bound</h3>
+      <t-b>
+        Very long sessions accumulate hundreds of messages. Each call sends the full list,
+        so cost and latency grow with session length. The API will eventually reject the
+        call when the total tokens exceed the context window. Add a length check or
+        implement message trimming for long-running sessions.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Calling input() without .strip()</h3>
+      <pre><code class="language-python"># Bad - "  /quit  " with surrounding spaces will not match "/quit".
+user_input = input("You: ")
+if user_input == "/quit":   # fails if user types with spaces
+
+# Good - strip whitespace before comparing.
+user_input = input("You: ").strip()
+if user_input.lower() == "/quit":   # matches regardless of spacing or case</code></pre>
+      <t-b>
+        Users often hit space before or after a command. Always call <code>.strip()</code>
+        immediately after <code>input()</code>.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>A1.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>chat loop</td><td>A <code>while True</code> loop that repeatedly reads user input and calls the API</td></tr>
+        <tr><td>conversation history</td><td>The growing list of user and assistant messages passed on every API call</td></tr>
+        <tr><td>/quit command</td><td>A special input string the loop checks to break out cleanly</td></tr>
+        <tr><td>context limit</td><td>The maximum total tokens (prompt + response) a model can process in one call</td></tr>
+        <tr><td>system prompt for chat</td><td>A fixed instruction string passed via the <code>system</code> parameter that shapes the model's behavior across all turns</td></tr>
+        <tr><td>interactive console</td><td>A terminal application that reads from stdin and writes to stdout in a loop</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn / Applications &nbsp;&bull;&nbsp; Tutorial A1 &nbsp;&bull;&nbsp; Chat Loop
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Delegates - C# Action, Func, and Lambda</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Delegates &mdash; C# Action, Func, and Lambda</h1>
+  <t-b>Tutorial S7 &nbsp;&bull;&nbsp; C# / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__StdLib_Closures.html">Rust</a>
+    <a href="CppTutorial__StdLib_Lambdas.html">C++</a>
+    <a href="CSharpTutorial__StdLib_Delegates.html">C#</a>
+    <a href="PythonTutorial__StdLib_Closures.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- S7.0 What This Teaches -->
+  <section>
+    <h2>S7.0 What This Teaches</h2>
+    <t-b>This tutorial covers delegates and functional programming in C#:</t-b>
+    <ul>
+      <li>Delegates: type-safe function pointers</li>
+      <li>Built-in delegate types: <code>Action</code>, <code>Func</code>, <code>Predicate</code></li>
+      <li>Lambda expressions: <code>(x) =&gt; expression</code></li>
+      <li>Closures: lambdas capturing outer variables</li>
+      <li>Passing delegates as callbacks and higher-order functions</li>
+      <li>Multicast delegates</li>
+    </ul>
+  </section>
+
+  <!-- S7.1 Delegate Basics -->
+  <section>
+    <h2>S7.1 Delegate Basics</h2>
+    <t-b>
+      A delegate is a type that holds a reference to a method with a matching signature.
+      You can invoke a delegate like calling the method directly:
+    </t-b>
+    <pre><code class="language-csharp">// Declare a delegate type
+delegate int MathOp(int a, int b);
+
+// Assign a method
+MathOp add = (a, b) =&gt; a + b;
+MathOp mul = (a, b) =&gt; a * b;
+
+Console.WriteLine(add(3, 4));   // 7
+Console.WriteLine(mul(3, 4));   // 12
+
+// Store and pass as argument
+static int Apply(int x, int y, MathOp op) =&gt; op(x, y);
+Console.WriteLine(Apply(5, 6, add));   // 11</code></pre>
+  </section>
+
+  <!-- S7.2 Action and Func -->
+  <section>
+    <h2>S7.2 Action and Func</h2>
+    <t-b>
+      The BCL provides generic delegate types so you rarely need to declare your own:
+    </t-b>
+    <pre><code class="language-csharp">// Action&lt;T&gt; - takes arguments, returns void
+Action&lt;string&gt; greet = name =&gt; Console.WriteLine($"Hello, {name}!");
+greet("Alice");
+
+// Func&lt;T, TResult&gt; - takes arguments, returns TResult
+Func&lt;int, int, int&gt; add = (a, b) =&gt; a + b;
+Console.WriteLine(add(3, 4));   // 7
+
+// Predicate&lt;T&gt; - returns bool (shorthand for Func&lt;T, bool&gt;)
+Predicate&lt;int&gt; isEven = n =&gt; n % 2 == 0;
+Console.WriteLine(isEven(4));   // True
+
+// Higher-order function using Func
+static List&lt;T&gt; Filter&lt;T&gt;(List&lt;T&gt; items, Func&lt;T, bool&gt; predicate) =&gt;
+    items.Where(predicate).ToList();</code></pre>
+  </section>
+
+  <!-- S7.3 Lambda Expressions -->
+  <section>
+    <h2>S7.3 Lambda Expressions</h2>
+    <pre><code class="language-csharp">// Expression lambda - single expression, implicit return
+Func&lt;int, int&gt; square = x =&gt; x * x;
+
+// Statement lambda - multiple statements in braces
+Func&lt;int, int&gt; safeSqrt = x =&gt;
+{
+    if (x &lt; 0) return 0;
+    return (int)Math.Sqrt(x);
+};
+
+// No parameters
+Action printTime = () =&gt; Console.WriteLine(DateTime.Now);
+
+// Multiple parameters
+Func&lt;int, int, int&gt; clamp = (value, max) =&gt; Math.Min(value, max);</code></pre>
+  </section>
+
+  <!-- S7.4 Closures -->
+  <section>
+    <h2>S7.4 Closures</h2>
+    <t-b>
+      A lambda can capture variables from its enclosing scope. The captured variable
+      is shared - if it changes, the lambda sees the new value:
+    </t-b>
+    <pre><code class="language-csharp">int multiplier = 3;
+Func&lt;int, int&gt; triple = x =&gt; x * multiplier;
+Console.WriteLine(triple(5));   // 15
+
+multiplier = 10;
+Console.WriteLine(triple(5));   // 50 - sees the changed value!
+
+// Factory function returning a closure
+static Func&lt;int, int&gt; MakeAdder(int delta) =&gt; x =&gt; x + delta;
+
+var addFive = MakeAdder(5);
+var addTen  = MakeAdder(10);
+Console.WriteLine(addFive(3));  // 8
+Console.WriteLine(addTen(3));   // 13</code></pre>
+  </section>
+
+  <!-- S7.5 Multicast Delegates -->
+  <section>
+    <h2>S7.5 Multicast Delegates</h2>
+    <t-b>
+      A delegate variable can hold references to multiple methods. Using <code>+=</code>
+      adds a method to the invocation list:
+    </t-b>
+    <pre><code class="language-csharp">Action&lt;string&gt; log = msg =&gt; Console.WriteLine($"[Log] {msg}");
+Action&lt;string&gt; alert = msg =&gt; Console.WriteLine($"[ALERT] {msg}");
+
+Action&lt;string&gt; notify = log;
+notify += alert;   // both will be called
+
+notify("Server started");
+// [Log] Server started
+// [ALERT] Server started
+
+notify -= log;   // remove from invocation list</code></pre>
+    <t-b>
+      Events in C# are built on multicast delegates. The publisher calls the delegate
+      and all subscribers receive the notification.
+    </t-b>
+  </section>
+
+  <!-- S7.6 Example -->
+  <section>
+    <h2>S7.6 Example - All Together</h2>
+    <pre><code class="language-csharp">// Delegates - pipeline of transformation steps with Func composition.
+
+var pipeline = Compose&lt;string, string&gt;(
+    s =&gt; s.Trim(),
+    s =&gt; s.ToLower(),
+    s =&gt; s.Replace(" ", "_")
+);
+
+string[] inputs = { "  Hello World  ", " Foo Bar ", "  C Sharp  " };
+foreach (string s in inputs)
+    Console.WriteLine(pipeline(s));
+
+static Func&lt;T, T&gt; Compose&lt;T, T2&gt;(params Func&lt;T, T&gt;[] steps)
+    where T2 : T
+{
+    return input =&gt; steps.Aggregate(input, (acc, f) =&gt; f(acc));
+}</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">hello_world
+foo_bar
+c_sharp</code></pre>
+  </section>
+
+  <!-- S7.7 Exercise -->
+  <section>
+    <h2>S7.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write a <code>Memoize&lt;T, TResult&gt;(Func&lt;T, TResult&gt; f)</code> method
+          that caches previously computed results in a dictionary and returns a
+          new <code>Func&lt;T, TResult&gt;</code>. Test it with a slow function.</li>
+        <li>Use an <code>Action&lt;string&gt;</code> multicast delegate to create a
+          simple logging system with Console and file handlers.</li>
+        <li>Write a higher-order function <code>Retry(Action action, int times)</code>
+          that calls action up to times times, catching exceptions on each attempt.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S7.8 Common Mistakes -->
+  <section>
+    <h2>S7.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Captured loop variable</h3>
+      <pre><code class="language-csharp">var actions = new List&lt;Action&gt;();
+for (int i = 0; i &lt; 3; i++)
+    actions.Add(() =&gt; Console.WriteLine(i));  // captures i, not a copy
+
+actions.ForEach(a =&gt; a());   // prints 3 3 3 - all see i=3!
+
+// Fix: capture a local copy
+for (int i = 0; i &lt; 3; i++)
+{
+    int copy = i;
+    actions.Add(() =&gt; Console.WriteLine(copy));  // prints 0 1 2
+}</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Null delegate invocation</h3>
+      <pre><code class="language-csharp">Action&lt;string&gt; handler = null;
+handler("test");   // NullReferenceException
+handler?.Invoke("test");   // safe - no-ops if null</code></pre>
+    </div>
+  </section>
+
+  <!-- S7.9 Key Terms -->
+  <section>
+    <h2>S7.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>delegate</td><td>Type representing a method reference with a specific signature</td></tr>
+        <tr><td>Action&lt;T&gt;</td><td>Built-in delegate that takes parameters and returns void</td></tr>
+        <tr><td>Func&lt;T, TResult&gt;</td><td>Built-in delegate that takes parameters and returns TResult</td></tr>
+        <tr><td>Predicate&lt;T&gt;</td><td>Shorthand for Func&lt;T, bool&gt;</td></tr>
+        <tr><td>lambda expression</td><td>(params) =&gt; body - anonymous method assigned to a delegate</td></tr>
+        <tr><td>closure</td><td>Lambda that captures variables from its enclosing scope</td></tr>
+        <tr><td>multicast delegate</td><td>Delegate holding multiple method references; all called on invoke</td></tr>
+        <tr><td>higher-order function</td><td>Function that takes or returns another function</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  C# / Learn &nbsp;&bull;&nbsp; Tutorial S7 &nbsp;&bull;&nbsp; Delegates
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CSharpTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

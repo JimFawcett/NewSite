@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demonstrations - Building Demo Executables with CMake</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Demonstrations &mdash; Building Demo Executables with CMake</h1>
+  <t-b>Tutorial D1.0 &nbsp;&bull;&nbsp; C++ / Learn / Demonstrations</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__Demonstrations.html">Rust</a>
+    <a href="CppTutorial__Demonstrations.html">C++</a>
+    <a href="CSharpTutorial__Demonstrations.html">C#</a>
+    <a href="PythonTutorial__Demonstrations.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- D1.0 What This Teaches -->
+  <section>
+    <h2>D1.0 What This Teaches</h2>
+    <t-b>
+      CMake lets you build a static library and attach multiple demo executables to it in
+      the same project tree, without writing a separate build file for each demo. This
+      tutorial covers:
+    </t-b>
+    <ul>
+      <li>Splitting a CMake project into a library and a <code>demos/</code> subdirectory</li>
+      <li>Using <code>add_subdirectory</code> to compose the build from parts</li>
+      <li>A <code>foreach</code> loop in CMake to register many executables with one rule</li>
+      <li>Linking each demo against the library with <code>target_link_libraries</code></li>
+      <li>Configuring, building, and running individual demos</li>
+    </ul>
+  </section>
+
+  <!-- D1.1 Why a demos/ Directory? -->
+  <section>
+    <h2>D1.1 Why a demos/ Directory?</h2>
+    <t-b>
+      A static library has no entry point - you cannot run it directly. A <code>demos/</code>
+      directory collects small standalone programs that link against the library and show how
+      to call its API. Keeping demonstration code here separates it from the library sources
+      and from automated tests.
+    </t-b>
+    <t-b>
+      The pattern mirrors what Cargo's <code>examples/</code> directory does for Rust: each
+      demo compiles to its own executable, and all demos are built together by the same
+      top-level build command.
+    </t-b>
+  </section>
+
+  <!-- D1.2 Project Layout -->
+  <section>
+    <h2>D1.2 Project Layout</h2>
+    <pre><code class="language-terminal">Demonstrations/
+├── CMakeLists.txt        ← root: defines the library, pulls in demos/
+├── include/
+│   └── demo_lib.h        ← public declarations for the library
+├── src/
+│   └── demo_lib.cpp      ← library implementation
+└── demos/
+    ├── CMakeLists.txt    ← adds one executable per demo source file
+    ├── basic.cpp
+    ├── words.cpp
+    └── shapes.cpp</code></pre>
+    <t-b>
+      Library sources live in <code>src/</code>; public declarations live in
+      <code>include/</code>. Each <code>.cpp</code> in <code>demos/</code> becomes its
+      own named executable.
+    </t-b>
+  </section>
+
+  <!-- D1.3 The Library Header -->
+  <section>
+    <h2>D1.3 The Library Header - include/demo_lib.h</h2>
+    <t-b>
+      Every symbol the demos use must be declared here:
+    </t-b>
+    <pre><code class="language-cpp">// demo_lib.h - public API for the Demonstrations library.
+#pragma once
+#include &lt;string&gt;
+
+int  add(int a, int b);
+int  clamp(int value, int lo, int hi);
+int  word_count(const std::string&amp; s);
+
+struct Circle {
+    double radius;
+    Circle(double r) : radius(r) {}
+    double area()          const;
+    double circumference() const;
+};
+
+struct Rectangle {
+    double width, height;
+    Rectangle(double w, double h) : width(w), height(h) {}
+    double area()      const;
+    double perimeter() const;
+    bool   is_square() const;
+};</code></pre>
+    <t-b>
+      <code>#pragma once</code> is a universally supported include guard that prevents the
+      header from being processed more than once per translation unit.
+    </t-b>
+  </section>
+
+  <!-- D1.4 The Library Implementation -->
+  <section>
+    <h2>D1.4 The Library Implementation - src/demo_lib.cpp</h2>
+    <pre><code class="language-cpp">// demo_lib.cpp - implementation of the Demonstrations library.
+#include "demo_lib.h"
+#include &lt;numbers&gt;
+#include &lt;sstream&gt;
+
+int add(int a, int b) { return a + b; }
+
+int clamp(int value, int lo, int hi) {
+    if (value &lt; lo) return lo;
+    if (value &gt; hi) return hi;
+    return value;
+}
+
+int word_count(const std::string&amp; s) {
+    std::istringstream stream(s);
+    std::string word;
+    int count = 0;
+    while (stream &gt;&gt; word) ++count;
+    return count;
+}
+
+double Circle::area()          const { return std::numbers::pi * radius * radius; }
+double Circle::circumference() const { return 2.0 * std::numbers::pi * radius; }
+
+double Rectangle::area()      const { return width * height; }
+double Rectangle::perimeter() const { return 2.0 * (width + height); }
+bool   Rectangle::is_square() const { return width == height; }</code></pre>
+    <t-b>
+      <code>std::numbers::pi</code> requires C++20. The root <code>CMakeLists.txt</code>
+      sets <code>CMAKE_CXX_STANDARD 20</code> for the entire project.
+    </t-b>
+  </section>
+
+  <!-- D1.5 Root CMakeLists.txt -->
+  <section>
+    <h2>D1.5 Root CMakeLists.txt</h2>
+    <pre><code class="language-cmake"># CMakeLists.txt - root build file for the Demonstrations project.
+cmake_minimum_required(VERSION 3.20)
+project(Demonstrations LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_library(demo_lib src/demo_lib.cpp)
+target_include_directories(demo_lib PUBLIC include)
+
+add_subdirectory(demos)</code></pre>
+    <t-b>
+      <code>add_library</code> creates a static library target named <code>demo_lib</code>.
+      <code>target_include_directories(... PUBLIC include)</code> propagates the
+      <code>include/</code> path to any target that links against <code>demo_lib</code>,
+      so demos find the header without specifying it themselves.
+    </t-b>
+    <t-b>
+      <code>add_subdirectory(demos)</code> reads <code>demos/CMakeLists.txt</code> and
+      adds its targets to the build.
+    </t-b>
+  </section>
+
+  <!-- D1.6 demos/CMakeLists.txt -->
+  <section>
+    <h2>D1.6 demos/CMakeLists.txt</h2>
+    <pre><code class="language-cmake"># demos/CMakeLists.txt - one executable per demo source file.
+foreach(demo basic words shapes)
+  add_executable(${demo} ${demo}.cpp)
+  target_link_libraries(${demo} PRIVATE demo_lib)
+endforeach()</code></pre>
+    <t-b>
+      The <code>foreach</code> loop iterates <code>basic words shapes</code>. For each name
+      it calls <code>add_executable</code> with that name and the matching <code>.cpp</code>
+      file, then links the executable against <code>demo_lib</code>.
+    </t-b>
+    <t-b>
+      Adding a new demo requires only adding its name to the list and creating the
+      corresponding <code>.cpp</code> file.
+    </t-b>
+  </section>
+
+  <!-- D1.7 Demo: basic.cpp -->
+  <section>
+    <h2>D1.7 Demo: basic.cpp</h2>
+    <pre><code class="language-cpp">// basic.cpp - demonstrates add and clamp from demo_lib.
+// Build the project, then run: ./build/demos/basic
+#include &lt;iostream&gt;
+#include "demo_lib.h"
+
+int main() {
+    std::cout &lt;&lt; "=== basic demo ===\n";
+    std::cout &lt;&lt; "add(7, 3)        = " &lt;&lt; add(7, 3)         &lt;&lt; "\n";
+    std::cout &lt;&lt; "clamp(25, 0, 20) = " &lt;&lt; clamp(25, 0, 20) &lt;&lt; "\n";
+    std::cout &lt;&lt; "clamp(-5, 0, 20) = " &lt;&lt; clamp(-5, 0, 20) &lt;&lt; "\n";
+    std::cout &lt;&lt; "clamp(10, 0, 20) = " &lt;&lt; clamp(10, 0, 20) &lt;&lt; "\n";
+}</code></pre>
+    <t-b>
+      Because <code>demo_lib</code> uses a <code>PUBLIC</code> include directory,
+      <code>#include "demo_lib.h"</code> resolves without any extra compiler flags in the
+      demo's own build rule.
+    </t-b>
+  </section>
+
+  <!-- D1.8 Demo: words.cpp -->
+  <section>
+    <h2>D1.8 Demo: words.cpp</h2>
+    <pre><code class="language-cpp">// words.cpp - demonstrates word_count from demo_lib.
+// Build the project, then run: ./build/demos/words
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include "demo_lib.h"
+
+int main() {
+    std::cout &lt;&lt; "=== words demo ===\n";
+    std::string text = "the quick brown fox jumps over the lazy dog the fox";
+    std::cout &lt;&lt; "text:       \"" &lt;&lt; text &lt;&lt; "\"\n";
+    std::cout &lt;&lt; "word_count: " &lt;&lt; word_count(text) &lt;&lt; "\n";
+}</code></pre>
+  </section>
+
+  <!-- D1.9 Demo: shapes.cpp -->
+  <section>
+    <h2>D1.9 Demo: shapes.cpp</h2>
+    <pre><code class="language-cpp">// shapes.cpp - demonstrates Circle and Rectangle from demo_lib.
+// Build the project, then run: ./build/demos/shapes
+#include &lt;format&gt;
+#include &lt;iostream&gt;
+#include "demo_lib.h"
+
+int main() {
+    std::cout &lt;&lt; "=== shapes demo ===\n";
+
+    Circle c(5.0);
+    std::cout &lt;&lt; std::format("Circle r=5:\n  area          = {:.4f}\n"
+                              "  circumference = {:.4f}\n",
+                              c.area(), c.circumference());
+
+    Rectangle r(4.0, 6.0);
+    std::cout &lt;&lt; std::format("Rectangle 4x6:\n  area      = {:.1f}\n"
+                              "  perimeter = {:.1f}\n  is_square = {}\n",
+                              r.area(), r.perimeter(), r.is_square());
+
+    Rectangle sq(5.0, 5.0);
+    std::cout &lt;&lt; std::format("Rectangle 5x5:\n  is_square = {}\n",
+                              sq.is_square());
+}</code></pre>
+    <t-b>
+      <code>std::format</code> is a C++20 feature that works like Python's f-strings:
+      <code>{:.4f}</code> formats a floating-point value to four decimal places.
+    </t-b>
+  </section>
+
+  <!-- D1.10 Build and Run -->
+  <section>
+    <h2>D1.10 Build and Run</h2>
+    <t-b>Configure and build from the <code>Demonstrations/</code> directory:</t-b>
+    <pre><code class="language-terminal">cmake -S . -B build
+cmake --build build</code></pre>
+    <t-b>Run a demo on Linux or macOS:</t-b>
+    <pre><code class="language-terminal">./build/demos/basic
+./build/demos/words
+./build/demos/shapes</code></pre>
+    <t-b>Run a demo on Windows (MSVC debug build):</t-b>
+    <pre><code class="language-terminal">build\demos\Debug\basic.exe</code></pre>
+    <table>
+      <thead>
+        <tr><th>Command</th><th>What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>cmake -S . -B build</code></td><td>Configure: read CMakeLists.txt, generate build files in <code>build/</code></td></tr>
+        <tr><td><code>cmake --build build</code></td><td>Build all targets: <code>demo_lib</code>, <code>basic</code>, <code>words</code>, <code>shapes</code></td></tr>
+        <tr><td><code>cmake --build build --target basic</code></td><td>Build only the <code>basic</code> executable</td></tr>
+        <tr><td><code>cmake --build build --config Release</code></td><td>Release build - optimized, no debug symbols</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- D1.11 Expected Outputs -->
+  <section>
+    <h2>D1.11 Expected Outputs</h2>
+    <t-b><code>./build/demos/basic</code></t-b>
+    <pre class="output"><code class="language-terminal">=== basic demo ===
+add(7, 3)        = 10
+clamp(25, 0, 20) = 20
+clamp(-5, 0, 20) = 0
+clamp(10, 0, 20) = 10</code></pre>
+
+    <t-b><code>./build/demos/words</code></t-b>
+    <pre class="output"><code class="language-terminal">=== words demo ===
+text:       "the quick brown fox jumps over the lazy dog the fox"
+word_count: 11</code></pre>
+
+    <t-b><code>./build/demos/shapes</code></t-b>
+    <pre class="output"><code class="language-terminal">=== shapes demo ===
+Circle r=5:
+  area          = 78.5398
+  circumference = 31.4159
+Rectangle 4x6:
+  area      = 24.0
+  perimeter = 20.0
+  is_square = false
+Rectangle 5x5:
+  is_square = true</code></pre>
+  </section>
+
+  <!-- D1.12 Exercise -->
+  <section>
+    <h2>D1.12 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Add a <code>unique_words(const std::string&amp; s) -&gt; std::vector&lt;std::string&gt;</code>
+          function to the library. Sort the words and remove duplicates before returning.</li>
+        <li>Add a <code>stats</code> demo in <code>demos/stats.cpp</code> that calls both
+          <code>word_count</code> and <code>unique_words</code> on several strings and
+          prints both results.</li>
+        <li>Add <code>stats</code> to the <code>foreach</code> list in
+          <code>demos/CMakeLists.txt</code>. Re-run the configure step, rebuild, and run
+          the new demo.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- D1.13 Common Mistakes -->
+  <section>
+    <h2>D1.13 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Forgetting to add the demo name to the foreach list</h3>
+      <t-b>
+        Creating <code>demos/stats.cpp</code> without adding <code>stats</code> to the
+        <code>foreach</code> list means CMake never defines a build target for it. Nothing
+        fails - the file is silently ignored.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>PRIVATE vs PUBLIC for include directories</h3>
+      <t-b>
+        <code>target_include_directories(demo_lib PRIVATE include)</code> keeps the path
+        inside the library only. Demos linking against it would then need their own
+        <code>target_include_directories</code>. Using <code>PUBLIC</code> on the library
+        propagates the path automatically to all dependents.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Not re-running cmake after changing CMakeLists.txt</h3>
+      <t-b>
+        Adding a name to the <code>foreach</code> list and then only running the build step
+        may not pick up the change. Re-run <code>cmake -S . -B build</code> whenever a
+        <code>CMakeLists.txt</code> changes.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Defining function bodies in the header</h3>
+      <t-b>
+        Writing a function body directly in the header (not just a declaration) without
+        <code>inline</code> gives every translation unit that includes it a copy. The
+        linker then reports "multiple definition" errors. Declare in the header, define in
+        <code>.cpp</code>, or mark the body <code>inline</code>.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- D1.14 Key Terms -->
+  <section>
+    <h2>D1.14 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>add_library</td><td>CMake command that declares a library target</td></tr>
+        <tr><td>add_executable</td><td>CMake command that declares an executable target</td></tr>
+        <tr><td>add_subdirectory</td><td>Includes another directory's CMakeLists.txt in the build</td></tr>
+        <tr><td>target_link_libraries</td><td>Links a target against a library; propagates PUBLIC properties</td></tr>
+        <tr><td>target_include_directories</td><td>Sets include search paths; PUBLIC propagates to dependents</td></tr>
+        <tr><td>foreach</td><td>CMake loop construct that iterates over a list of values</td></tr>
+        <tr><td>static library</td><td>Archive of object files linked into each executable at build time</td></tr>
+        <tr><td>#pragma once</td><td>Include guard preventing a file from being processed more than once</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  C++ / Learn / Demonstrations &nbsp;&bull;&nbsp; Tutorial D1 &nbsp;&bull;&nbsp; Demonstrations
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CppTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

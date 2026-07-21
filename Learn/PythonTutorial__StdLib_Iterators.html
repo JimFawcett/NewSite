@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iterators - Python Iterators and itertools</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Iterators &mdash; Python Iterators and itertools</h1>
+  <t-b>Tutorial S6 &nbsp;&bull;&nbsp; Python / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__Iterators.html">Rust</a>
+    <a href="CppTutorial__StdLib_Algorithms.html">C++</a>
+    <a href="CSharpTutorial__StdLib_LINQ.html">C#</a>
+    <a href="PythonTutorial__StdLib_Iterators.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- S6.0 What This Teaches -->
+  <section>
+    <h2>S6.0 What This Teaches</h2>
+    <t-b>This tutorial covers Python's iterator protocol and the <code>itertools</code> module:</t-b>
+    <ul>
+      <li>The iterator protocol: <code>__iter__</code> and <code>__next__</code></li>
+      <li>Generator functions with <code>yield</code></li>
+      <li>Built-in iterator tools: <code>map</code>, <code>filter</code>, <code>zip</code>, <code>enumerate</code></li>
+      <li><code>itertools</code>: <code>chain</code>, <code>islice</code>, <code>groupby</code>, <code>product</code></li>
+      <li>Lazy evaluation and memory efficiency</li>
+    </ul>
+  </section>
+
+  <!-- S6.1 The Iterator Protocol -->
+  <section>
+    <h2>S6.1 The Iterator Protocol</h2>
+    <t-b>
+      Any object with <code>__iter__</code> and <code>__next__</code> is an iterator.
+      <code>for</code> loops call these automatically. You can also call them manually:
+    </t-b>
+    <pre><code class="language-python">lst = [10, 20, 30]
+it = iter(lst)     # calls lst.__iter__()
+print(next(it))    # 10
+print(next(it))    # 20
+print(next(it))    # 30
+# next(it)         # StopIteration - iterator exhausted
+
+# Any iterable works in for
+for x in iter(lst):
+    print(x)</code></pre>
+    <t-b>
+      Iterators are lazy: they produce one value at a time without building the
+      entire sequence in memory. This is why <code>range(1_000_000)</code> is fast
+      and memory-efficient.
+    </t-b>
+  </section>
+
+  <!-- S6.2 Generator Functions -->
+  <section>
+    <h2>S6.2 Generator Functions</h2>
+    <t-b>
+      A function containing <code>yield</code> is a generator function. Calling it
+      returns a generator object - an iterator that produces values on demand:
+    </t-b>
+    <pre><code class="language-python">def count_up(start: int, stop: int):
+    n = start
+    while n &lt; stop:
+        yield n
+        n += 1
+
+for n in count_up(1, 6):
+    print(n, end=" ")   # 1 2 3 4 5
+
+def fibonacci():
+    a, b = 0, 1
+    while True:
+        yield a
+        a, b = b, a + b
+
+# Take first 10 Fibonacci numbers
+import itertools
+fibs = list(itertools.islice(fibonacci(), 10))
+print(fibs)   # [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]</code></pre>
+  </section>
+
+  <!-- S6.3 Built-in Iterator Tools -->
+  <section>
+    <h2>S6.3 Built-in Iterator Tools</h2>
+    <pre><code class="language-python">numbers = [1, 2, 3, 4, 5, 6]
+
+# map - apply function to each element (lazy)
+squares = map(lambda x: x**2, numbers)
+
+# filter - keep elements satisfying predicate (lazy)
+evens = filter(lambda x: x % 2 == 0, numbers)
+
+# zip - pair elements from multiple iterables
+names  = ["Alice", "Bob", "Carol"]
+scores = [92, 78, 95]
+paired = list(zip(names, scores))   # [('Alice', 92), ('Bob', 78), ('Carol', 95)]
+
+# enumerate - add index to any iterable
+for i, name in enumerate(names, start=1):
+    print(f"{i}. {name}")
+
+# sorted, min, max work on any iterable
+print(sorted(map(lambda x: x**2, numbers)))   # [1, 4, 9, 16, 25, 36]</code></pre>
+  </section>
+
+  <!-- S6.4 itertools -->
+  <section>
+    <h2>S6.4 itertools</h2>
+    <pre><code class="language-python">import itertools
+
+# chain - concatenate iterables
+combined = list(itertools.chain([1, 2], [3, 4], [5]))   # [1, 2, 3, 4, 5]
+
+# islice - lazy slice of any iterable
+first5 = list(itertools.islice(range(100), 5))   # [0, 1, 2, 3, 4]
+
+# groupby - group consecutive equal keys (sort first!)
+data = [("A", 1), ("A", 2), ("B", 3), ("B", 4), ("A", 5)]
+data.sort(key=lambda x: x[0])
+for key, group in itertools.groupby(data, key=lambda x: x[0]):
+    print(key, list(group))
+
+# product - Cartesian product
+for r, c in itertools.product("ABC", [1, 2]):
+    print(r, c, end=" | ")
+
+# accumulate - running totals
+import operator
+running = list(itertools.accumulate([1, 2, 3, 4, 5]))   # [1, 3, 6, 10, 15]</code></pre>
+  </section>
+
+  <!-- S6.5 Custom Iterators -->
+  <section>
+    <h2>S6.5 Custom Iterators</h2>
+    <pre><code class="language-python">class Countdown:
+    def __init__(self, start: int):
+        self.current = start
+
+    def __iter__(self):
+        return self
+
+    def __next__(self) -> int:
+        if self.current &lt;= 0:
+            raise StopIteration
+        val = self.current
+        self.current -= 1
+        return val
+
+for n in Countdown(5):
+    print(n, end=" ")   # 5 4 3 2 1</code></pre>
+    <t-b>
+      In practice, generator functions are simpler than implementing the full
+      iterator protocol class. Reserve classes for stateful iterators that need
+      methods beyond iteration.
+    </t-b>
+  </section>
+
+  <!-- S6.6 Example -->
+  <section>
+    <h2>S6.6 Example - All Together</h2>
+    <pre><code class="language-python"># Iterators - pipeline processing with generators and itertools.
+
+import itertools
+
+def read_numbers():
+    """Simulate reading a stream of numbers."""
+    yield from [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5]
+
+def deduplicate(seq):
+    seen = set()
+    for item in seq:
+        if item not in seen:
+            seen.add(item)
+            yield item
+
+def running_average(seq):
+    total = 0
+    count = 0
+    for item in seq:
+        total += item
+        count += 1
+        yield total / count
+
+# Build a lazy pipeline
+pipeline = running_average(deduplicate(read_numbers()))
+for avg in itertools.islice(pipeline, 5):
+    print(f"{avg:.2f}", end=" ")</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">3.00 2.00 2.67 2.50 3.40</code></pre>
+  </section>
+
+  <!-- S6.7 Exercise -->
+  <section>
+    <h2>S6.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Write a generator <code>powers(base, n)</code> that yields base<sup>0</sup>
+          through base<sup>n</sup>. Consume it with a comprehension to build a list.</li>
+        <li>Use <code>itertools.groupby</code> on a sorted list of words to group
+          them by their first letter. Print each group.</li>
+        <li>Build a lazy pipeline that reads integers from <code>range(1, 101)</code>,
+          keeps only those divisible by 3 or 5, squares them, and computes the sum
+          using <code>sum()</code> without materializing a list.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S6.8 Common Mistakes -->
+  <section>
+    <h2>S6.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Consuming an iterator twice</h3>
+      <pre><code class="language-python">it = iter([1, 2, 3])
+print(list(it))   # [1, 2, 3]
+print(list(it))   # [] - iterator is exhausted!</code></pre>
+      <t-b>
+        Convert to a list if you need to iterate multiple times. Iterators are
+        single-pass.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>itertools.groupby requires sorted input</h3>
+      <pre><code class="language-python">data = [1, 2, 1, 2]
+for k, g in itertools.groupby(data):
+    print(k, list(g))
+# 1 [1]  2 [2]  1 [1]  2 [2]  - NOT grouped!
+# Sort first: for k, g in itertools.groupby(sorted(data))</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Using map/filter where a comprehension is clearer</h3>
+      <t-b>
+        <code>[x**2 for x in nums if x % 2 == 0]</code> is usually more readable
+        than <code>map(lambda x: x**2, filter(lambda x: x%2==0, nums))</code>.
+        Use <code>map</code>/<code>filter</code> when passing a named function rather
+        than a lambda.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- S6.9 Key Terms -->
+  <section>
+    <h2>S6.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>iterator</td><td>Object with __iter__ and __next__; produces one value at a time</td></tr>
+        <tr><td>iterable</td><td>Object with __iter__ that returns an iterator; lists, strings, dicts, etc.</td></tr>
+        <tr><td>yield</td><td>Suspends a generator function and produces the yielded value</td></tr>
+        <tr><td>generator</td><td>Function with yield; returns an iterator that computes values lazily</td></tr>
+        <tr><td>StopIteration</td><td>Exception signaling that an iterator has no more values</td></tr>
+        <tr><td>itertools.chain</td><td>Concatenates multiple iterables without copying</td></tr>
+        <tr><td>itertools.islice</td><td>Takes the first n elements of any iterable lazily</td></tr>
+        <tr><td>itertools.groupby</td><td>Groups consecutive equal-key elements; input must be sorted by key</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  Python / Learn &nbsp;&bull;&nbsp; Tutorial S6 &nbsp;&bull;&nbsp; Iterators
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/PythonTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

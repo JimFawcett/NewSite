@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testing - Evaluating AI Output</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Testing &mdash; Evaluating AI Output</h1>
+  <t-b>Tutorial 10.0 &nbsp;&bull;&nbsp; AI / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>10.0 What This Teaches</h2>
+    <t-b>
+      Testing AI-generated output is harder than testing ordinary functions because the
+      same prompt can produce different text on different runs. You cannot simply compare
+      strings with <code>assertEqual</code>. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Why AI output resists traditional unit tests</li>
+      <li>Structural tests: things you can check deterministically</li>
+      <li>Semantic tests: running generated code and checking its behavior</li>
+      <li>Using <code>temperature=0</code> to improve test stability</li>
+      <li>Snapshot (golden file) testing for regression detection</li>
+      <li>Human-in-the-loop evaluation for subjective quality</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>10.1 Why AI Output Is Hard to Test</h2>
+    <t-b>
+      AI models are non-deterministic by default. The same prompt sent twice may return
+      two structurally different responses. This breaks the fundamental assumption of
+      automated unit testing - that a function returns the same value for the same input.
+    </t-b>
+    <t-b>
+      The practical consequence: you cannot use <code>assertEqual(response_text, expected)</code>
+      for anything beyond trivial prompts. Instead, test <em>properties</em> of the output:
+      does it contain the right structure? Does the code it generated actually run?
+    </t-b>
+  </section>
+
+  <section>
+    <h2>10.2 Structural Tests</h2>
+    <t-b>
+      Structural tests check properties you can evaluate without running the code. Examples:
+      does the response contain a function definition? Does it parse as valid Python?
+    </t-b>
+    <pre><code class="language-python"># structural_test.py - check that the response contains a function and parses.
+import anthropic
+
+client = anthropic.Anthropic()
+
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=512,
+    temperature=0,
+    messages=[{"role": "user", "content": "Write a Python function that adds two numbers."}]
+)
+
+text = response.content[0].text
+
+# Structural check 1 - does the response contain a function definition?
+assert "def " in text, "Response does not contain a function definition"
+
+# Structural check 2 - does the code block parse as valid Python?
+try:
+    compile(text, "&lt;string&gt;", "exec")
+    print("Syntax OK")
+except SyntaxError as e:
+    print(f"Syntax error in generated code: {e}")</code></pre>
+    <t-b>
+      <code>compile()</code> parses the source without executing it. It catches syntax
+      errors but not logic bugs - that requires running the code.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>10.3 Semantic Tests</h2>
+    <t-b>
+      A semantic test runs the generated code and checks its behavior with known inputs.
+      Python's built-in <code>exec()</code> executes a string as code in a namespace you
+      control:
+    </t-b>
+    <pre><code class="language-python"># semantic_test.py - exec the generated function and test its behavior.
+import anthropic
+
+client = anthropic.Anthropic()
+
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=256,
+    temperature=0,
+    messages=[{"role": "user", "content":
+        "Write only a Python function named add(a, b) that returns a + b. "
+        "No explanation, just the function."}]
+)
+
+code = response.content[0].text
+
+# Execute the generated code in an isolated namespace
+namespace = {}
+exec(code, namespace)
+
+# Call the generated function with known inputs
+add = namespace["add"]
+assert add(2, 3) == 5,  f"Expected 5, got {add(2, 3)}"
+assert add(0, 0) == 0,  f"Expected 0, got {add(0, 0)}"
+assert add(-1, 1) == 0, f"Expected 0, got {add(-1, 1)}"
+
+print("All semantic tests passed.")</code></pre>
+    <t-b>
+      The prompt asks for <em>only</em> the function to make parsing straightforward.
+      Asking for "no explanation" reduces the chance that the model wraps the function
+      in markdown or prose that would cause <code>exec()</code> to fail.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>10.4 Temperature=0 for Reproducibility</h2>
+    <t-b>
+      With <code>temperature=0</code>, the model picks the highest-probability token at
+      every step. This does not guarantee identical output across model versions, but it
+      is far more stable than the default temperature. For automated tests, always set
+      <code>temperature=0</code>:
+    </t-b>
+    <pre><code class="language-python"># Always use temperature=0 in automated test scripts.
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=512,
+    temperature=0,        # makes output as stable as possible
+    messages=[{"role": "user", "content": "Write a Python function to reverse a string."}]
+)</code></pre>
+    <t-b>
+      Without this, a test that passes today may fail tomorrow because the model sampled
+      a different but equally valid function structure.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>10.5 Snapshot Testing</h2>
+    <t-b>
+      A snapshot test (also called a golden file test) generates output once, saves it,
+      and compares future runs against the saved version. This catches regressions when
+      the model or prompt changes:
+    </t-b>
+    <pre><code class="language-python"># snapshot_test.py - generate output, save it, compare on later runs.
+import anthropic
+from pathlib import Path
+
+client = anthropic.Anthropic()
+GOLDEN_FILE = Path("golden_reverse.txt")
+
+PROMPT = ("Write only a Python function named reverse_string(s) that returns s reversed. "
+          "No explanation.")
+
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=256,
+    temperature=0,
+    messages=[{"role": "user", "content": PROMPT}]
+)
+current = response.content[0].text
+
+if not GOLDEN_FILE.exists():
+    GOLDEN_FILE.write_text(current)
+    print("Golden file created.")
+else:
+    golden = GOLDEN_FILE.read_text()
+    if current == golden:
+        print("Snapshot matches.")
+    else:
+        print("SNAPSHOT MISMATCH - output changed since baseline was saved.")
+        print("--- golden ---")
+        print(golden)
+        print("--- current ---")
+        print(current)</code></pre>
+    <t-b>
+      Delete the golden file to reset the baseline after a deliberate prompt change.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>10.6 Human-in-the-Loop Evaluation</h2>
+    <t-b>
+      For subjective qualities - clarity, style, correctness on complex tasks - automated
+      checks are not enough. A simple scoring script lets you rate multiple responses
+      manually:
+    </t-b>
+    <pre><code class="language-python"># human_eval.py - generate N responses and prompt the user to rate each.
+import anthropic
+
+client = anthropic.Anthropic()
+
+PROMPT = "Explain what a Python context manager is. Be clear and concise."
+NUM_RESPONSES = 3
+
+scores = []
+for i in range(NUM_RESPONSES):
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=256,
+        # deliberately not setting temperature=0 to get varied responses
+        messages=[{"role": "user", "content": PROMPT}]
+    )
+    text = response.content[0].text
+    print(f"\n--- Response {i + 1} ---")
+    print(text)
+    score = input("Rate this response 1-5: ").strip()
+    scores.append(int(score))
+
+print(f"\nScores: {scores}")
+print(f"Average: {sum(scores) / len(scores):.1f}")</code></pre>
+    <t-b>
+      Running this over time reveals whether prompt changes consistently improve quality,
+      which no automated metric can judge for complex outputs.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>10.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Write a test script that:
+      </t-b>
+      <ol>
+        <li>
+          Asks Claude to write a Python function that returns <code>True</code> if a
+          string is a palindrome (ignore case).
+        </li>
+        <li>
+          Extracts the code from the response by finding the first line that starts
+          with <code>def </code> and taking everything from there to the end.
+        </li>
+        <li>
+          Uses <code>exec()</code> to load the function into a local namespace.
+        </li>
+        <li>
+          Calls the function on <code>["racecar", "hello", "level"]</code> and asserts
+          the correct results: <code>True</code>, <code>False</code>, <code>True</code>.
+        </li>
+        <li>
+          Prints <code>"All tests passed."</code> if all assertions succeed.
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <h2>10.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Testing exact output text with assertEqual</h3>
+      <pre><code class="language-python"># Bad - breaks whenever the model rephrases the same correct answer.
+assert response.content[0].text == "def add(a, b):\n    return a + b\n"
+
+# Good - test behavior, not exact text.
+exec(response.content[0].text, ns := {})
+assert ns["add"](2, 3) == 5</code></pre>
+      <t-b>
+        Exact string comparison is brittle. The model may use different whitespace,
+        variable names, or add a docstring - all valid, but all failing the string check.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Not setting temperature=0 for automated tests</h3>
+      <pre><code class="language-python"># Bad - default temperature causes flaky tests.
+response = client.messages.create(model="claude-sonnet-4-6", max_tokens=256,
+    messages=[{"role": "user", "content": "Write a sort function."}])
+
+# Good - pin temperature to reduce variation.
+response = client.messages.create(model="claude-sonnet-4-6", max_tokens=256,
+    temperature=0,
+    messages=[{"role": "user", "content": "Write a sort function."}])</code></pre>
+      <t-b>
+        Random variation makes tests fail intermittently. Always use <code>temperature=0</code>
+        in automated test scripts.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>exec()ing model output without any sanity check</h3>
+      <pre><code class="language-python"># Risky - no check before executing arbitrary model output.
+exec(response.content[0].text)
+
+# Safer - compile first to catch syntax errors, then exec in an isolated namespace.
+code = response.content[0].text
+compile(code, "&lt;string&gt;", "exec")   # raises SyntaxError if malformed
+ns = {}
+exec(code, ns)</code></pre>
+      <t-b>
+        Model output is not guaranteed to be safe or even syntactically valid. At minimum,
+        run <code>compile()</code> before <code>exec()</code> and always use an isolated
+        namespace rather than <code>exec(code)</code> directly into the global scope.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>10.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>structural test</td><td>A test that checks the shape or format of the output without running it</td></tr>
+        <tr><td>semantic test</td><td>A test that runs the generated code and checks its behavior with known inputs</td></tr>
+        <tr><td>exec()</td><td>Python built-in that executes a string as code; used to run model-generated functions</td></tr>
+        <tr><td>compile()</td><td>Python built-in that parses source code and catches syntax errors without executing it</td></tr>
+        <tr><td>golden file</td><td>A saved reference output used to detect changes in future runs</td></tr>
+        <tr><td>snapshot test</td><td>A test that compares current output against a saved golden file</td></tr>
+        <tr><td>temperature=0</td><td>Setting that makes model output as deterministic as possible; required for stable automated tests</td></tr>
+        <tr><td>human evaluation</td><td>Manual scoring of model output for subjective qualities that automated checks cannot measure</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn &nbsp;&bull;&nbsp; Tutorial 10 &nbsp;&bull;&nbsp; Testing
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

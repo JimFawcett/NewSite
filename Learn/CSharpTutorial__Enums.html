@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Enums - C# Enumeration Types</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Enums &mdash; C# Enumeration Types</h1>
+  <t-b>Tutorial 8.0 &nbsp;&bull;&nbsp; C# / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__Enums.html">Rust</a>
+    <a href="CppTutorial__Enums.html">C++</a>
+    <a href="CSharpTutorial__Enums.html">C#</a>
+    <a href="PythonTutorial__Enums.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- 8.0 What This Teaches -->
+  <section>
+    <h2>8.0 What This Teaches</h2>
+    <t-b>This tutorial covers C# enumeration types:</t-b>
+    <ul>
+      <li>Basic <code>enum</code> syntax and underlying integer types</li>
+      <li>Explicit values and conversions</li>
+      <li><code>[Flags]</code> enums for bit sets</li>
+      <li>Extension methods on enums</li>
+      <li>Pattern matching with <code>switch</code> expressions</li>
+    </ul>
+    <t-b>
+      Note: C# enums are named integer constants. Rust enums carry data per variant
+      and are more powerful. Python enums (from the <code>enum</code> module) are
+      objects with methods.
+    </t-b>
+  </section>
+
+  <!-- 8.1 Basic Syntax -->
+  <section>
+    <h2>8.1 Basic Enum Syntax</h2>
+    <pre><code class="language-csharp">enum Direction { North, South, East, West }
+
+Direction d = Direction.North;
+Console.WriteLine(d);        // North
+Console.WriteLine((int)d);   // 0 - first member defaults to 0</code></pre>
+    <t-b>
+      By default, enum members are numbered from 0. The enum name and its members
+      are accessed with dot notation. An enum variable has the type safety of the
+      named type, not a raw integer.
+    </t-b>
+  </section>
+
+  <!-- 8.2 Underlying Type and Explicit Values -->
+  <section>
+    <h2>8.2 Underlying Type and Explicit Values</h2>
+    <pre><code class="language-csharp">enum HttpStatus : int
+{
+    Ok = 200,
+    Created = 201,
+    BadRequest = 400,
+    NotFound = 404,
+    ServerError = 500
+}
+
+HttpStatus status = HttpStatus.NotFound;
+Console.WriteLine(status);           // NotFound
+Console.WriteLine((int)status);      // 404
+
+// Parse from integer
+HttpStatus s = (HttpStatus)200;
+Console.WriteLine(s);                // Ok
+
+// Parse from string
+HttpStatus parsed = Enum.Parse&lt;HttpStatus&gt;("Created");
+Console.WriteLine(parsed);           // Created</code></pre>
+    <t-b>
+      The underlying type defaults to <code>int</code>. You can specify <code>byte</code>,
+      <code>short</code>, <code>long</code>, or any other integral type after the colon.
+    </t-b>
+  </section>
+
+  <!-- 8.3 Flags Enums -->
+  <section>
+    <h2>8.3 [Flags] Enums</h2>
+    <t-b>
+      Apply <code>[Flags]</code> when members represent bits in a bit field. Assign
+      powers of two as values. Combine and test members with bitwise operators:
+    </t-b>
+    <pre><code class="language-csharp">[Flags]
+enum Permission
+{
+    None    = 0,
+    Read    = 1,
+    Write   = 2,
+    Execute = 4,
+    All     = Read | Write | Execute
+}
+
+Permission p = Permission.Read | Permission.Write;
+Console.WriteLine(p);                            // Read, Write
+Console.WriteLine(p.HasFlag(Permission.Read));   // True
+Console.WriteLine(p.HasFlag(Permission.Execute));// False
+
+p |= Permission.Execute;
+Console.WriteLine(p);  // Read, Write, Execute</code></pre>
+  </section>
+
+  <!-- 8.4 Enum Utility Methods -->
+  <section>
+    <h2>8.4 Enum Utility Methods</h2>
+    <pre><code class="language-csharp">// Get all values
+foreach (Direction d in Enum.GetValues&lt;Direction&gt;())
+    Console.Write($"{d} ");   // North South East West
+
+// Get all names
+string[] names = Enum.GetNames&lt;Direction&gt;();
+
+// Check if a value is defined
+bool valid = Enum.IsDefined(typeof(Direction), "North");  // true
+bool bad   = Enum.IsDefined(typeof(Direction), "Up");     // false
+
+// TryParse - safer than Parse
+if (Enum.TryParse&lt;Direction&gt;("East", out Direction result))
+    Console.WriteLine(result);  // East</code></pre>
+  </section>
+
+  <!-- 8.5 switch with Enums -->
+  <section>
+    <h2>8.5 switch with Enums</h2>
+    <t-b>
+      Switch expressions are the cleanest way to handle all enum cases. The compiler
+      warns if a case is missing:
+    </t-b>
+    <pre><code class="language-csharp">Direction dir = Direction.West;
+
+string label = dir switch
+{
+    Direction.North =&gt; "up",
+    Direction.South =&gt; "down",
+    Direction.East  =&gt; "right",
+    Direction.West  =&gt; "left",
+    _ =&gt; throw new ArgumentOutOfRangeException()
+};
+Console.WriteLine(label);  // left</code></pre>
+  </section>
+
+  <!-- 8.6 Example -->
+  <section>
+    <h2>8.6 Example - All Together</h2>
+    <pre><code class="language-csharp">// Enums - traffic light state machine with switch expression.
+
+TrafficLight light = TrafficLight.Red;
+
+for (int i = 0; i &lt; 6; i++)
+{
+    Console.WriteLine(Describe(light));
+    light = Next(light);
+}
+
+static string Describe(TrafficLight l) =&gt; l switch
+{
+    TrafficLight.Red    =&gt; "STOP",
+    TrafficLight.Yellow =&gt; "CAUTION",
+    TrafficLight.Green  =&gt; "GO",
+    _ =&gt; "UNKNOWN"
+};
+
+static TrafficLight Next(TrafficLight l) =&gt; l switch
+{
+    TrafficLight.Red    =&gt; TrafficLight.Green,
+    TrafficLight.Green  =&gt; TrafficLight.Yellow,
+    TrafficLight.Yellow =&gt; TrafficLight.Red,
+    _ =&gt; TrafficLight.Red
+};
+
+enum TrafficLight { Red, Yellow, Green }</code></pre>
+    <t-b>Expected output:</t-b>
+    <pre class="output"><code class="language-terminal">STOP
+GO
+CAUTION
+STOP
+GO
+CAUTION</code></pre>
+  </section>
+
+  <!-- 8.7 Exercise -->
+  <section>
+    <h2>8.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Define a <code>Season</code> enum with four values. Write a switch expression
+          that maps each season to a weather description string.</li>
+        <li>Define a <code>[Flags]</code> enum <code>DayOfWeek</code> (not the built-in one)
+          with values for each day. Create a <code>Permission</code> value representing
+          a Mon-Wed-Fri schedule and test each day with <code>HasFlag</code>.</li>
+        <li>Use <code>Enum.GetValues&lt;Season&gt;()</code> to iterate and print all seasons
+          with their integer value.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 8.8 Common Mistakes -->
+  <section>
+    <h2>8.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Casting an arbitrary int to an enum without validation</h3>
+      <pre><code class="language-csharp">Direction d = (Direction)99;   // no exception - d holds 99
+Console.WriteLine(d);           // 99 - not a named value!</code></pre>
+      <t-b>
+        Always validate with <code>Enum.IsDefined</code> or <code>Enum.TryParse</code>
+        before casting from an external integer.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Forgetting powers of two in [Flags]</h3>
+      <pre><code class="language-csharp">[Flags]
+enum Bad { A = 1, B = 2, C = 3 }  // C = 3 = A|B, not a distinct bit!</code></pre>
+      <t-b>
+        Every distinct bit flag must be a power of two (1, 2, 4, 8, 16…). The value
+        3 overlaps with the combination of 1 and 2.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Using int instead of enum in APIs</h3>
+      <t-b>
+        Accepting a raw <code>int</code> where an enum is appropriate loses type
+        safety and documentation. Callers must know valid values out of band. Use
+        the enum type in method signatures.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- 8.9 Key Terms -->
+  <section>
+    <h2>8.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>enum</td><td>Named set of integer constants; provides type-safe symbolic names</td></tr>
+        <tr><td>underlying type</td><td>The integral type storing enum values; defaults to int</td></tr>
+        <tr><td>[Flags]</td><td>Attribute enabling bitwise combination of enum members</td></tr>
+        <tr><td>HasFlag</td><td>Tests whether a flags enum value includes a specific flag</td></tr>
+        <tr><td>Enum.GetValues&lt;T&gt;</td><td>Returns all declared values of an enum type</td></tr>
+        <tr><td>Enum.TryParse&lt;T&gt;</td><td>Parses a string to an enum value without throwing on failure</td></tr>
+        <tr><td>Enum.IsDefined</td><td>Tests whether a value is a declared member of an enum</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  C# / Learn &nbsp;&bull;&nbsp; Tutorial 8 &nbsp;&bull;&nbsp; Enums
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CSharpTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

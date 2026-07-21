@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Modules - Python Modules and Packages</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Modules &mdash; Python Modules and Packages</h1>
+  <t-b>Tutorial 7.0 &nbsp;&bull;&nbsp; Python / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="#" class="disabled">Rust</a>
+    <a href="#" class="disabled">C++</a>
+    <a href="#" class="disabled">C#</a>
+    <a href="PythonTutorial__Modules.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- 7.0 What This Teaches -->
+  <section>
+    <h2>7.0 What This Teaches</h2>
+    <t-b>This tutorial covers how Python organizes code with modules and packages:</t-b>
+    <ul>
+      <li>What a module is and how Python finds it</li>
+      <li><code>import</code> and <code>from ... import</code> syntax</li>
+      <li>Module namespaces and the <code>as</code> alias</li>
+      <li>Packages: directories with <code>__init__.py</code></li>
+      <li>The <code>__name__ == "__main__"</code> guard</li>
+      <li>A tour of useful standard library modules</li>
+    </ul>
+  </section>
+
+  <!-- 7.1 What is a Module -->
+  <section>
+    <h2>7.1 What is a Module</h2>
+    <t-b>
+      A module is simply a <code>.py</code> file. Importing it executes the file once
+      and makes its top-level names available. Every Python source file is automatically
+      a module:
+    </t-b>
+    <pre><code class="language-python"># math_utils.py
+PI = 3.14159
+
+def circle_area(r):
+    return PI * r * r
+
+def square_area(s):
+    return s * s</code></pre>
+    <pre><code class="language-python"># main.py
+import math_utils
+
+print(math_utils.PI)
+print(math_utils.circle_area(3))</code></pre>
+    <t-b>
+      After <code>import math_utils</code>, all names from <code>math_utils.py</code>
+      are accessible through the <code>math_utils</code> namespace. The file is only
+      executed once no matter how many times it is imported.
+    </t-b>
+  </section>
+
+  <!-- 7.2 import Forms -->
+  <section>
+    <h2>7.2 import and from...import</h2>
+    <pre><code class="language-python">import math                    # import module; use math.sqrt(...)
+import math as m               # alias: m.sqrt(...)
+from math import sqrt          # import one name directly
+from math import sqrt, pi      # import multiple names
+from math import *             # import everything (avoid in production code)
+
+print(math.sqrt(16))   # 4.0
+print(m.pi)            # 3.14...
+print(sqrt(25))        # 5.0
+print(pi)              # 3.14...</code></pre>
+    <t-b>
+      Prefer <code>import module</code> over <code>from module import *</code>. The
+      explicit module prefix shows readers where each name comes from and prevents
+      namespace collisions.
+    </t-b>
+  </section>
+
+  <!-- 7.3 Module Search Path -->
+  <section>
+    <h2>7.3 Module Search Path</h2>
+    <t-b>
+      When you write <code>import foo</code>, Python searches these locations in order:
+    </t-b>
+    <ol>
+      <li>The directory containing the script being run</li>
+      <li>Directories in the <code>PYTHONPATH</code> environment variable</li>
+      <li>The standard library directories</li>
+      <li>Installed packages in the active virtual environment</li>
+    </ol>
+    <pre><code class="language-python">import sys
+for path in sys.path:
+    print(path)</code></pre>
+    <t-b>
+      If Python cannot find a module it raises <code>ModuleNotFoundError</code>. Install
+      missing third-party modules with <code>pip install module-name</code>.
+    </t-b>
+  </section>
+
+  <!-- 7.4 Packages -->
+  <section>
+    <h2>7.4 Packages</h2>
+    <t-b>
+      A package is a directory containing an <code>__init__.py</code> file (which can
+      be empty). Packages let you organize related modules under a namespace:
+    </t-b>
+    <pre><code class="language-python"># directory layout:
+# myapp/
+#   __init__.py
+#   shapes.py
+#   utils.py
+
+# shapes.py
+class Circle:
+    def __init__(self, r): self.r = r
+    def area(self): return 3.14159 * self.r ** 2
+
+# main.py
+from myapp.shapes import Circle
+import myapp.utils as utils
+
+c = Circle(5)
+print(c.area())</code></pre>
+    <t-b>
+      The <code>__init__.py</code> runs when the package is imported. You can use it
+      to export selected names, making deep imports optional.
+    </t-b>
+  </section>
+
+  <!-- 7.5 __name__ == "__main__" -->
+  <section>
+    <h2>7.5 The __name__ Guard</h2>
+    <t-b>
+      Every module has a <code>__name__</code> attribute. When a file is run directly,
+      <code>__name__</code> is <code>"__main__"</code>. When imported, it is the
+      module name. Use this to include test code that doesn't run on import:
+    </t-b>
+    <pre><code class="language-python"># geometry.py
+def circle_area(r: float) -> float:
+    import math
+    return math.pi * r * r
+
+if __name__ == "__main__":
+    # Only runs when executed directly: python geometry.py
+    print(circle_area(3))   # 28.27...</code></pre>
+    <t-b>
+      This pattern is idiomatic Python. Libraries use it to include runnable examples
+      or self-tests without polluting the namespace when imported.
+    </t-b>
+  </section>
+
+  <!-- 7.6 Useful Standard Library Modules -->
+  <section>
+    <h2>7.6 Useful Standard Library Modules</h2>
+    <table>
+      <thead>
+        <tr><th>Module</th><th>Purpose</th><th>Example</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>math</code></td><td>Math functions and constants</td><td><code>math.sqrt(2)</code></td></tr>
+        <tr><td><code>random</code></td><td>Random number generation</td><td><code>random.randint(1, 6)</code></td></tr>
+        <tr><td><code>os</code></td><td>OS interaction, paths</td><td><code>os.getcwd()</code></td></tr>
+        <tr><td><code>pathlib</code></td><td>Object-oriented paths</td><td><code>Path("data.txt").read_text()</code></td></tr>
+        <tr><td><code>sys</code></td><td>Interpreter internals, argv</td><td><code>sys.argv[1]</code></td></tr>
+        <tr><td><code>datetime</code></td><td>Dates and times</td><td><code>datetime.now()</code></td></tr>
+        <tr><td><code>json</code></td><td>JSON encode/decode</td><td><code>json.dumps({"a": 1})</code></td></tr>
+        <tr><td><code>re</code></td><td>Regular expressions</td><td><code>re.findall(r"\d+", s)</code></td></tr>
+        <tr><td><code>collections</code></td><td>Counter, defaultdict, deque</td><td><code>Counter("hello")</code></td></tr>
+        <tr><td><code>itertools</code></td><td>Combinatorial iterators</td><td><code>itertools.chain(a, b)</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 7.7 Example -->
+  <section>
+    <h2>7.7 Example - All Together</h2>
+    <pre><code class="language-python"># Modules - standard library showcase with math, random, and collections.
+
+import math
+import random
+import collections
+
+# math: compute statistics manually
+values = [random.gauss(0, 1) for _ in range(1000)]
+mean = sum(values) / len(values)
+variance = sum((v - mean) ** 2 for v in values) / len(values)
+print(f"mean={mean:.3f}  std={math.sqrt(variance):.3f}")
+
+# collections.Counter: count word frequencies
+words = "the cat sat on the mat the cat".split()
+freq = collections.Counter(words)
+print(freq.most_common(3))
+
+# pathlib: list current directory's .html files
+from pathlib import Path
+html_files = sorted(Path(".").glob("*.html"))
+print(f"Found {len(html_files)} html files")</code></pre>
+  </section>
+
+  <!-- 7.8 Exercise -->
+  <section>
+    <h2>7.8 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Create a module <code>stats.py</code> with functions <code>mean(data)</code>,
+          <code>median(data)</code>, and <code>mode(data)</code>. Add a
+          <code>__name__ == "__main__"</code> block that tests each function.</li>
+        <li>Import <code>stats</code> from a separate <code>main.py</code> and call
+          all three functions on a list of your choosing.</li>
+        <li>Use <code>random</code> and <code>collections.Counter</code> to simulate
+          rolling two dice 10 000 times and print the frequency of each sum (2-12).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7.9 Common Mistakes -->
+  <section>
+    <h2>7.9 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Naming your script the same as a standard library module</h3>
+      <pre><code class="language-python"># If your file is named math.py:
+import math   # imports YOUR math.py, not the standard library
+print(math.sqrt(4))   # AttributeError: module 'math' has no attribute 'sqrt'</code></pre>
+      <t-b>
+        Never name your files after standard library modules: <code>math.py</code>,
+        <code>os.py</code>, <code>random.py</code>, <code>json.py</code>, etc.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Circular imports</h3>
+      <t-b>
+        If module A imports module B and module B imports module A, Python can fail
+        with <code>ImportError</code> or silently produce incomplete modules. Refactor
+        shared code into a third module that both import.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Using from module import * in production code</h3>
+      <t-b>
+        Wildcard imports pollute the local namespace and make it impossible to know
+        where a name comes from without reading the imported module. Reserve them for
+        interactive REPL sessions.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- 7.10 Key Terms -->
+  <section>
+    <h2>7.10 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>module</td><td>Any .py file; imported modules expose their top-level names</td></tr>
+        <tr><td>package</td><td>Directory with __init__.py; groups related modules under a namespace</td></tr>
+        <tr><td>import</td><td>Statement that loads a module and binds its namespace to a name</td></tr>
+        <tr><td>from...import</td><td>Imports specific names from a module into the current namespace</td></tr>
+        <tr><td>as</td><td>Creates an alias for an imported module or name</td></tr>
+        <tr><td>__name__</td><td>Built-in attribute; "__main__" when run directly, module name when imported</td></tr>
+        <tr><td>__init__.py</td><td>File that marks a directory as a package; runs on package import</td></tr>
+        <tr><td>sys.path</td><td>List of directories Python searches when looking for modules</td></tr>
+        <tr><td>ModuleNotFoundError</td><td>Raised when an import cannot locate the named module</td></tr>
+        <tr><td>standard library</td><td>Modules shipped with Python: math, os, json, collections, etc.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  Python / Learn &nbsp;&bull;&nbsp; Tutorial 7 &nbsp;&bull;&nbsp; Modules
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/PythonTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>App: Web Chat - Flask Chat Interface</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>App: Web Chat &mdash; Flask Chat Interface</h1>
+  <t-b>Tutorial A6.0 &nbsp;&bull;&nbsp; AI / Learn / Applications</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>A6.0 What This Teaches</h2>
+    <t-b>
+      This tutorial builds a minimal Flask web app: the browser sends a message, the server
+      calls Claude, and the response appears in the page without a full reload. It covers:
+    </t-b>
+    <ul>
+      <li>Flask basics - creating an app, defining routes, running the dev server</li>
+      <li>Serving HTML with <code>render_template()</code></li>
+      <li>Handling POST routes that accept JSON request bodies</li>
+      <li>Calling the Anthropic API from a web server context</li>
+      <li>Returning JSON from Flask with <code>jsonify()</code></li>
+      <li>Maintaining in-memory conversation history across requests</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>A6.1 Application Layout</h2>
+    <t-b>
+      The project has two files: a Python server and one HTML template.
+    </t-b>
+    <pre><code class="language-terminal">web_chat/
+├── app.py          ← Flask server
+└── templates/
+    └── index.html  ← chat UI</code></pre>
+    <t-b>
+      Flask looks for templates in a <code>templates/</code> folder by default.
+      That folder must sit next to <code>app.py</code>.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A6.2 The Flask Server</h2>
+    <t-b>
+      The server has two routes:
+    </t-b>
+    <ul>
+      <li><strong>GET /</strong> - returns the chat page HTML</li>
+      <li><strong>POST /chat</strong> - receives a message, calls Claude, returns the reply as JSON</li>
+    </ul>
+    <t-b>
+      Conversation history is kept in a module-level list called <code>messages</code>.
+      This is intentionally simple: it supports one user at a time and resets when the
+      server restarts. That is fine for local development and learning.
+    </t-b>
+    <pre><code class="language-python"># app.py (structure) - Flask server with in-memory chat history.
+from flask import Flask, render_template, request, jsonify
+import anthropic
+
+app = Flask(__name__)
+client = anthropic.Anthropic()
+messages = []   # single-user, in-memory history; resets on restart
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    user_text = request.json["message"]
+    messages.append({"role": "user", "content": user_text})
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        messages=messages,
+    )
+    reply = response.content[0].text
+    messages.append({"role": "assistant", "content": reply})
+    return jsonify({"reply": reply})</code></pre>
+  </section>
+
+  <section>
+    <h2>A6.3 Complete app.py</h2>
+    <pre><code class="language-python"># app.py - Flask chat server backed by Claude.
+# Run: python app.py, then open http://127.0.0.1:5000
+
+from flask import Flask, render_template, request, jsonify
+import anthropic
+
+app = Flask(__name__)
+client = anthropic.Anthropic()
+
+# In-memory history - single-user only, resets on server restart.
+messages = []
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.json
+    if not data or not data.get("message"):
+        return jsonify({"error": "empty message"}), 400
+
+    user_text = data["message"]
+    messages.append({"role": "user", "content": user_text})
+
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        messages=messages,
+    )
+
+    reply = response.content[0].text
+    messages.append({"role": "assistant", "content": reply})
+    return jsonify({"reply": reply})
+
+if __name__ == "__main__":
+    app.run(debug=True)</code></pre>
+    <t-b>
+      <code>debug=True</code> enables auto-reload on file changes. Turn it off in any
+      non-development environment.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A6.4 The HTML Template</h2>
+    <t-b>
+      The chat UI needs three things:
+    </t-b>
+    <ul>
+      <li>A scrollable <code>div</code> that shows the conversation</li>
+      <li>An <code>input</code> field where the user types</li>
+      <li>A Send button that triggers a <code>fetch()</code> POST to <code>/chat</code></li>
+    </ul>
+    <t-b>
+      The JavaScript appends both the user message and the reply directly to the chat div.
+      No page reload occurs. The input is cleared after each send.
+    </t-b>
+    <pre><code class="language-javascript">// Sends a message and appends the reply to the chat log.
+async function sendMessage() {
+  const input = document.getElementById('user-input');
+  const text  = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  appendMessage('You', text);
+
+  const res  = await fetch('/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: text }),
+  });
+  const data = await res.json();
+  appendMessage('Claude', data.reply);
+}</code></pre>
+  </section>
+
+  <section>
+    <h2>A6.5 Complete index.html</h2>
+    <pre><code class="language-html">&lt;!-- templates/index.html - Chat UI --&gt;
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title&gt;Web Chat&lt;/title&gt;
+  &lt;style&gt;
+    body { font-family: sans-serif; max-width: 700px; margin: 2rem auto; }
+    #chat-log { border: 1px solid #ccc; height: 400px; overflow-y: auto;
+                padding: 1rem; margin-bottom: 1rem; }
+    .msg { margin-bottom: 0.75rem; }
+    .msg strong { display: block; }
+    #controls { display: flex; gap: 0.5rem; }
+    #user-input { flex: 1; padding: 0.4rem; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Web Chat&lt;/h1&gt;
+  &lt;div id="chat-log"&gt;&lt;/div&gt;
+  &lt;div id="controls"&gt;
+    &lt;input id="user-input" type="text" placeholder="Type a message..."
+           onkeydown="if(event.key==='Enter') sendMessage()"&gt;
+    &lt;button onclick="sendMessage()"&gt;Send&lt;/button&gt;
+  &lt;/div&gt;
+
+  &lt;script&gt;
+    function appendMessage(who, text) {
+      const log = document.getElementById('chat-log');
+      const div = document.createElement('div');
+      div.className = 'msg';
+      div.innerHTML = '&lt;strong&gt;' + who + '&lt;/strong&gt;' + text;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('user-input');
+      const text  = input.value.trim();
+      if (!text) return;
+      input.value = '';
+
+      appendMessage('You', text);
+
+      const res  = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
+      const data = await res.json();
+      appendMessage('Claude', data.reply);
+    }
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+  </section>
+
+  <section>
+    <h2>A6.6 Running the Application</h2>
+    <t-b>
+      Install Flask if you have not already, then start the server:
+    </t-b>
+    <pre><code class="language-terminal">pip install flask anthropic
+cd web_chat
+python app.py</code></pre>
+    <t-b>
+      Open <code>http://127.0.0.1:5000</code> in a browser. Type a message and press
+      Enter or click Send. The reply appears below your message without a page reload.
+    </t-b>
+    <pre><code class="language-terminal"> * Running on http://127.0.0.1:5000
+ * Debug mode: on
+ * Restarting with stat</code></pre>
+  </section>
+
+  <section>
+    <h2>A6.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Add a "Clear" button that resets the conversation on both the server and the browser.
+      </t-b>
+      <ol>
+        <li>Add a POST route <code>/clear</code> in <code>app.py</code> that runs
+            <code>messages.clear()</code> and returns <code>jsonify({"ok": True})</code>.</li>
+        <li>Add a Clear button to <code>index.html</code> that calls
+            <code>fetch('/clear', {method: 'POST'})</code> and then clears the
+            <code>#chat-log</code> div.</li>
+      </ol>
+      <t-b>
+        Test it: have a multi-turn conversation, click Clear, then send a new message.
+        Confirm the model no longer remembers the earlier turns.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>A6.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Storing history in a module-level list for multiple users</h3>
+      <t-b>
+        A module-level <code>messages</code> list works correctly for one user at a time
+        during development. With two simultaneous users, their messages get interleaved
+        and both users see the wrong history. For production, use a session or database
+        keyed per user.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Returning HTML from the /chat route instead of JSON</h3>
+      <t-b>
+        If the route returns an HTML string, the browser-side JavaScript has to parse HTML
+        to extract the reply. Returning <code>jsonify({"reply": text})</code> lets the JS
+        read <code>data.reply</code> directly - much simpler and less error-prone.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Forgetting Content-Type: application/json in fetch()</h3>
+      <t-b>
+        Without <code>headers: {'Content-Type': 'application/json'}</code> in the
+        <code>fetch()</code> call, Flask receives the body as raw bytes and
+        <code>request.json</code> returns <code>None</code>. Always set the header when
+        sending a JSON body.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Flask</td><td>Lightweight Python web framework; maps URLs to Python functions called routes</td></tr>
+        <tr><td>route</td><td>A URL pattern bound to a Python function with <code>@app.route()</code></td></tr>
+        <tr><td>render_template</td><td>Flask helper that reads an HTML file from the <code>templates/</code> folder and returns it</td></tr>
+        <tr><td>request.json</td><td>The parsed JSON body of an incoming POST request; <code>None</code> if Content-Type is wrong</td></tr>
+        <tr><td>jsonify</td><td>Flask helper that converts a Python dict to a JSON HTTP response with correct headers</td></tr>
+        <tr><td>fetch()</td><td>Browser API for making HTTP requests from JavaScript without a page reload</td></tr>
+        <tr><td>POST</td><td>HTTP method for sending data to the server; used here to submit chat messages</td></tr>
+        <tr><td>in-memory session</td><td>Conversation history stored in a Python list; fast but lost on server restart</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn / Applications &nbsp;&bull;&nbsp; Tutorial A6 &nbsp;&bull;&nbsp; Web Chat
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

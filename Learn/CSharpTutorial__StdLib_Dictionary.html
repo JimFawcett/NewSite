@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dictionary - C# Dictionary&lt;K,V&gt;</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Dictionary &mdash; C# Dictionary&lt;K,V&gt;</h1>
+  <t-b>Tutorial S3 &nbsp;&bull;&nbsp; C# / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__StdLib_HashMap.html">Rust</a>
+    <a href="CppTutorial__StdLib_Map.html">C++</a>
+    <a href="CSharpTutorial__StdLib_Dictionary.html">C#</a>
+    <a href="PythonTutorial__StdLib_Dicts.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- S3.0 What This Teaches -->
+  <section>
+    <h2>S3.0 What This Teaches</h2>
+    <t-b>This tutorial covers <code>Dictionary&lt;TKey, TValue&gt;</code>, C#'s hash map:</t-b>
+    <ul>
+      <li>Creating and initializing dictionaries</li>
+      <li>Adding, updating, and removing entries</li>
+      <li>Safe lookup with <code>TryGetValue</code> and <code>GetValueOrDefault</code></li>
+      <li>Iterating keys, values, and key-value pairs</li>
+      <li>Related types: <code>SortedDictionary</code>, <code>ConcurrentDictionary</code></li>
+    </ul>
+  </section>
+
+  <!-- S3.1 Creating -->
+  <section>
+    <h2>S3.1 Creating and Initializing</h2>
+    <pre><code class="language-csharp">// Empty dictionary
+var ages = new Dictionary&lt;string, int&gt;();
+
+// Collection initializer
+var capitals = new Dictionary&lt;string, string&gt;
+{
+    ["France"]  = "Paris",
+    ["Germany"] = "Berlin",
+    ["Japan"]   = "Tokyo"
+};
+
+// Infer types with var
+var freq = new Dictionary&lt;char, int&gt;();</code></pre>
+  </section>
+
+  <!-- S3.2 Adding and Updating -->
+  <section>
+    <h2>S3.2 Adding and Updating</h2>
+    <pre><code class="language-csharp">var d = new Dictionary&lt;string, int&gt;();
+
+d["Alice"] = 30;    // add or update
+d.Add("Bob", 25);   // throws if key exists
+
+// Increment a counter safely
+string key = "cat";
+d[key] = d.GetValueOrDefault(key, 0) + 1;
+
+// Remove
+d.Remove("Bob");
+d.Clear();</code></pre>
+  </section>
+
+  <!-- S3.3 Safe Lookup -->
+  <section>
+    <h2>S3.3 Safe Lookup</h2>
+    <pre><code class="language-csharp">var d = new Dictionary&lt;string, int&gt; { ["a"] = 1, ["b"] = 2 };
+
+// Direct indexer - throws KeyNotFoundException if missing
+int val = d["a"];
+
+// TryGetValue - preferred for uncertain lookups
+if (d.TryGetValue("c", out int found))
+    Console.WriteLine(found);
+else
+    Console.WriteLine("not found");
+
+// GetValueOrDefault - returns default(T) or specified fallback
+int v = d.GetValueOrDefault("x", -1);   // -1
+
+// ContainsKey - use before indexer when you're sure key is present
+bool exists = d.ContainsKey("b");   // True</code></pre>
+  </section>
+
+  <!-- S3.4 Iterating -->
+  <section>
+    <h2>S3.4 Iterating</h2>
+    <pre><code class="language-csharp">var capitals = new Dictionary&lt;string, string&gt;
+{
+    ["France"] = "Paris", ["Germany"] = "Berlin", ["Japan"] = "Tokyo"
+};
+
+// Key-value pairs (order not guaranteed for Dictionary)
+foreach (var (country, capital) in capitals)
+    Console.WriteLine($"{country}: {capital}");
+
+// Keys or values only
+foreach (string country in capitals.Keys)
+    Console.WriteLine(country);
+
+foreach (string capital in capitals.Values)
+    Console.WriteLine(capital);
+
+// Count
+Console.WriteLine(capitals.Count);  // 3</code></pre>
+  </section>
+
+  <!-- S3.5 Related Types -->
+  <section>
+    <h2>S3.5 Related Types</h2>
+    <table>
+      <thead>
+        <tr><th>Type</th><th>Ordered?</th><th>Use when</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>Dictionary&lt;K,V&gt;</code></td><td>No</td><td>General-purpose hash map; O(1) lookup</td></tr>
+        <tr><td><code>SortedDictionary&lt;K,V&gt;</code></td><td>Yes (by key)</td><td>Need keys in sorted order; O(log n) lookup</td></tr>
+        <tr><td><code>ConcurrentDictionary&lt;K,V&gt;</code></td><td>No</td><td>Thread-safe updates without explicit locks</td></tr>
+        <tr><td><code>ImmutableDictionary&lt;K,V&gt;</code></td><td>No</td><td>Snapshot that cannot be modified</td></tr>
+      </tbody>
+    </table>
+    <pre><code class="language-csharp">// ConcurrentDictionary: atomic GetOrAdd
+using System.Collections.Concurrent;
+var cd = new ConcurrentDictionary&lt;string, int&gt;();
+cd.AddOrUpdate("hits", 1, (_, old) =&gt; old + 1);</code></pre>
+  </section>
+
+  <!-- S3.6 Example -->
+  <section>
+    <h2>S3.6 Example - All Together</h2>
+    <pre><code class="language-csharp">// Dictionary - word frequency counter and inversion.
+
+string text = "the quick brown fox jumps over the lazy dog the fox";
+var freq = new Dictionary&lt;string, int&gt;();
+
+foreach (string word in text.Split(' '))
+    freq[word] = freq.GetValueOrDefault(word, 0) + 1;
+
+// Sort by frequency descending
+var top = freq.OrderByDescending(kv =&gt; kv.Value).Take(3);
+foreach (var (word, count) in top)
+    Console.WriteLine($"{word}: {count}");
+
+// Invert: group words by their frequency
+var byFreq = freq.GroupBy(kv =&gt; kv.Value)
+                 .ToDictionary(g =&gt; g.Key, g =&gt; g.Select(kv =&gt; kv.Key).ToList());
+foreach (var (count, words) in byFreq.OrderByDescending(kv =&gt; kv.Key))
+    Console.WriteLine($"{count}: [{string.Join(", ", words)}]");</code></pre>
+  </section>
+
+  <!-- S3.7 Exercise -->
+  <section>
+    <h2>S3.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Count character frequencies in a string using a
+          <code>Dictionary&lt;char, int&gt;</code>. Print the five most frequent
+          characters sorted by count descending.</li>
+        <li>Build a <code>Dictionary&lt;string, List&lt;string&gt;&gt;</code> that groups
+          words by their first letter. Populate it from a word list.</li>
+        <li>Use <code>TryGetValue</code> to safely look up several keys, including
+          some that don't exist, and print a "not found" message for missing ones.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S3.8 Common Mistakes -->
+  <section>
+    <h2>S3.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Using d["key"] when the key might not exist</h3>
+      <pre><code class="language-csharp">int count = d["missing"];   // KeyNotFoundException
+// Use TryGetValue or GetValueOrDefault instead</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Using Add when you want to overwrite</h3>
+      <pre><code class="language-csharp">d.Add("key", 1);   // OK
+d.Add("key", 2);   // ArgumentException: key already exists
+d["key"] = 2;      // always works - add or update</code></pre>
+    </div>
+
+    <div class="mistake">
+      <h3>Assuming insertion order is preserved</h3>
+      <t-b>
+        <code>Dictionary&lt;K,V&gt;</code> does not guarantee insertion order.
+        Use <code>SortedDictionary</code> for key-sorted order, or a
+        <code>List&lt;KeyValuePair&lt;K,V&gt;&gt;</code> when order matters.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- S3.9 Key Terms -->
+  <section>
+    <h2>S3.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Dictionary&lt;K,V&gt;</td><td>Hash map mapping unique keys to values; O(1) average lookup</td></tr>
+        <tr><td>TryGetValue</td><td>Returns false instead of throwing when a key is missing</td></tr>
+        <tr><td>GetValueOrDefault</td><td>Returns a fallback value when a key is missing</td></tr>
+        <tr><td>ContainsKey</td><td>Tests whether a key exists without retrieving the value</td></tr>
+        <tr><td>KeyValuePair</td><td>The element type when iterating a dictionary; has .Key and .Value</td></tr>
+        <tr><td>SortedDictionary</td><td>Dictionary that keeps keys in sorted order; O(log n) operations</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  C# / Learn &nbsp;&bull;&nbsp; Tutorial S3 &nbsp;&bull;&nbsp; Dictionary
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CSharpTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

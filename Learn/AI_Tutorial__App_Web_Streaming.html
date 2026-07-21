@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>App: Web Streaming - SSE Responses</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>App: Web Streaming &mdash; SSE Responses</h1>
+  <t-b>Tutorial A8.0 &nbsp;&bull;&nbsp; AI / Learn / Applications</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>A8.0 What This Teaches</h2>
+    <t-b>
+      This tutorial connects Claude's streaming API to a browser using Server-Sent Events,
+      so tokens appear in the page as they are generated rather than all at once. It covers:
+    </t-b>
+    <ul>
+      <li>Server-Sent Events (SSE) - the browser standard for server-pushed data</li>
+      <li>Flask streaming responses with generator functions</li>
+      <li>The browser's <code>EventSource</code> API for reading SSE</li>
+      <li>Connecting the Anthropic streaming API to an HTTP response</li>
+      <li>Sending a done sentinel to signal the end of the stream</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>A8.1 What Server-Sent Events Are</h2>
+    <t-b>
+      SSE is a browser standard for receiving a continuous stream of data over a single
+      HTTP connection. The browser opens the connection once; the server sends chunks as
+      they become available. Each chunk uses a simple text format:
+    </t-b>
+    <pre><code class="language-terminal">data: Hello, this is chunk one\n\n
+data: And here is chunk two\n\n
+data: [DONE]\n\n</code></pre>
+    <t-b>
+      The double newline (<code>\n\n</code>) marks the end of each event. A single
+      <code>\n</code> is not enough - the browser will not fire the <code>onmessage</code>
+      callback until it sees <code>\n\n</code>.
+    </t-b>
+    <t-b>
+      The browser's <code>EventSource</code> object handles reconnection, buffering,
+      and parsing automatically. You only write event handlers.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A8.2 The Flask Streaming Route</h2>
+    <t-b>
+      A Flask route returns a streaming response by passing a generator function to
+      <code>Response()</code> with <code>mimetype="text/event-stream"</code>.
+      The generator yields SSE-formatted strings as Claude produces tokens.
+    </t-b>
+    <pre><code class="language-python"># Flask streaming route pattern.
+from flask import Response
+
+def generate(prompt):
+    # each yield pushes one SSE event to the browser
+    with client.messages.stream(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}],
+    ) as stream:
+        for chunk in stream.text_stream:
+            yield f"data: {chunk}\n\n"
+    yield "data: [DONE]\n\n"   # sentinel tells the browser to close
+
+@app.route("/stream")
+def stream():
+    prompt = request.args.get("prompt", "")
+    return Response(generate(prompt), mimetype="text/event-stream")</code></pre>
+    <t-b>
+      The <code>/stream</code> route uses GET with a query parameter because
+      <code>EventSource</code> only supports GET requests.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A8.3 Complete app.py</h2>
+    <pre><code class="language-python"># app.py - Flask server with SSE streaming from Claude.
+# Run: python app.py, then open http://127.0.0.1:5000
+
+from flask import Flask, render_template, request, Response
+import anthropic
+
+app = Flask(__name__)
+client = anthropic.Anthropic()
+
+def generate(prompt):
+    # stream.text_stream yields one string per token
+    with client.messages.stream(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}],
+    ) as stream:
+        for chunk in stream.text_stream:
+            # escape newlines inside chunk so SSE format stays intact
+            safe = chunk.replace("\n", " ")
+            yield f"data: {safe}\n\n"
+    yield "data: [DONE]\n\n"
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/stream")
+def stream():
+    prompt = request.args.get("prompt", "").strip()
+    if not prompt:
+        return Response("data: [DONE]\n\n", mimetype="text/event-stream")
+    return Response(generate(prompt), mimetype="text/event-stream")
+
+if __name__ == "__main__":
+    app.run(debug=True)</code></pre>
+    <t-b>
+      Newlines inside a chunk are replaced with spaces so each <code>data:</code> line
+      stays on one line. The browser reconstructs the full text from consecutive chunks.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A8.4 The Browser JavaScript</h2>
+    <t-b>
+      <code>EventSource</code> opens the SSE connection. Each arriving event fires
+      <code>onmessage</code>. Check the data for the <code>[DONE]</code> sentinel and
+      close the connection when it arrives.
+    </t-b>
+    <pre><code class="language-javascript">// Opens an SSE connection and streams tokens into the output div.
+function sendPrompt() {
+  const prompt = document.getElementById('prompt-input').value.trim();
+  if (!prompt) return;
+
+  const output = document.getElementById('output');
+  output.textContent = '';   // clear previous response
+
+  const es = new EventSource('/stream?prompt=' + encodeURIComponent(prompt));
+
+  es.onmessage = function(e) {
+    if (e.data === '[DONE]') {
+      es.close();
+      return;
+    }
+    output.textContent += e.data;
+  };
+
+  es.onerror = function() {
+    es.close();
+    output.textContent += '\n[stream error]';
+  };
+}</code></pre>
+  </section>
+
+  <section>
+    <h2>A8.5 Sending a Done Sentinel</h2>
+    <t-b>
+      Without a sentinel, the browser keeps the SSE connection open indefinitely waiting
+      for more events. The generator yields <code>"data: [DONE]\n\n"</code> after the
+      stream loop ends, and the JavaScript closes the <code>EventSource</code> when it
+      sees that value.
+    </t-b>
+    <pre><code class="language-python"># Sentinel pattern - last thing the generator yields.
+yield "data: [DONE]\n\n"</code></pre>
+    <pre><code class="language-javascript">// Browser side - close on sentinel.
+es.onmessage = function(e) {
+  if (e.data === '[DONE]') { es.close(); return; }
+  output.textContent += e.data;
+};</code></pre>
+    <t-b>
+      Choose a sentinel value that Claude will never produce as real output.
+      <code>[DONE]</code> is a common convention borrowed from the OpenAI streaming format.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A8.6 Complete index.html</h2>
+    <pre><code class="language-html">&lt;!-- templates/index.html - SSE streaming chat UI --&gt;
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title&gt;Streaming Chat&lt;/title&gt;
+  &lt;style&gt;
+    body { font-family: sans-serif; max-width: 700px; margin: 2rem auto; }
+    #output { border: 1px solid #ccc; min-height: 200px; padding: 1rem;
+              white-space: pre-wrap; margin-top: 1rem; }
+    #controls { display: flex; gap: 0.5rem; margin-top: 1rem; }
+    #prompt-input { flex: 1; padding: 0.4rem; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Streaming Chat&lt;/h1&gt;
+  &lt;div id="controls"&gt;
+    &lt;input id="prompt-input" type="text" placeholder="Ask something..."&gt;
+    &lt;button onclick="sendPrompt()"&gt;Send&lt;/button&gt;
+  &lt;/div&gt;
+  &lt;div id="output"&gt;&lt;/div&gt;
+
+  &lt;script&gt;
+    let activeEs = null;
+
+    function sendPrompt() {
+      if (activeEs) { activeEs.close(); activeEs = null; }
+
+      const prompt = document.getElementById('prompt-input').value.trim();
+      if (!prompt) return;
+
+      const output = document.getElementById('output');
+      output.textContent = '';
+
+      activeEs = new EventSource('/stream?prompt=' + encodeURIComponent(prompt));
+
+      activeEs.onmessage = function(e) {
+        if (e.data === '[DONE]') { activeEs.close(); activeEs = null; return; }
+        output.textContent += e.data;
+      };
+
+      activeEs.onerror = function() {
+        activeEs.close();
+        activeEs = null;
+        output.textContent += '\n[stream error]';
+      };
+    }
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+  </section>
+
+  <section>
+    <h2>A8.7 Running the Application</h2>
+    <pre><code class="language-terminal">pip install flask anthropic
+cd web_streaming
+python app.py</code></pre>
+    <t-b>
+      Open <code>http://127.0.0.1:5000</code>, type a prompt, and click Send. Tokens
+      appear one by one as Claude generates them.
+    </t-b>
+    <t-b>
+      Flask's built-in dev server supports streaming. For production, use gunicorn
+      with a single worker or an ASGI server like uvicorn:
+    </t-b>
+    <pre><code class="language-terminal">gunicorn --workers=1 --timeout=120 app:app</code></pre>
+    <t-b>
+      Multiple workers break SSE because each request may hit a different worker process.
+      A single worker or a proper async server (uvicorn + FastAPI) avoids this.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A8.8 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Add a Stop button that cancels the stream mid-response.
+      </t-b>
+      <ol>
+        <li>Add a <code>&lt;button id="stop-btn"&gt;Stop&lt;/button&gt;</code> next to the
+            Send button.</li>
+        <li>In the <code>sendPrompt()</code> function, store the <code>EventSource</code>
+            in a variable accessible to the Stop button's click handler.</li>
+        <li>In the Stop handler, call <code>es.close()</code> and append
+            <code>" (stopped)"</code> to the output div.</li>
+      </ol>
+      <t-b>
+        Test it: send a long prompt like "Write a 500-word essay about the ocean",
+        click Stop after a few sentences, and confirm the stream halts.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>A8.9 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Forgetting the double newline after each SSE chunk</h3>
+      <t-b>
+        SSE requires <code>\n\n</code> (two newlines) to terminate each event.
+        Using a single <code>\n</code> means the browser buffers the data and never fires
+        <code>onmessage</code>. The stream appears broken even though the server is
+        sending data correctly.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Using POST for the streaming route</h3>
+      <t-b>
+        The browser's <code>EventSource</code> API only supports GET requests.
+        Attempting to point it at a POST route results in a connection error.
+        Pass the prompt as a URL query parameter with
+        <code>encodeURIComponent()</code> to handle special characters.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Not closing the EventSource on [DONE]</h3>
+      <t-b>
+        If the browser never calls <code>es.close()</code>, the connection stays open
+        and the browser periodically retries it. This produces duplicate responses and
+        consumes server resources. Always close the <code>EventSource</code> when the
+        sentinel arrives.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Server-Sent Events (SSE)</td><td>Browser standard for one-way server-to-client streaming over HTTP; each event is <code>data: text\n\n</code></td></tr>
+        <tr><td>EventSource</td><td>Browser API that opens an SSE connection and fires <code>onmessage</code> for each event</td></tr>
+        <tr><td>Flask Response</td><td>Flask object wrapping a generator function to produce a streaming HTTP response</td></tr>
+        <tr><td>text/event-stream</td><td>MIME type that tells the browser the response is an SSE stream</td></tr>
+        <tr><td>generator function</td><td>Python function using <code>yield</code>; Flask calls it lazily to produce response chunks</td></tr>
+        <tr><td>sentinel</td><td>A special value (here <code>[DONE]</code>) that signals the end of a data stream</td></tr>
+        <tr><td>stream.text_stream</td><td>Anthropic SDK iterator that yields one string per token from a streaming API call</td></tr>
+        <tr><td>encodeURIComponent</td><td>JavaScript function that percent-encodes a string so it is safe to include in a URL</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn / Applications &nbsp;&bull;&nbsp; Tutorial A8 &nbsp;&bull;&nbsp; Web Streaming
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

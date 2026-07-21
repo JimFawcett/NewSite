@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>App: Code Explainer - File Analysis</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>App: Code Explainer &mdash; File Analysis</h1>
+  <t-b>Tutorial A2.0 &nbsp;&bull;&nbsp; AI / Learn / Applications</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>A2.0 What This Teaches</h2>
+    <t-b>
+      This tutorial builds a command-line tool that reads a source file and asks Claude
+      to explain it. It covers:
+    </t-b>
+    <ul>
+      <li>Reading files with <code>open()</code> and handling <code>FileNotFoundError</code></li>
+      <li>Using <code>sys.argv</code> to accept command-line arguments</li>
+      <li>Embedding source code inside a prompt with an f-string template</li>
+      <li>Detecting the programming language from the file extension</li>
+      <li>Producing structured explanation output via a system prompt</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>A2.1 Application Design</h2>
+    <t-b>
+      The tool follows five steps in sequence:
+    </t-b>
+    <ol>
+      <li>Read the filename from <code>sys.argv[1]</code></li>
+      <li>Read the file contents into a string</li>
+      <li>Build a prompt that embeds the code in a fenced code block</li>
+      <li>Call the API with a system prompt that enforces a structured response format</li>
+      <li>Print the result to the terminal</li>
+    </ol>
+    <t-b>
+      Each step is small enough to understand and test independently.
+      Keeping them separate also makes it easy to extend the tool later - for example,
+      by writing the explanation to a file instead of printing it.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A2.2 Reading the File</h2>
+    <t-b>
+      Read the file with <code>open()</code> inside a try/except block so a bad path
+      produces a readable error instead of a traceback. Also warn early if the file
+      is large enough to generate a significant token bill.
+    </t-b>
+    <pre><code class="language-python"># read_file.py - isolated file reading with error handling and size check.
+import sys
+
+MAX_BYTES = 50_000   # roughly 10,000-15,000 tokens depending on content
+
+def read_source_file(path: str) -&gt; str:
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            source = f.read()
+    except FileNotFoundError:
+        print(f"Error: file not found: {path}")
+        sys.exit(1)
+
+    if len(source) &gt; MAX_BYTES:
+        print(
+            f"Warning: {path} is {len(source):,} bytes. "
+            "Token cost will be high. Consider explaining a smaller section."
+        )
+
+    return source</code></pre>
+    <t-b>
+      <code>sys.exit(1)</code> stops the program immediately with a non-zero exit code,
+      which signals failure to any shell script or CI system that called the tool.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A2.3 Building the Prompt</h2>
+    <t-b>
+      Wrap the source code in a fenced code block inside the prompt. This gives the model
+      clear boundaries around the code and lets it apply syntax-aware reasoning.
+      Detect the language from the file extension so the fence label is accurate.
+    </t-b>
+    <pre><code class="language-python"># detect_language.py - map file extension to language name.
+from pathlib import Path
+
+EXT_TO_LANG = {
+    ".py":   "Python",
+    ".js":   "JavaScript",
+    ".cpp":  "C++",
+    ".rs":   "Rust",
+    ".cs":   "C#",
+    ".java": "Java",
+    ".go":   "Go",
+}
+
+def detect_language(filename: str) -&gt; str:
+    ext = Path(filename).suffix.lower()
+    return EXT_TO_LANG.get(ext, "code")
+
+def build_prompt(filename: str, code: str) -&gt; str:
+    language = detect_language(filename)
+    return f"Explain this {language} code:\n\n```{language}\n{code}\n```"</code></pre>
+    <t-b>
+      If the extension is not in the table, the language falls back to
+      <code>"code"</code>, which is a valid fence label and still gives the model
+      enough context to work with.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A2.4 The System Prompt</h2>
+    <t-b>
+      A system prompt sets the model's role and output format before the user message
+      arrives. Specifying the exact structure here means every explanation follows the
+      same four-part layout, regardless of which file you pass.
+    </t-b>
+    <pre><code class="language-python"># system_prompt.py - the explanation format.
+SYSTEM = (
+    "You are a code explainer. Structure your response as:\n"
+    "(1) Purpose - one sentence.\n"
+    "(2) Key Components - bulleted list.\n"
+    "(3) How It Works - step-by-step.\n"
+    "(4) Potential Issues - any risks or gotchas."
+)</code></pre>
+    <t-b>
+      Numbered labels like <code>(1)</code> are more reliable than prose section headers
+      when you want consistent output - the model treats them as required fields to fill in.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A2.5 Complete Implementation</h2>
+    <pre><code class="language-python"># explain.py - explain a source file using Claude.
+# Usage: python explain.py &lt;filename&gt;
+
+import sys
+from pathlib import Path
+import anthropic
+
+MAX_BYTES = 50_000
+
+EXT_TO_LANG = {
+    ".py": "Python", ".js": "JavaScript", ".cpp": "C++",
+    ".rs": "Rust",   ".cs": "C#",         ".java": "Java", ".go": "Go",
+}
+
+SYSTEM = (
+    "You are a code explainer. Structure your response as:\n"
+    "(1) Purpose - one sentence.\n"
+    "(2) Key Components - bulleted list.\n"
+    "(3) How It Works - step-by-step.\n"
+    "(4) Potential Issues - any risks or gotchas."
+)
+
+def detect_language(filename: str) -&gt; str:
+    return EXT_TO_LANG.get(Path(filename).suffix.lower(), "code")
+
+def main():
+    if len(sys.argv) &lt; 2:
+        print("Usage: python explain.py &lt;filename&gt;")
+        sys.exit(1)
+
+    filename = sys.argv[1]
+
+    try:
+        with open(filename, "r", encoding="utf-8") as f:
+            code = f.read()
+    except FileNotFoundError:
+        print(f"Error: file not found: {filename}")
+        sys.exit(1)
+
+    if len(code) &gt; MAX_BYTES:
+        print(f"Warning: {filename} is {len(code):,} bytes - token cost will be high.")
+
+    language = detect_language(filename)
+    prompt = f"Explain this {language} code:\n\n```{language}\n{code}\n```"
+
+    client = anthropic.Anthropic()
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        system=SYSTEM,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    print(response.content[0].text)
+
+if __name__ == "__main__":
+    main()</code></pre>
+  </section>
+
+  <section>
+    <h2>A2.6 Sample Output</h2>
+    <t-b>
+      Running the tool on a small Python file that defines a <code>clamp()</code> function
+      produces output like this:
+    </t-b>
+    <pre class="output"><code class="language-terminal">$ python explain.py clamp.py
+
+(1) Purpose - Constrains a numeric value to lie within a specified minimum and maximum range.
+
+(2) Key Components
+- clamp(value, lo, hi): the single public function
+- Parameters: value (the number to constrain), lo (lower bound), hi (upper bound)
+- Return: the nearest boundary value if out of range, otherwise value unchanged
+
+(3) How It Works
+1. Compare value against lo - if below, return lo immediately.
+2. Compare value against hi - if above, return hi.
+3. If neither condition triggers, return value as-is.
+
+(4) Potential Issues
+- No type checking: passing a string raises TypeError at the comparison.
+- lo &gt; hi is not validated; results are undefined in that case.
+- No docstring or type hints, which makes the expected types ambiguous.</code></pre>
+  </section>
+
+  <section>
+    <h2>A2.7 Detecting Language from Extension</h2>
+    <t-b>
+      The mapping used in this tool covers the most common compiled and scripted languages.
+      Add entries as needed for your own projects.
+    </t-b>
+    <table>
+      <thead>
+        <tr><th>Extension</th><th>Language label</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>.py</td><td>Python</td></tr>
+        <tr><td>.js</td><td>JavaScript</td></tr>
+        <tr><td>.cpp</td><td>C++</td></tr>
+        <tr><td>.rs</td><td>Rust</td></tr>
+        <tr><td>.cs</td><td>C#</td></tr>
+        <tr><td>.java</td><td>Java</td></tr>
+        <tr><td>.go</td><td>Go</td></tr>
+        <tr><td>(anything else)</td><td>code</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>A2.8 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Extend <code>explain.py</code> to accept an optional second argument: a question
+        about the code. If provided, append it to the prompt after the code block:
+      </t-b>
+      <pre><code class="language-python">if len(sys.argv) &gt;= 3:
+    question = sys.argv[2]
+    prompt += f"\n\nAfter your explanation, answer this specific question: {question}"</code></pre>
+      <t-b>
+        Usage example:
+      </t-b>
+      <pre><code class="language-terminal">python explain.py myfile.py "What does the main function do?"</code></pre>
+      <t-b>
+        Test with a file you wrote yourself - ask a question whose answer you already know,
+        then check whether the model's answer is accurate.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>A2.9 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Not handling FileNotFoundError</h3>
+      <t-b>
+        If you call <code>open(filename)</code> without a try/except and the path is wrong,
+        Python raises an unformatted traceback. Users of a CLI tool expect a clean error
+        message, not a stack trace. Always catch <code>FileNotFoundError</code> and print
+        something actionable before calling <code>sys.exit(1)</code>.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Sending an entire large codebase file</h3>
+      <t-b>
+        Files over 1,000 lines often produce poor explanations - the model has to skim
+        rather than reason carefully. If a file is that large, either explain individual
+        functions by slicing the text, or ask the model to focus on one specific section
+        per call.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Not telling the model the language</h3>
+      <t-b>
+        Sending raw code without a language label forces the model to guess. For a
+        <code>.cs</code> file that uses LINQ, the model might misread it as Java and
+        produce a subtly wrong explanation. The fenced code block label and the phrase
+        "Explain this C# code" together eliminate the ambiguity.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>sys.argv</td><td>List of command-line arguments; argv[0] is the script name, argv[1] is the first user argument</td></tr>
+        <tr><td>pathlib.Path</td><td>Object-oriented path manipulation; Path(f).suffix returns the file extension including the dot</td></tr>
+        <tr><td>system prompt</td><td>An instruction passed to the model before the user message; controls tone and output format</td></tr>
+        <tr><td>fenced code block</td><td>Markdown syntax wrapping code in triple backticks with an optional language label</td></tr>
+        <tr><td>FileNotFoundError</td><td>Python exception raised when open() cannot locate the specified path</td></tr>
+        <tr><td>sys.exit(1)</td><td>Terminates the program immediately with exit code 1, signaling failure</td></tr>
+        <tr><td>token cost</td><td>The number of tokens consumed by a request; large files increase cost and may degrade quality</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn / Applications &nbsp;&bull;&nbsp; Tutorial A2 &nbsp;&bull;&nbsp; Code Explainer
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Records - C# Record Types</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Records &mdash; C# Record Types</h1>
+  <t-b>Tutorial S10 &nbsp;&bull;&nbsp; C# / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="#" class="disabled">Rust</a>
+    <a href="#" class="disabled">C++</a>
+    <a href="CSharpTutorial__Records.html">C#</a>
+    <a href="PythonTutorial__Dataclasses.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- S10.0 What This Teaches -->
+  <section>
+    <h2>S10.0 What This Teaches</h2>
+    <t-b>This tutorial covers C# record types for immutable data modeling:</t-b>
+    <ul>
+      <li>Record class vs plain class: value equality by default</li>
+      <li>Positional records and primary constructors</li>
+      <li>Non-destructive mutation with <code>with</code> expressions</li>
+      <li><code>init</code>-only properties</li>
+      <li>Record structs for stack-allocated value types</li>
+      <li>Inheritance and pattern matching with records</li>
+    </ul>
+  </section>
+
+  <!-- S10.1 Record Types -->
+  <section>
+    <h2>S10.1 Record Types</h2>
+    <t-b>
+      A <code>record</code> is a reference type where equality is based on property
+      values, not object identity. The compiler generates <code>Equals</code>,
+      <code>GetHashCode</code>, <code>ToString</code>, and <code>==</code>:
+    </t-b>
+    <pre><code class="language-csharp">// Records - value equality on reference types.
+
+record Person(string Name, int Age);
+
+var alice1 = new Person("Alice", 30);
+var alice2 = new Person("Alice", 30);
+var bob    = new Person("Bob",   25);
+
+Console.WriteLine(alice1 == alice2);   // True  - same values
+Console.WriteLine(alice1 == bob);      // False
+Console.WriteLine(alice1);             // Person { Name = Alice, Age = 30 }</code></pre>
+    <t-b>
+      Compare this to a regular class, where <code>==</code> checks reference identity
+      by default. Use records when you want data containers with structural equality.
+    </t-b>
+  </section>
+
+  <!-- S10.2 Positional Records -->
+  <section>
+    <h2>S10.2 Positional Records</h2>
+    <t-b>
+      The compact syntax <code>record T(Type Prop, ...)</code> declares a primary
+      constructor and generates matching <code>init</code>-only properties. You can
+      still add extra members:
+    </t-b>
+    <pre><code class="language-csharp">record Point(double X, double Y)
+{
+    // Computed property - not part of equality
+    public double Length =&gt; Math.Sqrt(X * X + Y * Y);
+
+    // Additional constructor
+    public Point(double v) : this(v, v) { }
+}
+
+var p = new Point(3, 4);
+Console.WriteLine(p.Length);   // 5
+
+// Deconstruct into variables
+var (x, y) = p;
+Console.WriteLine($"x={x}, y={y}");</code></pre>
+  </section>
+
+  <!-- S10.3 with Expressions -->
+  <section>
+    <h2>S10.3 Non-Destructive Mutation with with</h2>
+    <t-b>
+      Records are immutable by default. The <code>with</code> expression creates a
+      copy with specified properties changed - the original is unchanged:
+    </t-b>
+    <pre><code class="language-csharp">record Address(string Street, string City, string Zip);
+
+var home = new Address("123 Main St", "Springfield", "62701");
+
+// Change only the city; everything else is copied
+var relocated = home with { City = "Shelbyville", Zip = "62702" };
+
+Console.WriteLine(home);       // Address { Street = 123 Main St, City = Springfield, Zip = 62701 }
+Console.WriteLine(relocated);  // Address { Street = 123 Main St, City = Shelbyville, Zip = 62702 }
+Console.WriteLine(home == relocated);  // False</code></pre>
+    <t-b>
+      <code>with</code> is the idiomatic way to model change in immutable data.
+      It avoids accidental mutation while remaining concise.
+    </t-b>
+  </section>
+
+  <!-- S10.4 init-only Properties -->
+  <section>
+    <h2>S10.4 init-only Properties</h2>
+    <t-b>
+      The <code>init</code> accessor allows a property to be set during object
+      initialization but not afterward. You can combine this with object initializers
+      on non-positional records:
+    </t-b>
+    <pre><code class="language-csharp">record Config
+{
+    public string Host { get; init; } = "localhost";
+    public int    Port { get; init; } = 8080;
+    public bool   Tls  { get; init; } = false;
+}
+
+var cfg = new Config { Host = "prod.example.com", Port = 443, Tls = true };
+Console.WriteLine(cfg);
+
+// cfg.Port = 9090;   // compile error - init-only after construction
+
+// Non-positional records still support with
+var dev = cfg with { Host = "dev.example.com", Tls = false };</code></pre>
+  </section>
+
+  <!-- S10.5 Record Structs -->
+  <section>
+    <h2>S10.5 Record Structs</h2>
+    <t-b>
+      <code>record struct</code> gives value-type semantics (stack allocation, copy
+      on assignment) while keeping the auto-generated equality and <code>ToString</code>:
+    </t-b>
+    <pre><code class="language-csharp">record struct Vector2(double X, double Y)
+{
+    public static Vector2 operator +(Vector2 a, Vector2 b) =&gt; new(a.X + b.X, a.Y + b.Y);
+    public double Length =&gt; Math.Sqrt(X * X + Y * Y);
+}
+
+var v1 = new Vector2(1, 2);
+var v2 = new Vector2(3, 4);
+Console.WriteLine(v1 + v2);      // Vector2 { X = 4, Y = 6 }
+Console.WriteLine(v1 == v2);     // False
+
+// readonly record struct - all properties immutable
+readonly record struct Color(byte R, byte G, byte B);</code></pre>
+    <t-b>
+      Prefer <code>record struct</code> for small data (2-4 fields) that is passed
+      by value and compared by value - coordinates, colors, keys.
+    </t-b>
+  </section>
+
+  <!-- S10.6 Inheritance and Pattern Matching -->
+  <section>
+    <h2>S10.6 Inheritance and Pattern Matching</h2>
+    <t-b>
+      Records support inheritance. Combined with pattern matching, they model
+      discriminated-union-like hierarchies cleanly:
+    </t-b>
+    <pre><code class="language-csharp">abstract record Shape;
+record Circle(double Radius) : Shape;
+record Rectangle(double Width, double Height) : Shape;
+record Triangle(double Base, double Height) : Shape;
+
+static double Area(Shape s) =&gt; s switch
+{
+    Circle c     =&gt; Math.PI * c.Radius * c.Radius,
+    Rectangle r  =&gt; r.Width * r.Height,
+    Triangle t   =&gt; 0.5 * t.Base * t.Height,
+    _            =&gt; throw new ArgumentException("unknown shape")
+};
+
+Console.WriteLine(Area(new Circle(5)));          // 78.54
+Console.WriteLine(Area(new Rectangle(4, 6)));    // 24
+Console.WriteLine(Area(new Triangle(3, 8)));     // 12</code></pre>
+  </section>
+
+  <!-- S10.7 Example -->
+  <section>
+    <h2>S10.7 Example - All Together</h2>
+    <pre><code class="language-csharp">// Records - immutable order pipeline with with-expressions.
+
+record Product(string Name, decimal Price);
+record OrderLine(Product Item, int Qty)
+{
+    public decimal Total =&gt; Item.Price * Qty;
+}
+record Order(string Customer, IReadOnlyList&lt;OrderLine&gt; Lines)
+{
+    public decimal GrandTotal =&gt; Lines.Sum(l =&gt; l.Total);
+}
+
+var widget  = new Product("Widget", 9.99m);
+var gadget  = new Product("Gadget", 49.95m);
+
+var order = new Order("Alice", new[]
+{
+    new OrderLine(widget, 3),
+    new OrderLine(gadget, 1),
+});
+
+Console.WriteLine($"Customer: {order.Customer}");
+foreach (var line in order.Lines)
+    Console.WriteLine($"  {line.Item.Name} x{line.Qty} = {line.Total:C}");
+Console.WriteLine($"Total: {order.GrandTotal:C}");
+
+// Update price without mutating the original
+var discountedWidget = widget with { Price = 7.99m };
+Console.WriteLine($"Sale price: {discountedWidget.Price:C}");</code></pre>
+  </section>
+
+  <!-- S10.8 Exercise -->
+  <section>
+    <h2>S10.8 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Define a <code>record Temperature(double Value, string Unit)</code>.
+          Add a method <code>ToCelsius()</code> that converts Fahrenheit and Kelvin
+          to Celsius. Use <code>with</code> to produce a Celsius version of a given
+          temperature.</li>
+        <li>Model a simple event system: define an abstract <code>record Event</code>
+          with derived records <code>UserCreated</code>, <code>UserDeleted</code>,
+          and <code>EmailChanged</code>. Write a <code>Describe(Event e)</code>
+          method using a switch expression.</li>
+        <li>Use <code>readonly record struct</code> to model an RGB color. Add a
+          method <code>Blend(Color other)</code> that averages the two colors.
+          Verify value equality works correctly.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S10.9 Common Mistakes -->
+  <section>
+    <h2>S10.9 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Mutable properties break the value equality contract</h3>
+      <pre><code class="language-csharp">record BadPoint(double X, double Y)
+{
+    public double Z { get; set; }   // mutable - excluded from equality!
+}
+
+var a = new BadPoint(1, 2) { Z = 3 };
+var b = new BadPoint(1, 2) { Z = 9 };
+Console.WriteLine(a == b);   // True - Z is not in equality check</code></pre>
+      <t-b>
+        Only positional parameters and <code>init</code>-only properties are included
+        in auto-generated equality. Mutable <code>set</code> properties are silently excluded.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Confusing record class and record struct</h3>
+      <t-b>
+        <code>record</code> (or <code>record class</code>) is a reference type - two
+        variables can point to the same object. <code>record struct</code> is a value
+        type - assigning copies the data. Choose based on size and usage pattern,
+        not just on needing value equality.
+      </t-b>
+    </div>
+  </section>
+
+  <!-- S10.10 Key Terms -->
+  <section>
+    <h2>S10.10 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>record</td><td>Reference type with compiler-generated value equality, ToString, and deconstruct</td></tr>
+        <tr><td>positional record</td><td>record T(Type Prop, ...) shorthand generating primary constructor and init properties</td></tr>
+        <tr><td>with expression</td><td>Creates a copy of a record with specified properties changed; original unchanged</td></tr>
+        <tr><td>init accessor</td><td>Property setter that can only be called during object initialization</td></tr>
+        <tr><td>record struct</td><td>Value-type record; stack-allocated, copied on assignment</td></tr>
+        <tr><td>readonly record struct</td><td>record struct where all properties are immutable after construction</td></tr>
+        <tr><td>value equality</td><td>Equality based on property values, not object identity</td></tr>
+        <tr><td>deconstruct</td><td>Positional records generate Deconstruct() enabling var (x, y) = point syntax</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  C# / Learn &nbsp;&bull;&nbsp; Tutorial S10 &nbsp;&bull;&nbsp; Records
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CSharpTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

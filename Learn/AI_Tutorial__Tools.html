@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tools - SDK, API Key, Environment</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Tools &mdash; SDK, API Key, Environment</h1>
+  <t-b>Tutorial 2.0 &nbsp;&bull;&nbsp; AI / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>2.0 What This Teaches</h2>
+    <t-b>
+      Before writing any AI application you need three things: Python, the Anthropic SDK,
+      and a valid API key. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Python 3.10+ and creating a virtual environment</li>
+      <li>Installing <code>anthropic</code> and optional packages</li>
+      <li>Getting an API key from console.anthropic.com</li>
+      <li>Storing the key safely in an environment variable</li>
+      <li>Using a <code>.env</code> file with <code>python-dotenv</code></li>
+      <li>Verifying the setup with a one-line test</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>2.1 Python 3.10 and Virtual Environments</h2>
+    <t-b>
+      The Anthropic SDK requires Python 3.8 or newer; Python 3.10 or later is recommended.
+      Always work inside a virtual environment so SDK versions are isolated per project.
+    </t-b>
+    <pre><code class="language-terminal"># create and activate a virtual environment
+python -m venv .venv
+
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+
+# macOS / Linux
+source .venv/bin/activate</code></pre>
+    <t-b>
+      Your prompt will change to show <code>(.venv)</code> when the environment is active.
+      All <code>pip install</code> commands from this point install into <code>.venv</code>
+      only, not system Python.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>2.2 Installing the SDK</h2>
+    <pre><code class="language-terminal">pip install anthropic</code></pre>
+    <t-b>
+      For web application tutorials also install Flask:
+    </t-b>
+    <pre><code class="language-terminal">pip install anthropic flask</code></pre>
+    <t-b>
+      For loading API keys from a <code>.env</code> file (covered in section 2.5):
+    </t-b>
+    <pre><code class="language-terminal">pip install python-dotenv</code></pre>
+    <t-b>
+      To record exact versions for reproducibility, freeze your environment after
+      installing:
+    </t-b>
+    <pre><code class="language-terminal">pip freeze &gt; requirements.txt</code></pre>
+    <t-b>Anyone restoring the project later runs:</t-b>
+    <pre><code class="language-terminal">pip install -r requirements.txt</code></pre>
+  </section>
+
+  <section>
+    <h2>2.3 Getting an API Key</h2>
+    <t-b>
+      Navigate to <strong>console.anthropic.com</strong>, create an account, and open the
+      <strong>API Keys</strong> section. Click <strong>Create Key</strong>, give it a name,
+      and copy the value immediately - it is shown only once.
+    </t-b>
+    <t-b>
+      The key starts with <code>sk-ant-</code>. Treat it like a password: never put it in
+      source code, never commit it to version control, and revoke it if you believe it was
+      exposed.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>2.4 Setting the Environment Variable</h2>
+    <t-b>
+      The SDK reads <code>ANTHROPIC_API_KEY</code> from the environment automatically.
+      Set it for the current terminal session:
+    </t-b>
+    <pre><code class="language-terminal"># macOS / Linux
+export ANTHROPIC_API_KEY="sk-ant-your-key-here"
+
+# Windows PowerShell
+$env:ANTHROPIC_API_KEY = "sk-ant-your-key-here"</code></pre>
+    <t-b>
+      To set it permanently on macOS/Linux, add the export line to
+      <code>~/.bashrc</code> or <code>~/.zshrc</code>. On Windows, use
+      System Properties &rarr; Environment Variables.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>2.5 Using a .env File</h2>
+    <t-b>
+      A <code>.env</code> file in the project root stores the key so you don't have to
+      set the environment variable every time you open a terminal.
+    </t-b>
+    <pre><code class="language-terminal"># .env  (never commit this file)
+ANTHROPIC_API_KEY=sk-ant-your-key-here</code></pre>
+    <t-b>Add <code>.env</code> to <code>.gitignore</code> immediately:</t-b>
+    <pre><code class="language-terminal"># .gitignore
+.env
+.venv/
+__pycache__/</code></pre>
+    <t-b>Load it at the top of your script with <code>python-dotenv</code>:</t-b>
+    <pre><code class="language-python"># Load .env before creating the client.
+from dotenv import load_dotenv
+load_dotenv()
+
+import anthropic
+client = anthropic.Anthropic()   # ANTHROPIC_API_KEY is now in the environment</code></pre>
+  </section>
+
+  <section>
+    <h2>2.6 Verifying the Setup</h2>
+    <pre><code class="language-python"># verify.py - confirms SDK and API key are working.
+import anthropic
+
+client = anthropic.Anthropic()
+response = client.messages.create(
+    model="claude-haiku-4-5-20251001",
+    max_tokens=32,
+    messages=[{"role": "user", "content": "Say OK."}]
+)
+print(response.content[0].text)</code></pre>
+    <pre class="output"><code class="language-terminal">OK</code></pre>
+    <t-b>
+      Using <code>claude-haiku-4-5-20251001</code> here keeps the verification call cheap
+      and fast. Any response means the key, network, and SDK are all working.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>2.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Create a fresh project folder with a virtual environment. Install
+        <code>anthropic</code> and <code>python-dotenv</code>. Create a <code>.env</code>
+        file with your API key, add it to <code>.gitignore</code>, and run
+        <code>verify.py</code>. Then run <code>pip freeze &gt; requirements.txt</code>
+        and inspect the file to see which packages were installed.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>2.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Installing without a virtual environment</h3>
+      <t-b>
+        Installing into system Python pollutes the global environment and can break other
+        tools. Always create and activate <code>.venv</code> before running any
+        <code>pip install</code> in a project.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Committing the .env file or the key in source code</h3>
+      <t-b>
+        Once an API key is in version control history it must be treated as compromised
+        even after deletion - history is recoverable. Revoke the key on
+        console.anthropic.com and create a new one.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Forgetting to activate the virtual environment</h3>
+      <t-b>
+        Running <code>python verify.py</code> without activating <code>.venv</code> uses
+        system Python, which does not have the <code>anthropic</code> package. The error
+        is <code>ModuleNotFoundError: No module named 'anthropic'</code>.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>2.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>virtual environment</td><td>An isolated Python installation for one project; packages installed here don't affect others</td></tr>
+        <tr><td>pip</td><td>Python's package installer; downloads packages from PyPI</td></tr>
+        <tr><td>requirements.txt</td><td>A file listing exact package versions; used to recreate an environment</td></tr>
+        <tr><td>API key</td><td>A secret token that authenticates your requests to Anthropic's servers</td></tr>
+        <tr><td>ANTHROPIC_API_KEY</td><td>The environment variable the SDK reads for the API key</td></tr>
+        <tr><td>.env file</td><td>A plain-text file storing environment variables; loaded by python-dotenv</td></tr>
+        <tr><td>python-dotenv</td><td>A package that loads .env into the process environment at startup</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn &nbsp;&bull;&nbsp; Tutorial 2 &nbsp;&bull;&nbsp; Tools
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

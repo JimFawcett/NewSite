@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demonstrations - Building Demo Projects with dotnet</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Demonstrations &mdash; Building Demo Projects with dotnet</h1>
+  <t-b>Tutorial D1.0 &nbsp;&bull;&nbsp; C# / Learn / Demonstrations</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="RustTutorial__Demonstrations.html">Rust</a>
+    <a href="CppTutorial__Demonstrations.html">C++</a>
+    <a href="CSharpTutorial__Demonstrations.html">C#</a>
+    <a href="PythonTutorial__Demonstrations.html">Python</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- D1.0 What This Teaches -->
+  <section>
+    <h2>D1.0 What This Teaches</h2>
+    <t-b>
+      A .NET solution can contain a class library project and multiple console projects
+      that reference it. Each console project becomes a runnable demo for the library.
+      This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Organizing a solution with a library project and separate demo projects</li>
+      <li>Adding a project reference so demos can use library types</li>
+      <li>The <code>dotnet run --project</code> command for running individual demos</li>
+      <li>The library class and each demo's <code>Program.cs</code></li>
+    </ul>
+  </section>
+
+  <!-- D1.1 Why Separate Demo Projects? -->
+  <section>
+    <h2>D1.1 Why Separate Demo Projects?</h2>
+    <t-b>
+      A class library has no entry point - it cannot run on its own. Separate console
+      projects serve as runnable demonstrations that call into the library. Keeping each
+      demo in its own project makes it easy to run, extend, or remove independently.
+    </t-b>
+    <t-b>
+      The pattern mirrors what Cargo's <code>examples/</code> directory does for Rust and
+      CMake's <code>demos/</code> subdirectory does for C++: each demo is a standalone
+      executable that imports from a shared library.
+    </t-b>
+  </section>
+
+  <!-- D1.2 Project Layout -->
+  <section>
+    <h2>D1.2 Project Layout</h2>
+    <pre><code class="language-terminal">Demonstrations/
+├── Demonstrations.sln          ← solution file (links all projects)
+├── Lib/
+│   ├── Lib.csproj              ← class library project
+│   └── DemoLib.cs              ← public types and functions
+└── Demos/
+    ├── Basic/
+    │   ├── Basic.csproj        ← console app, references Lib
+    │   └── Program.cs
+    ├── Words/
+    │   ├── Words.csproj
+    │   └── Program.cs
+    └── Shapes/
+        ├── Shapes.csproj
+        └── Program.cs</code></pre>
+    <t-b>
+      The solution file tracks all projects. A project reference in each demo's
+      <code>.csproj</code> tells the build system to compile the library and make its
+      public types available.
+    </t-b>
+  </section>
+
+  <!-- D1.3 Creating the Solution Structure -->
+  <section>
+    <h2>D1.3 Creating the Solution Structure</h2>
+    <t-b>Run these commands from a terminal, starting in an empty <code>Demonstrations/</code> folder:</t-b>
+    <pre><code class="language-terminal">dotnet new sln --name Demonstrations
+dotnet new classlib --name Lib --output Lib
+dotnet new console --name Basic  --output Demos/Basic
+dotnet new console --name Words  --output Demos/Words
+dotnet new console --name Shapes --output Demos/Shapes
+
+dotnet sln add Lib/Lib.csproj
+dotnet sln add Demos/Basic/Basic.csproj
+dotnet sln add Demos/Words/Words.csproj
+dotnet sln add Demos/Shapes/Shapes.csproj
+
+dotnet add Demos/Basic/Basic.csproj   reference Lib/Lib.csproj
+dotnet add Demos/Words/Words.csproj   reference Lib/Lib.csproj
+dotnet add Demos/Shapes/Shapes.csproj reference Lib/Lib.csproj</code></pre>
+    <t-b>
+      After these commands the solution is configured. Delete the generated
+      <code>Class1.cs</code> placeholder in <code>Lib/</code> and replace it with
+      <code>DemoLib.cs</code>.
+    </t-b>
+  </section>
+
+  <!-- D1.4 Lib/Lib.csproj -->
+  <section>
+    <h2>D1.4 Lib/Lib.csproj</h2>
+    <pre><code class="language-xml">&lt;Project Sdk="Microsoft.NET.Sdk"&gt;
+  &lt;PropertyGroup&gt;
+    &lt;TargetFramework&gt;net9.0&lt;/TargetFramework&gt;
+    &lt;Nullable&gt;enable&lt;/Nullable&gt;
+    &lt;ImplicitUsings&gt;enable&lt;/ImplicitUsings&gt;
+  &lt;/PropertyGroup&gt;
+&lt;/Project&gt;</code></pre>
+    <t-b>
+      A class library omits <code>&lt;OutputType&gt;Exe&lt;/OutputType&gt;</code>. The
+      default output type is a <code>.dll</code> that other projects reference.
+    </t-b>
+  </section>
+
+  <!-- D1.5 The Library - Lib/DemoLib.cs -->
+  <section>
+    <h2>D1.5 The Library - Lib/DemoLib.cs</h2>
+    <pre><code class="language-csharp">// DemoLib.cs - public API for the Demonstrations library.
+namespace DemoLib;
+
+public static class MathUtils
+{
+    public static int Add(int a, int b) =&gt; a + b;
+
+    public static int Clamp(int value, int lo, int hi) =&gt;
+        value &lt; lo ? lo : value &gt; hi ? hi : value;
+
+    public static int WordCount(string s) =&gt;
+        s.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+}
+
+public class Circle(double radius)
+{
+    public double Radius { get; } = radius;
+    public double Area()          =&gt; Math.PI * Radius * Radius;
+    public double Circumference() =&gt; 2 * Math.PI * Radius;
+    public override string ToString() =&gt; $"Circle(r={Radius})";
+}
+
+public class Rectangle(double width, double height)
+{
+    public double Width  { get; } = width;
+    public double Height { get; } = height;
+    public double Area()      =&gt; Width * Height;
+    public double Perimeter() =&gt; 2 * (Width + Height);
+    public bool   IsSquare()  =&gt; Width == Height;
+    public override string ToString() =&gt; $"Rectangle({Width}x{Height})";
+}</code></pre>
+    <t-b>
+      Primary constructors (<code>class Circle(double radius)</code>) are a C# 12 feature
+      that declares constructor parameters as part of the class declaration. The properties
+      are initialized directly in the property declaration.
+    </t-b>
+  </section>
+
+  <!-- D1.6 Demo Project File -->
+  <section>
+    <h2>D1.6 Demo Project File - Demos/Basic/Basic.csproj</h2>
+    <pre><code class="language-xml">&lt;Project Sdk="Microsoft.NET.Sdk"&gt;
+  &lt;PropertyGroup&gt;
+    &lt;OutputType&gt;Exe&lt;/OutputType&gt;
+    &lt;TargetFramework&gt;net9.0&lt;/TargetFramework&gt;
+    &lt;Nullable&gt;enable&lt;/Nullable&gt;
+    &lt;ImplicitUsings&gt;enable&lt;/ImplicitUsings&gt;
+  &lt;/PropertyGroup&gt;
+  &lt;ItemGroup&gt;
+    &lt;ProjectReference Include="../../Lib/Lib.csproj" /&gt;
+  &lt;/ItemGroup&gt;
+&lt;/Project&gt;</code></pre>
+    <t-b>
+      <code>&lt;OutputType&gt;Exe&lt;/OutputType&gt;</code> makes this a console executable.
+      <code>&lt;ProjectReference&gt;</code> pulls in the library so <code>using DemoLib;</code>
+      resolves at compile time. The <code>Words</code> and <code>Shapes</code> project files
+      follow the same pattern with their own names.
+    </t-b>
+  </section>
+
+  <!-- D1.7 Demo: Basic/Program.cs -->
+  <section>
+    <h2>D1.7 Demo: Basic/Program.cs</h2>
+    <pre><code class="language-csharp">// Basic/Program.cs - demonstrates Add and Clamp from DemoLib.
+// Run with: dotnet run --project Demos/Basic
+using DemoLib;
+
+Console.WriteLine("=== basic demo ===");
+Console.WriteLine($"Add(7, 3)        = {MathUtils.Add(7, 3)}");
+Console.WriteLine($"Clamp(25, 0, 20) = {MathUtils.Clamp(25, 0, 20)}");
+Console.WriteLine($"Clamp(-5, 0, 20) = {MathUtils.Clamp(-5, 0, 20)}");
+Console.WriteLine($"Clamp(10, 0, 20) = {MathUtils.Clamp(10, 0, 20)}");</code></pre>
+    <t-b>
+      Top-level statements (no explicit <code>class</code> or <code>Main</code>) are
+      available in C# 9 and later. The compiler generates the entry point automatically.
+      <code>ImplicitUsings</code> in the project file makes <code>System</code> available
+      without an explicit <code>using System;</code>.
+    </t-b>
+  </section>
+
+  <!-- D1.8 Demo: Words/Program.cs -->
+  <section>
+    <h2>D1.8 Demo: Words/Program.cs</h2>
+    <pre><code class="language-csharp">// Words/Program.cs - demonstrates WordCount from DemoLib.
+// Run with: dotnet run --project Demos/Words
+using DemoLib;
+
+string text = "the quick brown fox jumps over the lazy dog the fox";
+Console.WriteLine("=== words demo ===");
+Console.WriteLine($"text:       \"{text}\"");
+Console.WriteLine($"WordCount:  {MathUtils.WordCount(text)}");</code></pre>
+  </section>
+
+  <!-- D1.9 Demo: Shapes/Program.cs -->
+  <section>
+    <h2>D1.9 Demo: Shapes/Program.cs</h2>
+    <pre><code class="language-csharp">// Shapes/Program.cs - demonstrates Circle and Rectangle from DemoLib.
+// Run with: dotnet run --project Demos/Shapes
+using DemoLib;
+
+Console.WriteLine("=== shapes demo ===");
+
+var c = new Circle(5.0);
+Console.WriteLine("Circle r=5:");
+Console.WriteLine($"  area          = {c.Area():F4}");
+Console.WriteLine($"  circumference = {c.Circumference():F4}");
+
+var r = new Rectangle(4.0, 6.0);
+Console.WriteLine("Rectangle 4x6:");
+Console.WriteLine($"  area      = {r.Area():F1}");
+Console.WriteLine($"  perimeter = {r.Perimeter():F1}");
+Console.WriteLine($"  IsSquare  = {r.IsSquare()}");
+
+var sq = new Rectangle(5.0, 5.0);
+Console.WriteLine("Rectangle 5x5:");
+Console.WriteLine($"  IsSquare  = {sq.IsSquare()}");</code></pre>
+    <t-b>
+      <code>:F4</code> and <code>:F1</code> are format specifiers inside interpolated
+      strings. They map to the same specifiers used with <code>string.Format</code>:
+      <code>F</code> for fixed-point, followed by the number of decimal places.
+    </t-b>
+  </section>
+
+  <!-- D1.10 Build and Run -->
+  <section>
+    <h2>D1.10 Build and Run</h2>
+    <t-b>Build all projects from the solution root:</t-b>
+    <pre><code class="language-terminal">dotnet build</code></pre>
+    <t-b>Run an individual demo:</t-b>
+    <pre><code class="language-terminal">dotnet run --project Demos/Basic
+dotnet run --project Demos/Words
+dotnet run --project Demos/Shapes</code></pre>
+    <table>
+      <thead>
+        <tr><th>Command</th><th>What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>dotnet build</code></td><td>Build all projects in the solution</td></tr>
+        <tr><td><code>dotnet run --project Demos/Basic</code></td><td>Build and run the Basic demo</td></tr>
+        <tr><td><code>dotnet build --configuration Release</code></td><td>Release build - optimized binaries</td></tr>
+        <tr><td><code>dotnet sln list</code></td><td>Show all projects registered in the solution</td></tr>
+        <tr><td><code>dotnet add &lt;proj&gt; reference &lt;lib&gt;</code></td><td>Add a project reference from a demo to the library</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- D1.11 Expected Outputs -->
+  <section>
+    <h2>D1.11 Expected Outputs</h2>
+    <t-b><code>dotnet run --project Demos/Basic</code></t-b>
+    <pre class="output"><code class="language-terminal">=== basic demo ===
+Add(7, 3)        = 10
+Clamp(25, 0, 20) = 20
+Clamp(-5, 0, 20) = 0
+Clamp(10, 0, 20) = 10</code></pre>
+
+    <t-b><code>dotnet run --project Demos/Words</code></t-b>
+    <pre class="output"><code class="language-terminal">=== words demo ===
+text:       "the quick brown fox jumps over the lazy dog the fox"
+WordCount:  11</code></pre>
+
+    <t-b><code>dotnet run --project Demos/Shapes</code></t-b>
+    <pre class="output"><code class="language-terminal">=== shapes demo ===
+Circle r=5:
+  area          = 78.5398
+  circumference = 31.4159
+Rectangle 4x6:
+  area      = 24.0
+  perimeter = 20.0
+  IsSquare  = False
+Rectangle 5x5:
+  IsSquare  = True</code></pre>
+  </section>
+
+  <!-- D1.12 Exercise -->
+  <section>
+    <h2>D1.12 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <ul>
+        <li>Add a <code>UniqueWords(string s)</code> static method to <code>MathUtils</code>
+          that returns <code>IEnumerable&lt;string&gt;</code> of distinct words in sorted
+          order.</li>
+        <li>Create a new console project <code>Demos/Stats/</code> and add it to the
+          solution and to the library reference.</li>
+        <li>In <code>Stats/Program.cs</code>, call both <code>WordCount</code> and
+          <code>UniqueWords</code> on several strings and print the results.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- D1.13 Common Mistakes -->
+  <section>
+    <h2>D1.13 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Forgetting to add the project reference</h3>
+      <t-b>
+        Creating the demo project and adding it to the solution does not automatically
+        link it to the library. You must also run
+        <code>dotnet add &lt;demo.csproj&gt; reference &lt;lib.csproj&gt;</code> or
+        edit the <code>.csproj</code> file to add a <code>&lt;ProjectReference&gt;</code>
+        element.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Forgetting to add the project to the solution</h3>
+      <t-b>
+        A project that exists on disk but is not registered in the solution file is
+        invisible to <code>dotnet build</code> at the solution level. Run
+        <code>dotnet sln add &lt;proj.csproj&gt;</code> to register it.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Missing namespace in using statement</h3>
+      <pre><code class="language-csharp">using MathUtils;  // error: MathUtils is a class, not a namespace
+using DemoLib;    // correct: DemoLib is the namespace</code></pre>
+      <t-b>
+        The <code>namespace</code> declaration in <code>DemoLib.cs</code> is
+        <code>namespace DemoLib</code>. Use that name in the <code>using</code>
+        statement, not the class name.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Running dotnet run without --project from the solution root</h3>
+      <t-b>
+        <code>dotnet run</code> without <code>--project</code> fails at the solution
+        level because it cannot determine which project to run. Always specify
+        <code>--project Demos/Basic</code> (or the path to the <code>.csproj</code> file).
+      </t-b>
+    </div>
+  </section>
+
+  <!-- D1.14 Key Terms -->
+  <section>
+    <h2>D1.14 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>solution (.sln)</td><td>File that groups multiple .NET projects for building together</td></tr>
+        <tr><td>class library</td><td>Project that compiles to a .dll with no entry point</td></tr>
+        <tr><td>console app</td><td>Project with OutputType=Exe; has an entry point and runs standalone</td></tr>
+        <tr><td>ProjectReference</td><td>.csproj element that links one project to another at build time</td></tr>
+        <tr><td>dotnet run --project</td><td>Build and run a specific project from anywhere in the repo</td></tr>
+        <tr><td>top-level statements</td><td>C# 9+ feature: code at the file level becomes the entry point</td></tr>
+        <tr><td>primary constructor</td><td>C# 12+ feature: parameters declared on the class header</td></tr>
+        <tr><td>format specifier</td><td>Suffix after : in an interpolated string, e.g. :F4 for 4 decimal places</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  C# / Learn / Demonstrations &nbsp;&bull;&nbsp; Tutorial D1 &nbsp;&bull;&nbsp; Demonstrations
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/CSharpTutorialPages.js"></script>
+  <script>
+    // Sections dropdown
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+
+    // Pages dropdown
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    // No-equivalent-topic popup for disabled lang links
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

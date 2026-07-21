@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>App: Web Code Review - Form Submission</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>App: Web Code Review &mdash; Form Submission</h1>
+  <t-b>Tutorial A7.0 &nbsp;&bull;&nbsp; AI / Learn / Applications</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>A7.0 What This Teaches</h2>
+    <t-b>
+      This tutorial builds a stateless web form: the user pastes code into a textarea,
+      submits it, and sees a review on the next page. It covers:
+    </t-b>
+    <ul>
+      <li>Stateless web forms - no session history is needed</li>
+      <li>Reading textarea input with <code>request.form</code></li>
+      <li>Rendering API output safely inside an HTML page</li>
+      <li>Using Jinja2 template escaping to prevent XSS</li>
+      <li>Passing data between Flask routes and templates</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>A7.1 Why Stateless</h2>
+    <t-b>
+      Code review is a one-shot operation. The user submits code, receives a review, and
+      is done. There is no "turn 2" - no need to remember what was said before.
+    </t-b>
+    <t-b>
+      Stateless design is simpler: each POST request is completely independent. The server
+      reads the submitted code, calls Claude once, and renders the result. No session
+      object, no database, no history list.
+    </t-b>
+    <t-b>
+      Compare this to the Web Chat tutorial (A6), where history accumulates across
+      requests. Picking stateless vs. stateful is an early design decision that shapes
+      the entire application.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A7.2 Complete app.py</h2>
+    <pre><code class="language-python"># app.py - stateless code review web app.
+# GET /  renders the submission form.
+# POST / calls Claude and renders the review.
+
+from flask import Flask, render_template, request
+import anthropic
+
+app = Flask(__name__)
+client = anthropic.Anthropic()
+
+SYSTEM = (
+    "You are an expert code reviewer. "
+    "Review the submitted code for correctness, style, and potential bugs. "
+    "Structure your response as: (1) Summary, (2) Issues Found, (3) Suggestions."
+)
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if request.method == "GET":
+        return render_template("index.html")
+
+    code     = request.form.get("code", "").strip()
+    language = request.form.get("language", "code")
+
+    if not code:
+        return render_template("index.html", error="Please paste some code before submitting.")
+
+    prompt = f"Review this {language} code:\n\n```{language}\n{code}\n```"
+
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        system=SYSTEM,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    review = response.content[0].text
+    return render_template("review.html", review=review, code=code, language=language)
+
+if __name__ == "__main__":
+    app.run(debug=True)</code></pre>
+  </section>
+
+  <section>
+    <h2>A7.3 The Form Template</h2>
+    <t-b>
+      The form has a language selector, a code textarea, and a submit button.
+      The <code>name</code> attributes on each field match what <code>request.form</code>
+      reads in the route.
+    </t-b>
+    <pre><code class="language-html">&lt;!-- templates/index.html - code submission form --&gt;
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title&gt;Code Review&lt;/title&gt;
+  &lt;style&gt;
+    body { font-family: sans-serif; max-width: 700px; margin: 2rem auto; }
+    textarea { width: 100%; height: 300px; font-family: monospace; }
+    select, button { margin-top: 0.5rem; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Code Review&lt;/h1&gt;
+  {% if error %}&lt;p style="color:red"&gt;{{ error }}&lt;/p&gt;{% endif %}
+  &lt;form method="POST"&gt;
+    &lt;label&gt;Language:
+      &lt;select name="language"&gt;
+        &lt;option value="Python"&gt;Python&lt;/option&gt;
+        &lt;option value="JavaScript"&gt;JavaScript&lt;/option&gt;
+        &lt;option value="C++"&gt;C++&lt;/option&gt;
+        &lt;option value="Rust"&gt;Rust&lt;/option&gt;
+        &lt;option value="C#"&gt;C#&lt;/option&gt;
+      &lt;/select&gt;
+    &lt;/label&gt;
+    &lt;br&gt;
+    &lt;textarea name="code" placeholder="Paste your code here..."&gt;&lt;/textarea&gt;
+    &lt;br&gt;
+    &lt;button type="submit"&gt;Review&lt;/button&gt;
+  &lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+  </section>
+
+  <section>
+    <h2>A7.4 The Review Template</h2>
+    <t-b>
+      The review page shows the submitted code in a <code>&lt;pre&gt;</code> block
+      and the review text below it. The Jinja2 <code>| e</code> filter escapes HTML
+      characters in the user-supplied code so it cannot inject markup into the page.
+    </t-b>
+    <pre><code class="language-html">&lt;!-- templates/review.html - displays review results --&gt;
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title&gt;Review Result&lt;/title&gt;
+  &lt;style&gt;
+    body { font-family: sans-serif; max-width: 700px; margin: 2rem auto; }
+    pre  { background: #f4f4f4; padding: 1rem; overflow-x: auto; }
+    .review { white-space: pre-wrap; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Review: {{ language }}&lt;/h1&gt;
+  &lt;h2&gt;Submitted Code&lt;/h2&gt;
+  &lt;pre&gt;{{ code | e }}&lt;/pre&gt;
+  &lt;h2&gt;Review&lt;/h2&gt;
+  &lt;div class="review"&gt;{{ review | e }}&lt;/div&gt;
+  &lt;br&gt;
+  &lt;a href="/"&gt;&amp;larr; Review another file&lt;/a&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    <t-b>
+      <code>{{ review | e }}</code> escapes any HTML in the API response too, which prevents
+      a malicious model response from injecting script tags.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A7.5 Complete Code</h2>
+    <t-b>
+      The full project is three files: <code>app.py</code> (shown in A7.2),
+      <code>templates/index.html</code> (shown in A7.3), and
+      <code>templates/review.html</code> (shown in A7.4). They are complete and runnable
+      as shown - no additional code is needed.
+    </t-b>
+    <t-b>
+      Install dependencies:
+    </t-b>
+    <pre><code class="language-terminal">pip install flask anthropic</code></pre>
+  </section>
+
+  <section>
+    <h2>A7.6 Running and Testing</h2>
+    <pre><code class="language-terminal">cd web_review
+python app.py</code></pre>
+    <t-b>
+      Open <code>http://127.0.0.1:5000</code>. Paste a small Python function, select
+      Python from the dropdown, and click Review. The review page loads with the submitted
+      code above and the review below.
+    </t-b>
+    <pre><code class="language-terminal"> * Running on http://127.0.0.1:5000
+ * Debug mode: on</code></pre>
+    <t-b>
+      Try submitting empty input to confirm the error message appears correctly.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>A7.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Add a download link on the review page that lets the user save the review as a
+        plain text file.
+      </t-b>
+      <ol>
+        <li>Add a route <code>GET /download</code> that reads a <code>text</code> query
+            parameter and returns it as a plain text file download using Flask's
+            <code>make_response</code>.</li>
+        <li>On <code>review.html</code>, add a link:
+            <code>&lt;a href="/download?text=...">Download Review&lt;/a&gt;</code>.
+            URL-encode the review text in the link using Jinja2's <code>urlencode</code>
+            filter or a hidden form with a POST route.</li>
+      </ol>
+      <t-b>
+        In the route, set the response headers:
+        <code>Content-Disposition: attachment; filename="review.txt"</code> and
+        <code>Content-Type: text/plain</code>.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>A7.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Not escaping user code in the HTML template</h3>
+      <t-b>
+        If you render user-submitted code with <code>{{ code }}</code> instead of
+        <code>{{ code | e }}</code>, a user who pastes <code>&lt;script&gt;alert(1)&lt;/script&gt;</code>
+        will see that script execute in the browser. Always use <code>| e</code> (or
+        Jinja2 autoescape) for any user-supplied content rendered in HTML.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Not handling empty textarea submission</h3>
+      <t-b>
+        If <code>code</code> is an empty string and you send it to Claude, the model
+        returns a puzzled response about having nothing to review. Check
+        <code>if not code</code> before calling the API and return a helpful error
+        message instead.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Adding conversation history to a stateless form</h3>
+      <t-b>
+        Some developers add a <code>messages</code> list to the stateless review app
+        thinking it improves context. It does not - the user submits one piece of code
+        and receives one review. Adding history adds complexity without benefit here.
+        Use the Chat app (A6) when multi-turn conversation is genuinely needed.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>stateless</td><td>Each request carries all the data it needs; the server keeps no memory between requests</td></tr>
+        <tr><td>request.form</td><td>Flask dict-like object containing HTML form fields submitted via POST</td></tr>
+        <tr><td>render_template</td><td>Renders a Jinja2 HTML template with values passed as keyword arguments</td></tr>
+        <tr><td>Jinja2 | e filter</td><td>HTML-escapes a string, converting &lt; &gt; &amp; to safe entities</td></tr>
+        <tr><td>textarea</td><td>HTML element for multi-line text input; value is read via <code>request.form["name"]</code></td></tr>
+        <tr><td>make_response</td><td>Flask function for building an HTTP response with custom headers and body</td></tr>
+        <tr><td>XSS</td><td>Cross-Site Scripting - injecting malicious script tags via unescaped user input</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn / Applications &nbsp;&bull;&nbsp; Tutorial A7 &nbsp;&bull;&nbsp; Web Code Review
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>

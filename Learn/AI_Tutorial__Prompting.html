@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prompting - Effective Prompts for Code</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/ThemeOcean.css">
+  <link rel="stylesheet" href="../css/prism.css">
+  <link rel="stylesheet" href="css/Learn.css">
+</head>
+<body>
+
+<div id="top-controls">
+  <a id="site-btn" href="../Site/SiteHome.html">Site</a>
+  <div id="sections-wrap">
+    <button id="sections-btn" type="button">Sections</button>
+    <div id="sections-dropdown"></div>
+  </div>
+  <div id="pages-wrap">
+    <button id="pages-btn" type="button">Pages</button>
+    <div id="pages-dropdown"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Prompting &mdash; Effective Prompts for Code</h1>
+  <t-b>Tutorial 5.0 &nbsp;&bull;&nbsp; AI / Learn</t-b>
+</header>
+<nav id="lang-bar">
+  <div id="lang-links">
+    <a href="Learn_intro.html">Index</a>
+    <a href="AI_Tutorial__Hello.html">AI</a>
+  </div>
+  <div id="lang-nav">
+    <a id="prev-btn" href="#" class="disabled">&larr; Prev</a>
+    <a id="next-btn" href="#" class="disabled">Next &rarr;</a>
+  </div>
+</nav>
+
+<main>
+
+  <section>
+    <h2>5.0 What This Teaches</h2>
+    <t-b>
+      Getting good code out of an LLM depends less on which model you use and more
+      on how you phrase the request. This tutorial covers:
+    </t-b>
+    <ul>
+      <li>Why specificity about language and version matters</li>
+      <li>How to request a particular output format</li>
+      <li>Using chain-of-thought reasoning for algorithmic problems</li>
+      <li>Teaching the model by example (few-shot prompting)</li>
+      <li>Iterating on prompts when the first result is not good enough</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>5.1 Be Specific About Language and Version</h2>
+    <t-b>
+      Vague prompts produce generic output. Specific prompts constrain the model to
+      exactly what you need.
+    </t-b>
+    <table>
+      <thead>
+        <tr><th>Vague</th><th>Specific</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>"Write a sort function"</td>
+          <td>"Write a Python 3.10 function that sorts a list of dicts by a given key.
+              Include a type hint for the key parameter and a one-line docstring."</td>
+        </tr>
+        <tr>
+          <td>"Read a file"</td>
+          <td>"Write a Python 3.10 function that reads a UTF-8 text file and returns its
+              contents as a list of stripped lines. Include type hints."</td>
+        </tr>
+      </tbody>
+    </table>
+    <t-b>
+      The model has seen millions of sort functions in dozens of languages. Without
+      constraints it picks the most common interpretation. Naming the language, version,
+      type annotations, and docstring style removes ambiguity and produces output
+      that fits directly into your codebase.
+    </t-b>
+    <pre><code class="language-python"># specific_prompt.py - compare vague vs specific prompt output.
+import anthropic
+
+client = anthropic.Anthropic()
+
+def ask(prompt: str) -&gt; str:
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=256,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.content[0].text
+
+vague    = "Write a sort function."
+specific = (
+    "Write a Python 3.10 function that sorts a list of dicts by a given key. "
+    "Include a type hint for the key parameter and a one-line docstring. "
+    "Return only the code, no explanation."
+)
+
+print("--- Vague ---")
+print(ask(vague))
+print("--- Specific ---")
+print(ask(specific))</code></pre>
+  </section>
+
+  <section>
+    <h2>5.2 Ask for Format Instructions</h2>
+    <t-b>
+      By default the model wraps code in explanation and prose. Tell it exactly what
+      format you want, especially if you are parsing the output programmatically.
+    </t-b>
+    <pre><code class="language-python"># format_json.py - request structured output and parse it.
+import anthropic
+import json
+
+client = anthropic.Anthropic()
+
+prompt = (
+    "Write a Python function that checks whether a string is a palindrome. "
+    "Return a JSON object with exactly two keys: "
+    "'code' (the function as a string) and "
+    "'explanation' (one sentence describing what it does). "
+    "Return only the JSON object, no other text."
+)
+
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=512,
+    messages=[{"role": "user", "content": prompt}]
+)
+
+raw  = response.content[0].text
+data = json.loads(raw)
+print("Code:")
+print(data["code"])
+print("\nExplanation:", data["explanation"])</code></pre>
+    <t-b>
+      Common format instructions and when to use them:
+    </t-b>
+    <ul>
+      <li><code>"Return only the code, no explanation."</code> - when you need clean code to save to a file</li>
+      <li><code>"Wrap the code in a markdown code block."</code> - when rendering in a UI that parses markdown</li>
+      <li><code>"Return JSON with keys 'code' and 'explanation'."</code> - when you need to process both parts separately</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>5.3 Step-by-Step Reasoning</h2>
+    <t-b>
+      For algorithmic problems - sorting, graph traversal, dynamic programming - asking
+      the model to reason before writing code often produces more correct output. Add the
+      phrase "Think step by step before writing code." at the end of the prompt.
+    </t-b>
+    <pre><code class="language-python"># chain_of_thought.py - ask the model to reason first.
+import anthropic
+
+client = anthropic.Anthropic()
+
+prompt = (
+    "Write a Python function that finds all pairs in a list of integers "
+    "that sum to a given target value. "
+    "Think step by step before writing code."
+)
+
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=512,
+    messages=[{"role": "user", "content": prompt}]
+)
+
+print(response.content[0].text)</code></pre>
+    <t-b>
+      The model will typically describe its approach first, then write the function.
+      This reasoning step acts as a check - if the plan is wrong, the code is usually
+      also wrong, and you can spot the error before running anything.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>5.4 Few-Shot Examples</h2>
+    <t-b>
+      A few-shot prompt shows the model one or more input/output examples before
+      presenting the actual task. The model learns the pattern from your examples
+      and applies it to the new request.
+    </t-b>
+    <pre><code class="language-python"># few_shot.py - teach style with one example then request a new function.
+import anthropic
+
+client = anthropic.Anthropic()
+
+example = '''\
+def multiply(a: int, b: int) -&gt; int:
+    """Return the product of a and b."""
+    return a * b
+'''
+
+prompt = (
+    f"Here is an example of the style I want:\n\n{example}\n"
+    "Now write a function that divides two floats, following the same style: "
+    "type hints, a one-line docstring, and no extra prose."
+)
+
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=256,
+    messages=[{"role": "user", "content": prompt}]
+)
+
+print(response.content[0].text)</code></pre>
+    <t-b>
+      Few-shot prompting is especially useful when you have a house style for
+      docstrings, logging, or error handling that is hard to describe in words but
+      easy to show.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>5.5 Iterating on Prompts</h2>
+    <t-b>
+      AI output is rarely perfect on the first try. Treat prompt writing as a loop:
+      generate, inspect the result, refine the prompt, generate again.
+    </t-b>
+    <pre><code class="language-python"># prompt_loop.py - iterative prompt refinement.
+import anthropic
+
+client = anthropic.Anthropic()
+
+prompts = [
+    # iteration 1: too vague
+    "Write a function to parse dates.",
+    # iteration 2: added language and format spec
+    "Write a Python 3.10 function to parse ISO 8601 date strings. Include type hints.",
+    # iteration 3: added docstring and error handling requirement
+    (
+        "Write a Python 3.10 function to parse ISO 8601 date strings. "
+        "Include type hints, a one-line docstring, and raise ValueError "
+        "for invalid input. Return only the code."
+    ),
+]
+
+for i, prompt in enumerate(prompts, start=1):
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=256,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    print(f"--- Iteration {i} ---")
+    print(response.content[0].text)
+    print()</code></pre>
+    <t-b>
+      Keep a prompt log - a plain text file or list - so you can track what changed
+      between versions and roll back to a better prompt if a new refinement makes
+      things worse.
+    </t-b>
+  </section>
+
+  <section>
+    <h2>5.6 Common Prompt Patterns</h2>
+    <table>
+      <thead>
+        <tr><th>Pattern</th><th>Example phrase</th><th>When to use</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Only code</td>
+          <td>"Return only the code, no explanation."</td>
+          <td>Saving output directly to a source file</td>
+        </tr>
+        <tr>
+          <td>Step by step</td>
+          <td>"Think step by step before writing code."</td>
+          <td>Algorithms with non-obvious logic</td>
+        </tr>
+        <tr>
+          <td>Format as JSON</td>
+          <td>"Return JSON with keys 'code' and 'explanation'."</td>
+          <td>Programmatic processing of both parts</td>
+        </tr>
+        <tr>
+          <td>Explain each line</td>
+          <td>"Add an inline comment to every line of code."</td>
+          <td>Learning a new pattern or library</td>
+        </tr>
+        <tr>
+          <td>What could go wrong?</td>
+          <td>"List edge cases and potential bugs in this code."</td>
+          <td>Code review and hardening</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>5.7 Exercise</h2>
+    <div class="box">
+      <strong>Exercise</strong>
+      <t-b>
+        Write two versions of a prompt asking for a binary search implementation.
+        The first version should be vague: "Write a binary search function."
+        The second version should be fully specified: state the language (Python 3.10),
+        require type hints on the function signature, require a docstring that
+        describes the parameters and return value, and instruct the model to return
+        only the code with no surrounding prose.
+        Run both prompts and compare the output. Note which version requires less
+        editing before you could commit it to a real codebase.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>5.8 Common Mistakes</h2>
+
+    <div class="mistake">
+      <h3>Assuming the model knows your codebase context</h3>
+      <t-b>
+        The model has no access to your files. If you ask it to "add error handling
+        to my read_config function" without pasting the function into the prompt,
+        it will invent a plausible function from scratch. Always include the relevant
+        code in the prompt when asking for modifications.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Asking for too many things at once</h3>
+      <t-b>
+        "Write a REST client, add logging, include unit tests, and make it async."
+        is four tasks. The model attempts all of them and often does each one poorly.
+        Send one clear task per call and combine the results yourself.
+      </t-b>
+    </div>
+
+    <div class="mistake">
+      <h3>Not specifying the programming language</h3>
+      <t-b>
+        "Write a function that reads environment variables" could be Python, Rust,
+        JavaScript, or Go. The model picks the most statistically common answer for
+        that phrase. If you want Python, say Python.
+      </t-b>
+    </div>
+  </section>
+
+  <section>
+    <h2>5.9 Key Terms</h2>
+    <table>
+      <thead>
+        <tr><th>Term</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>prompt</td><td>The text input you send to the model</td></tr>
+        <tr><td>prompt engineering</td><td>The practice of crafting and refining prompts to improve model output</td></tr>
+        <tr><td>few-shot</td><td>Including one or more input/output examples in the prompt to teach a style or pattern</td></tr>
+        <tr><td>chain-of-thought</td><td>Instructing the model to reason step by step before producing its final answer</td></tr>
+        <tr><td>format instruction</td><td>A directive in the prompt that specifies the shape of the output (JSON, code only, etc.)</td></tr>
+        <tr><td>specificity</td><td>The degree to which a prompt constrains the model's output to what you actually need</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer id="page-bottom">
+  AI / Learn &nbsp;&bull;&nbsp; Tutorial 5 &nbsp;&bull;&nbsp; Prompting
+</footer>
+
+  <script src="../js/prism.js"></script>
+  <script src="js/AITutorialPages.js"></script>
+  <script>
+    const sectionsBtn = document.getElementById('sections-btn');
+    const sectionsDropdown = document.getElementById('sections-dropdown');
+    { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    document.querySelectorAll('main h2').forEach(h2 => {
+      if (!h2.id) {
+        h2.id = h2.textContent.trim().toLowerCase()
+          .replace(/#/g, 'sharp').replace(/\+\+/g, 'plusplus').replace(/\+/g, 'plus')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      }
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      sectionsDropdown.appendChild(a);
+    });
+    { const a = document.createElement('a'); a.href = '#page-bottom'; a.textContent = 'Bottom'; sectionsDropdown.appendChild(a); }
+    sectionsBtn.addEventListener('click', e => {
+      dropdown.classList.remove('open');
+      sectionsDropdown.classList.toggle('open');
+      e.stopPropagation();
+    });
+    sectionsDropdown.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    const btn = document.getElementById('pages-btn');
+    const dropdown = document.getElementById('pages-dropdown');
+    tutorialPages.forEach(p => {
+      const a = document.createElement('a');
+      a.href = p.url;
+      a.textContent = p.name;
+      dropdown.appendChild(a);
+    });
+    const _mlClose = () => dropdown.classList.remove('open');
+    btn.addEventListener('click', e => {
+      sectionsDropdown.classList.remove('open');
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) {
+        dropdown.removeEventListener('mouseleave', _mlClose);
+        dropdown.addEventListener('mouseleave', _mlClose);
+      }
+      e.stopPropagation();
+    });
+    dropdown.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (!a) return;
+      e.preventDefault();
+      location.href = a.getAttribute('href') + '?p=1';
+    });
+    if (new URLSearchParams(location.search).get('p') === '1') {
+      dropdown.classList.add('open');
+      setTimeout(() => dropdown.addEventListener('mouseleave', _mlClose), 50);
+    } else {
+      dropdown.addEventListener('mouseleave', _mlClose);
+    }
+    const cur = location.href.split('/').pop().split('?')[0];
+    const idx = tutorialPages.findIndex(p => p.url === cur);
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (idx > 1) { prevBtn.href = tutorialPages[idx-1].url; prevBtn.classList.remove('disabled'); }
+    if (idx >= 0 && idx < tutorialPages.length - 1) { nextBtn.href = tutorialPages[idx+1].url; nextBtn.classList.remove('disabled'); }
+    prevBtn?.addEventListener('click', e => {
+      if (prevBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx-1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    nextBtn?.addEventListener('click', e => {
+      if (nextBtn.classList.contains('disabled')) return;
+      e.preventDefault();
+      location.href = tutorialPages[idx+1].url + (dropdown.classList.contains('open') ? '?p=1' : '');
+    });
+    const noEquivPopup = document.createElement('div');
+    noEquivPopup.id = 'no-equiv-popup';
+    noEquivPopup.textContent = 'no equivalent topic';
+    document.body.appendChild(noEquivPopup);
+    document.getElementById('lang-links').addEventListener('click', e => {
+      const a = e.target.closest('a.disabled');
+      if (!a) return;
+      e.preventDefault();
+      noEquivPopup.style.left = (e.clientX + 12) + 'px';
+      noEquivPopup.style.top  = (e.clientY + 12) + 'px';
+      noEquivPopup.classList.add('visible');
+    });
+    document.addEventListener('mousemove', () => noEquivPopup.classList.remove('visible'), { passive: true });
+  </script>
+</body>
+</html>
