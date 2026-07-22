@@ -19,6 +19,7 @@ function buildPages() {
         <a href='AIBites_AgentAI.html'>AI agents</a>\
         <a href='AIBites_AgenticAI.html'>agentic AI</a>\
         <a href='AIBites_SpecDev.html'>spec-driven dev</a>\
+        <a href='AIBites_ContextPrune.html'>context pruning</a>\
         <a href='AIBites_SkillsAI.html'>AI Skills</a>\
         <a href='AIBites_LLM_API.html'>LLM API</a>\
         <a href='AIBites_AI_Links.html'>AI Links</a>\

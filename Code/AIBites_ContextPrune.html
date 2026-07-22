@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  AIBites_ContextPrune.html - pruning irrelevant history from Claude Code context
+-->
+<head>
+  <title>Context Pruning</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/help.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <script src="../js/SitePagesForTools.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <script src="../js/FigureSizer.js"></script>
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    details div h3 { margin:0.25rem 0rem; }
+    details div ol { padding:0.5rem 0rem; margin: 0rem; }
+    details div ul { padding:0.5rem 0rem; margin: 0rem; }
+    details div li { padding:0.05rem 0.0rem; margin:0rem; }
+    .cmd-box {
+      border: 1px solid rgba(5,2,3,0.7);
+      padding:0.25rem 1.5rem;
+      width: 50rem;
+    }
+    #github .contentwidth {
+      width: max-content;
+    }
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
+    AIBites_ContextPrune.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 07/22/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">AIBites: Context Pruning</h2>
+        <h4 id="subtitle" class="indent">
+          managing context window size in Claude Code sessions<br />
+        </h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0rem 0rem 0.25rem 0rem; margin-top:0.125rem; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25rem; margin-left:1.5rem;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/NewSite/tree/main/Code" style="margin-left: 1rem; color:var(--atten); ">Code Repo</a>
+      </div>
+    </header>
+    <tm-b style="margin-left:1.5rem;">
+      "Prune early - a well-timed /compact is better than waiting for auto-compact."
+    </tm-b>
+    <hr class="spread">
+
+    <h3 id="intro">1.0 - Introduction</h3>
+    <tm-b>
+      A Claude Code context window fills with conversation history, file reads, tool
+      results, CLAUDE.md content, memory, and MCP tool schemas. As the window fills,
+      responses slow and cost rises. Three built-in commands give direct control over
+      what stays and what goes: <code>/clear</code>, <code>/compact</code>, and
+      <code>/context</code>.
+    </tm-b>
+    <t-b>
+      The right choice depends on what you are doing. Hard resets make sense between
+      unrelated tasks. Structured summaries work within a task when you want to shed
+      accumlated back-and-forth without losing intent. The context breakdown command
+      tells you whether conversation history is actually the problem or whether the
+      culprit is an oversized CLAUDE.md or too many active MCP servers.
+    </t-b>
+
+    <h3 id="commands">2.0 - Core Commands</h3>
+    <tm-b>
+      Three commands form the basic toolkit for pruning context:
+    </tm-b>
+    <t-b>
+      <strong><code>/clear</code></strong> - hard reset. Wipes the conversation entirely
+      with no summary. CLAUDE.md files reload automatically from disk after the reset.
+      Use this when switching to genuinely unrelated work - for example, jumping from a
+      Rust tutorial repo to a website CSS fix.
+    </t-b>
+    <t-b>
+      <strong><code>/compact</code></strong> - replaces conversation history with a
+      structured summary rather than deleting it. You can steer it:
+      <code>/compact focus on the auth bug fix</code> keeps what you choose instead of
+      what the automatic pass guesses matters. Use it proactively - before the window
+      gets crowded - rather than waiting for auto-compact, because Claude summarizes
+      better with full recall and more headroom.
+    </t-b>
+    <t-b>
+      <strong><code>/context</code></strong> - shows a live breakdown of what is
+      consuming your context window: CLAUDE.md size, memory, MCP tool schemas, skills,
+      and conversation. Includes optimization suggestions. Run this first when a session
+      feels sluggish - sometimes the problem is not conversation history at all but a
+      bloated CLAUDE.md or too many MCP servers.
+    </t-b>
+    <details>
+      <summary class="darkItem">When to use each command</summary>
+      <div class="cmd-box">
+        <ol class="tight">
+          <li>
+            Run <code>/context</code> to identify what is actually consuming the window.
+            If CLAUDE.md or MCP schemas are the problem, <code>/clear</code> or
+            <code>/compact</code> will not help much - address the source instead.
+          </li>
+          <li>
+            Use <code>/compact focus on &lt;topic&gt;</code> between phases of a long task -
+            for example, between spec-writing and implementation - to carry intent forward
+            without carrying every intermediate exchange.
+          </li>
+          <li>
+            Use <code>/clear</code> when starting a completely different task in the same
+            terminal session. CLAUDE.md reloads automatically so project context is restored.
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <h3 id="survives">3.0 - What Survives <code>/compact</code></h3>
+    <tm-b>
+      Not everything is equivalent after a <code>/compact</code>. Some project context
+      reloads from disk automatically; some requires touching the right file to restore.
+    </tm-b>
+    <t-b>
+      <strong>Reloaded automatically from disk:</strong>
+      <ul class="tight" style="margin-left:2rem;">
+        <li>Project-root CLAUDE.md and any unscoped rules</li>
+        <li>Auto memory files</li>
+      </ul>
+    </t-b>
+    <t-b>
+      <strong>Lost until a file is touched again:</strong>
+      <ul class="tight" style="margin-left:2rem;">
+        <li>
+          Rules with <code>paths:</code> frontmatter - lost until a file matching that
+          path pattern is read. To keep a rule active across compactions, remove the
+          <code>paths:</code> frontmatter or move the rule into root CLAUDE.md.
+        </li>
+        <li>
+          Nested CLAUDE.md files in subdirectories - lost until a file in that
+          subdirectory is touched again.
+        </li>
+      </ul>
+    </t-b>
+    <t-b>
+      <strong>Skill bodies:</strong> reloaded but capped at 5,000 tokens per skill and
+      25,000 tokens total. Oldest skills are dropped first when the cap is reached.
+      Put critical instructions near the top of the skill definition to ensure they
+      survive.
+    </t-b>
+    <details>
+      <summary class="darkItem">Implications for CLAUDE.md hierarchies</summary>
+      <div class="cmd-box">
+        <ol class="tight">
+          <li>
+            If you use path-scoped rules (<code>paths: ["src/auth/**"]</code> in
+            frontmatter), plan for them to be absent after a compact. Either restructure
+            them as unscoped rules in root CLAUDE.md or ensure the first action after
+            compacting reads a file in the relevant directory.
+          </li>
+          <li>
+            Nested CLAUDE.md files (for example, a <code>Learn/CLAUDE.md</code>) are
+            transparent after compact until a file under that directory is accessed.
+            If you use phase-based compaction, prime the subdirectory explicitly early
+            in each new phase.
+          </li>
+          <li>
+            For skill-heavy setups, order critical instructions at the top of each
+            skill file - they survive longest when the 25,000-token cap forces drops.
+          </li>
+        </ol>
+      </div>
+    </details>
+
+    <h3 id="levers">4.0 - Other Levers</h3>
+    <tm-b>
+      Two additional tools address context size without requiring a full reset or compact:
+    </tm-b>
+    <t-b>
+      <strong>Subagents</strong> - spawning a subagent keeps large file reads entirely
+      out of the main context. Only the final summary comes back. This is useful before
+      deciding what to change in a large codebase: delegate the broad exploration to a
+      subagent, review the summary, then act in the main session.
+    </t-b>
+    <t-b>
+      <strong><code>/rewind</code></strong> - undoes recent turns without leaving a trail
+      of corrective back-and-forth in history. Preferable to writing "no, actually do X
+      instead" messages that themselves consume context and add noise to any future
+      compact summary.
+    </t-b>
+
+    <h3 id="refs">5.0 - References</h3>
+    <table>
+      <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+      <tr>
+        <td class="lightItem">
+          <a target="_blank" rel="noopener" href="https://code.claude.com/docs/en/context-window">Claude Code - Explore the context window</a>
+        </td>
+        <td class="lightItem">Official documentation covering all context management commands.</td>
+      </tr>
+      <tr>
+        <td class="lightItem">
+          <a target="_blank" href="AIBites_SpecDev.html">AIBites: Spec-Driven Development</a>
+        </td>
+        <td class="lightItem">Illustrates how /compact between workflow phases keeps sessions focused.</td>
+      </tr>
+    </table>
+
+    <div style="height:15rem;"></div>
+  </content-block>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <a href="#intro">introduction</a>
+        <a href="#commands">core commands</a>
+        <a href="#survives">what survives /compact</a>
+        <a href="#levers">other levers</a>
+        <a href="#refs">references</a>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/CodeBitesPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 9, 10);
+  </script>
+</body>
+</html>
