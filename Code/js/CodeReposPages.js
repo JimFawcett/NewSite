@@ -13,6 +13,7 @@ function buildPages() {
         <a href='RepoCode_PyDevAgent.html'>Dev Agent</a>\
         <a href='RepoCode_ReadmeAgent.html'>Readme Agent</a>\
         <a href='RepoCode_Webifier.html'>CodeWebifier</a>\
+        <a href='RepoCode_PyCodeMetrics.html'>Code Metrics</a>\
         <a href='RepoCode_TextFinder.html'>TextFinder Comparison</a>\
         <a href='RepoCode_PageValidator.html'>PageValidator Comparison</a>\
         <a href='RepoCode_CommCompare.html'>Comm Comparison</a>\
