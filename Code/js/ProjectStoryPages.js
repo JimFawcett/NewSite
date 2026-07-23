@@ -16,6 +16,7 @@ function buildPages() {
       <a href='ProjectStory_PageValidator.html'>Chap 3 - PageValidator</a>\
       <a href='ProjectStory_Metrics.html'>Chap 4 - Metrics</a>\
       <a href='ProjectStory_CodeTrack.html'>Chap 5 - Code Track Map</a>\
+      <a href='ProjectStory_Plans.html'>Plans</a>\
       </div>\
     <div style='height:0.5em;'></div>";
   }
