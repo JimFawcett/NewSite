@@ -28,5 +28,6 @@ When given the command "fix_voice in file [path]":
 2. Copy the original file to an `archive/` subdirectory alongside the file, preserving the filename. If `archive/` does not exist create one then copy.
 3. Identify all prose text - skip code, HTML tags, and structured data.
 4. Revise the prose to match the author's voice shown in the sample above. Favor active voice. Preserve all technical details and key terms exactly. Keep sentences concise and direct. Do not add content beyond what is in the original.
-5. Do not use emdashes.  Use dashes instead.
-6. Write the revised text back to the file, preserving all non-prose content unchanged.
+5. Update the about block with new revised date
+6. Do not use emdashes.  Use dashes instead.
+7. Write the revised text back to the file, preserving all non-prose content unchanged.
