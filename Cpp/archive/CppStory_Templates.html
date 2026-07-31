@@ -134,7 +134,7 @@
       <div id="about" class="hidden" onclick="toggleAbout()">
         CppStory_Templates.html<br />
         copyright &copy; James Fawcett<br />
-        Revised: 07/30/2026
+        Revised: 02/01/2025
       </div>
       <content-block>
 
@@ -148,13 +148,14 @@
 
         <h3 id="prologue">7.0  Prologue</h3>
         <t-b>
-          Templates support parameterized types and functions. The template parameter type remains unspecified until
-          an application instantiates the code with a concrete type. Parameterized code accepts, without compilation
-          error, arbitrary calls on template type instances. When an application provides a concrete type, the
-          instantiated code compiles successfully if that type supports the required operations, and fails otherwise.
+          Templates support building parameterized types and functions that accept an unspecified type which gets
+          resolved only when an application instantiates the code with a concrete type. Parameterized code will
+          accept, without compilation error, arbitrary calls on instances of the template type. When an application
+          instantiates the parameterized code with a concrete type, compilation of the instantiated code succeeds
+          if the type supports specified operations that are used by the application, else it fails.
         </t-b>
         <t-b>
-          C++ template compilation has two phases:
+          So there are two C++ template compilation phases:
           <indent-block>
             <ol class="tight">
               <li>
@@ -168,15 +169,17 @@
               </li>
             </ol>
           </indent-block>
-          Template compilation excludes any function or statement that code never calls.
-          This lazy translation is valuable - the template library compiles successfully, deferring
-          translation of its functions to the second phase.  If the instantiated type provides the required
-          methods, compilation succeeds.  A missing method causes failure only when a call targets that method.
+          Compilation of templates does not include any function or statement that isn&apos;t used.
+          This lazy translation is very useful. We compile the template library successfully and defer
+          translation of functions to the second phase.  If the instantiated type has an appropriate method
+          compilation succeeds.  If the instantiated type does not have a method used by the template but
+          that method is never called, the translation succeeds.  It fails only for called methods that are not
+          matched in the instantiated type(s).
         </t-b>
         <t-b>
-          Lazy compilation requires all template definition code to reside in a header file. The application
-          using the template must see all of its code to compile successfully, and it accesses that code
-          only by including the header.
+          An implication of lazy compilation is that all of the template definition code must go in a
+          header file, because the application that uses the template definition has to see all of it's code
+          to compile successfully, and it gets that only by including a header file.
         </t-b>
         <t-b>
           <details>
@@ -279,21 +282,22 @@ Parameter here
                 </defn-outerBlock>
               </t-b>
               <t-b>
-                Lazy template compilation is important.  It lets us build template classes that call
-                a method on a parameter type for some instantiations, while still working for other
-                parameter types as long as the missing method is never called.
+                Lazy template compilation is very important.  It allows us to build template classes that,
+                for some parameters, may want to call a method on that parameter, but for other parameters
+                it still works as long as we don&apos;t call a missing method.
               </t-b>
               <t-b>
-                This effect appears in several demo codes in this story and the C++ Repository, most
-                notably the Property&lt;T&gt; class example, presented later in this chapter.
+                I&apos;ve used this effect in several of the demo codes for this story and other codes
+                in the C++ Repository, most notably the
+                Property&lt;T&gt; class example, presented later in this chapter.
               </t-b>
               <t-b>
                 <defn-block class="indents" style="width:30em;">
                   <defn-head>Conclusion:</defn-head>
                   <defn-body>
-                    Lazy template compilation makes template classes flexible about their parameter
-                    types.  If a type lacks a method used for other parameter types,
-                    that causes no problem as long as code never calls the missing method.
+                    Lazy template compilation makes template classes very forgiving of their parameter
+                    types.  If a type doesn&apos;t have a method that&apos;s used for other parameter types,
+                    that causes no problems as long as we don&apos;t call the missing method.
                   </defn-body>
                 </defn-block>
               </t-b>
@@ -301,9 +305,10 @@ Parameter here
           </details>
         </t-b>
         <t-b>
-          C# and Java generics use eager type checking, so many generic operations that would succeed for
-          useful types are disallowed because the compiler cannot guarantee success.  You must use a constraint
-          requiring the generic class to implement an interface with the required method.
+          C# and Java generics do eagar type checking so many generic operations
+          that would succeed for useful types are not allowed because the compiler can't ensure that they will
+          succeed.  You have to use a constraint that requires the generic class to implement an interface with
+          the required method.
         </t-b>
 
         <h3 id="tmplfunc">7.1  Template Functions</h3>
@@ -334,22 +339,24 @@ T h() {
             </defn-block>
           </defn-outerBlock>
           <t-b>
-            For the first two forms, calling code provides arguments and the compiler infers the types, compiling
-            a function for those types. In the second form, function <c-s>g</c-s> takes: <c-s>a1</c-s> by value,
+            For the first two forms using code provides arguments and the compiler will infer the types and compile
+            a function using those types. In the second form function <c-s>g</c-s> takes arguments: <c-s>a1</c-s> by value,
             <c-s>a2</c-s> by lvalue reference (&amp;), and <c-s>a3</c-s> by rvalue reference (&amp;&amp;).
-            That second form uses &quot;<c-s>class</c-s>&quot; instead of &quot;<c-s>typename</c-s>&quot;.
-            Both are valid, but <c-s>typename</c-s> is preferred.
+            In that second form we&apos;ve used &quot;<c-s>class</c-s>&quot; instead of &quot;<c-s>typename</c-s>&quot;.
+            Both forms are supported, but <c-s>typename</c-s> is preferred syntax.
           </t-b>
           <t-b>
-            Passing by value copies the argument into the function&apos;s stackframe.  Passing by lvalue
+            Passing by value makes a copy of the argument in the function&apos;s stackframe.  Passing with an lvalue
             reference creates a reference in the function&apos;s stackframe, bound to the argument in the caller&apos;s
-            scope.  lvalue references do not bind to non-const temporaries. rvalue references behave like lvalue
-            references but can bind to temporaries - rvalues - and are most frequently used with move operations.
+            scope.  lvalue references will not bind to non-const temporaries. rvalue references behave like lvalue
+            references except that they can bind to a temporary, e.g., an rvalue, and are used most frequently with
+            move operations.
           </t-b>
           <t-b>
-            For the third case, the compiler cannot infer the type from arguments because there are none,
-            and it does not analyze the body to determine the type. You must supply the type explicitly, as shown
-            in the last line of code below.
+            For the
+            third case, type inference is not possible from the arguments, as there are none, and the compiler does not attempt to
+            analyze the body code to figure that out, so we have to help by providing the type we want, as shown
+            in the last line of code, below.
           </t-b>
           <defn-outerBlock class="indent">
             <defn-block>
@@ -366,25 +373,28 @@ int j = g&lt;int&gt;(d, s, 'z');
             </defn-block>
           </defn-outerBlock>
           <t-b>
-            For the first case, the compiler knows the type of <c-s>i</c-s>
-            and compiles <c-s>f</c-s> as if it were defined as:
+            For the first case the compiler knows the type of <c-s>i</c-s>
+            and will compile <c-s>f</c-s> as if the
+            function was defined as:
             <t-b>
               <c-b>  void f(int i) { ... }</c-b>
-            </t-b>    It handles the remaining two cases the same way.
+            </t-b>    and does the same thing with the remaining two cases.
           </t-b>
 
           <h3 id="overld">7.2  Overloading Template Functions</h3>
           <t-b>
-            Template functions provide generic recipes for their operations.  Often that is sufficient
-            for a program's needs.  But some types may not compile or behave correctly with the generic
-            pattern, requiring a function overload that handles those types correctly.
+            Template functions provide generic recipes for their operation.  That is often all we need
+            for a program we are implementing.  However, frequently we need to handle a range of types,
+            some of which may not compile or operate correctly with the generic pattern.  In those cases we
+            look for a function overload that will work correctly.
           </t-b>
           <t-b>
-            The code below expands the <c-s>T max(T t1,T t2)</c-s> example from Chapter #1
-            by allowing the two arguments to have different types, which produces some interesting behavior.
+            In the code below, we&apos;ve expanded the <c-s>T max(T t1,T t2)</c-s> example from Chapter #1
+            by allowing the two arguments to have different types. That results in some interesting
+            processing activities.
           </t-b>
           <t-b>
-            Examining the output from the using code:
+            Looking at the output of the using code, we see that:
             <t-b class="indent">
               <ol class="indent">
                 <li>
@@ -415,13 +425,14 @@ int j = g&lt;int&gt;(d, s, 'z');
             </t-b>
           </t-b>
           <t-b>
-            Using two distinct parameter types allows <c-s>max</c-s> to compile in cases that would fail
-            with both arguments required to be the same type.  Only the first and fourth examples compile
-            for the original <c-s>T max(T t1, T t2)</c-s> function.
+            Using two unique parameter types allows <c-s>max</c-s> to compile successfully in cases that would
+            fail if we required both arguments to be the same type.  Only the first and fourth examples, below, will
+            compile for the original <c-s>T max(T t1, T t2)</c-s> function.
           </t-b>
           <t-b>
-            Returning the result as <c-s>auto</c-s> avoids the problem of stating the return type
-            when either <c-s>T1</c-s> or <c-s>T2</c-s> could be returned.
+            Returning the result as an auto gets around
+            the problem of how to state the return type if more than one type could be returned, e.g.,
+            <c-s>T1</c-s> or <c-s>T2</c-s>.
           </t-b>
           <defn-outerBlock>
             <defn-block>
@@ -503,8 +514,8 @@ std::cout &lt;&lt; "\n  " &lt;&lt; typeid(what).name();
             </defn-block>
           </details>
           <t-b>
-            To understand how template functions work, we examine type categories and type inference - the process
-            the compiler uses to establish argument types after they pass to template functions.
+            To understand how template functions work, we need to look at type categories and type inference, the process
+            compilation uses to establish the types that arguments take after being passed to template functions.
           </t-b>
 
           <h4 id="typcat">7.2.1  Type Categories</h4>
@@ -513,31 +524,32 @@ std::cout &lt;&lt; "\n  " &lt;&lt; typeid(what).name();
             <div>
               <ol>
                 <li>
-                  An lvalue is any named variable - anything for which we can evaluate an address.
-                  The name derives from the fact that lvalues appear on the left side of an assignment:
+                  lvalue refers to any named variable, e.g., anything for which we can evaluate an address.
+                  It was called lvalue because it could by used on the left side of an assignment expression:
                   <c-b class="indent pad5">char ch = 'z';</c-b>
                   Here, ch is an lvalue.
                 </li>
                 <li>
-                  An rvalue is any entity for which you cannot evaluate an address. It has no name
+                  rvalue refers to any entity for which you cannot evaluate an address, as it has no name
                   and is usually a temporary.  rvalues can only appear on the right side of an assignment
-                  expression, such as the 'z' of the previous item.
+                  expression, e.g., the 'z' of the previous item.
                 </li>
               </ol>
             </div>
           </t-b>
           <t-b>
-            Since C++17, things are somewhat more complicated.  rvalues split into xvalues and prvalues:
+            Things are, since C++17, somewhat more complicated.  rvalues split into xvalues and prvalues:
             <div>
               <ol>
                 <li>
-                  An xvalue is an entity that can serve as the source of a move operation.  These are almost
-                  always values of temporary objects created in a function scope and returned by value
-                  syntactically.  An xvalue is not copied but moved - its resources transfer to the return target.
+                  An xvalue is an entity that can be the source of a move operation.  These are almost always
+                  values of temporary objects created in the scope of some function, and are syntactically returned
+                  by value.  An xvalue is not copied, but instead moved by transferring its resources to the
+                  entity that is the target of the return operation.
                 </li>
                 <li>
                   A prvalue is an expression that defines the initialization of the destination.  Under return
-                  value optimization, the prvalue initializes the target instance directly.  When rvo does
+                  value optimization the prvalue initializes the creation of a target instance.  When rvo does
                   not apply, the prvalue initializes an xvalue as part of a move operation, provided the
                   returned object has a move constructor and move assignment operator.
                 </li>
@@ -545,25 +557,27 @@ std::cout &lt;&lt; "\n  " &lt;&lt; typeid(what).name();
             </div>
           </t-b>
           <t-b>
-            Most implementations do not require thinking about these categories unless you write code that
-            runs partially at compile time, such as template metaprogramming.
+            For most of your implementations, you won&apos;t have to think about these categories unless you are
+            writing code that runs partially at compile-time, e.g., template metaprogramming.
           </t-b>
 
           <h4 id="typtran">7.2.2  Type Transformations</h4>
           <t-b>
-            When passing arguments to functions, template type deduction does not always produce the same type
-            as the argument in the caller&apos;s scope.  This is an intentional transformation for performance
-            or usability, not an inference error.
-            Non-template functions have only one such transformation, which occurs for array arguments.
-            When the function&apos;s stackframe is built, the compiler creates a pointer in stack memory bound
-            to the first element of the array, rather than copying the array.
+            When passing arguments to functions, the result of template type deduction is not necessarily the same as
+            the type of the argument in the caller&apos;s scope.  This is not an inference error, but an intentional
+            transformation made for reasons of performance or usability.
+            For non-template functions there is only one such transformation. That occurs for array arguments.
+            When the function&apos;s stackframe is constructed, a pointer is created in stack memory, bound to
+            the first element of the array, instead of copying the array.
           </t-b>
           <t-b>
-            All array access within the function goes through that pointer to the caller&apos;s array.
-            This process is called type decay - the array type decays to a pointer type in the function&apos;s scope.
+            All access to the array, within the function,
+            accesses the caller&apos;s array via that pointer. It is common to refer to this process as type decay.  That is,
+            the array type decays to a pointer type in the function&apos;s scope.
           </t-b>
           <t-b>
-            Template functions apply more complicated argument type transformations.  The most important are:
+            For template functions, transformations of function argument types are more complicated.  The most important
+            of these are:
             <t-b>
               <ol>
                 <li>
@@ -611,16 +625,18 @@ std::cout &lt;&lt; "\n  " &lt;&lt; typeid(what).name();
           <details>
             <summary class="labelStyle darkItem">Type Transformation Details</summary>
             <t-b>
-              This section examines type transformations that occur when passing arguments to functions,
-              especially template functions. The C++ typeid operator cannot explore these effects - passing
-              an argument to a template function by value strips its constant, volatile, and reference (cvr)
-              qualifiers, and typeid is itself a template function that strips the same qualifiers.
-              The Boost libraries provide a workaround with their <c-s>boost::typeindex::type_id_with_cvr<T>()</c-s>
-              operator<sup>1</sup>. All type analysis reported below uses that operator.
+              In this section we will look at type transformations that occur when passing arguments to functions,
+              especially template functions. Unfortunately you cannot use the C++ typeid operator to explore these
+              effects.  We see below, that passing an argument to a template function by value strips its constant,
+              volatile, and reference (cvr) qualifiers.  But typeid is a template function, so it will strip off
+              some of the things we are looking for.
+              The Boost libraries have a work-around with their <c-s>boost::typeindex::type_id_with_cvr<T>()</c-s>
+              operator<sup>1</sup>. I&apos;ve used that for all of the type analysis reported below.
             </t-b>
             <t-b>
-              Table 1. shows that in all non-template cases tested, only the array argument undergoes type decay.
-              This holds generally - for non-template functions, type decay occurs only with array arguments.
+              We see, from Table 1., that in all non-template cases tested, the only case with type decay is the array argument.
+              This is true in general, e.g., for non-template functions, the only type decay that happens is with array
+              arguments.
             </t-b>
             <s-halfEm></s-halfEm>
             <h3>Table 1. - Type of arg in bodies of non-template functions</h3>
@@ -664,27 +680,27 @@ std::cout &lt;&lt; "\n  " &lt;&lt; typeid(what).name();
             </table>
             <s-halfEm></s-halfEm>
             <t-b>
-              Template functions differ.  When compiling an instantiated template, the compiler infers
-              argument types from invocation syntax. That inference follows several rules:
+              Template functions are a different story.  When compiling an instantiated template, the compiler infers
+              argument types from syntax of invocations. That inference has several rules:
             </t-b>
             <t-b class="indents">
               <ol>
                 <li>
-                  Passing an argument by value removes all const, volatile, and reference (cvr) qualifiers.
+                  Passing an argument by value removes all const, volatile, and reference (cvr) qulifiers.
                   Array arguments decay to pointers.
                 </li>
                 <li>
-                  Passing an argument by lvalue reference (T&amp;) preserves qualifiers, and arrays do not
-                  decay because they will not be copied. An lvalue reference binds only to lvalues or const rvalues.
-                  C++ classifies literal strings as lvalues; all other literals, such as ints and doubles, are rvalues.
+                  Passing an argument by lvalue reference (T&amp;) doesn&apos;t remove qualifiers and arrays do not
+                  decay (because they won&apos;t be copied). An lvalue reference can only bind to lvalues or const rvalues.
+                  Note that C++ classifies literal strings as lvalues.  All other literals, e.g., ints and doubles, are rvalues.
                 </li>
                 <li>
-                  Passing an argument by pointer preserves qualifiers, but arrays decay because the argument
-                  becomes a pointer.
+                  Passing an argument by pointer doesn&apos;t remove qualifiers, but arrays do decay (because the argument
+                  is a pointer).
                 </li>
                 <li>
-                  Passing an argument by universal reference (T&amp;&amp; where T is being deduced) preserves qualifiers,
-                  and arrays do not decay. Universal references bind to both lvalues and rvalues.
+                  Passing an argument by universal reference (T&amp;&amp; where T is being deduced) doesn&apos;t strip qualifiers and arrays do not
+                  decay. Universal references can bind to both lvalues and rvalues.
                 </li>
               </ol>
             </t-b>
@@ -767,25 +783,25 @@ std::cout &lt;&lt; "\n  " &lt;&lt; typeid(what).name();
             </ol>
           </details>
           <t-b>
-            Usually these rules require no attention - inference works as expected.
-            On rare occasions you may need them to understand unexpected compilation or run-time
+            Usually you don&apos;t have to think about the rules.  Inference just works as you would expect.
+            On rare occasions you may need to consider them to understand unexpected compilation or run-time
             behavior of template code.
           </t-b>
 
           <h4 id="SFINAE">7.2.3  Substitution Failure Is Not An Error (SFINAE)</h4>
           <t-b>
-            When compiling overloaded template functions, type deduction may fail for one or more overloads.
-            Each deduction involves a substitution into the overload. Substitution failure is not a compile
-            error - the build succeeds as long as at least one deduction succeeds.
+            When compiling overloaded template functions argument type deduction may fail for one or perhaps several
+            overloads. These deductions are based on substitutions in each of the overloads. Substitution failure
+            is not a compile error, so the build should succeed unless none of the deductions succeed.
           </t-b>
           <details>
             <summary class="labelStyle darkItem">SFINAE Details</summary>
             <t-b>
-              The example below provides two function overloads, each displaying the contents of a collection.
-              The first shows array contents; the second shows vector contents.
+              In the example below, we&apos;ve supplied two function overloads, each displaying the contents of
+              a collection.  The first displays contents of an array, and the second, contents of a vector.
             </t-b>
             <t-b>
-              The Using Code main has three cases:
+              In the Using Code main there are three cases:
               <ol>
                 <li>
                   First case: no SFINAE -
@@ -808,9 +824,9 @@ std::cout &lt;&lt; "\n  " &lt;&lt; typeid(what).name();
                   Third case: SFINAE with build failure not due to substitution -
                   <strong><c-s>show(3.14159)</c-s></strong>
                   <tt-b class="indent">
-                    Substitution of 3.14159 into the first overload fails but is not a compile
+                    Substitution of the double 3.14159 into the first overload fails but is not a compile
                     error. Substitution into the second overload succeeds, but the body fails to compile
-                    since a double does not satisfy the requirements of a range-based for loop.
+                    since a double does not satify the requirements of a range-based for loop.
                   </tt-b>
                 </li>
               </ol>
@@ -895,18 +911,18 @@ displaying vector
               </defn-block>
             </defn-outerBlock>
             <t-b>
-              The key point is that function code can work for some types but not others, as long as another
-              overload succeeds in type deduction and provides working code for all types the program uses
-              in that set of invocations.
+              The point of all this is that you can write function code that works for some types
+              but not for others as long as there is a type deduction for some other function overload that succeeds
+              and provides working code for any of the types your program will use for this set invocations.
             </t-b>
           </details>
           <t-b>
-            SFINAE for template classes is covered in the next chapter - Template Metaprogramming.
+            We will look at SFINAE for template classes in the next chapter7 - Template Metaprogramming.
           </t-b>
 
           <h3 id="tfexam">7.3  Template Function Examples</h3>
           <t-b>
-            Several standard template functions prove useful, especially for template metaprogramming:
+            There are a number of standard template functions that prove useful, especially for template metaprogramming:
           </t-b>
           <bb-full>
             <h3>Table 1. - Standard Template Functions</h3>
@@ -986,13 +1002,13 @@ displaying vector
           </bb-full>
           <s-halfEm></s-halfEm>
           <t-b>
-            Next are some example template function designs.  The first two come from the
+            Next we will look at some example template function designs.  The first two come from the
             <a href="CppUtilities.html">CppUtilities</a> repository.
           </t-b>
           <t-b>
-            <c-s>Converter&lt;T&gt;::toString(t)</c-s>, in the CodeUtilities folder, converts a value of <c-s>t &epsilon; T</c-s>
+            <c-s>Converter&lt;T&gt;::toString(t)</c-s>, in the CodeUtilities folder, converts the value of <c-s>t &epsilon; T</c-s>
             to its string representation.
-            Given the conversion string, ConvStr, <c-s>Converter&lt;T&gt;::toValue(ConvStr)</c-s>
+            And, given the conversion string, ConvStr, <c-s>Converter&lt;T&gt;::toValue(ConvStr)</c-s>
             converts back to a new instance with the original value.
 
           </t-b>
@@ -1078,13 +1094,13 @@ Converting from strings to values:
             </defn-outerBlock>
           </details>
           <t-b>
-            <c-s>Converter</c-s> works simply because it uses <c-s>std::ostringstream</c-s> to convert
-            values to string representation, and <c-s>std::istringstream</c-s> to convert back.
-            The std::stringstream library classes do all the work.
+            <c-s>Converter</c-s> is simple because it uses <c-s>std::ostringstream</c-s> to convert from
+            values to their string representation, and it uses <c-s>std::istringstream</c-s> to convert back.
+            Thus, the std::stringstream library classes do all the heavy lifting.
           </t-b>
           <t-b>
-            The second example, in the StringUtilities folder, presents string utility functions
-            <c-s>trim</c-s> and <c-s>split</c-s> with capabilities similar to those in the C# string class.
+            The second example, found in the StringUtilities folder, presents string utility functions
+            <c-s>trim</c-s> and <c-s>split</c-s> with capabilities similar those in the C# string class.
           </t-b>
           <details>
             <summary class="labelStyle darkItem">String Utilities</summary>
@@ -1260,10 +1276,11 @@ test string = a,
             </defn-outerBlock>
           </details>
           <t-b>
-            The last template function example shows how to create
+            For our last template function example, the code below shows how to create
             <span class="notice">generic lambdas</span>.
-            They use auto parameters, as shown, equivalent to a template function without template syntax.
-            The auto declarators generate the type deduction that makes them generic.
+            They are defined using auto parameters, as shown.  This is equivalent to a
+            template function, but doesn&apos;t use template syntax.  That it is generic is
+            due to type deduction generated for the auto declarators.
             <s-1em></s-1em>
             <details>
               <summary class="labelStyle darkItem">Generic Lambda Code</summary>
@@ -1302,19 +1319,19 @@ arg's value is: this is a string
             </details>
           </t-b>
           <t-b>
-            Template functions appear again in Chapter #7 - Template Metaprogramming, which explores
-            functions used to provide displays for code demonstrations throughout this story.
+            We will look at template functions again, in Chapter #7 - Template Metaprogramming, where we explore
+            some of the functions used to provide displays for code demonstrations throughout this story.
           </t-b>
 
           <h3 id="tclass">7.4  Template Classes</h3>
           <t-b>
-            Template classes use the syntax shown in the blocks below.  Wherever the class name <c-s>SynDemo</c-s>
-            appears as a type, it requires the template parameter, e.g., <c-s>SynDemo&lt;T&gt;</c-s>.
+            Template classes use syntax as shown in the blocks below.  Everywhere that the class name <c-s>SynDemo</c-s> is used
+            as a type it needs the template parameter, e.g., <c-s>SynDemo&lt;T&gt;</c-s>.
           </t-b>
           <t-b>
-            Both template declarations <span class="notice">and</span>
+            Remember that both template declarations <span class="notice">and</span>
             definitions must appear in the class&apos;s header file, as shown below.
-            The included file <a href="..\CppStory\Display\display.h">display.h</a> is found here.
+            Here you will find the included file <a href="..\CppStory\Display\display.h">display.h</a>.
             <s-halfEm></s-halfEm>
             <defn-outerblock>
               <defn-block>
@@ -1375,37 +1392,39 @@ hello world
             </defn-outerblock>
           </t-b>
           <t-b>
-            The two-phase compilation model for C++ templates requires placing all method implementations
-            in the header file.
+            Because of the two phase compilation for templates used by C++, the class&apos;s
+            method implementations must be placed in its header file.
           </t-b>
           <h4 id="stack">7.4.1  Stack&lt;T&gt; Class Example</h4>
           <t-b>
-            The <c-s>Stack&lt;T&gt;</c-s> class example below illustrates this syntax
-            for professionally developed code.  It also demonstrates:
+            The <c-s>Stack&lt;T&gt;</c-s> class example, below, illustrates this syntax
+            for a class typical of professionally developed code.  It also illustrates:
             <ol class="tight">
               <li>
                 <strong>Template members:</strong><br />
-                A copy constructor <c-s>template &lt;class U&gt; stack(const stack&lt;U&gt;&amp;);</c-s> and
+                A copy constructor <c-s>template &lt;class U&gt; stack(const stack&lt;U&gt;&);</c-s> and
                 assignment operator
-                <c-s>template &lt;class U&gt; stack&lt;T&gt;&amp; operator=(const stack&lt;U&gt;&amp;);</c-s>
+                <c-s>template &lt;class U&gt; stack&lt;U&gt;&amp; operator=(const stack&lt;U&gt;&);</c-s>
                 are declared as methods with a potentially different type <c-s>U</c-s>.  That could be
-                the same as <c-s>T</c-s>, providing the usual copy and assignment, or different, allowing
-                assignment of a <c-s>stack&lt;int&gt;</c-s> to a <c-s>stack&lt;double&gt;</c-s>, for example.
-                The example code demonstrates that use. Template type inference enables this flexibility.
+                the same as <c-s>T</c-s>, providing the usual copy and assignment operations, but could
+                also be different, allowing one, for example, to assign a <c-s>stack&lt;int&gt;</c-s> to a
+                <c-s>stack&lt;double&gt;</c-s>. The example code illustrates that use. Template type inference
+                is the reason we can design this flexibility.
               </li>
               <li>
                 <strong>Inner classes:</strong><br />
-                Inner classes rarely appear in C++ programs, but when a parent class needs a small,
-                specialized helper class, using an inner class makes sense.
-                The <c-s>struct stacknode</c-s> is such an example.
+                Inner classes aren&apos;t often used for C++ programs, but if a parent class needs
+                services of a small and simple class that is specialized for the parent, then using an
+                inner class for the child makes sense.  The <c-s>struct stacknode</c-s> is an example
+                of that use.
               </li>
               <li>
                 <strong>Friend relationships:</strong><br />
-                Friend relationships expand encapsulation from the granting class to its friends,
-                so use them sparingly.  When needed, they are straightforward to apply, as shown here.
-                This <c-s>stack&lt;T&gt;</c-s> class grants friend access to its template members so they
-                can access private data - necessary because <c-s>stack&lt;T&gt;</c-s> and
-                <c-s>stack&lt;U&gt;</c-s> are different classes.
+                We try to avoid using <c-s>friend</c-s> relationships because they expand encapsulation
+                from the granting class to include friends as well.  However, when needed it&apos;s
+                easy to use, as shown here.  This <c-s>stack&lt;T&gt;</c-s> class needs to allow
+                template members, cited in the first item, to access its private data. That&apos;s because
+                <c-s>stack&lt;T&gt;</c-s> is a different class than <c-s>stack&lt;U&gt;</c-s>.
               </li>
             </ol>
           </t-b>
@@ -1708,24 +1727,23 @@ attempt to pop empty stack
             </details>
           </t-b>
           <t-b>
-            You will not use this class in your own designs.  The Standard Template Library (STL) provides
-            a stack adapter class<sup>1</sup>, which all C++ developers know how to use.
-            The STL offers a rich set of template class examples, one for each STL container.
-            Demonstrations of each appear in
-            <a href="STL-Containers.html">STL-Containers.html</a> in the Demonstrations section of
+            You won&apos;t use this class for your own designs.  The Standard Template Library (STL) provides
+            a stack adapter class<sup>1</sup> and C++ developers know how that works, so you should use it.
+            The STL provides a rich set of examples of template classes including one for each of the STL
+            containers.  You will find a demonstration of each of them in
+            <a href="STL-Containers.html">STL-Containers.html</a> in the Demonstrations part of the
             <a href="CppRepositories.html">CppRepositories.html</a>.
           </t-b>
           <h4 id="direxpl">7.4.2  Directory Explorer Example</h4>
           <t-b>
-            The next example, <c-s>DirExplorerT</c-s>, shows how to build a reusable directory navigator
-            component - one that works in many different applications without changing its code.
-            It achieves reusability by parameterizing the navigator on an application-specific class,
-            <c-s>DirExplorerT&lt;App&gt;</c-s>.
+            The next example, <c-s>DirExplorerT</c-s>, shows how to build a component - a directory navigator - to be reusable,
+            e.g., can be used in many different applications without changing any of its code.  The way that is done
+            is to parameterize the navigator on an application specific class, <c-s>DirExplorerT&lt;App&gt;</c-s>.
           </t-b>
           <t-b>
-            The application class must provide methods <c-s>doFile(const std::string&amp; fileName)</c-s>
-            and <c-s>doDir(const std::string&amp; dirName)</c-s> to handle all application-specific
-            requirements for file and directory information.
+            The application class is expected to provide methods <c-s>doFile(const std::string&amp; fileName)</c-s>
+            and <c-s>doDir(const std::string&amp; dirName)</c-s> that handle all application specific
+            requirements for using file and directory information.
           </t-b>
           <t-b>
             <details>
@@ -2180,17 +2198,17 @@ processed 14 files in 2 directories
             </details>
           </t-b>
           <t-b>
-            <c-s>DirExplorerT</c-s> contains substantial code, but studying it reveals a powerful method
-            for building flexible, reusable components.
+            There is a significant amount of code in <c-s>DirExplorerT</c-s> to digest, but the effort will show you
+            a very powerful method of building flexible reusable components.
           </t-b>
           <hr class="spreadup" />
           <ol class="footnote">
             <li>
-              There are two STL adapters, <c-s>stack&lt;T&gt;</c-s> and <c-s>queue&lt;T&gt;</c-s>. Both wrap
-              <c-s>deque&lt;T&gt;</c-s> by default, providing access only to the top for <c-s>stack</c-s>
-              and both ends for <c-s>queue</c-s>. That behavior violates the STL container model, which
-              supports iteration over entire container contents. The adapter design removes that support
-              intentionally.
+              There are two STL adapters, <c-s>stack&lt;T&gt;</c-s> and <c-s>queue&lt;T&gt;</c-s>. These were
+              built as adapters, wrapping by default the <c-s>deque&lt;T&gt;</c-s>, because they intend to provide
+              access only to the top for the <c-s>stack</c-s> and both ends for the <c-s>queue</c-s>. That behavior
+              voilates the model for STL container classes that provide iteration over entire container
+              contents.  So, they are created as adapters that remove support of that model.
             </li>
           </ol>
 
@@ -2230,26 +2248,27 @@ processed 14 files in 2 directories
             </ol>
           </t-b>
           <t-b>
-            <span class="notice">Type parameters</span> may hold processing that customizes a template
-            class's behavior for specific applications.
-            They also define application-specific data structures.
-            Applications often define type parameters for unique processing to use with an existing
-            template class framework.
+            <span class="notice">Type parameters</span> may hold processing that customizes behavior of
+            a template class for specific applications.
+            they may also be used to define specific data structures
+            for an application. Often an application defines type parameters for
+            its unique processing to be used with an existing template class framework.
           </t-b>
           <t-b>
-            <span class="notice">Template type parameters</span> are themselves templates. The Template
-            Functors example below uses a functor, <c-s>X&lt;C&gt;</c-s>, parameterized on <c-s>C</c-s>
-            - the type of an STL container - in a traversal function that operates on all container members.
+            <span class="notice">Template type parameters</span> are themselves templates. You will see in
+            the Template Functors example, below, use of a functor, <c-s>X&lt;C&gt;</c-s> that is parameterized on
+            <c-s>C</c-s>, the type of an STL container. It is used in a traversal function to operate on all
+            the members of the STL container.
           </t-b>
           <t-b>
             <span class="notice">Value parameters</span> are values rather than classes.
             The <c-s>std::Array&lt;T,N&gt; class</c-s>
-            uses value parameter <c-s>N</c-s> to define the number of elements it holds.
+            uses a value parameter, <c-s>N</c-s> to define the number of elements it holds.
           </t-b>
           <t-b>
-            The Template Functors code example below contains a global function <c-s>Traverse</c-s>
-            defined with template parameter <c-s>C</c-s> and
-            <span class="notice">template template parameter <c-s>X&lt;C&gt;</c-s></span>:
+            The Template Functors code example, below, has a global function <c-s>Traverse</c-s> that is
+            defined with a template parameter, <c-s>C</c-s>, and a
+            <span class="notice">template template parameter, <c-s>X&lt;C&gt;</c-s></span>:
             <i-b class="pad5">
               <c-s>
                 template &lt;class C, template &lt;class C&gt; class X&gt;<br />
@@ -2262,8 +2281,8 @@ processed 14 files in 2 directories
                 }
               </c-s>
             </i-b>
-            where <c-s>C</c-s> represents an STL container and <c-s>X</c-s> is a function
-            object that operates on <c-s>C</c-s> in a way specified by the application defining
+            where <c-s>C</c-s> represents an STL container, and <c-s>X</c-s> is a function
+            object that operates on <c-s>C</c-s> in a way specified by the application that defines
             <c-s>X&lt;C&gt;</c-s>.
           </t-b>
           <t-b>
@@ -2402,32 +2421,36 @@ C S E 6 8 7   -   O b j e c t   O r i e n t e d   D e s i g n
           </t-b>
           <div style="height:0.25em;"></div>
           <t-b>
-            Section 6.6 discusses template class specialization - a mechanism for providing both a generic
-            implementation pattern and alternate implementations for special cases where the generic
-            pattern performs poorly.
+            In section 6.6 we discuss template class specialization, a mechanism for providing not only a
+            generic pattern for implementing a template class, as all templates do, but also alternate
+            implementations for special
+            cases for which the generic pattern may not work well.
           </t-b>
 
           <h3 id="specl">7.6  Template Class Specialization</h3>
           <t-b>
-            Templates define classes configured with subordinate classes. The code block below configures
-            class <c-s>X</c-s> to use helper classes <c-s>P</c-s> and <c-s>Q</c-s>.
-            Each application chooses which helpers to use or implements application-specific helpers.
+            Templates provide the means to define classes that are configured with other subordinate
+            classes. In the code block, below, we&apos;re configuring class <c-s>X</c-s> to use helper
+            classes <c-s>P</c-s> and <c-s>Q</c-s>.  Each application can decide which helpers to use
+            and/or implement another set of helpers specific to that application.
           </t-b>
           <t-b>
-            Template <span class="notice">specialization</span> adds another degree of design freedom.
-            Specialization defines a template class with one or more template arguments, then provides
-            additional classes with the same name but with at least one argument specialized.
+            Template <span class="notice">specialization</span> gives us another degree of design freedom.
+            Specialization occurs when
+            we define a template class with one or more template arguments, but also provide one or more
+            additional classes with the same name, but with at least one of the arguments specialized.
           </t-b>
           <t-b>
-            The code below specializes <c-s>X&lt;P,Q&gt;</c-s> for cases:
+            In the code below, we&apos;ve specialized <c-s>X&lt;P,Q&gt;</c-s> for the cases:
             <c-s>X&lt;P,Q1&gt;</c-s>, <c-s>X&lt;P1,Q&gt;</c-s>, and <c-s>X&lt;P1,Q1&gt;</c-s>. Each
-            specialization provides its own class implementation, differing in ways required for those
-            specific cases. These are distinct classes.  When compiling a template class, the compiler
-            searches for specializations and compiles a matching one when found.
+            specialization provides its own class implementation and each will be different in some
+            way needed for those specific cases. Note that these are different classes.  The compiler
+            is required, when compiling a template class, to look for specializations, and if one matches
+            the declaration it&apos;s compiling, it must compile the specialized class.
           </t-b>
           <t-b>
-            The code block below illustrates template specialization syntax. The logger example that
-            follows demonstrates specialization in a practical application.
+            The code block below illustrates template specialization syntax. The following logger example
+            demonstrates how specialization is used for practical applications.
           </t-b>
           <t-b>
             <defn-outerBlock class="indent">
@@ -2579,28 +2602,29 @@ doing Q1 processing
           </t-b>
           <s-halfEm></s-halfEm>
           <t-b>
-            Template specialization provides a generic class for common needs.
-            Each specialization replaces the generic class for a specific case - a specific parameter type
-            at instantiation.  You may add as many specializations as needed.
+            Template specialization provides a generic class, expected to handle common program needs.
+            Each specialization adds another class that replaces the generic one for a specific case, e.g.
+            a specific parameter type when instantiated.  There may be as many specializations as you need.
           </t-b>
           <t-b>
-            The logger example below is simpler than the one above.  It illustrates template specialization,
-            using it to provide:
+            The logger example, below, is simpler than that presented above.  It is here to illustrate
+            template specialization.  It uses specialization to provide:
             <indent-block>
               <ol class="tight indent">
                 <li>
-                  A generic logger class, Logger&lt;S, F, T&gt;, that describes Logger structure.
-                  It is not intended for direct use but provides the layout for template arguments.
-                  S is a text-based message, F is a message formatter, and T is a timer.
+                  A generic logger class, Logger&lt;S, F, T&gt;, describing Logger structure.
+                  It&apos;s not intended for use, but provides the layout for template
+                  arguments. S is a text-based message, F is a message formatter, and T is a timer.
                 </li>
                 <li>
-                  An unadorned logger, Logger&lt;S, FNull, TNull&gt;, that writes text to a specified stream.
-                  The first argument, S, is usually a std::string but can be a structured message.
-                  FNull provides a no-op formatter, and TNull provides a no-op timer.
+                  An unadorned logger, Logger&lt;S, FNull, TNull&gt;, that provides basic logging, i.e.,
+                  writes text to a specified stream. The first argument, S, will usually be a std::string,
+                  but could also be a structured message. The FNull argument provides a do nothing formatter,
+                  and the TNull argument provides a do nothing timer.
                 </li>
                 <li>
-                  A partial specialization on F for application-specific formatting. This parameter is
-                  itself a template, F&lt;S&gt;, allowing F to handle different message types.
+                  A partial specialization on F, to provide application specific formatting. Note that this
+                  parameter is a template, e.g., F&lt;S&gt;, allowing F to handle different types of text messages.
                 </li>
                 <li>
                   A partial specialization on T, to provide elapsed time annotations on each message.
@@ -2609,10 +2633,10 @@ doing Q1 processing
             </indent-block>
           </t-b>
           <t-b>
-            This example deviates from the usual pattern: the generic class serves only as a framework
-            for subsequent specializations, so every template the application instantiates is a specialization.
-            This design style is less common than providing a working generic class, but is sometimes easier
-            to build.
+            This example deviates from the usual pattern in that the generic class is just used to provide a
+            framework for subsequent specializations, so every template the application instantiates is
+            a specialization. This design style is used less often than providing a working generic class,
+            but sometimes it&apos;s easier to build this way.
           </t-b>
           <div>
             <details>
@@ -2777,7 +2801,7 @@ second log item
                 </defn-block>
               </defn-outerBlock>
               <t-b>
-                A more complete implementation would also provide a full specialization for both
+                A more fully featured implementation would probably also provide a full specialization for both
                 formatting and timing.
               </t-b>
             </details>
@@ -3006,45 +3030,46 @@ second log item
           </details>
         </div>-->
           <t-b>
-            This concludes the discussion of templates, overloading, and specialization.  The next
-            chapter covers Template Metaprogramming.
+            This concludes our discussion of templates, overloading, and specialization.  In the next
+            chapter we discuss Template Metaprogramming.
           </t-b>
           <h3 id="epilogue">7.7  Epilogue - Two More Examples and References</h3>
           <t-b>
-            The examples below are too large for the main chapter body. They illustrate very common template uses:
+            The examples below are too large for the main part of this chapter. They are here to illustrate
+            very typical uses of templates:
             <indent-blocks>
               <ol>
                 <li>
-                  <c-s>Graph&lt;V,E&gt;</c-s> illustrates using template parameters to hold information.
-                  The <c-s>V</c-s> type holds vertex-specific information such as a name,
-                  and the <c-s>E</c-s> type holds edge-specific information such as the relationship type
-                  between parent and child vertices.
+                  <c-s>Graph&lt;V,E&gt;</c-s> illustrates the use of template parameters to hold information.  The
+                  <c-s>V</c-s> type holds information specific to each instance of a graph vertex, perhaps a name,
+                  and the <c-s>E</c-s> type holds information specific to each instance of a graph edge, perhaps
+                  the type of relationship between the dependency parent and child vertices.
                 </li>
                 <li>
-                  <c-s>Logger&lt;T,C&gt;</c-s> uses value parameter <c-s>C</c-s> to define logger categories,
-                  creating a distinct logger class for each value of <c-s>C</c-s>.  For example,
-                  <c-s>Logger&lt;std::string,1&gt;</c-s> and <c-s>Logger&lt;std::string,2&gt;</c-s>
-                  can log information from two threads, <c-s>t1</c-s> and <c-s>t2</c-s>.
+                  <c-s>Logger&lt;T,C&gt;</c-s> uses a value parameter, <c-s>C</c-s>, to define categories of
+                  loggers, by creating a different logger class for each value of <c-s>C</c-s>.  So, for example,
+                  we might define <c-s>Logger&lt;std::string,1&gt;</c-s> and <c-s>Logger&lt;std::string,2&gt;</c-s>
+                  to log information from two threads, <c-s>t1</c-s> and <c-s>t2</c-s>.
                 </li>
               </ol>
             </indent-blocks>
           </t-b>
           <t-b>
-            The first example is a Directed Graph class.  Complete code is in the
-            <a href="CppGraph.html">CppGraph.html</a> repository. A directed graph consists of vertices
-            connected by directed edges from parent to child. Graphs represent hierarchical relationships
-            such as package dependencies or social network connections.
+            The first example is a Directed Graph class.  You can find complete code
+            in the <a href="CppGraph.html">CppGraph.html</a> repository. A directed graph consists of vertices
+            that are connected with directed edges, from parent vertex to child vertex. Graphs are used to
+            represent hierarchal relationships, e.g., package dependency or social network friend relationships.
           </t-b>
           <t-b>
-            This example appears here because it uses two template
-            <span class="notice">type parameters, <c-s>V</c-s> and <c-s>E</c-s></span>, representing
-            information held in each vertex and edge.  For example, a class dependency graph would contain
-            a class name in each vertex and a relationship type in each edge - inheritance, composition,
-            aggregation, or using.
+            The example is here, because it uses two template
+            <span class="notice">type parameters, <c-s>V</c-s> and <c-s>E</c-s></span>, that
+            represent information held in each vertex and each edge.  For example, a class dependency graph
+            would probably contain a class name in each vertex and in each edge a class relationship
+            type, e.g., inheritance, composition, aggregation, or using.
           </t-b>
           <t-b>
-            Before examining the example, review the <a href="CppGraph.html">Graph Documentation</a>
-            for the CppGraph repository.  The diagrams there clarify the code below.
+            Before looking at the example, it will help to look at the <a href="CppGraph.html">Graph Documentation</a>
+            for the CppGraph repository.  We show diagrams there that will help you understand the code below.
           </t-b>
           <t-b>
             <details>
@@ -3570,12 +3595,13 @@ edge points to vertex with id = 1 and value = v2, edge value = e5
           </t-b>
           <t-b>
             <t-b>
-              The Logger class example below has a more complete design than the earlier simplified Logger.
-              It takes <span class="notice">template type parameter <c-s>T</c-s></span> - the type of
-              message being logged - and <span class="notice">value parameter <c-s>size_t C</c-s></span>,
+              In the Logger class example, below, <c-s>Logger</c-s> has a larger design than the earlier
+              simplified Logger example.  It takes a
+              <span class="notice">template type parameter <c-s>T</c-s></span>,
+              the type of message being logged, and <span class="notice">value parameter <c-s>size_t C</c-s></span>,
               representing a logger category.
-              <c-s>Logger</c-s> uses its <c-s>C</c-s> parameter to define a logging level, such as
-              debug, demonstration, results, or any combination.
+              <c-s>Logger</c-s> uses its <c-s>C</c-s> parameter to define a logging level, e.g., debug or
+              demonstration or results or some combination of the three.
             </t-b>
             <t-b>
               <details>
@@ -3921,51 +3947,54 @@ a result
               </details>
             </t-b>
             <t-b>
-              Both designs have merit. The best features of each will eventually merge into the
+              Both designs have merit. I will eventually merge the best features of each and put that in the
               <a href="Logger.html">Logger Repository</a>.
             </t-b>
             <t-b>
-              C++ templates are a powerful language feature.  They enable reusable components that
-              applications instantiate with specific types.  Because templates are constructed at compile
-              time, type deduction makes building these reusable types remarkably effective.
+              C++ templates are a very powerful feature of the language.  We use them to build components that can
+              be reused by instantiating with application specific types.  Because templates are constructed at compile
+              time, template type deduction makes it suprisingly effective to build these reusable types.
             </t-b>
             <t-b>
-              The next chapter explores this further with template metaprogramming.
+              We will explore this further in the next chapter where we look at template metaprogramming.
             </t-b>
             <h3 id="exer">7.8  Programming Exercises</h3>
             <indent-blocks>
               <div style="width:80%">
                 <ol>
                   <li>
-                    Write a calculator class with methods for addition, subtraction, multiplication,
-                    and division.  Use template parameters to support those operations for all C++
-                    arithmetic types, including unsigned types.
+                    Write a calculator class that provides methods for addition, subtraction, multiplication
+                    and division.  Use template parameters to support those operations for all the C++
+                    arithmetic types (that includes unsigned types).
                     <hr />
-                    Can you make this work for complex numbers? That requires a specialization.
-                    What will you do for division?
+                    Can you make this work for complex numbers? You will need a specialization
+                    for that. what will you do for division?
                   </li>
                   <li>
-                    Write a CircularBuffer class with an &quot;add&quot; method that accepts
-                    a value of unspecified type and appends it to a private STL container.
-                    After N calls, the method appends the new item and discards the oldest,
-                    keeping the collection at N items. Provide an iterator starting at the
-                    most recent element and moving toward the oldest.
+                    Write a CircularBuffer class that has an &quot;add&quot; method that accepts
+                    a value of unspecified type and appends it to a private member collection -
+                    one of the STL containers.  After the method has been called N times, it
+                    appends the new item and discards the oldest item, keeping the collection
+                    size at N items. Provide an iterator that starts at the most recent and
+                    increments toward the oldest.
                     <hr />
-                    Is there an STL container that makes this easy to implement?
-                    Demonstrate that your CircularBuffer instances behave as expected.
+                    Is there an STL container that will make this very easy to implement?
+                    Please demonstrate that your CircularBuffer instances behave as expected.
                   </li>
                   <li>
-                    Write a query facility for STL containers with a declarative interface similar to
-                    C#&apos;s LINQ - methods like <c-s>select</c-s>, <c-s>where</c-s>,
-                    <c-s>sort</c-s>. This is a proof of concept, not a production library.
-                    Consider selecting a container and flattening it into a <c-s>std::vector</c-s>.
-                    Since queries may modify contents, do not operate directly on the original container.
-                    Having most methods return a Query&amp; enables method chaining, as in:
+                    Write a query facility for STL containers that provides a declarative interface,
+                    something like C#&apos;s LINQ, providing methods like <c-s>select</c-s>, <c-s>where</c-s>,
+                    <c-s>sort</c-s>, ... You&apos;re trying to do a proof of concept, not a complete
+                    industrial strength library. You might think about <c-s>select</c-s>ing some container
+                    and flattening into a <c-s>std::vector</c-s>. Since queries may modify the contents
+                    you don&apos;t want to operate directly on the original container. If you make most
+                    of the methods return a Query&amp; then you can chain them, e.g.:
                     <defn-code>
 std::vector = Query.select(container).where(predicate).sort().toVector();
                     </defn-code>
-                    Work out the template syntax yourself.
-                    Several operations using STL algorithms would be worth exploring.
+                    This is just pseudo-code with all of the template syntax left for you to work out.
+                    It would be interesting to work out several operations, using the STL algorithms
+                    where appropriate.
                   </li>
                 </ol>
               </div>

@@ -149,34 +149,46 @@
 
         <h3 id="prologue">10.0 Prologue</h3>
         <t-b>
-          C++ provides a rich collection of standard libraries, with scores of well-designed facilities and more arriving with C++20. This chapter covers the standard I/O streams libraries.
+          The C++ language comes with a great collection of standard libraries. There are scores of very
+          well designed facilities and more are coming with the next standardization in C++20.
+          In this part we will be discussing the standard I/O streams libraries.
         </t-b>
         <view-image src="pictures/iostreams.JPG" width="400px" bg-color="var(--light)" title-bg-color="#ccc" step-px="100" style="float:right; margin-right:-1rem;">
           Fig 1. IOStream Hierarchy
         </view-image>
         <h3 id="strms">10.1 Streams</h3>
         <t-b>
-          The stream library structure appears in Fig 1. <c-s>std::ios</c-s> manages formatting and error information. Its derived classes - <c-s>std::istream</c-s>, <c-s>std::ostream</c-s>, and others - provide an invariant interface for streams, forming the language we use to interact with them.
+          The stream library is structured as shown in Fig 1.  <c-s>std::ios</c-s> is a class responsible
+          for managing formatting and error information. All its derived classes, <c-s>std::istream</c-s>,
+          <c-s>std::ostream</c-s>, ... provide an invariant interface for streams.  They make the language
+          we use to interact with streams.
         </t-b>
         <t-b>
-          <c-s>std::streambuf</c-s> and its derived classes expose virtual functions that support customization. The interface is fixed so all code interacts with streams consistently, but semantics can be customized by implementing application-specific buffer adapters.
+          The buffers <c-s>std::streambuf</c-s> and its derived classes have a number of virtual functions that
+          support customization. This is a really elegant design. The interface is fixed so everyone knows how
+          to deal with streams, but their semantics can be customized by implementing application specific
+          buffer adapters.
         </t-b>
         <t-b>
-          I built such an example for graduate course CSE776 - Design Patterns, using the Adapter Pattern to route socket messages through a stream interface.
+          I did that as an example in a graduate course CSE776 - Design Patterns, using the &quot;Adapter Pattern&quot;.
+          That example supported sending socket messages through a stream interface.
         </t-b>
         <t-b>
-          Buffers provide the actual stream functionality. You can open, read, write, and close files using just an instance of std::filebuf.
+          All of the real stream functionality is provided by the buffers.  You can open, read, write, and close
+          files, for example, just using an instance of std::filebuf.
         </t-b>
         <div class="clear"></div>
         <h3 id="frmt">10.2 Streams Formatting Code Examples</h3>
         <div style="height:0.75rem;"></div>
         <t-b>
-          std::iostreams formatting is straightforward. Format settings are encoded as bits in a long int, accessed via these functions:
+          std::iostreams formatting is fairly simple. All the format settings are encoded in bits in
+          a long int which you can access from the functions:
           <defn-code class="pad10">
 long frmt = flags();  // retrieve the current format settings
 flags(frmt);          // restore the original settings
           </defn-code>
-          Most settings toggle individual bits when there are only two format choices. Three formats each have three choices:
+          A lot of the settings can be activated by toggling individual bits when there are only two
+          format choices.  However, there are three formats that each have three choices:
         </t-b>
         <t-b indent>
             <div>
@@ -196,14 +208,19 @@ flags(frmt);          // restore the original settings
               </ol>
             </div>
             <s-5px></s-5px>
-            Each choice occupies a single bit, so both left and right adjust could be set simultaneously, producing undefined behavior. The adjustfield, floatfield, and basefield arguments zero all bits for that format group, then set the one specified - ios::left, for example.
+            Each of the choices is encoded in a single bit, so it is possible, for example, that both left and right
+            adjust could be set, resulting in undefined behavior. The adjustfield, floatfield, and basefield
+            arguments cause all of the bits for that format to be zeroed, then the one you want is set with
+            ios::left, for example.
           </t-b>
           <t-b>
-            Formats can be set using <c-s>flags(frmt)</c-s> or <c-s>setf(frmt, field)</c-s>, as shown below. They can also be set using iomanipulators - functions that modify part of the <c-s>std::ios</c-s> state by insertion into a stream.
+            Formats can be set using <c-s>flags(frmt)</c-s> or <c-s>setf(frmt, field)</c-s>, as shown in the
+            example, below.  They can also be set using iomanipulators. An iomanipulator is a function that
+            sets some part of the <c-s>std::ios</c-s> state. That&apos;s done by inserting them into a stream.
             <indent-block class="pad10">
               <c-s>outstrm &lt;&lt; setw(15);</c-s>
             </indent-block>
-            The insertion operator is overloaded to accept function pointers for this purpose.
+            The insertion operator is overloaded to accept function pointers for just this purpose.
           </t-b>
           <t-b>
             <h4 style="display:inline-block">Table 1. - Partial list of io manipulators</h4>
@@ -309,7 +326,7 @@ flags(frmt);          // restore the original settings
             </table>
           </t-b>
           <t-b>
-            The code example below demonstrates most iostreams formatting mechanisms.
+            The code example, below, shows most of the formatting mechanisms in iostreams.
           </t-b>
         <details>
           <summary class="labelStyle darkItem">Example: std::iostream formats</summary>
@@ -451,11 +468,12 @@ stream manipulators
         </details>
         <h3 id="file">10.3 File Streams Code Examples</h3>
         <t-b>
-          The next example demonstrates file stream operations, covering most tasks you encounter when working with files.
+          The next example illustrates working with file streams.  Many of the things you will need to
+          do when working with files are presented in the example.
         </t-b>
         <div style="height:0.75rem;"></div>
         <t-b>
-          Files open in two ways and close as follows:
+          Files can be opened in two ways and closed:
         </t-b>
           <t-b>
             <div>
@@ -467,11 +485,13 @@ stream manipulators
             </div>
           </t-b>
         <t-b>
-          File stream destructors call <c-s>close()</c-s> when the stream goes out of scope, but closing early is harmless - it frees the internal OS file handle immediately.
+          When file streams go out of scope their destructors call <c-s>close()</c-s>, but it does no
+          harm to close the file before it goes out of scope, freeing the internal OS file handle.
         </t-b>
         <div style="height:0.75rem;"></div>
         <t-b>
-          The example below illustrates error handling for file open operations that may fail.
+          The example, below, illustrates standard error handling.
+          When you attempt to open a file that may or may not succeed.
         </t-b>
           <t-b>
             <div>
@@ -483,7 +503,8 @@ stream manipulators
             </div>
           </t-b>
         <t-b>
-          Standard streams support a simple error handling model. A stream exists in one of three states:
+          For this, standard streams have a simple error handling process.  Streams can be in any of
+          three states:
         </t-b>
           <t-b>
             <div>
@@ -508,7 +529,8 @@ stream manipulators
             </div>
           </t-b>
         <t-b>
-          <span class="notice">Always</span> check file stream state after opening, before any use. The common pattern:
+          You should <span class="notice">always</span> check filestream state after opening, before any attempt
+          to use it.  We often do that with:
           <indent-block class="pad10">
             <c-s>
               std::ofstream out(filename, ios::out);<br />
@@ -517,7 +539,7 @@ stream manipulators
               }
             </c-s>
           </indent-block>
-          The example follows:
+          Finally, here&apos;s the example:
         </t-b>
         <details>
           <summary class="labelStyle darkItem">Example: std::fstreams I/O</summary>
@@ -692,7 +714,9 @@ after reading EOF stream state not good again
         </details>
         <h3 id="fbuf">10.4 Filebuf I/O Code Examples</h3>
         <t-b>
-          The next example shows that most stream object operations are also available directly on its internal filebuf. The stream object presents a non-virtual interface; its filebuf does the actual work.
+          The next example illustrates that most things you can do with a standard stream object you can
+          also do with its internal filebuf. In other words, the stream object presents a (non-virtual)
+          interface and its filebuf does all the work.
         </t-b>
         <details>
           <summary class="labelStyle darkItem">Example: std::Filebuf I/O</summary>
@@ -811,13 +835,19 @@ this is the sixth and final line
         </details>
         <h3 id="rdwr">10.5 Read-Write Code Examples</h3>
         <t-b>
-          The next example demonstrates reading and writing to the same file through a single filebuf. This approach suits a database record manager that reads existing data and writes new data to the same file.
+          The next example illustrates that you can read and write to the same file using a single filebuf
+          for both reading and writing.  You might do that if you were building a database record manager
+          where you need to read existing data but also enter new data into the same file.
         </t-b>
         <t-b>
-          Making this useful requires a schema defining file regions for reading and writing specific record columns - the approach SQL databases take.
+          In order to make this work for something useful you will have to devise a schema which defines
+          regions of the file where you read and write specific columns of a record.  That&apos;s what
+          SQL databases do.
         </t-b>
         <t-b>
-          This example demonstrates concurrent reading and writing, without schema-based record management. The approach wraps a shared filebuf with both an input stream and an output stream. Details:
+          This example just demonstrates that you can both read and write.  It doesn&apos;t do any schema-based
+          record management (but that wouldn&apos;t be too hard to do). The way we get that to work is to
+          wrap a common filebuf with both an input stream and an output stream.  Here&apos;s the details:
         </t-b>
         <details>
           <summary class="labelStyle darkItem">Read/Write Streams</summary>
@@ -942,12 +972,16 @@ this text is added to the end
         </details>
         <h3 id="strgs">10.6 String Streams Code Examples</h3>
         <t-b>
-          The final example demonstrates stringstreams. They are especially useful for object-to-string and string-to-object transformations - what std::ostream does. Writing:
+          The final example demonstrates stringstreams.  These are particularly useful for doing object to
+          string and string to object transformations.  That&apos;s what a std::ostream does.  If you write:
           <indent-block class="pad10">
             double d{ 3.14159 };<br />
             std::cout << d;
           </indent-block>
-          <c-s>std::cout</c-s> transforms its double argument into a character sequence written to your terminal - a string. All standard streams do this. stringstream objects let you retrieve that string for processing instead of sending it to a terminal. The demo:
+          <c-s>std::cout</c-s> transforms its double input into a sequence of characters written to your
+          terminal, e.g., a string. All the standard streams do this, and, with stringstream objects, we
+          can retrieve the string for processing rather than write it to a terminal.
+          Here&apos;s the demo:
         </t-b>
         <details>
           <summary class="labelStyle darkItem">Example: std::stringstreams</summary>

@@ -133,7 +133,7 @@
       <div id="about" class="hidden" onclick="toggleAbout()">
         CppStory_LibraryThreads.html<br />
         copyright &copy; James Fawcett<br />
-        Revised: 07/30/2026
+        Revised: 05/15/2026
       </div>
       <content-block>
 
@@ -251,9 +251,9 @@ worker stopping
 
         <h3 id="sync">13.2 Synchronization</h3>
         <t-b>
-          <c-s>std::mutex</c-s> protects shared data from concurrent modification. Locking a mutex
-          manually with <c-s>lock()</c-s>/<c-s>unlock()</c-s> is error-prone - an RAII wrapper ensures
-          the lock releases even when an exception unwinds the stack.
+          <c-s>std::mutex</c-s> protects shared data from concurrent modification. Never lock a mutex
+          manually with <c-s>lock()</c-s>/<c-s>unlock()</c-s> - use an RAII wrapper so the lock is
+          always released even when an exception unwinds the stack.
         </t-b>
         <t-b>
           The two primary wrappers are <c-s>std::lock_guard</c-s> (non-movable, simplest) and
@@ -262,11 +262,11 @@ worker stopping
           deadlock-free order.
         </t-b>
         <t-b>
-          <c-s>std::condition_variable</c-s> lets threads wait for a condition without busy-spinning.
-          <c-s>wait()</c-s> atomically releases the associated <c-s>unique_lock</c-s>
+          <c-s>std::condition_variable</c-s> lets threads wait for a condition to become true without
+          busy-spinning. <c-s>wait()</c-s> atomically releases the associated <c-s>unique_lock</c-s>
           and blocks the calling thread. <c-s>notify_one()</c-s> wakes one waiter;
-          <c-s>notify_all()</c-s> wakes all of them. Passing a predicate to <c-s>wait()</c-s>
-          guards against spurious wakeups.
+          <c-s>notify_all()</c-s> wakes all of them. Always pass a predicate to <c-s>wait()</c-s>
+          to guard against spurious wakeups.
         </t-b>
         <div style="height:0.75rem;"></div>
           <details>
@@ -479,16 +479,16 @@ got: 42
 
         <h3 id="epilogue">13.4 Epilogue</h3>
         <t-b>
-          The C++ threading library makes concurrency portable across every major platform.
-          <c-s>std::async</c-s> and <c-s>std::future</c-s> handle task-level parallelism, with the
-          implementation managing thread lifetime. Use <c-s>std::thread</c-s> directly only when precise
-          control over thread affinity, priority, or lifetime is required.
+          The C++ threading library makes concurrency portable across every major platform. Prefer
+          <c-s>std::async</c-s> and <c-s>std::future</c-s> for task-level parallelism - the
+          implementation manages thread lifetime for you. Drop to <c-s>std::thread</c-s> only when you
+          need precise control over thread affinity, priority, or lifetime.
         </t-b>
         <t-b>
-          Shared data always requires protection. Accessing a shared variable from multiple threads
-          without synchronization violates the C++ memory model, and the resulting data races are
-          undefined behavior. <c-s>std::jthread</c-s> (C++20) joins automatically on destruction,
-          eliminating the terminate-on-destruction trap that raw <c-s>std::thread</c-s> carries.
+          Always protect shared data. Never access a shared variable from multiple threads without
+          synchronization - the C++ memory model gives no guarantees otherwise, and the resulting data
+          races are undefined behavior. Use <c-s>std::jthread</c-s> (C++20) in preference to raw
+          <c-s>std::thread</c-s> to eliminate the terminate-on-destruction trap.
         </t-b>
 
         <h3 id="refs">13.5 References</h3>
