@@ -13,9 +13,10 @@
   <link rel="stylesheet" href="../css/help.css" />
   <link rel="stylesheet" href="../css/ThemeRust.css" />
   <link rel="stylesheet" href="../css/StylesPhoto.css" />
-  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/ViewImage.css" />
   <link rel="stylesheet" href="../css/StylesWebComponents.css" />
   <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/ViewImage.js"></script>
   <script src="../js/Content.js"></script>
   <script src="../js/ContentMenus.js"></script>
   <link rel="stylesheet" href="../css/FigureSizer.css" />
@@ -112,7 +113,7 @@
       <div id="about" class="hidden" onclick="toggleAbout()">
         RustStory_Structures.html<br />
         copyright &copy; James Fawcett<br />
-        Revised: 02/01/2025
+        Revised: 07/31/2026
       </div>
       <content-block>
         <header class="spread-down">
@@ -130,13 +131,13 @@
         <a id="prologue"></a>
         <h3>4.0 Prologue</h3>
         <t-b>
-          Previous chapters have provided a lot of technical details about the Rust programming language.  In this chapter we will bring all that
-          together by presenting a few libraries: Logger, CmdLineParser, and DirNavigator.
+          Previous chapters cover the technical details of the Rust programming language. This chapter ties those details together by
+          presenting three libraries: Logger, CmdLineParser, and DirNavigator.
         </t-b>
         <t-b>
-          For the first library, <n-s>Logger</n-s> we will explore library structure, its implementation, testing, and documentation.  The Rust tool cargo,
-          in concert with the rustc compiler, provide an excellent environment for building libraries and applications, with detailed testing and
-          documentation.
+          The first library, <n-s>Logger</n-s>, illustrates library structure, implementation, testing, and documentation. Cargo and the
+          rustc compiler together provide an excellent environment for building libraries and applications, with strong support for
+          testing and documentation.
         </t-b>
         <t-b>
           This chapter is a good place to start exploring that.
@@ -144,22 +145,13 @@
         <a id="logger"></a>
         <h3>4.1 Logger Library</h3>
         <div style="width:calc(100vw - 9em);">
-          <photosizer-block src="pictures/RustLoggerOutput.JPG" width="300" class="photoSizerBlock right" style="margin-top:0;">
-            <span style="
-              display: inline-block;
-              font-weight: bold;
-              font-family: 'Comic Sans MS', Tahoma;
-              background-color: #ddd;
-              width: 100%;
-              padding: 5px 0px;
-            ">
-              Fig 1. Rust Logger Output
-            </span>
-          </photosizer-block>
+          <view-image src="pictures/RustLoggerOutput.JPG" width="300px" bg-color="var(--light)" title-bg-color="#ccc" step-px="100" style="float:right; margin-top:0; margin-right:-6rem;">
+            Fig 1. Rust Logger Output
+          </view-image>
         </div>
         <t-b>
-          The Logger Library provides a light-weight logger, useful for debugging and demonstration.
-          Library development started with <span>specifications</span>:
+          The Logger Library provides a lightweight logger, useful for debugging and demonstration.
+          Development starts with <span>specifications</span>:
           <indent-block class="pad5">
             <ol class="tight">
               <li>
@@ -197,33 +189,32 @@ pub struct Logger {
           </div>
         </t-b>
         <t-b>
-          Logger has two data members: <c-s>fl</c-s> and <c-s>console</c-s>. <c-s>fl</c-s> is an <c-s>Option</c-s> enumeration that either holds a <c-s>File</c-s>
-          instance as <c-s>Some(f:File)</c-s> or <c-s>None</c-s>.  When you create a logger with <c-s>Logger::new()</c-s>,
-          <c-s>fl</c-s> is <c-s>None</c-s>, so the logger is not attached to a file.
+          Logger has two data members: <c-s>fl</c-s> and <c-s>console</c-s>. The member <c-s>fl</c-s> is an <c-s>Option</c-s> enumeration
+          that holds either a <c-s>File</c-s> instance as <c-s>Some(f:File)</c-s> or <c-s>None</c-s>. <c-s>Logger::new()</c-s> sets
+          <c-s>fl</c-s> to <c-s>None</c-s>, so the new logger has no attached file.
         </t-b>
         <t-b>
-          The member <c-s>console</c-s> is a boolean that determines whether a write sends its output to the console.  <c-s>Logger::new()</c-s> sets
-          <c-s>console</c-s> to <c-s>true</c-s>, so the logger will, by default, write to the console. To do anything useful, we need some functions
-          that operate on that member data.  Note
-          that the Logger structure is public, but its data members are not, so only Logger methods can alter their state.
+          The member <c-s>console</c-s> is a boolean that controls whether a write sends output to the console. <c-s>Logger::new()</c-s> sets
+          <c-s>console</c-s> to <c-s>true</c-s>, so the logger writes to the console by default. The Logger structure is public, but its
+          data members are not, so only Logger methods can alter their state.
         </t-b>
         <t-b>
-          Logger has nine methods:
+          Logger provides nine methods:
           <div class="pad5 indent">
             <c-s>new()</c-s>, <c-s>init(f:File, con:bool)</c-s>,
             <c-s>console(con:bool)</c-s>, <c-s>file(f:file)</c-s>, <c-s>opt(f:Option&lt;File&gt;)</c-s>,
             <c-s>open(file_name:&str)</c-s>, <c-s>ts_write(s:&str)</c-s>, <c-s>write(s:&str)</c-s>,
             and <c-s>close()</c-s>
           </div>
-          <c-s>new</c-s> and <c-s>init</c-s> are creational methods, <c-s>console</c-s>, <c-s>file</c-s>, and <c-s>opt</c-s> mutate the logger state,
-          <c-s>open</c-s> and <c-s>close</c-s> manage the state of logger&apos;s file member, and <c-s>write</c-s> and <c-s>ts_write</c-s> handle
-          logger&apos;s main business, writing to the console and/or file.
+          <c-s>new</c-s> and <c-s>init</c-s> are creational methods. <c-s>console</c-s>, <c-s>file</c-s>, and <c-s>opt</c-s> mutate logger state.
+          <c-s>open</c-s> and <c-s>close</c-s> manage the state of the file member, and <c-s>write</c-s> and <c-s>ts_write</c-s> handle
+          the logger&apos;s main business - writing to the console and/or file.
         </t-b>
-        <t-b>
-          <div>
-            <details>
-              <summary class="labelStyle darkItem">Logger Methods and Functions:</summary>
-              <defn-outerblock>
+        <div style="height:0.75rem;"></div>
+        <div>
+          <details>
+            <summary class="labelStyle darkItem">Logger Methods and Functions:</summary>
+            <defn-outerblock>
                 <defn-block>
                   <defn-head>Logger Methods:</defn-head>
                   <defn-code>
@@ -363,77 +354,75 @@ pub fn file_exists(s:&amp;str) -&gt; bool {
                   <defn-head>Explanations:</defn-head>
                   <defn-body style="width:25em;">
                     <t-b>
-                      Methods are defined in one or more impl blocks.
-                      Each block contains method definitions, as you see in the right panel.
+                      Method definitions live in one or more impl blocks. Each block contains method definitions,
+                      as shown in the right panel.
                     </t-b>
                     <t-b>
-                      The type Self is the type of the Structure, e.g., Logger. The variable self is a reference
-                      to the instance on which the method was called.
+                      The type Self is the type of the Structure, e.g., Logger. The variable self is a reference to
+                      the instance on which the method was called.
                     </t-b>
                     <t-b>
-                      The method new() returns an instance of the type Self, e.g., the logger we are creating with
-                      this method. It only has one line: <c-s>Self { fl:None, console:true, }</c-s>. Since there
-                      is no semicolon following the closing brace in this line, this is an expression, and any scope has the value
-                      of its last expression, so we are returning <c-s>Logger { fl:None, console:true }</c-s>.
+                      The method new() returns an instance of the type Self, i.e., the logger being created. Its body
+                      has one line: <c-s>Self { fl:None, console:true, }</c-s>. No semicolon follows the closing brace,
+                      so this is an expression. A scope takes the value of its last expression, so new() returns
+                      <c-s>Logger { fl:None, console:true }</c-s>.
                     </t-b>
                     <t-b>
-                      Many of the methods are relatively simple, but the <c-s>write</c-s> method has some peculiar code, e.g.:
+                      Most methods are relatively simple, but the <c-s>write</c-s> method contains one peculiar line:
                       <indent-block class="pad5">
                         <c-s>if let Some(ref&nbsp;&nbsp;mut&nbsp;&nbsp;f) = self.fl { ... }</c-s>
                       </indent-block>
-                      The &quot;=&quot; operator is not an assignment.  It is a matching operator. The term &quot;<c-s>Some(ref&nbsp;&nbsp;mut&nbsp;&nbsp;f)</c-s>
-                      is the <c-s>Option&lt;T&gt;::Some(t:T)</c-s> holding a mutable reference to a File instance.  So, we are matching
-                      <c-s>self.fl</c-s> with a pattern that requires the <c-s>Some</c-s> option rather than <c-s>None</c-s>.
-                      If the match is satisfied, e.g., the logger has a file reference, then we write to the file.
+                      The &quot;=&quot; is not an assignment - it is a matching operator. The term <c-s>Some(ref&nbsp;&nbsp;mut&nbsp;&nbsp;f)</c-s>
+                      is the <c-s>Option&lt;T&gt;::Some(t:T)</c-s> variant holding a mutable reference to a File instance.
+                      The match binds <c-s>self.fl</c-s> against a pattern that requires the <c-s>Some</c-s> variant rather than
+                      <c-s>None</c-s>. When the match succeeds, the logger has a file reference, and write() writes to that file.
                     </t-b>
                     <t-b>
-                      The remainder of the function
-                      is a test to see if the user elected to use the console, and if so, writes to the console.  So, if both conditions match, the
-                      logger writes to both the console and the log file.
+                      The rest of the function checks whether the caller enabled the console, and if so, writes to the console.
+                      When both conditions hold, the logger writes to both the console and the log file.
                     </t-b>
                     <t-b>
-                      The <c-s>ts_write</c-s> method uses code from the DateTime crate to generate the local system date and time, format it, and then write
-                      using the <c-s>write</c-s> method. It then repeats with its string argument.
+                      The <c-s>ts_write</c-s> method uses the DateTime crate to generate the local system date and time, format it,
+                      then write it using the <c-s>write</c-s> method. It then repeats with its string argument.
                     </t-b>
                   </defn-body>
                 </defn-block>
-              </defn-outerblock>
-            </details>
-          </div>
-        </t-b>
+            </defn-outerblock>
+          </details>
+        </div>
         <t-b class="mbz">
-          Both <c-s>write</c-s> and <c-s>ts_write</c-s> return <c-s>&mut Self</c-s>, so they can be chained, e.g.,
+          Both <c-s>write</c-s> and <c-s>ts_write</c-s> return <c-s>&mut Self</c-s>, so callers can chain them, e.g.,
           <c-s>l.write("first).write(", second");</c-s>
         </t-b>
         <t-b class="mbz">
-          Logger also contains functions:
+          Logger also provides free functions:
           <div class="pad5 indent">
             <c-s>open_file(file_name, open_mode)</c-s>, <c-s>remove_file(file_name)</c-s>,
             <c-s>file_contains(file_name, search_text)</c-s>, <c-s>file_contents(file_name)</c-s>,
             and <c-s>file_exists(file_name)</c-s>.
           </div>
-          These are helper files used during logger testing.  They will probably be useful for testing other projects.
+          These helpers support logger testing and will likely help when testing other projects.
         </t-b>
         <div class="clear"></div>
         <div style="height:0.25em;"></div>
         <a id="unittest"></a>
         <h4>4.1.1 Library Unit Tests</h4>
         <t-b>
-          when cargo creates a library project with <c-s>cargo new --lib</c-s>, it creates a src directory containing a <c-s>lib.rs</c-s>
-          file.  At the end of the file you will find a #[cfg(test)] directive that defines one or more tests to run.
+          When cargo creates a library project with <c-s>cargo new --lib</c-s>, it creates a src directory containing a <c-s>lib.rs</c-s>
+          file. At the end of that file, a #[cfg(test)] directive defines one or more tests to run.
         </t-b>
         <t-b>
-          Each test starts with a #[test] directive containing a single test function.  The test function is expected to have one or more
-          assertions.  The test passes if all assertions are satisfied, otherwise it fails.
+          Each test starts with a #[test] directive containing a single test function. The test function contains one or more
+          assertions. The test passes when all assertions succeed, otherwise it fails.
         </t-b>
         <t-b>
-          You run unit tests with the cargo command:
+          Run unit tests with the cargo command:
           <indent-block class="pad5">
             <c-s>cargo test</c-s>
           </indent-block>
         </t-b>
         <t-b>
-          The details dropdown, below, lists all of the unit tests for the Logger library.
+          The details dropdown below lists all of the unit tests for the Logger library.
         </t-b>
         <t-b>
           <div>
@@ -608,21 +597,20 @@ test result: ok.
           </div>
         </t-b>
         <t-b>
-          Since cargo sets up the unit test configuration code for each library crate that it creates,
-          it is quite easy to write unit tests as we write functions.  When development is finished we
-          have a robust test sequence that can be run any time maintenance changes are made to the library.
+          Cargo sets up unit test configuration code for each library crate it creates, making it easy
+          to write unit tests as you write functions. When development finishes, a robust test sequence
+          remains and can run any time maintenance changes touch the library.
         </t-b>
 
         <a id="examples"></a>
         <h4>4.1.2 Library Examples</h4>
         <t-b>
-          If you create an examples directory as a sibling of src, then you can put code there with a main function that
-          exercises your library, perhaps to demonstrate its operations for new users.  If you do that then
+          Create an examples directory as a sibling of src, and put code there with a main function that exercises the library,
+          perhaps to demonstrate its operations for new users. With that in place,
           <indent-block class="pad5">
             <c-s>cargo run --example test1</c-s>
           </indent-block>
-          will trigger cargo to attempt to build a binary crate from
-          test1.rs and run its executable.
+          tells cargo to build a binary crate from test1.rs and run its executable.
         </t-b>
         <t-b>
           <div>
@@ -695,24 +683,23 @@ That's all Folks!
           </div>
         </t-b>
         <t-b class="mbz">
-          You can have any number of example files in the examples directory, each with a main function that demonstrates some
-          particular aspect of your library. You can also supply examples suitable for developer&apos;s with different levels
-          of expertise with Rust.
+          The examples directory can hold any number of example files, each with a main function that demonstrates a particular
+          aspect of the library. Examples can also target developers with different levels of expertise with Rust.
         </t-b>
 
         <a id="docs"></a>
         <h4>4.1.3 Library Documentation</h4>
         <t-b>
           <div style="width:calc(100vw - 9em);">
-            <photosizer-block src="pictures/RustDoc.JPG" width="600" class="photoSizerBlock right clear">
-              <span style="font-family:'Comic Sans MS';">Figure 1. Logger Documentation</span>
-            </photosizer-block>
+            <view-image src="pictures/RustDoc.JPG" width="600px" bg-color="var(--light)" title-bg-color="#ccc" step-px="100" style="float:right; clear:both; margin-right:-6rem;">
+              Figure 1. Logger Documentation
+            </view-image>
 
           </div>
         </t-b>
         <t-b>
-          You can endow your own libraries with the same kind of documentation provided for the std libraries.
-          If you put comments above each method or function with the format:
+          Your own libraries can carry the same kind of documentation the std libraries provide.
+          Place comments above each method or function using this format:
           <indent-block class="pad5">
             <defn-code>
 /// ```
@@ -725,28 +712,27 @@ pub fn new() -> Self {
 }
             </defn-code>
           </indent-block>
-          That places your comments in the document below the function, as shown in Figure 1.
+          Rustdoc places those comments in the document below the function, as shown in Figure 1.
         </t-b>
         <t-b>
-          To create documentation, simply issue the cargo command:
+          Build documentation with the cargo command:
           <indent-block class="pad5">
             <c-s>cargo doc --document-private-items</c-s>
           </indent-block>
-          If you don&apos;t want to display private items, then leave off that option.
+          Drop the option to exclude private items.
         </t-b>
         <t-b>
-          The <c-s>doc</c-s> command builds documentation and deposites it in your <n-s>Target</n-s> folder.
-          This creates documentation, not only for your code, but also for code it depends upon.
+          The <c-s>doc</c-s> command builds documentation and deposits it in the <n-s>Target</n-s> folder.
+          This produces documentation for your code and for the code it depends upon.
         </t-b>
         <t-b>
-          Be aware that if you issue a <c-s>cargo clean</c-s> command that will delete all the
-          documentation because clean deletes the <n-s>Target</n-s> folder.
+          A <c-s>cargo clean</c-s> command deletes all of that documentation, because clean removes the
+          <n-s>Target</n-s> folder.
         </t-b>
         <t-b>
-          One more thing: if you put documentation comments in your code, you need to set
-          <c-s>doctest = false</c-s> in a <c-s>[lib]</c-s> section of your <c-s>cargo.toml</c-s> file.
-          If you don&apos;t do this, the compiler attempts to compile your comments and emits a lot of
-          errors and warnings.
+          One more thing: doc comments in your code require <c-s>doctest = false</c-s> in a <c-s>[lib]</c-s>
+          section of your <c-s>cargo.toml</c-s> file. Without that setting, the compiler tries to compile
+          the comments and emits many errors and warnings.
         </t-b>
         <div>
           <details>
@@ -781,28 +767,19 @@ display = { path = "../display" }
           </details>
         </div>
         <t-b>
-          This completes our discussion of the <n-s>Logger</n-s> project.  You can find the code and discussion
-          in <a href="RustLogger.html">RustLogger</a> repository.
+          That completes the discussion of the <n-s>Logger</n-s> project. The code and discussion live in the
+          <a href="RustLogger.html">RustLogger</a> repository.
         </t-b>
 
         <a id="cmdlnproc"></a>
         <h3>4.2 CmdLine Parser Library</h3>
         <div style="width:calc(100vw - 9em);">
-          <photosizer-block src="pictures/RustCmdLineParserOutput.JPG" width="600" class="photoSizerBlock right" style="margin-top:0;">
-            <span style="
-        display: inline-block;
-        font-weight: bold;
-        font-family: 'Comic Sans MS', Tahoma;
-        background-color: #ddd;
-        width: 100%;
-        padding: 5px 0px;
-      ">
-              Fig 1. CmdLineParser Output
-            </span>
-          </photosizer-block>
+          <view-image src="pictures/RustCmdLineParserOutput.JPG" width="600px" bg-color="var(--light)" title-bg-color="#ccc" step-px="100" style="float:right; margin-top:0; margin-right:-6rem;">
+            Fig 1. CmdLineParser Output
+          </view-image>
         </div>
         <indent-blocks>
-          RustCmdLine is a facility for parsing command line arguments.  Here&apos;s a sample:
+          RustCmdLine parses command line arguments. A sample:
           <div class="indent pad5">
             <c-s>/P "." /p "rs,txt" /s /H /r "abc"</c-s>
           </div>
@@ -817,47 +794,47 @@ display = { path = "../display" }
             </c-s>
           </div>
           <spacer-15></spacer-15>
-          The intent is that a program creates an instance of CmdLineParser, uses that to parse its command line, then
-          passes it to any code that needs to know about a pattern or an option.
+          A program creates an instance of CmdLineParser, uses it to parse its command line, then passes it to any code
+          that needs a pattern or an option.
         </indent-blocks>
         <h4>Design:</h4>
         <indent-blocks>
+          <div style="height:0.75rem;"></div>
           <t-b>
             This library contains a single user-defined type: CmdLineParser.
-            <s-5px></s-5px>
-            <t-b class="left">
-              <div style="padding-right:1em;">
-                <defn-block>
-                  <defn-head style="margin-top:0px;">CmdLineParser Struct</defn-head>
-                  <defn-code>
+          </t-b>
+          <s-5px></s-5px>
+          <t-b class="left">
+            <div style="padding-right:1em;">
+              <defn-block>
+                <defn-head style="margin-top:0px;">CmdLineParser Struct</defn-head>
+                <defn-code>
 pub struct CmdLineParse {
   opt_map : Options,
   patterns : CmdLinePatterns,
   help_str : String,
 }
-                  </defn-code>
-                </defn-block>
-              </div>
-            </t-b>
-            <t-b>
-              The opt_map field is a HashMap&lt;K, V&gt; of key-value pairs, where each key is a command line
-              option; that is, a character from the command line that is preceeded by a '/' character.
-              If an option, o, is succeeded by a non-option string, that becomes the value. If there is no value,
-              then the opt_map contains &quot;true&quot; for the value of the key o.
-            </t-b>
-            <t-b>
-              The field, patterns, is a vector of Strings where each string is expected to be a file extension,
-              e.g., rs.  Note that using *.rs will not work as expected for applications like RustTextFinder.
-            </t-b>
-            <t-b>
-              It is expected that applications using CmdLineParser will process only files with the specified
-              extensions.  If none are supplied, then the application processes all files it encounters.
-            </t-b>
-            <t-b>
-              The field, help_str, is a String containing information to supply to the user in response to an
-              option /h.  In this library, the string contains the defaults, cited above, but an application
-              can change the string with <c-s>replace_help(hs&str)</c-s>.
-            </t-b>
+                </defn-code>
+              </defn-block>
+            </div>
+          </t-b>
+          <t-b>
+            The opt_map field is a HashMap&lt;K, V&gt; of key-value pairs, where each key is a command line option -
+            a character from the command line preceded by a '/'. If a non-option string follows an option o, that
+            string becomes the value. If no value follows, opt_map stores &quot;true&quot; for key o.
+          </t-b>
+          <t-b>
+            The patterns field is a vector of Strings, each expected to hold a file extension, e.g., rs. Using
+            *.rs will not work as expected for applications like RustTextFinder.
+          </t-b>
+          <t-b>
+            Applications that use CmdLineParser process only files with the specified extensions. When none are
+            supplied, the application processes every file it encounters.
+          </t-b>
+          <t-b>
+            The help_str field is a String containing information to display to the user in response to the /h
+            option. In this library the string contains the defaults cited above, and an application can replace
+            it with <c-s>replace_help(hs&str)</c-s>.
           </t-b>
           <div class="clear"></div>
           <a id="parmethods"></a>
@@ -966,7 +943,7 @@ pub struct CmdLineParse {
             </div>
           </t-b>
           <t-b>
-            Code for CmdLineParser library and a demonstration program are provided in the dropdown, below.
+            The dropdown below holds the CmdLineParser library code and a demonstration program.
           </t-b>
           <t-b>
             <div>
@@ -1307,50 +1284,32 @@ That's all Folks!
               </details>
             </div>
           </t-b>
-          The CmdLineParser library is used in the <a href="RustTextFinder.html">RustTextFinder</a> application.
-          I expect to use it for many more tools.
+          The <a href="RustTextFinder.html">RustTextFinder</a> application uses the CmdLineParser library, and
+          I expect to reuse it in many more tools.
         </indent-blocks>
 
         <a id="dirnav"></a>
         <h3>4.3 Directory Navigator Library</h3>
         <div style="width:calc(100vw - 9em);">
-          <photosizer-block src="pictures/RustDirNav.jpg" width="500" class="photoSizerBlock right" style="margin-top:0;">
-            <span style="
-          display: inline-block;
-          font-weight: bold;
-          font-family: 'Comic Sans MS', Tahoma;
-          background-color: #ddd;
-          width: 100%;
-          padding: 5px 0px;
-        ">
-              Fig 1. Directory Navigator Types
-            </span>
-          </photosizer-block>
+          <view-image src="pictures/RustDirNav.jpg" width="500px" bg-color="var(--light)" title-bg-color="#ccc" step-px="100" style="float:right; margin-top:0; margin-right:-6rem;">
+            Fig 1. Directory Navigator Types
+          </view-image>
         </div>
         <div style="width:calc(100vw - 9em);">
-          <photosizer-block src="pictures/RustDirNavOutput.JPG" width="500" class="photoSizerBlock right clear" style="margin-top:0;">
-            <span style="
-          display: inline-block;
-          font-weight: bold;
-          font-family: 'Comic Sans MS', Tahoma;
-          background-color: #ddd;
-          width: 100%;
-          padding: 5px 0px;
-        ">
-              Fig 1. Directory Navigator Output
-            </span>
-          </photosizer-block>
+          <view-image src="pictures/RustDirNavOutput.JPG" width="500px" bg-color="var(--light)" title-bg-color="#ccc" step-px="100" style="float:right; clear:both; margin-top:0; margin-right:-6rem;">
+            Fig 1. Directory Navigator Output
+          </view-image>
         </div>
         <!--<h3>Concept:</h3>-->
         <indent-blocks>
-          RustDirNav is a facility for Depth-First-Search (DFS) of a specified directory tree.  It uses generic parameter
-          App to provide application specific do_dir and do_file operations.
+          RustDirNav performs a Depth-First-Search (DFS) of a specified directory tree. It uses the generic parameter
+          App to supply application-specific do_dir and do_file operations.
           <spacer-15></spacer-15>
         </indent-blocks>
         <h4>Design:</h4>
         <indent-blocks>
           <t-b>
-            There is one struct, DirNav&lt;App&gt;, with methods and functions implementing this design:
+            The library provides one struct, DirNav&lt;App&gt;, with methods and functions that implement this design:
             <indent-block class="pad5">
               Methods:
               <ol class="tight">
@@ -1418,8 +1377,8 @@ That's all Folks!
             </indent-block>
           </t-b>
           <t-b>
-            The DirEvent trait constrains the App generic parameter to supply do_dir and do_file methods that
-            define what the application will do when the navigator encounters a new directory or file.
+            The DirEvent trait constrains the App generic parameter to supply do_dir and do_file methods. These methods
+            define what the application does when the navigator encounters a new directory or file.
           </t-b>
           <div>
             <defn-code style="font-size:1em;">
@@ -1430,9 +1389,9 @@ pub trait DirEvent {
             </defn-code>
           </div>
           <t-b>
-            The DirNav package provides a demonstration of the library in its /examples/test1.rs file.  For the
-            demo, test1 simply displays each directory once, and all of the files in that directory.  The App
-            type is defined by implementing the DirEvent trait, which may contain data members.
+            The DirNav package demonstrates the library in its /examples/test1.rs file. In this demo, test1 displays
+            each directory once, along with every file in that directory. The App type comes from an implementation of
+            the DirEvent trait, which may contain data members.
           </t-b>
           <div>
             <details>
@@ -1804,20 +1763,20 @@ fn main() -&gt; io::Result&lt;()&gt; {
             </details>
           </div>
           <t-b>
-            The lib.rs file defines all of the DirNav processing and, in its tests section, defines an ApplTest
-            type that implements DirEvent and contains a vector that will hold each of the files found during test,
-            so we can verify its operation.
+            The lib.rs file defines all DirNav processing. Its tests section defines an ApplTest type that implements
+            DirEvent and holds a vector for every file found during the test, so verification is straightforward.
           </t-b>
         </indent-blocks>
         <div class="clears"></div>
 
         <a id="epilogue"></a>
         <h3>4.4 Epilogue</h3>
-        The three libraries discussed here: Logger, CmdLineParser, and DirNav are good examples to study while learning
-        the Rust programming language.  They illustrate common Rust coding idioms and the great support for testing
-        and documentation provided by <c-s>cargo</c-s>, <c-s>rustc</c-s>, and <c-s>rustdoc</c-s>.  I&apos;ve  used the
-        clippy tool, e.g., <c-s>cargo clippy</c-s>,
-        to find non-idiomatic or inefficient code, before including here.
+        <t-b>
+          The three libraries discussed here - Logger, CmdLineParser, and DirNav - offer good examples to study while
+          learning the Rust programming language. They illustrate common Rust idioms and the strong support for testing
+          and documentation that <c-s>cargo</c-s>, <c-s>rustc</c-s>, and <c-s>rustdoc</c-s> provide. I used the clippy
+          tool, e.g., <c-s>cargo clippy</c-s>, to find non-idiomatic or inefficient code before including it here.
+        </t-b>
         <a id="refs"></a>
         <h3>4.5 References</h3>
         <table>
