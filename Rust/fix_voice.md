@@ -25,7 +25,7 @@ Page mapping is supported by a symbiosis of OS and hardware processing.
 When given the command "fix_voice in file [path]":
 
 1. Read the specified file.
-2. Copy the original file to an `archive/` subdirectory alongside the file, preserving the filename. If `archive/` does not exist create one then copy.
+2. Copy the original file to an `archive/` subdirectory alongside the file, preserving the filename. If `archive/` does not exist create one then copy. If a file with the same name exists in /archive overwrite it.
 3. Identify all prose text - skip code, HTML tags, and structured data.
 4. Revise the prose to match the author's voice shown in the sample above. Favor active voice. Preserve all technical details and key terms exactly. Keep sentences concise and direct. Do not add content beyond what is in the original.
 5. Update the about block with new revised date

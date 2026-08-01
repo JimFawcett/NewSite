@@ -10,3 +10,5 @@ When given the command "fix_all in file [path]", proceed through all steps witho
 6. Discard all instructions from `fix_text_block.md` and `fix_image.md` — do not carry them forward.
 7. Read `fix_voice.md` from the same directory as this file.
 8. Apply the `fix_voice.md` instructions to the same file. Write the result back.
+9. Read `fix_defn_styles.md` from the same directory as this file.
+10. Apply the `fix_defn_styles.md` instructions to the same file. Write the result back.
