@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  ComparisonStory_CppTextFinder_DirNav.html - DirNav discussion
+-->
+<head>
+  <title>Comparison Story: CppTextFinder — DirNav</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    ComparisonStory_CppTextFinder_DirNav.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 08/02/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Comparison Story: DirNav</h2>
+        <h4 class="indent" id="subtitle">3. &nbsp;<code>DirNav</code> — callback-driven depth-first walker</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="dirnav"></a>
+      <h3>3. &nbsp;DirNav</h3>
+      <t-b>
+        <code>DirNav</code> is a depth-first directory walker driven by two
+        <code>std::function</code> callbacks — one fired on entering a
+        directory, one on encountering a matching file:
+      </t-b>
+<pre><code class="language-cpp">using DirCallback  = std::function&lt;void(const std::string&amp; dir_path)&gt;;
+using FileCallback = std::function&lt;void(const std::string&amp; file_name)&gt;;</code></pre>
+      <t-b>
+        Where the Rust variant expresses the callback contract as a trait
+        implemented by an application-specific struct, the C++ variant uses
+        two <code>std::function</code> members that any caller can populate
+        with a lambda, free function, or method pointer.  This trade-off
+        removes the type-parameter plumbing but pays a small runtime cost per
+        call (indirect call through the type-erased wrapper).
+      </t-b>
+
+      <a id="design"></a>
+      <h4>3.1 &nbsp;Design Points</h4>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <strong>Skip list is baked in.</strong>  Build directories
+            (<code>build</code>, <code>out</code>, <code>bin</code>,
+            <code>obj</code>, <code>target</code>), Python caches, VCS/IDE
+            folders, and <code>archive</code> are pre-loaded into
+            <code>skip_list_</code> in the constructor initializer list so no
+            callers have to know the list.  Extra names can be added via
+            <code>add_skip()</code>.
+          </li>
+          <li>
+            <strong>Extensions normalised at insert.</strong>
+            <code>normalise_ext()</code> strips a leading <code>.</code> and,
+            on Windows, lowercases the string — done once when the pattern is
+            registered and again on each file's extension.  This makes
+            <code>patterns_.contains(...)</code> a straight
+            <code>O(1)</code> hash lookup on the hot path with no per-lookup
+            allocation.
+          </li>
+          <li>
+            <strong>Subdirectories are collected, then recursed.</strong>  The
+            scan pass fires <code>file_callback_</code> immediately for each
+            matching file, but subdirectories are buffered in a
+            <code>std::vector</code> and processed only after the current
+            directory is fully drained.  This keeps the
+            <code>directory_iterator</code> in one linear pass — no
+            interleaved recursion inside its loop.
+          </li>
+          <li>
+            <strong>Errors swallowed via
+            <code>std::error_code</code>.</strong>  Every
+            <code>std::filesystem</code> call is the non-throwing overload;
+            <code>ec</code> parameters are checked but errors do not abort
+            traversal — a permission-denied subdirectory simply drops out and
+            the walk continues.
+          </li>
+          <li>
+            <strong>Counts reset on each <code>visit()</code>.</strong>
+            <code>file_count_</code> and <code>dir_count_</code> are zeroed at
+            the top of every top-level <code>visit()</code>, so the same
+            <code>DirNav</code> instance can drive multiple sequential walks.
+          </li>
+          <li>
+            <strong>Directory fires unconditionally.</strong>  Unlike the Rust
+            walker, <code>DirNav</code> fires <code>dir_callback_</code>
+            every time it enters a directory — the "hide empty" logic lives
+            in <code>Output</code>, which defers printing the directory
+            header until it sees a matching file.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="visit"></a>
+      <h4>3.2 &nbsp;<code>visit_impl()</code> — the traversal loop</h4>
+      <t-b>
+        <ol class="tight">
+          <li>Increment <code>dir_count_</code> and fire
+              <code>dir_callback_</code> with the directory's
+              <code>generic_string()</code>.</li>
+          <li>Open a <code>directory_iterator</code>; on error, return.</li>
+          <li>For each entry: if it is a regular file whose extension matches,
+              bump <code>file_count_</code> and fire
+              <code>file_callback_</code>.  If it is a directory whose bare
+              name is not in the skip list and recursion is enabled, push its
+              path onto the <code>subdirs</code> vector.</li>
+          <li>After the scan pass, recurse into each buffered subdirectory.</li>
+        </ol>
+      </t-b>
+
+      <a id="source"></a>
+      <h4>3.3 &nbsp;Source — <code>DirNav/src/DirNav.ixx</code></h4>
+<pre><code class="language-cpp">export module dir_nav;
+
+import std;
+
+export {
+
+using DirCallback  = std::function&lt;void(const std::string&amp; dir_path)&gt;;
+using FileCallback = std::function&lt;void(const std::string&amp; file_name)&gt;;
+
+class DirNav {
+public:
+    explicit DirNav(bool recurse = true)
+        : recurse_(recurse)
+        , skip_list_({
+              // C#/.NET
+              "bin", "obj",
+              // Rust
+              "target",
+              // C++
+              "build", "out",
+              // Python
+              "__pycache__", ".venv", "venv", "dist",
+              // VCS / IDE
+              ".git", ".vs", ".idea",
+              // archives
+              "archive"
+          })
+        , file_count_(0)
+        , dir_count_(0)
+    {}
+
+    void set_dir_handler(DirCallback cb) {
+        dir_callback_ = std::move(cb);
+    }
+
+    void set_file_handler(FileCallback cb) {
+        file_callback_ = std::move(cb);
+    }
+
+    void add_pattern(const std::string&amp; ext) {
+        patterns_.insert(normalise_ext(ext));   // normalise once at insert
+    }
+
+    void add_skip(const std::string&amp; name) {
+        skip_list_.insert(name);
+    }
+
+    bool visit(const std::filesystem::path&amp; root) {
+        std::error_code ec;
+        bool exists = std::filesystem::exists(root, ec);
+        if (ec || !exists) return false;
+        bool is_dir = std::filesystem::is_directory(root, ec);
+        if (ec || !is_dir) return false;
+
+        file_count_ = 0;
+        dir_count_  = 0;
+
+        visit_impl(root);
+        return true;
+    }
+
+    std::size_t file_count() const { return file_count_; }
+    std::size_t dir_count()  const { return dir_count_;  }
+
+private:
+    bool                            recurse_;
+    std::unordered_set&lt;std::string&gt; skip_list_;
+    std::unordered_set&lt;std::string&gt; patterns_;
+    DirCallback                     dir_callback_;
+    FileCallback                    file_callback_;
+    std::size_t                     file_count_;
+    std::size_t                     dir_count_;
+
+    // Strip leading dot and lowercase on Windows so lookups are O(1) and allocation-free.
+    static std::string normalise_ext(std::string s) {
+        if (!s.empty() &amp;&amp; s.front() == '.') s.erase(s.begin());
+#if defined(_WIN32)
+        std::transform(s.begin(), s.end(), s.begin(),
+                       [](unsigned char c){ return static_cast&lt;char&gt;(std::tolower(c)); });
+#endif
+        return s;
+    }
+
+    bool extension_matches(const std::filesystem::path&amp; file_path) const {
+        if (patterns_.empty()) return true;
+        return patterns_.contains(normalise_ext(file_path.extension().string()));
+    }
+
+    void visit_impl(const std::filesystem::path&amp; dir) {
+        ++dir_count_;
+
+        if (dir_callback_)
+            dir_callback_(dir.generic_string());
+
+        std::error_code ec;
+        std::filesystem::directory_iterator it(dir, ec);
+        if (ec) return;
+
+        std::vector&lt;std::filesystem::path&gt; subdirs;
+        for (const auto&amp; entry : it) {
+            std::error_code entry_ec;
+
+            bool is_regular = entry.is_regular_file(entry_ec);
+            if (!entry_ec &amp;&amp; is_regular) {
+                if (extension_matches(entry.path())) {
+                    ++file_count_;
+                    if (file_callback_)
+                        file_callback_(entry.path().filename().generic_string());
+                }
+                continue;
+            }
+
+            bool is_directory = entry.is_directory(entry_ec);
+            if (!entry_ec &amp;&amp; is_directory) {
+                std::string bare_name = entry.path().filename().string();
+                if (!skip_list_.contains(bare_name) &amp;&amp; recurse_)
+                    subdirs.push_back(entry.path());
+            }
+        }
+
+        for (const auto&amp; subdir : subdirs)
+            visit_impl(subdir);
+    }
+};
+
+} // export</code></pre>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#dirnav">DirNav</a></menu-elem>
+        <menu-elem class="secElem"><a href="#design">design points</a></menu-elem>
+        <menu-elem class="secElem"><a href="#visit">visit_impl()</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/ComparisonStoryPages_Cpp.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>

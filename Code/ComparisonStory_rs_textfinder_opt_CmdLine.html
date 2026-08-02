@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  ComparisonStory_rs_textfinder_opt_CmdLine.html - RustCmdLine discussion
+-->
+<head>
+  <title>Comparison Story: RustCmdLine</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    ComparisonStory_rs_textfinder_opt_CmdLine.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 08/02/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Comparison Story: RustCmdLine</h2>
+        <h4 class="indent" id="subtitle">2. &nbsp;<code>CmdLineParse</code> — argv into options and patterns</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="cmdline"></a>
+      <h3>2. &nbsp;RustCmdLine — <code>CmdLineParse</code></h3>
+      <t-b>
+        <code>CmdLineParse</code> converts raw <code>env::args()</code> tokens into
+        a <code>HashMap&lt;char, String&gt;</code> of options and a
+        <code>Vec&lt;String&gt;</code> of file-extension patterns.  A token
+        starting with <code>/</code> or <code>-</code> is treated as an option
+        key; the next token (if it does not itself start with <code>/</code> or
+        <code>-</code>) becomes its value, otherwise the value defaults to
+        <code>"true"</code>.  Accepting both prefixes lets the same CLI work in
+        PowerShell (<code>/P .</code>) and in bash (<code>-P .</code>) without
+        path conversion.
+      </t-b>
+
+      <a id="design"></a>
+      <h4>2.1 &nbsp;Design Points</h4>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <strong>Two storage layers.</strong>  Options are keyed on a single
+            <code>char</code>; the comma-separated <code>/p</code> value is
+            expanded into a separate <code>Vec&lt;String&gt;</code> of patterns
+            for direct consumption by <code>DirNav</code>.
+          </li>
+          <li>
+            <strong>Absolute-path normalization.</strong>  <code>abs_path()</code>
+            canonicalizes the path and strips the Windows <code>\\?\</code> UNC
+            prefix, then replaces backslashes with forward slashes so output is
+            uniform across platforms.
+          </li>
+          <li>
+            <strong>Ownership discipline.</strong>  The struct owns all data (no
+            borrowed <code>&amp;str</code> fields), so it can be constructed in
+            one scope and consumed in another with no lifetime plumbing.
+          </li>
+          <li>
+            <strong>Defaults applied first, then overridden.</strong>
+            <code>main</code> calls <code>default_options()</code> before
+            <code>parse()</code>, so any argv value simply overwrites the default
+            entry in the map.  A missing argument leaves the default in place.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="api"></a>
+      <h4>2.2 &nbsp;Public API Summary</h4>
+      <table>
+        <colgroup>
+          <col style="width:20rem;" />
+          <col style="width:32rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Method</th>
+          <th class="darkItem">Purpose</th>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>new()</code></td>
+          <td class="lightItem">Construct with empty maps and canned help string.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>default_options()</code></td>
+          <td class="lightItem">Seed <code>P=.</code>, <code>s=true</code>, <code>r=.</code>, <code>H=true</code>.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>parse()</code></td>
+          <td class="lightItem">Read <code>args()</code> into the option map; expand <code>/p</code> into patterns.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>path() / abs_path()</code></td>
+          <td class="lightItem">Return raw or canonicalized root path.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>get_regex() / set_regex()</code></td>
+          <td class="lightItem">Read or overwrite the <code>/r</code> value.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>contains_option(c) / value(c)</code></td>
+          <td class="lightItem">Query the option map by single-char key.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>patterns() / add_pattern(p)</code></td>
+          <td class="lightItem">Read the pattern vector; append without duplicates.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>help() / replace_help(s)</code></td>
+          <td class="lightItem">Read or replace the built-in help text.</td>
+        </tr>
+      </table>
+
+      <a id="source"></a>
+      <h4>2.3 &nbsp;Source — <code>RustCmdLine/src/cmd_line_lib.rs</code></h4>
+<pre><code class="language-rust">/////////////////////////////////////////////////////////////
+// cmd_line_lib.rs                                         //
+//                                                         //
+// Jim Fawcett, https://JimFawcett.github.io, 19 Apr 2020  //
+// Revised: 05 Mar 2026                                    //
+/////////////////////////////////////////////////////////////
+
+use std::env::{args};
+use std::collections::HashMap;
+use std::fs::*;
+
+/////////////////////////////////////////////////////////////
+// sample command line with options
+//-----------------------------------------------------------
+// /P "." /p "rs,txt" /s [true] /r "abc" /h [true] /H [true]
+//
+// P - path in either absolute or relative form
+// p - pattern, a file extension indicating file to process
+// s - recurse directory tree rooted at P
+// r - regular expression
+// H - hide directories that don't contain any target files
+// h - help: display this message
+// custom option:
+// /x [v] - x is application specific option which may
+//          have value, v
+// Note:
+// Any attribute that has no value on command line will
+// have value "true" in option map
+/////////////////////////////////////////////////////////////
+
+/// display command line arguments
+pub fn show_cmd_line() {
+    print!("\n  {:?}\n  ", args().next().unwrap_or_default());
+    let mut iter = args().skip(1).peekable();
+    while let Some(arg) = iter.next() {
+        print!("{:?}", arg);
+        if iter.peek().is_some() {
+            print!(" ");
+        }
+    }
+}
+
+pub type Options = HashMap&lt;char, String&gt;;
+pub type CmdLinePatterns = Vec&lt;String&gt;;
+
+/// Parses command line into options and patterns
+#[derive(Debug, Default)]
+pub struct CmdLineParse {
+    opt_map  : Options,
+    patterns : CmdLinePatterns,
+    help_str : String,
+}
+impl CmdLineParse {
+    /// create new instance of parser
+    pub fn new() -&gt; Self {
+        let help = CmdLineParse::help_txt();
+        Self {
+            opt_map: Options::default(),
+            patterns: CmdLinePatterns::new(),
+            help_str: help,
+        }
+    }
+    /// returns string with command line arguments example
+    fn help_txt() -&gt; String {
+        let mut str =
+        "\n  Help:\n  Options: /P . /p \"rs,txt\"".to_string();
+        str.push_str(" /s /r \"abc\" /H /h");
+        str
+    }
+    /// does the command line argument start with '/'
+    fn is_opt(&amp;self, s:&amp;str) -&gt; bool {
+        let bytes = s.as_bytes();
+        let first = bytes[0] as char;
+        first == '/' || first == '-'
+    }
+    /// returns path string with default value "."
+    pub fn path(&amp;self) -&gt; String {
+        if self.contains_option('P') {
+            self.opt_map[&amp;'P'].clone()
+        }
+        else {
+            ".".to_string()
+        }
+    }
+
+    /// replace Win path separator "\\" with Linux "/"
+    /// - use only with absolute paths for Windows
+    fn replace_sep(path: &amp;str) -&gt; String {
+        let mut rtn = path.to_string();
+        if rtn.contains("\\") {
+            rtn = rtn.replace("\\", "/");
+            rtn = rtn.chars().skip(4).collect();
+        }
+        rtn
+    }
+    /// convert relative to absolute path
+    pub fn abs_path(&amp;self) -&gt; String {
+        let abs = std::path::PathBuf::from(self.path());
+        let rslt = canonicalize(&amp;abs);
+        match rslt {
+            Ok(path_buf) =&gt; {
+                let ap = path_buf.to_string_lossy().to_string();
+                let ap = CmdLineParse::replace_sep(&amp;ap);
+                ap
+            }
+            Err(error) =&gt; error.to_string()
+        }
+    }
+    /// set new root path
+    pub fn set_path(&amp;mut self, p:&amp;str) {
+        self.opt_map.insert('P', p.to_string());
+    }
+    /// set new regex string for matching
+    pub fn set_regex(&amp;mut self, re:&amp;str) {
+        self.opt_map.insert('r', re.to_string());
+    }
+    /// return current regex string
+    pub fn get_regex(&amp;self) -&gt; &amp;str {
+        let re_opt = self.opt_map.get(&amp;'r');
+        match re_opt {
+            Some(value) =&gt; value,
+            None =&gt; ".",
+        }
+    }
+    /// commonly used default options
+    pub fn default_options(&amp;mut self) {
+        self.opt_map.insert('P', ".".to_string());     // root is curr dir
+        self.opt_map.insert('s', "true".to_string());  // recurse
+        self.opt_map.insert('r', ".".to_string());     // regex always matches
+        self.opt_map.insert('H', "true".to_string());  // hide unused dirs
+    }
+    /// does options contain opt char?
+    pub fn contains_option(&amp;self, opt:char) -&gt; bool {
+        self.opt_map.contains_key(&amp;opt)
+    }
+    /// insert {o,v} if o key doesn't exist, else overwrite v
+    pub fn add_option(&amp;mut self, o:char, v:&amp;str) {
+        self.opt_map.insert(o, v.to_string());
+    }
+    /// return option value
+    pub fn value(&amp;self, opt:char) -&gt; &amp;str {
+        &amp;self.opt_map[&amp;opt]
+    }
+    /// add file ext (with no "*.")
+    pub fn add_pattern(&amp;mut self, p:&amp;str) -&gt; &amp;mut Self {
+        let s = String::from(p);
+        if !self.patterns.contains(&amp;s) {
+            self.patterns.push(s);
+        }
+        self
+    }
+    /// returns non-mutable reference to patterns
+    pub fn patterns(&amp;self) -&gt; &amp;CmdLinePatterns {
+        &amp;self.patterns
+    }
+    /// returns non-mutable reference to options
+    pub fn options(&amp; self) -&gt; &amp;Options {
+        &amp;self.opt_map
+    }
+    /// return help string
+    pub fn help(&amp;self) -&gt; &amp;str {
+        &amp;self.help_str
+    }
+    /// replace help string
+    pub fn replace_help(&amp;mut self, s:&amp;str) {
+        self.help_str = s.to_string();
+    }
+    /// parse command line arguments, provided by env()
+    pub fn parse(&amp;mut self) {
+
+        let cl_args:Vec&lt;String&gt; = args().collect();
+        let end = cl_args.len();
+        for i in 1..end {
+            if self.is_opt(&amp;cl_args[i]) {
+                let bytes = cl_args[i].as_bytes();
+                let key = bytes[1] as char;
+                if i &lt; end - 1 {
+                    if !self.is_opt(&amp;cl_args[i+1]) {
+                        self.opt_map.insert(key,cl_args[i+1].to_string());
+                    }
+                    else {
+                        self.opt_map.insert(key, "true".to_string());
+                    }
+                }
+                else {
+                    self.opt_map.insert(key, "true".to_string());
+                }
+            }
+        }
+        /*-- build patterns --*/
+        if self.contains_option('p') {
+            let pat_str = self.value('p').to_string();
+            let split_iter = pat_str.split(',');
+            for patt in split_iter {
+                self.add_pattern(patt);
+            }
+        }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn cl_args() {
+        let _mock_args = vec!["/P", ".", "/p", "rs,txt", "/s"];
+        print!("\n  cl args: ");
+        for arg in args() {
+            print!("{:?} ", arg);
+        }
+        let mut parser = CmdLineParse::new();
+        parser.parse();
+        for arg in args() {
+            let bytes = arg.as_bytes();
+            if '/' == (bytes[0] as char) {
+                assert!(parser.opt_map.contains_key(&amp;(bytes[1] as char)));
+            }
+        }
+    }
+}</code></pre>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#cmdline">RustCmdLine</a></menu-elem>
+        <menu-elem class="secElem"><a href="#design">design points</a></menu-elem>
+        <menu-elem class="secElem"><a href="#api">API summary</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/ComparisonStoryPages_rs.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 1, 10);
+  </script>
+</body>
+</html>

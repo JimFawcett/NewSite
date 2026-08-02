@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  ComparisonStory_rs_textfinder_opt_Conclusion.html - Sample output & conclusion
+-->
+<head>
+  <title>Comparison Story: rs_textfinder_opt — Conclusion</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    ComparisonStory_rs_textfinder_opt_Conclusion.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 08/02/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Comparison Story: rs_textfinder_opt</h2>
+        <h4 class="indent" id="subtitle">5. &nbsp;Conclusion — sample output, build, and references</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="conclusion"></a>
+      <h3>5. &nbsp;Conclusion</h3>
+      <t-b>
+        The four pieces come together in a small program: two library crates
+        that know nothing about each other, a binary crate that composes them
+        via a trait-based glue struct, and a stand-alone integration verifier
+        that treats the compiled binary as a black box.  What follows is a look
+        at that program in action.
+      </t-b>
+
+      <a id="sample"></a>
+      <h4>5.1 &nbsp;Sample Output</h4>
+      <t-b>
+        Matching files are grouped under their containing directory.  The header
+        prints the version and the resolved options; the summary line at the
+        bottom reports how many files were visited, how many directories were
+        entered, and how many files matched.
+      </t-b>
+<pre><code class="language-text">$ cargo run -- /P ".." /p "rs" /r "struct"
+
+  TextFinder ver 1.2.0
+ =======================
+  searching path: "../"
+  patterns: ["rs"]
+  matching files with regex: "struct"
+
+  ../RustTextFinder/src
+      "text_finder.rs"
+
+  ../RustDirNav/src
+      "dir_nav_lib.rs"
+
+  processed 42 files in 18 dirs, 2 matched
+
+  That's all Folks!</code></pre>
+      <t-b>
+        Directories that contain no matching files are hidden by default
+        (<code>/H true</code>).  Set <code>/H false</code> to print every
+        directory as it is entered — useful when you want to confirm which
+        subtrees the walker actually visits and which ones the built-in skip
+        list rejects.
+      </t-b>
+<pre><code class="language-text">$ cargo run -- /P "." /p "rs" /r "ZZZNOMATCH" /H false
+
+  TextFinder ver 1.2.0
+ =======================
+  searching path: "./"
+  patterns: ["rs"]
+  matching files with regex: "ZZZNOMATCH"
+
+--./
+--./RustCmdLine
+--./RustCmdLine/src
+--./RustDirNav
+--./RustDirNav/src
+--./RustTextFinder
+--./RustTextFinder/src
+--./RustTfVerify
+--./RustTfVerify/src
+
+  processed 42 files in 18 dirs, 0 matched
+
+  That's all Folks!</code></pre>
+      <t-b>
+        Verbose mode (<code>/v</code>) echoes every resolved option before
+        traversal — handy when you want to see exactly what defaults the parser
+        applied:
+      </t-b>
+<pre><code class="language-text">$ cargo run -- /P "." /p "rs" /r "fn main" /v
+
+  TextFinder ver 1.2.0
+ =======================
+  path = ./
+  patterns = "rs"
+  regex = "fn main"
+  option: P "."
+  option: p "rs"
+  option: r "fn main"
+  option: s "true"
+  option: H "true"
+  option: v "true"
+
+  ./RustTextFinder/src
+      "text_finder.rs"
+
+  processed 42 files in 18 dirs, 1 matched
+
+  That's all Folks!</code></pre>
+
+      <a id="build"></a>
+      <h4>5.2 &nbsp;Building &amp; Running</h4>
+      <t-b>
+        Each crate builds independently — there is no workspace manifest.  Build
+        the search tool from <code>RustTextFinder/</code>; the two library
+        crates are resolved via relative <code>path</code> dependencies:
+      </t-b>
+<pre><code class="language-bash"># From RustTextFinder/
+cargo build
+cargo run -- /P "." /p "rs,txt" /r "abc" /s /H   # Windows / PowerShell
+cargo run -- -P "." -p "rs,txt" -r "abc" -s -H   # bash / Unix</code></pre>
+      <t-b>
+        Unit tests for each library and for the application binary:
+      </t-b>
+<pre><code class="language-bash"># RustCmdLine
+cd RustCmdLine
+cargo test -- --show-output
+
+# RustDirNav — must run single-threaded (test_setup must precede test_walk)
+cd ../RustDirNav
+cargo test -- --test-threads=1 --show-output
+
+# RustTextFinder — white-box tests for TextFinder and TfAppl
+cd ../RustTextFinder
+cargo test -- --show-output</code></pre>
+
+      <a id="verify"></a>
+      <h4>5.3 &nbsp;Integration Verification</h4>
+      <t-b>
+        Unit tests inside <code>RustTextFinder</code> cover white-box state
+        (constructor field values, setter/getter round-trips).  They cannot
+        verify the observable behavior of the compiled binary — traversal,
+        matching output, skip lists, help-on-no-args, and so on.
+        <code>RustTfVerify</code> is a separate binary crate that spawns the
+        built <code>text_finder</code> executable as a subprocess and checks its
+        stdout against each requirement assertion from
+        <code>Req_TextFinder.md</code>.  Results are reported as
+        <code>PASS</code>, <code>FAIL</code>, or <code>SKIP</code>, and the
+        process exits with status 1 if any assertion fails.
+      </t-b>
+<pre><code class="language-bash"># Build the binary first, then run the verifier
+cd RustTextFinder &amp;&amp; cargo build
+cd ../RustTfVerify &amp;&amp; cargo run
+
+# Pass an explicit binary path if needed
+cargo run -- path/to/text_finder</code></pre>
+
+      <a id="takeaways"></a>
+      <h4>5.4 &nbsp;Design Takeaways</h4>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <strong>Traits factor cleanly across crate boundaries.</strong>
+            <code>DirEvent</code> is two lines; those two lines let the walker
+            live in one crate and the regex-matching application live in
+            another without either crate importing the other's types.
+          </li>
+          <li>
+            <strong>The dominant performance win was one line.</strong>
+            Switching from <code>Path::is_dir()</code> to
+            <code>DirEntry::file_type()</code> avoided one <code>stat</code>
+            syscall per directory entry and moved median elapsed time from
+            ~0.91&nbsp;s to ~0.61&nbsp;s.  Every other optimization
+            (pre-compiled regex, raw-byte matching, buffer reuse) shaved less.
+          </li>
+          <li>
+            <strong>Ownership discipline is worth the small ergonomic cost.</strong>
+            <code>CmdLineParse</code> and <code>DirNav</code> own all their
+            state.  No lifetime parameters bleed into caller code, and
+            constructing one in <code>main</code> and passing it around requires
+            no plumbing.
+          </li>
+          <li>
+            <strong>Verification-as-a-subprocess catches what unit tests
+            can't.</strong>  Everything observable — stdout format, skip-list
+            behavior, help-on-no-args — is checked by
+            <code>RustTfVerify</code> against the compiled binary, not against
+            in-process mocks.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="refs"></a>
+      <h4>5.5 &nbsp;References</h4>
+      <table>
+        <colgroup>
+          <col style="width:35%;" />
+          <col style="width:65%;" />
+        </colgroup>
+        <tr><th class="darkItem">Resource</th><th class="darkItem">Description</th></tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="ComparisonStory_rs_textfinder_opt.html">1. Introduction</a>
+          </td>
+          <td class="lightItem">Overview, crates, CLI options, and the design roadmap for the rest of this thread.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="ComparisonStory_rs_textfinder_opt_CmdLine.html">2. RustCmdLine</a>
+          </td>
+          <td class="lightItem"><code>CmdLineParse</code> — argv into <code>HashMap</code> + patterns.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="ComparisonStory_rs_textfinder_opt_DirNav.html">3. RustDirNav</a>
+          </td>
+          <td class="lightItem">Generic <code>DirNav&lt;App&gt;</code> depth-first walker.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="ComparisonStory_rs_textfinder_opt_TextFinder.html">4. RustTextFinder</a>
+          </td>
+          <td class="lightItem"><code>TextFinder</code>, <code>TfAppl</code>, <code>read_file</code>, and <code>main</code>.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="ProjectStory_TextFinder.html">Project Story: TextFinder</a>
+          </td>
+          <td class="lightItem">Cross-language overview of the four TextFinder implementations, CLI, performance, and the optimization summary.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://docs.rs/regex/latest/regex/">Rust regex crate</a>
+          </td>
+          <td class="lightItem">DFA-based regex engine; <code>regex::bytes::Regex</code> is used here to match against raw <code>&amp;[u8]</code>.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">
+            <a target="_blank" href="https://github.com/JimFawcett/RsTextFinder">RsTextFinder repository</a>
+          </td>
+          <td class="lightItem">Source of all four crates discussed in this thread.</td>
+        </tr>
+      </table>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#conclusion">conclusion</a></menu-elem>
+        <menu-elem class="secElem"><a href="#sample">sample output</a></menu-elem>
+        <menu-elem class="secElem"><a href="#build">build &amp; run</a></menu-elem>
+        <menu-elem class="secElem"><a href="#verify">verification</a></menu-elem>
+        <menu-elem class="secElem"><a href="#takeaways">takeaways</a></menu-elem>
+        <menu-elem class="secElem"><a href="#refs">references</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/ComparisonStoryPages_rs.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  ComparisonStory_CppTextFinder_EntryPoint.html - EntryPoint discussion
+-->
+<head>
+  <title>Comparison Story: CppTextFinder — EntryPoint</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    ComparisonStory_CppTextFinder_EntryPoint.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 08/02/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Comparison Story: EntryPoint</h2>
+        <h4 class="indent" id="subtitle">5. &nbsp;<code>main.cpp</code> — the executable that wires it all together</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="entrypoint"></a>
+      <h3>5. &nbsp;EntryPoint — <code>main.cpp</code></h3>
+      <t-b>
+        <code>EntryPoint</code> is the only translation unit that imports all
+        three library modules.  <code>main.cpp</code> is small on purpose —
+        the design goal is to make the wiring itself readable: parse args,
+        configure <code>Output</code>, configure <code>DirNav</code>, register
+        two lambda callbacks, run the walk, print a summary.
+      </t-b>
+
+      <a id="design"></a>
+      <h4>5.1 &nbsp;Design Points</h4>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <strong>Module imports replace headers.</strong>  The first four
+            lines of <code>main.cpp</code> are
+            <code>import cmd_line;</code>, <code>import dir_nav;</code>,
+            <code>import output;</code>, and <code>import std;</code>.  CMake's
+            module dependency scanner resolves build order from these imports
+            — no forward declarations, no include-order concerns.
+          </li>
+          <li>
+            <strong>Lambda callbacks glue <code>DirNav</code> to
+            <code>Output</code>.</strong>  Both callbacks capture
+            <code>&amp;out</code> by reference and forward directly to
+            <code>Output::on_dir</code> and <code>Output::on_file</code>.
+            This is the C++ equivalent of the Rust variant's
+            <code>impl DirEvent for TfAppl</code> — a small adapter that
+            adapts one API to the other.  Neither library imports the other,
+            so this glue must live in <code>EntryPoint</code>.
+          </li>
+          <li>
+            <strong>Help on <code>/h</code> or no arguments.</strong>
+            <code>argc == 1 || cl.help()</code> short-circuits before any
+            configuration or traversal — help text prints, <code>main</code>
+            returns 0, no filesystem work is done.
+          </li>
+          <li>
+            <strong>Verbose block prints resolved options.</strong>  When
+            <code>/v</code> is present, all seven options are printed
+            (including their defaults) before the walk starts.  The
+            <code>/p</code> line uses
+            <code>std::views::join_with(',')</code> to reassemble the pattern
+            list into a single comma-separated line — a nice C++23 idiom.
+          </li>
+          <li>
+            <strong>Traversal failure is a hard error.</strong>  If
+            <code>dn.visit(...)</code> returns false (path doesn't exist or
+            isn't a directory), <code>main</code> prints to
+            <code>stderr</code> and returns exit code 1.  Every other error
+            path — regex compilation, unreadable file, permission-denied
+            subdir — degrades silently and the walk continues.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="flow"></a>
+      <h4>5.2 &nbsp;Startup Flow</h4>
+      <t-b>
+        <ol class="tight">
+          <li>Construct <code>CmdLine cl(argc, argv)</code> — parse argv,
+              apply defaults.</li>
+          <li>If <code>argc == 1</code> or <code>/h</code> is present, print
+              help and return.</li>
+          <li>If <code>/v</code> is present, echo all resolved options.</li>
+          <li>Construct <code>Output out(cl.hide())</code> and call
+              <code>out.set_regex(cl.regex())</code>.</li>
+          <li>Construct <code>DirNav dn(cl.recurse())</code>.</li>
+          <li>Register two lambda callbacks that forward to
+              <code>out.on_dir</code> and <code>out.on_file</code>.</li>
+          <li>Add each <code>/p</code> pattern to the walker.</li>
+          <li>Call <code>dn.visit(cl.path())</code>; on failure, exit 1.</li>
+          <li>Print the summary line (files visited / matched) and return 0.</li>
+        </ol>
+      </t-b>
+
+      <a id="source"></a>
+      <h4>5.3 &nbsp;Source — <code>EntryPoint/src/main.cpp</code></h4>
+<pre><code class="language-cpp">import cmd_line;
+import dir_nav;
+import output;
+import std;
+
+int main(int argc, const char* argv[])
+{
+    CmdLine cl(argc, argv);
+
+    // Show help when no arguments are supplied or /h is present
+    if (argc == 1 || cl.help())
+    {
+        std::cout &lt;&lt; CmdLine::help_text();
+        return 0;
+    }
+
+    // Verbose: echo all options before searching
+    if (cl.verbose())
+    {
+        std::cout &lt;&lt; "Options:\n"
+                  &lt;&lt; "  /P  " &lt;&lt; cl.path()                          &lt;&lt; "\n"
+                  &lt;&lt; "  /r  " &lt;&lt; cl.regex()                         &lt;&lt; "\n"
+                  &lt;&lt; "  /s  " &lt;&lt; (cl.recurse() ? "true" : "false")  &lt;&lt; "\n"
+                  &lt;&lt; "  /H  " &lt;&lt; (cl.hide()    ? "true" : "false")  &lt;&lt; "\n";
+
+        auto patterns = cl.patterns();
+        if (patterns.empty())
+        {
+            std::cout &lt;&lt; "  /p  (all files)\n";
+        }
+        else
+        {
+            std::cout &lt;&lt; "  /p  ";
+            for (char c : patterns | std::views::join_with(','))
+                std::cout &lt;&lt; c;
+            std::cout &lt;&lt; "\n";
+        }
+        std::cout &lt;&lt; "\n";
+    }
+
+    // Configure Output
+    Output out(cl.hide());
+    out.set_regex(cl.regex());
+
+    // Configure DirNav
+    DirNav dn(cl.recurse());
+
+    dn.set_dir_handler( [&amp;out](const std::string&amp; d){ out.on_dir(d);  });
+    dn.set_file_handler([&amp;out](const std::string&amp; f){ out.on_file(f); });
+
+    for (const auto&amp; pattern : cl.patterns())
+        dn.add_pattern(pattern);
+
+    // Run the walk
+    if (!dn.visit(std::filesystem::path(cl.path())))
+    {
+        std::cerr &lt;&lt; "error: could not traverse path: " &lt;&lt; cl.path() &lt;&lt; "\n";
+        return 1;
+    }
+
+    // Summary
+    std::cout &lt;&lt; "\n"
+              &lt;&lt; dn.file_count() &lt;&lt; " file(s) visited, "
+              &lt;&lt; out.match_count() &lt;&lt; " file(s) matched\n";
+
+    return 0;
+}</code></pre>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#entrypoint">EntryPoint</a></menu-elem>
+        <menu-elem class="secElem"><a href="#design">design points</a></menu-elem>
+        <menu-elem class="secElem"><a href="#flow">startup flow</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/ComparisonStoryPages_Cpp.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+</body>
+</html>

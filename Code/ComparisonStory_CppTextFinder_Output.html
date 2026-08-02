@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  ComparisonStory_CppTextFinder_Output.html - Output discussion
+-->
+<head>
+  <title>Comparison Story: CppTextFinder — Output</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    ComparisonStory_CppTextFinder_Output.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 08/02/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Comparison Story: Output</h2>
+        <h4 class="indent" id="subtitle">4. &nbsp;<code>Output</code> — regex match + grouped stdout emission</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="output"></a>
+      <h3>4. &nbsp;Output</h3>
+      <t-b>
+        <code>Output</code> is the class that decides whether a file matches
+        and, if so, prints it grouped under its containing directory.  In the
+        Rust variant these two concerns live inside <code>TextFinder</code>
+        and <code>TfAppl</code>; in the C++ variant they are collapsed into a
+        single class exposed by the <code>output</code> module.
+        <code>Output</code>'s two public callback-shaped methods —
+        <code>on_dir</code> and <code>on_file</code> — are the natural targets
+        for the two <code>std::function</code> callbacks that
+        <code>DirNav</code> fires.
+      </t-b>
+
+      <a id="design"></a>
+      <h4>4.1 &nbsp;Design Points</h4>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <strong>Lazy directory printing.</strong>  <code>on_dir</code>
+            records the current directory and clears <code>dir_printed_</code>
+            but only prints the directory header when <code>hide_</code> is
+            false.  <code>on_file</code> checks the flag on every match and
+            prints the deferred header the first time a match is found — so
+            "hide empty" comes for free without a two-pass walk.
+          </li>
+          <li>
+            <strong>Match-anything shortcut.</strong>  When the user's regex
+            is <code>"."</code>, <code>match_all_</code> is set and
+            <code>find()</code> returns <code>true</code> without opening the
+            file.  This shortcut is important for the default no-<code>/r</code>
+            case where every non-empty file is expected to be reported.
+          </li>
+          <li>
+            <strong>Bad regex ≠ crash.</strong>  <code>set_regex()</code>
+            catches <code>std::regex_error</code>, resets the optional, and
+            flips <code>match_all_</code> back on so subsequent
+            <code>find()</code> calls degrade to "match everything" rather
+            than throw.  Any exception raised deeper in <code>find()</code>
+            is also swallowed and turned into a <code>false</code> return.
+          </li>
+          <li>
+            <strong>Text-first, binary fallback read.</strong>  The file is
+            opened in text mode first; if that fails (or the read reports an
+            error before EOF), a second attempt opens the file in binary
+            mode.  This mirrors the "binary file with lossy UTF-8" branch of
+            the baseline <code>rs_textfinder</code>, but the C++ version
+            keeps a single <code>contents</code> string throughout.
+          </li>
+          <li>
+            <strong><code>std::regex_search</code>, not
+            <code>regex_match</code>.</strong>  <code>regex_search</code>
+            reports whether the pattern matches anywhere in the string —
+            <code>regex_match</code> would require the whole string to match.
+          </li>
+          <li>
+            <strong>Performance caveat.</strong>  <code>std::regex</code> uses
+            a backtracking NFA engine that rescans input on each match
+            attempt, which is why the C++ variant runs noticeably slower than
+            the Rust and Python variants even though all three do the same
+            byte-level work (see <a href="ProjectStory_TextFinder.html#performance">Project Story: TextFinder — Performance</a>).
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="api"></a>
+      <h4>4.2 &nbsp;Public API Summary</h4>
+      <table>
+        <colgroup>
+          <col style="width:22rem;" />
+          <col style="width:30rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Method</th>
+          <th class="darkItem">Purpose</th>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>Output(bool hide = true)</code></td>
+          <td class="lightItem">Construct.  Sets initial hide state and defaults <code>regex_</code> to <code>"."</code> (match everything).</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>set_regex(const string&amp; pattern)</code></td>
+          <td class="lightItem">Compile the regex.  On failure, degrades to match-all mode without throwing.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>on_dir(const string&amp; dir_path)</code></td>
+          <td class="lightItem">Called by <code>DirNav</code> when entering a directory.  Prints or defers the header depending on <code>hide_</code>.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>on_file(const string&amp; file_name)</code></td>
+          <td class="lightItem">Called by <code>DirNav</code> for each pattern-matched file.  Reads the file, runs the regex, and — on a match — emits the (deferred) header plus the file name.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>match_count() const</code></td>
+          <td class="lightItem">Number of files whose content matched the regex.  Used by <code>main</code> in the summary line.</td>
+        </tr>
+      </table>
+
+      <a id="source"></a>
+      <h4>4.3 &nbsp;Source — <code>Output/src/Output.ixx</code></h4>
+<pre><code class="language-cpp">export module output;
+
+import std;
+
+export class Output
+{
+public:
+    explicit Output(bool hide = true)
+        : hide_(hide)
+        , dir_printed_(false)
+        , match_count_(0)
+        , match_all_(true)
+        , regex_(std::regex("."))
+    {}
+
+    void set_regex(const std::string&amp; pattern)
+    {
+        match_all_ = (pattern == ".");
+        try   { regex_ = std::regex(pattern); }
+        catch (const std::regex_error&amp;) { regex_.reset(); match_all_ = true; }
+    }
+
+    void on_dir(const std::string&amp; dir_path)
+    {
+        current_dir_ = dir_path;
+        dir_printed_ = false;
+
+        if (!hide_)
+        {
+            std::cout &lt;&lt; "\n  " &lt;&lt; current_dir_ &lt;&lt; '\n' &lt;&lt; std::flush;
+            dir_printed_ = true;
+        }
+    }
+
+    void on_file(const std::string&amp; file_name)
+    {
+        std::filesystem::path full_path =
+            std::filesystem::path(current_dir_) / file_name;
+
+        if (!find(full_path))
+            return;
+
+        if (hide_ &amp;&amp; !dir_printed_)
+        {
+            std::cout &lt;&lt; "\n  " &lt;&lt; current_dir_ &lt;&lt; '\n';
+            dir_printed_ = true;
+        }
+
+        std::cout &lt;&lt; "      " &lt;&lt; file_name &lt;&lt; '\n' &lt;&lt; std::flush;
+        ++match_count_;
+    }
+
+    std::size_t match_count() const
+    {
+        return match_count_;
+    }
+
+private:
+    bool                       hide_;
+    bool                       dir_printed_;
+    std::size_t                match_count_;
+    bool                       match_all_;
+    std::optional&lt;std::regex&gt;  regex_;
+    std::string                current_dir_;
+
+    bool find(const std::filesystem::path&amp; file_path) const
+    {
+        if (match_all_) return true;
+        if (!regex_) return false;
+        try
+        {
+            std::string contents;
+            bool        read_ok = false;
+
+            {
+                std::ifstream ifs(file_path);
+                if (ifs)
+                {
+                    std::ostringstream oss;
+                    oss &lt;&lt; ifs.rdbuf();
+                    if (ifs || ifs.eof())
+                    {
+                        contents = oss.str();
+                        read_ok  = true;
+                    }
+                }
+            }
+
+            if (!read_ok)
+            {
+                std::ifstream ifs(file_path, std::ios::binary);
+                if (!ifs)
+                    return false;
+
+                std::ostringstream oss;
+                oss &lt;&lt; ifs.rdbuf();
+                if (!ifs &amp;&amp; !ifs.eof())
+                    return false;
+
+                contents = oss.str();
+            }
+
+            return std::regex_search(contents, *regex_);
+        }
+        catch (...)
+        {
+            return false;
+        }
+    }
+};</code></pre>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#output">Output</a></menu-elem>
+        <menu-elem class="secElem"><a href="#design">design points</a></menu-elem>
+        <menu-elem class="secElem"><a href="#api">API summary</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/ComparisonStoryPages_Cpp.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+</body>
+</html>

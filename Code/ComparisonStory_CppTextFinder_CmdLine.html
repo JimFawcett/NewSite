@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  ComparisonStory_CppTextFinder_CmdLine.html - CommandLine discussion
+-->
+<head>
+  <title>Comparison Story: CppTextFinder — CommandLine</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    ComparisonStory_CppTextFinder_CmdLine.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 08/02/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Comparison Story: CommandLine</h2>
+        <h4 class="indent" id="subtitle">2. &nbsp;<code>CmdLine</code> — argv into options and patterns</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="cmdline"></a>
+      <h3>2. &nbsp;CommandLine — <code>CmdLine</code></h3>
+      <t-b>
+        <code>CmdLine</code> converts raw <code>argv</code> tokens into an
+        <code>std::unordered_map&lt;std::string, std::string&gt;</code> of
+        options.  A token starting with <code>/</code> or <code>-</code> and
+        followed by a single alphabetic character is treated as an option key;
+        the next token (if it does not itself start with <code>/</code> or
+        <code>-</code>) becomes its value, otherwise the value defaults to
+        <code>"true"</code>.  Accepting both prefixes lets the same CLI work in
+        PowerShell (<code>/P .</code>) and in bash (<code>-P .</code>).
+      </t-b>
+
+      <a id="design"></a>
+      <h4>2.1 &nbsp;Design Points</h4>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <strong>Single storage layer.</strong>  Every parsed option lives
+            in one <code>std::unordered_map&lt;std::string, std::string&gt;</code>.
+            The <code>/p</code> value is not eagerly expanded — the
+            <code>patterns()</code> accessor splits it on demand using
+            <code>std::views::split(',')</code>.
+          </li>
+          <li>
+            <strong>Defaults applied after parsing.</strong>  The constructor
+            calls <code>parse()</code> first, then <code>apply_defaults()</code>,
+            so any argv value stays put while missing keys are filled in with
+            <code>"P=."</code>, <code>"r=."</code>, <code>"s=true"</code>,
+            <code>"H=true"</code>.  This matches the Rust variant's ordering
+            but uses a member function rather than a public
+            <code>default_options()</code> that callers must remember to
+            invoke.
+          </li>
+          <li>
+            <strong>Flag validation.</strong>  <code>is_flag</code> requires
+            exactly two characters — a prefix and one alphabetic character.
+            Longer tokens like <code>/path</code> or <code>-help</code> are
+            treated as values, not keys, avoiding accidental collisions.
+          </li>
+          <li>
+            <strong>Named module, no headers.</strong>  <code>CmdLine</code> is
+            declared with <code>export class CmdLine</code> inside an
+            <code>export module cmd_line;</code> unit.  Callers write
+            <code>import cmd_line;</code> — there is no header file and no
+            include guard.
+          </li>
+          <li>
+            <strong>Ranges for pattern splitting.</strong>  The
+            <code>patterns()</code> method uses
+            <code>raw | std::views::split(',')</code> and constructs each part
+            from an iterator pair — a modern C++23 idiom that avoids manual
+            <code>find</code>/<code>substr</code> loops.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="api"></a>
+      <h4>2.2 &nbsp;Public API Summary</h4>
+      <table>
+        <colgroup>
+          <col style="width:22rem;" />
+          <col style="width:30rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Method</th>
+          <th class="darkItem">Purpose</th>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>CmdLine(argc, argv)</code></td>
+          <td class="lightItem">Parse argv, then apply defaults for any missing key.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>path()</code></td>
+          <td class="lightItem">Return the <code>/P</code> value (defaulted to <code>"."</code>).</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>regex()</code></td>
+          <td class="lightItem">Return the <code>/r</code> value (defaulted to <code>"."</code>).</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>patterns()</code></td>
+          <td class="lightItem">Split the <code>/p</code> value on <code>,</code> and return a <code>std::vector&lt;std::string&gt;</code>.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>recurse() / hide()</code></td>
+          <td class="lightItem">Return the boolean interpretation of <code>/s</code> and <code>/H</code>.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>verbose() / help()</code></td>
+          <td class="lightItem">Presence flags — true if <code>/v</code> or <code>/h</code> appeared on the command line.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>help_text()</code> <em>(static)</em></td>
+          <td class="lightItem">Multi-line help string printed by <code>main</code> on <code>/h</code> or on empty argv.</td>
+        </tr>
+      </table>
+
+      <a id="source"></a>
+      <h4>2.3 &nbsp;Source — <code>CommandLine/src/CmdLine.ixx</code></h4>
+<pre><code class="language-cpp">export module cmd_line;
+
+import std;
+
+export class CmdLine {
+public:
+    CmdLine(int argc, const char* argv[]) {
+        parse(argc, argv);
+        apply_defaults();
+    }
+
+    std::string path() const {
+        return get("P");
+    }
+
+    std::string regex() const {
+        return get("r");
+    }
+
+    std::vector&lt;std::string&gt; patterns() const {
+        std::string raw = get("p");
+        if (raw.empty())
+            return {};
+        std::vector&lt;std::string&gt; result;
+        for (auto part : raw | std::views::split(',')) {
+            std::string s(part.begin(), part.end());
+            if (!s.empty())
+                result.push_back(std::move(s));
+        }
+        return result;
+    }
+
+    bool recurse() const {
+        return get("s") == "true";
+    }
+
+    bool hide() const {
+        return get("H") == "true";
+    }
+
+    bool verbose() const {
+        return present("v");
+    }
+
+    bool help() const {
+        return present("h");
+    }
+
+    static std::string help_text() {
+        return
+            "CppTextFinder — search a directory tree for files whose content matches a regex\n"
+            "\n"
+            "Usage:\n"
+            "  text_finder [/P &lt;path&gt;] [/p &lt;exts&gt;] [/s &lt;bool&gt;] [/H &lt;bool&gt;]\n"
+            "              [/r &lt;regex&gt;] [/v] [/h]\n"
+            "\n"
+            "  Flag prefix: both '/' (Windows style) and '-' (Unix style) are accepted,\n"
+            "  e.g. \"/P .\" and \"-P .\" are equivalent.\n"
+            "\n"
+            "Options:\n"
+            "  /P &lt;path&gt;    Root path for the search              (default: \".\")\n"
+            "  /p &lt;exts&gt;    Comma-separated file extensions to\n"
+            "               include, e.g. \".cpp,.h\"              (default: all files)\n"
+            "  /s &lt;bool&gt;    Recurse into subdirectories           (default: true)\n"
+            "  /H &lt;bool&gt;    true  = print directory only when it\n"
+            "               contains a match (clean output).\n"
+            "               false = print every directory entered  (default: true)\n"
+            "  /r &lt;regex&gt;   Regular expression matched against\n"
+            "               file content                          (default: \".\")\n"
+            "  /v           Verbose: echo all options before\n"
+            "               searching\n"
+            "  /h           Print this help text and exit\n";
+    }
+
+private:
+    std::unordered_map&lt;std::string, std::string&gt; options_;
+
+    void parse(int argc, const char* argv[]) {
+        auto is_flag = [](const std::string&amp; t) {
+            return t.size() == 2 &amp;&amp; (t[0] == '/' || t[0] == '-') &amp;&amp; std::isalpha(static_cast&lt;unsigned char&gt;(t[1]));
+        };
+        int i = 1;
+        while (i &lt; argc) {
+            std::string token = argv[i];
+            if (is_flag(token)) {
+                std::string key(1, token[1]);
+                if (i + 1 &lt; argc) {
+                    std::string next = argv[i + 1];
+                    if (is_flag(next)) {
+                        // Next token is another flag — value is implicit "true"
+                        options_[key] = "true";
+                    } else {
+                        // Consume next token as value
+                        options_[key] = next;
+                        ++i;
+                    }
+                } else {
+                    // Last token on the command line — implicit "true"
+                    options_[key] = "true";
+                }
+            }
+            ++i;
+        }
+    }
+
+    void apply_defaults() {
+        if (!options_.contains("P")) { options_["P"] = "."; }
+        if (!options_.contains("r")) { options_["r"] = "."; }
+        if (!options_.contains("s")) { options_["s"] = "true"; }
+        if (!options_.contains("H")) { options_["H"] = "true"; }
+        // /p has no meaningful default value; leave absent so patterns() returns empty
+        // /v and /h are boolean presence flags; leave absent when not supplied
+    }
+
+    bool present(const std::string&amp; key) const {
+        return options_.contains(key);
+    }
+
+    std::string get(const std::string&amp; key) const {
+        auto it = options_.find(key);
+        if (it != options_.end()) {
+            return it-&gt;second;
+        }
+        return {};
+    }
+};</code></pre>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#cmdline">CommandLine</a></menu-elem>
+        <menu-elem class="secElem"><a href="#design">design points</a></menu-elem>
+        <menu-elem class="secElem"><a href="#api">API summary</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/ComparisonStoryPages_Cpp.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 1, 10);
+  </script>
+</body>
+</html>

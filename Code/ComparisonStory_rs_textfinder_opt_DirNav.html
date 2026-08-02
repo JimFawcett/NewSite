@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  ComparisonStory_rs_textfinder_opt_DirNav.html - RustDirNav discussion
+-->
+<head>
+  <title>Comparison Story: RustDirNav</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    ComparisonStory_rs_textfinder_opt_DirNav.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 08/02/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Comparison Story: RustDirNav</h2>
+        <h4 class="indent" id="subtitle">3. &nbsp;<code>DirNav&lt;App&gt;</code> — generic depth-first walker</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="dirnav"></a>
+      <h3>3. &nbsp;RustDirNav — <code>DirNav&lt;App: DirEvent&gt;</code></h3>
+      <t-b>
+        <code>RustDirNav</code> is a generic depth-first directory walker.  It is
+        parameterized by an application type <code>App</code> that must implement
+        the <code>DirEvent</code> trait — two callbacks that fire when the walker
+        enters a directory and when it encounters a matching file:
+      </t-b>
+<pre><code class="language-rust">pub trait DirEvent {
+    fn do_dir(&amp;mut self, d: &amp;str);
+    fn do_file(&amp;mut self, f: &amp;str);
+}</code></pre>
+      <t-b>
+        This trait is the entire contract between navigator and application.
+        Every <code>rs_textfinder_opt</code>-specific behavior — regex matching,
+        hide/show, path-relative printing — lives in <code>TfAppl</code>, an
+        implementor supplied by the binary crate.  The library itself remains
+        free of any TextFinder concepts and could equally well be reused by a
+        line-counting tool, a build-artifact scrubber, or a checksum walker.
+      </t-b>
+
+      <a id="design"></a>
+      <h4>3.1 &nbsp;Design Points</h4>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <strong>Skip list is baked in.</strong>  Build directories
+            (<code>target</code>, <code>bin</code>, <code>obj</code>,
+            <code>build</code>, <code>out</code>), Python caches, VCS/IDE folders,
+            and <code>archive</code> are pre-loaded into <code>skip_dirs</code>
+            at construction so no callers have to know the list.  Extra names
+            can be added via <code>add_skip()</code>.
+          </li>
+          <li>
+            <strong><code>DirEntry::file_type()</code>, not
+            <code>Path::is_dir()</code>.</strong>  The type is already carried by
+            the <code>readdir</code> response on both Windows and Unix, so no
+            extra <code>stat</code> syscall is issued per entry.  This single
+            call was the dominant optimization gain over the baseline
+            <code>rs_textfinder</code> — median elapsed time dropped from
+            ~0.91&nbsp;s to ~0.61&nbsp;s, a 33% improvement.
+          </li>
+          <li>
+            <strong>Directory printed only when it has matches.</strong>  Files
+            are accumulated in a <code>Vec</code> during the scan pass; the
+            directory callback fires only if that vector is non-empty (or if
+            <code>hide</code> is off).  This inverts the natural traversal order
+            but produces cleaner grouped output.
+          </li>
+          <li>
+            <strong>Windows separator normalization.</strong>  Paths are
+            converted to forward slashes at the emit site, so downstream
+            printing and regex matching see one path style regardless of host OS.
+          </li>
+          <li>
+            <strong>App owned by DirNav.</strong>  <code>DirNav&lt;App&gt;</code>
+            constructs an instance of <code>App</code> via <code>App::default()</code>
+            and owns it for the lifetime of the walker.  <code>get_app()</code>
+            returns a mutable reference so callers can configure the app (regex,
+            hide flag) before <code>visit()</code>.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="visit"></a>
+      <h4>3.2 &nbsp;<code>visit()</code> — the traversal loop</h4>
+      <t-b>
+        <code>visit()</code> is a straight recursion.  For each entry produced by
+        <code>fs::read_dir</code>:
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li>Grab the cached <code>file_type()</code> — no extra syscall.</li>
+          <li>If it is a directory, check the skip list; if not skipped, buffer
+              its normalized path for the recursion pass.</li>
+          <li>If it is a file and its extension is in the pattern list (or the
+              pattern list is empty), buffer its name and bump the file counter.</li>
+          <li>After the scan, fire <code>do_dir</code> only if the buffered file
+              list is non-empty or <code>hide</code> is off; fire
+              <code>do_file</code> for each buffered file.</li>
+          <li>Recurse into each buffered subdirectory if <code>recurse</code> is
+              on.</li>
+        </ol>
+      </t-b>
+      <t-b>
+        Separating the file-emit pass from the directory-emit decision is what
+        lets <code>hide=true</code> suppress the directory header for
+        no-match folders without a look-ahead: by the time
+        <code>do_dir</code> is called, the walker already knows whether any file
+        will follow.
+      </t-b>
+
+      <a id="source"></a>
+      <h4>3.3 &nbsp;Source — <code>RustDirNav/src/dir_nav_lib.rs</code></h4>
+<pre><code class="language-rust">/////////////////////////////////////////////////////////////
+// dir_nav_lib.rs                                          //
+//                                                         //
+// Jim Fawcett, https://JimFawcett.github.io, 12 Apr 2020  //
+/////////////////////////////////////////////////////////////
+/*
+   DirNav&lt;App&gt; is a directory navigator that  uses the generic
+   parameter App to define how files and directories are
+   handled.
+   - displays only paths that have file targets by default
+   - hide(false) will show all directories traversed
+   - recurses directory tree at specified root by default
+   - recurse(false) examines only specified path.
+*/
+use std::fs::{self, DirEntry};
+use std::io;
+use std::io::{Error, ErrorKind};
+#[allow(unused_imports)]
+use std::path::{Path, PathBuf};
+
+/// trait required of the App generic parameter type
+pub trait DirEvent {
+    fn do_dir(&amp;mut self, d: &amp;str);
+    fn do_file(&amp;mut self, f: &amp;str);
+}
+
+/////////////////////////////////////////////////
+// Patterns are a collection of extension strings
+// used to identify files as search targets
+
+type SearchPatterns = Vec&lt;std::ffi::OsString&gt;;
+
+/// Directory Navigator Structure
+#[allow(dead_code)]
+#[derive(Debug, Default)]
+pub struct DirNav&lt;App: DirEvent&gt; {
+    /// file extensions to look for
+    pats: SearchPatterns,
+    /// directory names to skip during traversal
+    skip_dirs: SearchPatterns,
+    /// instance of App : DirEvent, requires do_file and do_dir methods
+    app: App,
+    /// number of files processed
+    num_file: usize,
+    /// number of dirs processed
+    num_dir: usize,
+    /// recurse ?
+    recurse : bool,
+    /// hide dirs with no targets ?
+    hide: bool,
+}
+impl&lt;App: DirEvent + Default&gt; DirNav&lt;App&gt; {
+    pub fn new() -&gt; Self
+    where
+        App: DirEvent + Default,
+    {
+        let defaults = [
+            // C#/.NET
+            "bin", "obj",
+            // Rust
+            "target",
+            // C++
+            "build", "out",
+            // Python
+            "__pycache__", ".venv", "venv", "dist",
+            // VCS / IDE
+            ".git", ".vs", ".idea",
+            // archives
+            "archive",
+        ];
+        let mut skip_dirs = SearchPatterns::new();
+        for name in &amp;defaults {
+            let mut s = std::ffi::OsString::new();
+            s.push(name);
+            skip_dirs.push(s);
+        }
+        Self {
+            pats: SearchPatterns::new(),
+            skip_dirs,
+            app: App::default(),
+            num_file: 0,
+            num_dir: 0,
+            recurse: true,
+            hide: true,
+        }
+    }
+    /// do recursive visit?
+    pub fn recurse(&amp;mut self, p:bool) {
+        self.recurse = p;
+    }
+    /// hide dirs with no targets?
+    pub fn hide(&amp;mut self, p:bool) {
+        self.hide = p;
+    }
+    /// return reference to App to get results, if any
+    pub fn get_app(&amp;mut self) -&gt; &amp;mut App {
+        &amp;mut self.app
+    }
+    /// return number of dirs processed
+    pub fn get_dirs(&amp;self) -&gt; usize {
+        self.num_dir
+    }
+    /// return number of files processed
+    pub fn get_files(&amp;self) -&gt; usize {
+        self.num_file
+    }
+    /// return patterns, e.g., file extensions to look for
+    pub fn get_patts(&amp;self) -&gt; &amp;SearchPatterns {
+        &amp;self.pats
+    }
+
+    /// add directory name to skip during traversal - takes either String or &amp;str
+    pub fn add_skip&lt;S: Into&lt;String&gt;&gt;(&amp;mut self, s: S) -&gt; &amp;mut DirNav&lt;App&gt; {
+        let mut t = std::ffi::OsString::new();
+        t.push(s.into());
+        self.skip_dirs.push(t);
+        self
+    }
+    /// add extension to search for - takes either String or &amp;str
+    pub fn add_pat&lt;S: Into&lt;String&gt;&gt;(&amp;mut self, p: S) -&gt; &amp;mut DirNav&lt;App&gt; {
+        let mut t = std::ffi::OsString::new();
+        t.push(p.into());
+        self.pats.push(t);
+        self
+    }
+    /// reset to default state
+    pub fn clear(&amp;mut self) {
+        self.pats.clear();
+        self.num_dir = 0;
+        self.num_file = 0;
+        self.app = App::default();
+    }
+    /// Depth First Search for file extensions starting at path dir&lt;br /&gt;
+    /// Displays only directories with files matching pattern
+    pub fn visit(&amp;mut self, dir: &amp;Path) -&gt; io::Result&lt;()&gt;
+    where App: DirEvent
+    {
+        self.num_dir += 1;
+        let dir_name: String =
+          self.replace_sep(dir).to_string_lossy().to_string();
+        let mut files = Vec::&lt;std::ffi::OsString&gt;::new();
+        let mut sub_dirs = Vec::&lt;std::ffi::OsString&gt;::new();
+        if dir.is_dir() {
+            /* search local directory */
+            for entry in fs::read_dir(dir)? {
+                let entry = entry?;
+                let file_type = entry.file_type()?;
+                if file_type.is_dir() {
+                    let name = entry.file_name();
+                    let skip = self.skip_dirs.contains(&amp;name);
+                    if !skip {
+                        let cd = self.replace_sep(&amp;entry.path());
+                        sub_dirs.push(cd);
+                    }
+                } else if file_type.is_file() {
+                    if self.in_patterns(&amp;entry) | self.pats.is_empty() {
+                        self.num_file += 1;
+                        files.push(entry.file_name());
+                    }
+                }
+            }
+            /*-- display only dirs with found files --*/
+            if !files.is_empty() || !self.hide {
+                self.app.do_dir(&amp;dir_name);
+            }
+            for fl in files {
+                let flnm = fl.to_string_lossy().to_string();
+                self.app.do_file(&amp;flnm);
+            }
+            /*-- recurse into subdirectories --*/
+            for sub in sub_dirs {
+                let mut pb = std::path::PathBuf::new();
+                pb.push(sub);
+                if self.recurse {
+                    self.visit(&amp;pb)?;
+                }
+            }
+            return Ok(());  // normal return
+        }
+        Err(Error::new(ErrorKind::Other, "not a directory"))
+    }
+    /// replace Windows directory separator with Linux separator
+    pub fn replace_sep(&amp;self, path: &amp;Path) -&gt; std::ffi::OsString {
+        let rtn = path.to_string_lossy();
+        let mod_path = rtn.replace("\\", "/");
+        let mut os_str: std::ffi::OsString = std::ffi::OsString::new();
+        os_str.push(mod_path);
+        os_str
+    }
+    /// does store contain d.path().extension() ?
+    pub fn in_patterns(&amp;self, d: &amp;DirEntry) -&gt; bool {
+        let p = d.path();
+        let ext = p.extension();
+        match ext {
+            Some(extn) =&gt; self.pats.contains(&amp;(extn.to_os_string())),
+            None =&gt; false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // test_setup() should run first. To ensure that:
+    //   use cargo -- --test-threads=1
+    // to see console output:
+    //   use cargo test -- --show-output --test-threads=1
+    use super::*;
+    #[derive(Debug)]
+    struct ApplTest {
+        rslt_store: Vec&lt;String&gt;,
+    }
+    impl DirEvent for ApplTest {
+        fn do_dir(&amp;mut self, _d: &amp;str) {
+        }
+        fn do_file(&amp;mut self, f: &amp;str) {
+            self.rslt_store.push((*f).to_string());
+        }
+    }
+    impl Default for ApplTest {
+        fn default() -&gt; Self {
+            ApplTest {
+                rslt_store: Vec::&lt;String&gt;::new(),
+            }
+        }
+    }
+    #[test]
+    fn test_setup() {
+        let _ = std::fs::create_dir("./test_dir");
+        let _ = std::fs::create_dir("./test_dir/test_sub1_dir");
+        let _ = std::fs::create_dir("./test_dir/test_sub2_dir");
+        let _ = std::fs::File::create("./test_dir/test_file.rs");
+        let _ = std::fs::File::create("./test_dir/test_sub1_dir/test_file1.rs");
+        let _ = std::fs::File::create("./test_dir/test_sub1_dir/test_file2.exe");
+        let _ = std::fs::File::create("./test_dir/test_sub2_dir/test_file3.txt");
+    }
+    #[test]
+    fn test_walk() {
+        let mut dn = DirNav::&lt;ApplTest&gt;::new();
+        dn.add_pat("rs").add_pat("exe").add_pat("txt");
+        let mut pb = PathBuf::new();
+        pb.push("./test_dir".to_string());
+        let _ = dn.visit(&amp;pb);
+        let rl = &amp;dn.get_app().rslt_store;
+        print!("\n  {:?}", rl);
+
+        let l = |s: &amp;str| -&gt; String { s.to_string() };
+
+        assert!(rl.contains(&amp;l("test_file.rs")));
+        assert!(rl.contains(&amp;l("test_file1.rs")));
+        assert!(rl.contains(&amp;l("test_file2.exe")));
+        assert!(rl.contains(&amp;l("test_file3.txt")));
+    }
+    #[test]
+    fn test_patts() {
+        let mut dn = DirNav::&lt;ApplTest&gt;::new();
+        dn.add_pat("foo").add_pat("bar");
+        assert_eq!(dn.get_patts().len(), 2);
+        let pats = dn.get_patts();
+        let mut foo_str = std::ffi::OsString::new();
+        foo_str.push("foo");
+        assert!(pats.contains(&amp;foo_str));
+        let mut bar_str = std::ffi::OsString::new();
+        bar_str.push("bar");
+        assert!(pats.contains(&amp;bar_str));
+        dn.clear();
+        assert_eq!(dn.get_patts().len(), 0);
+    }
+}</code></pre>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#dirnav">RustDirNav</a></menu-elem>
+        <menu-elem class="secElem"><a href="#design">design points</a></menu-elem>
+        <menu-elem class="secElem"><a href="#visit">visit()</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/ComparisonStoryPages_rs.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>
