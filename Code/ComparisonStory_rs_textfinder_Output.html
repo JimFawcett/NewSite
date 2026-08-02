@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  ComparisonStory_rs_textfinder_Output.html - TfAppl discussion & code
+-->
+<head>
+  <title>Comparison Story: rs_textfinder_opt — Output (TfAppl)</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; padding: 1rem 2rem; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    ComparisonStory_rs_textfinder_Output.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 08/02/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Comparison Story: Output (TfAppl)</h2>
+        <h4 class="indent" id="subtitle">5. &nbsp;<code>TfAppl</code> — <code>DirEvent</code> implementor / output layer</h4>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="tfappl"></a>
+      <h3>5. &nbsp;Output — <code>TfAppl</code></h3>
+      <t-b>
+        <code>TfAppl</code> is the glue struct that lets <code>DirNav</code>
+        drive the search without knowing anything about regex or text
+        finding.  It is the Rust analogue of the C++ variant's
+        <code>Output</code> class — the object that receives directory /
+        file events from the walker, delegates matching to
+        <code>TextFinder</code>, and prints results grouped by directory.
+        Because the Rust walker's callback contract is a <code>trait</code>
+        rather than two <code>std::function</code> members,
+        <code>TfAppl</code> supplies the two required methods by writing
+        <code>impl dir_nav_lib::DirEvent for TfAppl</code>.
+      </t-b>
+
+      <a id="design"></a>
+      <h4>5.1 &nbsp;Design Points</h4>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <strong>Composition, not inheritance.</strong>  <code>TfAppl</code>
+            <em>has</em> a <code>TextFinder</code> (the <code>tf</code>
+            field) rather than being one.  Regex compilation and the actual
+            <code>find(path)</code> call are delegated to
+            <code>tf</code>; <code>TfAppl</code> only handles per-directory
+            printing state.
+          </li>
+          <li>
+            <strong>Deferred directory header.</strong>
+            <code>do_dir</code> records the incoming directory name in
+            <code>curr_dir</code> and, if <code>hide</code> is off, prints
+            it immediately.  If <code>hide</code> is on, printing is
+            deferred: the first successful <code>do_file</code> match in a
+            new directory prints the header (via
+            <code>tf.get_last_path() != self.curr_dir</code>) and updates
+            <code>tf.last_path</code> so subsequent files in the same
+            directory skip that step.
+          </li>
+          <li>
+            <strong>Match count is a first-class field.</strong>
+            <code>match_count</code> increments on every successful
+            <code>find()</code>, so <code>main</code> can print the summary
+            without re-scanning stdout.
+          </li>
+          <li>
+            <strong>Hide and recurse mirror <code>DirNav</code>.</strong>
+            <code>TfAppl</code> keeps its own copy of the <code>hide</code>
+            and <code>recurse</code> flags.  <code>main</code> writes both
+            copies at startup so <code>DirNav</code> and <code>TfAppl</code>
+            never disagree — the walker uses <code>hide</code> to decide
+            whether to invoke <code>do_dir</code> for empty directories,
+            and <code>TfAppl</code> uses the same flag to decide whether
+            to print immediately or defer.
+          </li>
+          <li>
+            <strong>Regex delegation.</strong>
+            <code>TfAppl::regex(s)</code> forwards to
+            <code>self.tf.regex(s)</code>; there is no local copy of the
+            pattern.  This preserves the single-source-of-truth for the
+            regex string.
+          </li>
+          <li>
+            <strong>Fully qualified path per file.</strong>  Because
+            <code>DirEvent::do_file</code> receives only the bare file
+            name, <code>do_file</code> reconstructs the fully qualified
+            path by concatenating <code>curr_dir</code> with
+            <code>f</code> before calling <code>tf.find</code>.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="api"></a>
+      <h4>5.2 &nbsp;Public API Summary</h4>
+      <table>
+        <colgroup>
+          <col style="width:22rem;" />
+          <col style="width:30rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Method</th>
+          <th class="darkItem">Purpose</th>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>new()</code></td>
+          <td class="lightItem">Construct with an empty <code>TextFinder</code>, <code>hide=true</code>, <code>recurse=true</code>, and <code>match_count=0</code>.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>do_dir(&amp;mut self, d)</code></td>
+          <td class="lightItem"><code>DirEvent</code> callback — record current directory; print immediately if <code>hide</code> is off.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>do_file(&amp;mut self, f)</code></td>
+          <td class="lightItem"><code>DirEvent</code> callback — build fully qualified path, call <code>tf.find</code>, print header + file name on match.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>regex(s) / get_regex()</code></td>
+          <td class="lightItem">Delegate to the embedded <code>TextFinder</code>.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>hide(p) / get_hide()</code></td>
+          <td class="lightItem">Read/write the hide-empty-directories flag.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>recurse(p) / get_recurse()</code></td>
+          <td class="lightItem">Read/write the recursion flag (mirrors <code>DirNav</code>).</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>get_match_count()</code></td>
+          <td class="lightItem">Number of files whose content matched the regex; used by <code>main</code> in the summary line.</td>
+        </tr>
+      </table>
+
+      <a id="source"></a>
+      <h4>5.3 &nbsp;Source Excerpt — <code>TfAppl</code> from <code>RustTextFinder/src/text_finder.rs</code></h4>
+<pre><code class="language-rust">/*-- TfAppl is an application specific proxy for TextFinder --*/
+#[derive(Debug, Default)]
+pub struct TfAppl {
+    tf: TextFinder,
+    curr_dir: String,
+    hide: bool,
+    recurse: bool,
+    match_count: usize,
+}
+impl dir_nav_lib::DirEvent for TfAppl {
+    fn do_dir(&amp;mut self, d:&amp;str) {
+        /*-- save dir name for use in do_file --*/
+        self.curr_dir = d.to_string();
+        /*-- print directory name if H(ide) is false --*/
+        if !self.get_hide() {
+            print!("\n--{}", d);
+        }
+    }
+    fn do_file(&amp;mut self, f:&amp;str) {
+        /*-- build fully qualified path to file --*/
+        let mut fqf = self.curr_dir.clone();
+        fqf.push('/');
+        fqf.push_str(f);
+        /*-- look for file text that matches regex --*/
+        if self.tf.find(&amp;fqf) {
+            self.match_count += 1;
+            /*-- print directory for first file if H(ide) is true --*/
+            let pred =
+              self.tf.get_last_path() != self.curr_dir
+              &amp;&amp; self.get_hide();
+            if  pred {
+                print!("\n\n  {}", self.curr_dir);
+                self.tf.last_path(&amp;self.curr_dir);
+            }
+            /*-- print name of file with matching text --*/
+            print!("\n      {:?}", f);
+        }
+    }
+}
+impl TfAppl {
+    pub fn new() -&gt; Self {
+        Self {
+            tf: TextFinder::new(),
+            curr_dir: String::default(),
+            hide: true,
+            recurse: true,
+            match_count: 0,
+        }
+    }
+    pub fn get_match_count(&amp;self) -&gt; usize {
+        self.match_count
+    }
+    pub fn recurse(&amp;mut self, p:bool) {
+        self.recurse = p;
+    }
+    pub fn get_recurse(&amp;self) -&gt; bool {
+        self.recurse
+    }
+    pub fn hide(&amp;mut self, p:bool) {
+        self.hide =p;
+    }
+    pub fn get_hide(&amp;self) -&gt; bool {
+        self.hide
+    }
+    pub fn regex(&amp;mut self, s:&amp;str) {
+        self.tf.regex(s);
+    }
+    pub fn get_regex(&amp;self) -&gt; &amp;str {
+        self.tf.get_regex()
+    }
+}</code></pre>
+
+      <a id="tests"></a>
+      <h4>5.4 &nbsp;Unit Tests</h4>
+      <t-b>
+        <code>TfAppl</code>'s white-box unit tests live alongside
+        <code>TextFinder</code>'s tests inside the <code>mod tests</code>
+        block in <code>text_finder.rs</code>.  The four <code>TA</code>-prefixed
+        tests below cover <code>TfAppl</code> construction defaults and the
+        two round-trip setters.
+      </t-b>
+<pre><code class="language-rust">    /*-- REQ-TA-01: TfAppl::new() initial field values --*/
+    #[test]
+    fn ta_new_hide_is_true() {
+        let ta = TfAppl::new();
+        assert!(ta.hide);
+    }
+    #[test]
+    fn ta_new_recurse_is_true() {
+        let ta = TfAppl::new();
+        assert!(ta.recurse);
+    }
+    #[test]
+    fn ta_new_curr_dir_is_empty() {
+        let ta = TfAppl::new();
+        assert_eq!(ta.curr_dir, "");
+    }
+
+    /*-- REQ-TA-04: hide()/get_hide() round-trip --*/
+    #[test]
+    fn ta_hide_round_trip() {
+        let mut ta = TfAppl::new();
+        ta.hide(false);
+        assert!(!ta.get_hide());
+        ta.hide(true);
+        assert!(ta.get_hide());
+    }
+
+    /*-- REQ-TA-06: TfAppl::regex() delegates to embedded TextFinder --*/
+    #[test]
+    fn ta_regex_delegates_to_text_finder() {
+        let mut ta = TfAppl::new();
+        ta.regex("hello");
+        assert_eq!(ta.get_regex(), "hello");
+    }</code></pre>
+
+      <a id="context"></a>
+      <h4>5.5 &nbsp;See Also</h4>
+      <t-b>
+        <code>TfAppl</code> depends on two sibling types that are documented
+        on their own pages in this thread:
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <a href="ComparisonStory_rs_textfinder_opt_TextFinder.html"><code>TextFinder</code> and <code>read_file</code></a> —
+            the regex engine and buffer-reuse module that <code>TfAppl</code>
+            wraps.
+          </li>
+          <li>
+            <a href="ComparisonStory_rs_textfinder_opt_DirNav.html"><code>DirEvent</code> trait</a> —
+            the two-method callback contract that <code>TfAppl</code>
+            implements.
+          </li>
+        </ul>
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#tfappl">Output (TfAppl)</a></menu-elem>
+        <menu-elem class="secElem"><a href="#design">design points</a></menu-elem>
+        <menu-elem class="secElem"><a href="#api">API summary</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source excerpt</a></menu-elem>
+        <menu-elem class="secElem"><a href="#tests">unit tests</a></menu-elem>
+        <menu-elem class="secElem"><a href="#context">see also</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/ComparisonStoryPages_rs.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+</body>
+</html>

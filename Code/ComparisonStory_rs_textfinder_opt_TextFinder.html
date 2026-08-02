@@ -67,29 +67,14 @@
       <a id="textfinder"></a>
       <h3>4. &nbsp;RustTextFinder</h3>
       <t-b>
-        The application binary is a single source file that pulls together four
-        pieces:
-      </t-b>
-      <t-b>
-        <ul class="tight">
-          <li>
-            <code>read_file</code> — a private module that behaves like
-            <code>std::fs::read</code> but reuses a thread-local staging buffer
-            across calls.
-          </li>
-          <li>
-            <code>TextFinder</code> — the regex engine and file-content matcher.
-          </li>
-          <li>
-            <code>TfAppl</code> — the <code>DirEvent</code> implementor that
-            wires <code>TextFinder</code> into <code>DirNav</code>'s callbacks
-            and prints output.
-          </li>
-          <li>
-            <code>main</code> — parses command-line options, configures the
-            navigator, and runs the traversal.
-          </li>
-        </ul>
+        <code>RustTextFinder</code> is the application binary — the crate
+        that composes <code>RustCmdLine</code> and <code>RustDirNav</code>
+        into the finished <code>text_finder</code> executable.  Its single
+        source file, <code>text_finder.rs</code>, houses the
+        <code>read_file</code> module, the <code>TextFinder</code> struct,
+        the <code>main</code> function, and (documented separately on the
+        <a href="ComparisonStory_rs_textfinder_Output.html">Output</a> page)
+        the <code>TfAppl</code> struct.
       </t-b>
 
       <a id="readfile"></a>
@@ -140,20 +125,8 @@
         regex engine.
       </t-b>
 
-      <a id="tfappl-struct"></a>
-      <h4>4.3 &nbsp;<code>TfAppl</code> — <code>DirEvent</code> implementor</h4>
-      <t-b>
-        <code>TfAppl</code> is the glue that lets <code>DirNav</code> drive the
-        search without knowing anything about regex or text finding.
-        <code>do_dir</code> records the current directory (and prints it when
-        <code>hide</code> is off).  <code>do_file</code> constructs the fully
-        qualified path, calls <code>TextFinder::find</code>, and — on a match —
-        prints the directory header if this is the first hit in a new directory,
-        then prints the file name.
-      </t-b>
-
       <a id="tf-main"></a>
-      <h4>4.4 &nbsp;<code>main</code> — startup wiring</h4>
+      <h4>4.3 &nbsp;<code>main</code> — startup wiring</h4>
       <t-b>
         <code>main</code> is the entire assembly step:
       </t-b>
@@ -176,7 +149,16 @@
       </t-b>
 
       <a id="source"></a>
-      <h4>4.5 &nbsp;Source — <code>RustTextFinder/src/text_finder.rs</code></h4>
+      <h4>4.4 &nbsp;Source — <code>RustTextFinder/src/text_finder.rs</code></h4>
+      <t-b>
+        The <code>TfAppl</code> struct definition and its two <code>impl</code>
+        blocks have been extracted to a companion page —
+        <a href="ComparisonStory_rs_textfinder_Output.html">Output (TfAppl)</a>.
+        The listing below shows the rest of <code>text_finder.rs</code>:
+        the <code>read_file</code> module, the <code>TextFinder</code>
+        struct, its unit tests, and the executable's <code>verbose</code>,
+        <code>help</code>, and <code>main</code> functions.
+      </t-b>
 <pre><code class="language-rust">/////////////////////////////////////////////////////////////
 // rust_textfinder::main.rs - recursive search for text    //
 //                                                         //
@@ -273,77 +255,7 @@ impl TextFinder {
     }
 }
 
-/*-- TfAppl is an application specific proxy for TextFinder --*/
-#[derive(Debug, Default)]
-pub struct TfAppl {
-    tf: TextFinder,
-    curr_dir: String,
-    hide: bool,
-    recurse: bool,
-    match_count: usize,
-}
-impl dir_nav_lib::DirEvent for TfAppl {
-    fn do_dir(&amp;mut self, d:&amp;str) {
-        /*-- save dir name for use in do_file --*/
-        self.curr_dir = d.to_string();
-        /*-- print directory name if H(ide) is false --*/
-        if !self.get_hide() {
-            print!("\n--{}", d);
-        }
-    }
-    fn do_file(&amp;mut self, f:&amp;str) {
-        /*-- build fully qualified path to file --*/
-        let mut fqf = self.curr_dir.clone();
-        fqf.push('/');
-        fqf.push_str(f);
-        /*-- look for file text that matches regex --*/
-        if self.tf.find(&amp;fqf) {
-            self.match_count += 1;
-            /*-- print directory for first file if H(ide) is true --*/
-            let pred =
-              self.tf.get_last_path() != self.curr_dir
-              &amp;&amp; self.get_hide();
-            if  pred {
-                print!("\n\n  {}", self.curr_dir);
-                self.tf.last_path(&amp;self.curr_dir);
-            }
-            /*-- print name of file with matching text --*/
-            print!("\n      {:?}", f);
-        }
-    }
-}
-impl TfAppl {
-    pub fn new() -&gt; Self {
-        Self {
-            tf: TextFinder::new(),
-            curr_dir: String::default(),
-            hide: true,
-            recurse: true,
-            match_count: 0,
-        }
-    }
-    pub fn get_match_count(&amp;self) -&gt; usize {
-        self.match_count
-    }
-    pub fn recurse(&amp;mut self, p:bool) {
-        self.recurse = p;
-    }
-    pub fn get_recurse(&amp;self) -&gt; bool {
-        self.recurse
-    }
-    pub fn hide(&amp;mut self, p:bool) {
-        self.hide =p;
-    }
-    pub fn get_hide(&amp;self) -&gt; bool {
-        self.hide
-    }
-    pub fn regex(&amp;mut self, s:&amp;str) {
-        self.tf.regex(s);
-    }
-    pub fn get_regex(&amp;self) -&gt; &amp;str {
-        self.tf.get_regex()
-    }
-}
+/*-- TfAppl definition and impls are documented on the Output page --*/
 
 /*-- Unit tests for white-box requirements --*/
 #[cfg(test)]
@@ -378,40 +290,7 @@ mod tests {
         assert_eq!(tf.get_last_path(), "some/dir");
     }
 
-    /*-- REQ-TA-01: TfAppl::new() initial field values --*/
-    #[test]
-    fn ta_new_hide_is_true() {
-        let ta = TfAppl::new();
-        assert!(ta.hide);
-    }
-    #[test]
-    fn ta_new_recurse_is_true() {
-        let ta = TfAppl::new();
-        assert!(ta.recurse);
-    }
-    #[test]
-    fn ta_new_curr_dir_is_empty() {
-        let ta = TfAppl::new();
-        assert_eq!(ta.curr_dir, "");
-    }
-
-    /*-- REQ-TA-04: hide()/get_hide() round-trip --*/
-    #[test]
-    fn ta_hide_round_trip() {
-        let mut ta = TfAppl::new();
-        ta.hide(false);
-        assert!(!ta.get_hide());
-        ta.hide(true);
-        assert!(ta.get_hide());
-    }
-
-    /*-- REQ-TA-06: TfAppl::regex() delegates to embedded TextFinder --*/
-    #[test]
-    fn ta_regex_delegates_to_text_finder() {
-        let mut ta = TfAppl::new();
-        ta.regex("hello");
-        assert_eq!(ta.get_regex(), "hello");
-    }
+    /*-- TA-prefixed tests for TfAppl are on the Output page --*/
 }
 
 /*-- display title, display options if v(erbose) is true --*/
@@ -519,7 +398,6 @@ fn main() {
         <menu-elem class="secElem"><a href="#textfinder">RustTextFinder</a></menu-elem>
         <menu-elem class="secElem"><a href="#readfile">read_file</a></menu-elem>
         <menu-elem class="secElem"><a href="#tf-struct">TextFinder</a></menu-elem>
-        <menu-elem class="secElem"><a href="#tfappl-struct">TfAppl</a></menu-elem>
         <menu-elem class="secElem"><a href="#tf-main">main</a></menu-elem>
         <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
         <a href="#bottom">bottom</a>
@@ -534,7 +412,7 @@ fn main() {
   <script>createSiteNavMenu('goto')</script>
   <script src="../js/link-nav.js" defer></script>
   <script>
-    setCookie('#pages', 3, 10);
+    setCookie('#pages', 4, 10);
   </script>
 </body>
 </html>
