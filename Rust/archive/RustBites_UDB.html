@@ -36,24 +36,24 @@
     }
 
     #github defn-code {
-      background-color: var(--light);
-      color: var(--dark);
+      background-color: var(--dark);
+      color: var(--light);
       border-radius: 4px;
       width: max-content;
       padding: 0rem 2rem;
     }
 
     #github defn-head {
-      background-color: var(--dark);
-      color: var(--light);
-    }
-
-    #github defn-block {
       background-color: var(--light);
       color: var(--dark);
     }
+
+    #github defn-block {
+      background-color: var(--dark);
+      color: var(--light);
+    }
     #github defn-body {
-      color: var(--dark);
+      color: var(--light);
     }  </style>
   <script>
     function loadInExplorer() {
@@ -152,50 +152,25 @@
     }
 
     #github defn-code {
-      background-color: var(--light);
-      color: var(--dark);
+      background-color: var(--dark);
+      color: var(--light);
       border-radius: 4px;
       width: max-content;
       padding: 0rem 2rem;
     }
 
     #github defn-head {
-      background-color: var(--dark);
-      color: var(--light);
-    }
-
-    #github defn-block {
       background-color: var(--light);
       color: var(--dark);
     }
-    #github defn-body {
-      color: var(--dark);
-    }
 
-    #github pre,
-    #github pre code {
+    #github defn-block {
       background-color: var(--dark);
       color: var(--light);
-      font-size:0.9rem;
     }
-
-    #github pre {
-      padding:0rem 1rem;
-    }
-
-    #github .codewrap {
-      background-color: var(--dark);
-      padding:0rem;
-    }
-
-    #github first-item {
-      background-color: var(--dark);
-    }
-
-    #github second-item {
-      background-color: var(--dark);
-    }
-  </style>
+    #github defn-body {
+      color: var(--light);
+    }  </style>
 </head>
 <body id="github" onload="load()">
 
@@ -206,7 +181,7 @@
   <div id="about" class="hidden" onclick="this.classList.toggle('hidden')">
     RustBites_UDB.html<br />
     copyright &copy; James Fawcett<br />
-    Revised: 08/01/2026
+    Revised: 07/09/2025
   </div>
 
   <content-block>
@@ -228,16 +203,13 @@
     </header>
     <div style="height:1em;"></div>
         <t-b>
-          Well-defined behavior in the Rust world means two things:
+          Well defined behavior means, in the Rust world, two things:
           <div class="indent pad5">
             <table class="invis">
               <tr class="invis">
                 <td class="invis">-</td>
                 <td class="invis"><strong>Memory&nbsp;safety:&nbsp;&nbsp;</strong></td>
-                <td class="invis">
-                  There is no way for code to access memory that it does not own or borrow.<br>
-                  The compiler applies rules that govern which borrows are valid.
-                </td>
+                <td class="invis">There is no way for code to access memory that it does not own or borrow.</td>
               </tr>
               <tr class="invis">
                 <td class="invis">-</td>
@@ -249,60 +221,61 @@
               </tr>
             </table>
           </div>
-          Undefined behavior is the absence of either or both.
+          Undefined behavior is the absence of either or both of these.
         </t-b>
         <t-b>
-          Preventing undefined behavior blocks attacks and unreliable behavior.  Rust delivers that
-          protection primarily by enforcing
-          <a target="_blank" href="RustBites_Ownrs.html">ownership policies</a> at compile time through static code analysis.
+          Preventing undefined behavior provides excellent support for preventing attacks and
+          unreliable behavior.  Rust implements that support primarily by enforcing
+          <a target="_blank" href="RustBites_Ownrs.html">Ownership policies</a> at compile-time through static code analysis.
         </t-b>
         <t-b>
-          Static code analysis is conservative.  The Rust compiler rejects any code for which it cannot
-          guarantee that ownership policies hold.  Most correct code passes static analysis,
-          but a few cases - most often in multi-threaded designs -
-          defeat static analysis, so the compiler may reject correct code.
-          A subsequent Bite shows examples.
+          Static code analysis is conservative.  The Rust compiler will reject any code for which it cannot
+          guarantee its ownership policies have been satisfied.  Most correct code will pass static analysis,
+          but there are a few cases, most often in multi-threaded designs,
+          that static analysis cannot effectively handle, and so correct code may be rejected by the compiler.
+          We will show examples of this in a subsequent Bite.
         </t-b>
         <t-b>
           Rust provides a mechanism, called <a target="_blank" href="RustBites_Safety.html#intmut">interior mutability</a>,
-          that defers enforcement to run time.  This lets correct code build even when static analysis cannot
-          verify it, at some cost to performance from run-time ownership checks.  When code fails a
-          run-time check, the program panics and shuts down before it can access unowned memory
-          or corrupt data through a race.
+          that defers enforcment to run-time. That allows correct code that can&apos;t satisfy static analysis,
+          to build, but has an impact on performance due to run-time ownership checks.  Should any code fail
+          its run-time checks the program will panic, shutting down without allowing access to unowned memory
+          or corrupting data with data races.
         </t-b>
         <t-b>
           Fortunately, most code does not require this deferred checking.  Run-time checking is clever and
-          inexpensive, but avoiding interior mutability where feasible skips even that small cost.
+          not very expensive, but avoiding use of interior mutability where feasible, avoids that cost.
         </t-b>
         <div style="height:0.75rem;"></div>
           <a id="ex_udb"></a>
           <h2>1.0 Examples of undefined behavior:</h2>
           <div class="indents">
             <t-b>
-              The examples below demonstrate undefined behavior in C++, then show the same processing
-              in Rust.
+              Here, we will demonstrate undefined behavior with C++ code, then discuss the same code
+              written in Rust.
             </t-b>
             <t-b>
-              C++ makes it easy to access unowned memory.  The dropdown below shows this by:
+              It is fairly easy, using C++, to program access to unowned memory.  That is done in the dropdown below by:
               <div class="pad-bottom5" style="margin-left:-1.5em;">
                 <ul class="tight" style="margin-left:4em; padding:0.5em 0em;">
                   <li>
-                    creating a std::vector&lt;int&gt;
+                    Creating a std::vector&lt;int&gt;
                   </li>
                   <li>
-                    filling it to capacity
+                    Filling it to capacity
                   </li>
                   <li>
-                    taking a reference to one of its elements
+                    making a reference to one of its elements
                   </li>
                   <li>
-                    pushing back another element into the vector.
+                    pushing back another element in the vector.
                   </li>
                 </ul>
               </div>
-              That last push forces the vector to allocate new memory to hold the added element
-              and copies every existing item from the old location to the new.  The reference now
-              observes memory the vector no longer owns.  The code fragment in the dropdown illustrates this.
+              That last addition forces the vector to allocate new memory to make room for the latest element
+              and then copies everything from the original location to the new location.  But that leaves the reference
+              observing memory that is no longer owned by the vector.  Code in the dropdown illustrates
+              this with a fragment of C++ code.
             </t-b>
             <details>
               <summary class="darkItem">C++ Ref Unowned Memory&nbsp;&nbsp;</summary>
@@ -313,13 +286,13 @@
               </table>
             </details>
             <t-b>
-              The reference reads memory owned by no program instance and returns its value, so the
-              program can continue computing on invalid data.  The process exits normally, as if
-              nothing had gone wrong.
+              Observe that the reference reads memory not owned by any program instance and returns its value.
+              That means that the program could continue computing with invalid data.  Observe further That
+              the process exits normally, as if nothing unexpected happened.
             </t-b>
             <t-b>
-              The next dropdown shows another way C++ code can access unowned memory: indexing an
-              array past its last element.
+              In the next dropdown you will see another way that C++ code can access unowned memory.  It does That
+              by indexing an array, but failing to stop at the last element.
             </t-b>
             <details>
               <summary class="darkItem">C++ Index out of Bounds&nbsp;&nbsp;</summary>
@@ -330,29 +303,29 @@
               </table>
             </details>
             <t-b>
-              The code indexes past the end of an array and returns a value from unowned memory.
-              Program flow continues, so invalid data can propagate through the rest of the
-              computation, and the program exits normally.
+              The code in this example indexes past the end of an array, and returns a value from unowned memory.
+              As before, program flow continues so invalid data could become part of the processing of the
+              program.  And, the program exits normally, as if nothing unexpected happened.
             </t-b>
             <t-b>
-              In fairness to C++, neither fragment is idiomatic.  The first example should use an
-              iterator rather than a reference; the iterator would throw an invalidation exception
-              before any unowned access.  The second example should use a range-based for loop,
-              which avoids out-of-bounds indexing.
+              In fairness to C++ both these code fragments are not idiomatic C++.  In the first example, accepted
+              convention would have the program use an iterator rather than a reference.  That would cause an
+              iterator invalidation exception to be thrown before memory could be accessed.  In the second example,
+              convention would have the program use a range-based for loop, avoiding out of bounds indexing.
             </t-b>
             <t-b>
-              C++ is memory safe by convention, and that works well in practice.  However, in large
-              programs - perhaps several hundred thousand lines - a few lapses in practice can slip
-              through and permit unsafe memory access, and those few can be very hard to find.
+              So C++ is memory safe by convention, and that works very well.  However, when building large programs
+              - perhaps several hundred thousand lines of code - it is possible that a few lapses of good practice happen,
+              allowing unsafe memory access, and those few may be very hard to find.
             </t-b>
             <t-b>
-              Rust, in contrast, is memory safe by construction.  Ownership policies prevent unsafe
-              memory operations.  The following examples duplicate the process flow of the two C++
-              fragments above.
+              In contrast, Rust is memory safe by construction, using data ownership policies to prevent unsafe memory
+              operations.
+              We illustrate that by duplicating the same process flow used in the previous two examples of C++ code.
             </t-b>
             <t-b>
-              The first dropdown below sets up the same processing as the first C++ example and
-              shows that it fails to compile.
+              In the first dropdown, below, we set up the same processing used in the first example above and show
+              that it fails to compile.
             </t-b>
             <details>
               <summary class="darkItem">Rust Attempt to Ref Unowned Memory&nbsp;&nbsp;</summary>
@@ -363,20 +336,22 @@
               </table>
             </details>
             <t-b>
-              As in the first C++ example, this Rust code creates a vector, fills it to capacity,
-              and takes a reference to one of its items.  The attempt to mutate the vector by adding
-              another element fails to compile.
+              As in the first C++ example, the Rust code, above, creates a vector, fills it to capacity, and makes a reference
+              to one of its items.  Now, an attempt to mutate the vector by adding another element fails to
+              compile.
             </t-b>
             <t-b>
-              That action violates Rust <a target="_blank" href="RustBites_Ownrs.html">ownership</a> policy.
-              The compiler pinpoints the problem and its exact location.  Rust's compiler error
-              messages are exceptionally well crafted, which makes software development significantly
-              more productive.
+              That action violates Rust <a target="_blank" href="RustBites_Ownrs.html">ownership</a> policy, and the compiler does
+              an excellent job of pointing
+              out what the problem is, and exactly where it occurs.  Compiler error messages are very well crafted
+              in Rust.  That makes software development significantly more productive than it would otherwise
+              be.
             </t-b>
             <t-b>
-              The Rust code in the last dropdown replicates the out-of-bounds indexing of the second
-              C++ example.  This code compiles, but when it attempts to read past the array, the
-              program never touches that memory.  Instead, a panic triggers an orderly shutdown.
+              Rust code in the last dropdown replicates the index out of bounds processing of the second C++ example.
+              In this case, we don't generate a compile error, but when an attempt to access unowned memory beyond
+              the array happens, the program never gets access to that memory.  Instead, a panic occurs that starts
+              an orderly shutdown of the process.
             </t-b>
           </div>
           <details>
@@ -388,19 +363,18 @@
             </table>
           </details>
           <t-b>
-            Program output shows the panic firing before the code can access unowned memory,
-            causing termination rather than a normal exit.
+            Program output shows that a panic occurs before the code can access unowned memory, causing termination
+            rather than a normal exit.
           </t-b>
 
           <h2><a id="conclusions"></a>2.0 Conclusions:</h2>
           <div class="indents">
             <t-b>
-              Rust code is memory safe by construction.  Language-enforced ownership policies rule
-              out access to unowned memory, so memory-unsafe operations fail at compile time.  A
-              later Bite shows situations where ownership checking must defer to run time, most often
-              in multi-threaded code.  The
-              <a target="_blank" href="RustBites_Safety.html#intmut">interior mutation</a> section
-              of the Safety Bite covers those cases.
+              Rust code is memory safe by construction.  Access to unowned memory is not possible due to the ownership
+              policies enforced by the language.  This has the advantage that attempts to use memory-unsafe operations
+              result in compile-time failures.  We will see in a later Bite that there are situations where ownership
+              checking needs to be deferred to run-time.  That happens most often in multi-threaded code. We address those
+              cases in the <a target="_blank" href="RustBites_Safety.html#intmut">interior mutation</a> section of the Safety Bite.
             </t-b>
             <t-b>
               <under-construction>
@@ -408,8 +382,8 @@
               </under-construction>
             </t-b>
             <t-b>
-              Construction means that violations cannot occur in code that compiles.
-              Convention means that violations do not occur as long as programmers follow the conventions.
+              Construction means that violations can not happen in compileable code.
+              Convention means that violations won&apos;t happen as long as the conventions are followed.
             </t-b>
           </div>
           <a id="refs" />
