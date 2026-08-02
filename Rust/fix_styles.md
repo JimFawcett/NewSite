@@ -8,6 +8,8 @@ For the `#github pre, #github pre code` rule below: if a matching rule already e
 
 For the `#github codewrap` rule below: if a matching rule already exists in the page's `<style>` section, replace its body with the block shown. If no matching rule exists, add the block as-is to the `<style>` section.
 
+For the `#github first-item` and `#github second-item` rules below: if a matching rule already exists in the page's `<style>` section, replace its body with the block shown. If no matching rule exists, add the block as-is to the `<style>` section.
+
     #github defn-code {
       background-color: var(--light);
       color: var(--dark);
@@ -56,7 +58,20 @@ For the `#github codewrap` rule below: if a matching rule already exists in the 
       font-size:0.9rem;
     }
 
+    #github pre {
+      padding:0rem 1rem;
+    }
+
     #github .codewrap {
       background-color: var(--dark);
       padding:0rem;
     }
+
+    #github first-item {
+      background-color: var(--dark);
+    }
+
+    #github second-item {
+      background-color: var(--dark);
+    }    
+
