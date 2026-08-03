@@ -11,7 +11,7 @@ decision.
 ### Prompt
 
 > create a new thread for CppTextFinder using the same page structure used in
-> the RustTextFinder thread.  I want the pages to be essentially the same
+> the EntryPoint thread.  I want the pages to be essentially the same
 > except that the content is based on the C++ project.
 
 ### Assistant reply

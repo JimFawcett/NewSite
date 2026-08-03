@@ -14,7 +14,7 @@ The project is composed of four independent crates linked by relative paths.
 |-------|------|------|
 | `RustCmdLine` | library | Parses `/Key [Value]` or `-Key [Value]` command-line arguments |
 | `RustDirNav` | library | Generic, event-driven depth-first directory walker |
-| `RustTextFinder` | binary (`text_finder`) | Application — wires the libraries and drives the search |
+| `EntryPoint` | binary (`text_finder`) | Application — wires the libraries and drives the search |
 | `RustTfVerify` | binary (`tf_verify`) | Integration verifier — runs `text_finder` as a subprocess and checks its output against requirement assertions |
 
 ---
@@ -23,7 +23,7 @@ The project is composed of four independent crates linked by relative paths.
 
 ```bash
 # 1. Build the search tool
-cd RustTextFinder
+cd EntryPoint
 cargo build
 
 # 2. Search the parent directory for Rust files containing "struct"
@@ -76,7 +76,7 @@ Matching files are grouped under their containing directory:
   patterns: ["rs"]
   matching files with regex: "struct"
 
-  ../RustTextFinder/src
+  ../EntryPoint/src
       "text_finder.rs"
 
   ../RustDirNav/src
@@ -117,7 +117,7 @@ file whose extension matches the registered patterns.  Build-output and
 VCS directories (`target`, `bin`, `obj`, `.git`, etc.) are skipped
 automatically.
 
-### `RustTextFinder` — `TextFinder` + `TfAppl`
+### `EntryPoint` — `TextFinder` + `TfAppl`
 
 `TextFinder` holds a regex string and exposes `find(&self, file_path) -> bool`.
 It reads file content as UTF-8 text, falling back to lossy byte decoding for
@@ -159,7 +159,7 @@ high-water-mark capacity.
 ### `RustTfVerify` — integration verifier
 
 Spawns the compiled `text_finder` binary with controlled arguments and
-verifies its stdout against each requirement in `RustTextFinder/Req_TextFinder.md`.
+verifies its stdout against each requirement in `EntryPoint/Req_TextFinder.md`.
 Results are reported as `PASS`, `FAIL`, or `SKIP`.
 
 ---
@@ -171,7 +171,7 @@ Each crate is built independently:
 ```bash
 cd RustCmdLine   && cargo build
 cd ../RustDirNav && cargo build
-cd ../RustTextFinder && cargo build
+cd ../EntryPoint && cargo build
 cd ../RustTfVerify   && cargo build
 ```
 
@@ -188,12 +188,12 @@ cargo test -- --show-output
 cd RustDirNav
 cargo test -- --test-threads=1 --show-output
 
-# RustTextFinder unit tests
-cd RustTextFinder
+# EntryPoint unit tests
+cd EntryPoint
 cargo test -- --show-output
 
 # Integration verification (requires text_finder binary to be built first)
-cd RustTextFinder && cargo build
+cd EntryPoint && cargo build
 cd ../RustTfVerify && cargo run
 ```
 
@@ -203,6 +203,6 @@ cd ../RustTfVerify && cargo run
 
 | Package | Version | Used by | Purpose |
 |---------|---------|---------|---------|
-| `regex` | 1.7.0 | `RustTextFinder` | Compile and match regular expressions |
+| `regex` | 1.7.0 | `EntryPoint` | Compile and match regular expressions |
 
 All other functionality uses the Rust standard library only.

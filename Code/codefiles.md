@@ -399,13 +399,13 @@
   C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustDirNav/test_dir/test_sub1_dir
       "test_file1.rs"
 
-  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustTextFinder/src
+  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/EntryPoint/src
       "text_finder.rs"
 
-  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustTextFinder/test_dir
+  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/EntryPoint/test_dir
       "test_file.rs"
 
-  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustTextFinder/test_dir/test_sub1_dir
+  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/EntryPoint/test_dir/test_sub1_dir
       "test_file1.rs"
 
   C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustTfVerify/src
@@ -429,13 +429,13 @@
   C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/RustDirNav/test_dir/test_sub1_dir
       "test_file1.rs"
 
-  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/RustTextFinder/src
+  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/EntryPoint/src
       "text_finder.rs"
 
-  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/RustTextFinder/test_dir
+  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/EntryPoint/test_dir
       "test_file.rs"
 
-  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/RustTextFinder/test_dir/test_sub1_dir
+  C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/EntryPoint/test_dir/test_sub1_dir
       "test_file1.rs"
 
   C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/RustTfVerify/src

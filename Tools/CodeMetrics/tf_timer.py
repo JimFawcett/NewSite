@@ -8,7 +8,7 @@ the remaining timed runs.
 Usage:
     python tf_timer.py <program> [--runs N] [TextFinder options ...]
 
-<program>: PyTextFinder | CsTextFinder | CppTextFinder | RustTextFinder | RustTextFinderOpt
+<program>: PyTextFinder | CsTextFinder | CppTextFinder | EntryPoint | EntryPointOpt
 --runs N : number of timed runs after discarding warm-up (default: 20)
 All remaining arguments are forwarded to the chosen program.
 
@@ -25,7 +25,7 @@ import time
 from pathlib import Path
 
 ROOT  = Path(__file__).resolve().parent / "TextFinder"
-KNOWN = ["PyTextFinder", "CsTextFinder", "CppTextFinder", "RustTextFinder", "RustTextFinderOpt"]
+KNOWN = ["PyTextFinder", "CsTextFinder", "CppTextFinder", "EntryPoint", "EntryPointOpt"]
 
 
 def _dash_to_slash(args):
@@ -79,32 +79,32 @@ def resolve_command(prog_name, tf_args):
             return [str(exe)] + tf_args, None
         return None, "no built executable found — run 'cmake --build' inside CppTextFinder/build first"
 
-    if prog_name == "RustTextFinder":
+    if prog_name == "EntryPoint":
         exe = _first_existing(
-            ROOT / "rs_textfinder/RustTextFinder/target/release/text_finder.exe",
-            ROOT / "rs_textfinder/RustTextFinder/target/release/text_finder",
-            ROOT / "rs_textfinder/RustTextFinder/target/debug/text_finder.exe",
-            ROOT / "rs_textfinder/RustTextFinder/target/debug/text_finder",
+            ROOT / "rs_textfinder/EntryPoint/target/release/text_finder.exe",
+            ROOT / "rs_textfinder/EntryPoint/target/release/text_finder",
+            ROOT / "rs_textfinder/EntryPoint/target/debug/text_finder.exe",
+            ROOT / "rs_textfinder/EntryPoint/target/debug/text_finder",
         )
         if exe:
             return [str(exe)] + _dash_to_slash(tf_args), None
-        manifest = ROOT / "rs_textfinder" / "RustTextFinder" / "Cargo.toml"
+        manifest = ROOT / "rs_textfinder" / "EntryPoint" / "Cargo.toml"
         return (
             ["cargo", "run", "--release",
              "--manifest-path", str(manifest), "--"] + tf_args,
             "no pre-built exe — using 'cargo run --release' (includes compile check)",
         )
 
-    if prog_name == "RustTextFinderOpt":
+    if prog_name == "EntryPointOpt":
         exe = _first_existing(
-            ROOT / "rs_textfinder_opt/RustTextFinder/target/release/text_finder.exe",
-            ROOT / "rs_textfinder_opt/RustTextFinder/target/release/text_finder",
-            ROOT / "rs_textfinder_opt/RustTextFinder/target/debug/text_finder.exe",
-            ROOT / "rs_textfinder_opt/RustTextFinder/target/debug/text_finder",
+            ROOT / "rs_textfinder_opt/EntryPoint/target/release/text_finder.exe",
+            ROOT / "rs_textfinder_opt/EntryPoint/target/release/text_finder",
+            ROOT / "rs_textfinder_opt/EntryPoint/target/debug/text_finder.exe",
+            ROOT / "rs_textfinder_opt/EntryPoint/target/debug/text_finder",
         )
         if exe:
             return [str(exe)] + _dash_to_slash(tf_args), None
-        manifest = ROOT / "rs_textfinder_opt" / "RustTextFinder" / "Cargo.toml"
+        manifest = ROOT / "rs_textfinder_opt" / "EntryPoint" / "Cargo.toml"
         return (
             ["cargo", "run", "--release",
              "--manifest-path", str(manifest), "--"] + tf_args,

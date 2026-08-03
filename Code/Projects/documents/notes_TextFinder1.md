@@ -59,7 +59,7 @@ directory holding cargo.toml.
 4. rebuilt library and example code and tested successfully.
 ### ------------------------------------------------------------
 ### application processing
-1. selected the RustTextFinder part, renamed main.rs to text_finder.rs, made corresponding change to cargo.
+1. selected the EntryPoint part, renamed main.rs to text_finder.rs, made corresponding change to cargo.
 2. attempted to build but encountered several package name errors in the text_finder code.
 3. Asked claude to fix those and it did successfully.
 4. Testing was complicated by text_finder searching the Target directory.  I asked claude to implement a black-list of directory names.
@@ -92,9 +92,9 @@ directory holding cargo.toml.
 4. if that works, we have a very powerful way of implementing requirements driven implementation.
 5. ask claude to summarize the console chat that implemented all of this as a way of documenting the technique.
 ### ------------------------------------------------------------
-### RustTextFinder production tests based on specification
+### EntryPoint production tests based on specification
 1. opened a new git branch 
-2. asked claude to generate a Req_TextFinder.md that, for each requirement in RustTextFinder_Spec.md, displays the name of the requirement and a list of assertions it must meet. That succeeded
+2. asked claude to generate a Req_TextFinder.md that, for each requirement in EntryPoint_Spec.md, displays the name of the requirement and a list of assertions it must meet. That succeeded
 3. Asked claude to create a Rust application that verifies each of the assertions, above, by running text_finder with appropriate command line arguments and verifies based on output.
 4. That request ran out of context and was restarted after compacting context. It completed and provided a Design summary.
 5. Built application RustTfVerify::main - succeeded

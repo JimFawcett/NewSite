@@ -41,7 +41,7 @@ The shared CLI accepted `/P`, `/p`, `/r`, `/s`, `/H`, `/v`, `/h` flags with both
 
 **Decisions / follow-up**
 - All five variants share the same CLI and architecture so results are directly comparable.
-- rs_textfinder_opt added after timing showed RustTextFinder slower than expected; three
+- rs_textfinder_opt added after timing showed EntryPoint slower than expected; three
   optimisation steps investigated — only switching `Path::is_dir()` to
   `DirEntry::file_type()` produced a measurable gain (~33% reduction in median elapsed).
 - Performance measurements documented in README.md with analysis of why Python leads

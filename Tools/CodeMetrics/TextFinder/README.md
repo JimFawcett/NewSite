@@ -13,8 +13,8 @@ Each TextFinder variant walks a directory tree and reports files whose content m
 | [CppTextFinder](CppTextFinder/) | C++23 (named modules) | CMake 3.28+ / MSVC or Clang | `build/EntryPoint/Release/text_finder` |
 | [CsTextFinder](CsTextFinder/) | C# / .NET 10 | dotnet CLI | `CsTextFinder.exe` |
 | [PyTextFinder](PyTextFinder/) | Python 3.10+ | none | `python EntryPoint/PyTextFinder.py` |
-| [rs_textfinder](rs_textfinder/) | Rust (Cargo workspace) | cargo | `cargo run` from `RustTextFinder/` |
-| [rs_textfinder_opt](rs_textfinder_opt/) | Rust (Cargo workspace) | cargo | `cargo run` from `RustTextFinder/` |
+| [rs_textfinder](rs_textfinder/) | Rust (Cargo workspace) | cargo | `cargo run` from `EntryPoint/` |
+| [rs_textfinder_opt](rs_textfinder_opt/) | Rust (Cargo workspace) | cargo | `cargo run` from `EntryPoint/` |
 
 ### Shared Command-Line Interface
 
@@ -133,7 +133,7 @@ Metrics collected by `code_metrics.py`. **Lines** = total line count; **Scopes**
 | Output\test_output.py | 114 | 33 |
 | **TOTAL** | **905** | **207** |
 
-### RustTextFinder
+### EntryPoint
 
 | File | Lines | Scopes |
 |------|------:|-------:|
@@ -141,11 +141,11 @@ Metrics collected by `code_metrics.py`. **Lines** = total line count; **Scopes**
 | RustCmdLine\src\cmd_line_lib.rs | 242 | 52 |
 | RustDirNav\examples\test1.rs | 77 | 14 |
 | RustDirNav\src\dir_nav_lib.rs | 294 | 53 |
-| RustTextFinder\src\text_finder.rs | 297 | 77 |
+| EntryPoint\src\text_finder.rs | 297 | 77 |
 | RustTfVerify\src\main.rs | 760 | 137 |
 | **TOTAL** | **1715** | **348** |
 
-### RustTextFinderOpt
+### EntryPointOpt
 
 | File | Lines | Scopes |
 |------|------:|-------:|
@@ -153,7 +153,7 @@ Metrics collected by `code_metrics.py`. **Lines** = total line count; **Scopes**
 | RustCmdLine\src\cmd_line_lib.rs | 243 | 52 |
 | RustDirNav\examples\test1.rs | 77 | 14 |
 | RustDirNav\src\dir_nav_lib.rs | 292 | 52 |
-| RustTextFinder\src\text_finder.rs | 319 | 78 |
+| EntryPoint\src\text_finder.rs | 319 | 78 |
 | RustTfVerify\src\main.rs | 760 | 137 |
 | **TOTAL** | **1736** | **348** |
 
@@ -166,14 +166,14 @@ Search root: `NewSite`, extensions: `py js ts jsx tsx cpp c h hpp ixx cs rs`, co
 | TextFinder        | Files Visited | Files Matched | Min (s) | Median (s) | Max (s) |
 |-------------------|--------------:|--------------:|--------:|-----------:|--------:|
 | PyTextFinder      |          1196 |           656 |   0.222 |      0.281 |   0.715 |
-| RustTextFinderOpt |          1196 |           656 |   0.536 |      0.610 |   1.034 |
+| EntryPointOpt |          1196 |           656 |   0.536 |      0.610 |   1.034 |
 | CppTextFinder     |          1196 |           656 |   0.568 |      0.647 |   0.706 |
 | CsTextFinder      |          1196 |           656 |   0.827 |      1.053 |   1.456 |
-| RustTextFinder    |          1196 |           656 |   0.873 |      0.905 |   1.402 |
+| EntryPoint    |          1196 |           656 |   0.873 |      0.905 |   1.402 |
 
 All five agree on 656 matched.
 
-The elevated max values for RustTextFinderOpt (1.034 s), CsTextFinder (1.456 s), and RustTextFinder (1.402 s) are OS scheduling interrupts hitting during a run, not intrinsic to those tools — the medians are more representative of steady-state performance. Python's median (0.281 s) is noticeably above its min (0.222 s), reflecting occasional GC or OS pauses that affect the short-lived interpreter process.
+The elevated max values for EntryPointOpt (1.034 s), CsTextFinder (1.456 s), and EntryPoint (1.402 s) are OS scheduling interrupts hitting during a run, not intrinsic to those tools — the medians are more representative of steady-state performance. Python's median (0.281 s) is noticeably above its min (0.222 s), reflecting occasional GC or OS pauses that affect the short-lived interpreter process.
 
 ### Why Python leads despite being interpreted
 
@@ -185,9 +185,9 @@ Python's hot path is **C**. `os.scandir()`, `open()`, `file.read()`, and `re.sea
 
 **C# pays .NET startup cost.** The runtime and JIT spin up before the first directory is touched — a large fraction of total elapsed time for a short-running tool.
 
-**Rust is genuinely fast** — its `regex` crate is excellent — but the baseline `RustTextFinder` has two inefficiencies that `RustTextFinderOpt` corrects.
+**Rust is genuinely fast** — its `regex` crate is excellent — but the baseline `EntryPoint` has two inefficiencies that `EntryPointOpt` corrects.
 
-### RustTextFinderOpt — optimization steps
+### EntryPointOpt — optimization steps
 
 Three changes were investigated; only the third produced a clear gain.
 
@@ -195,7 +195,7 @@ Three changes were investigated; only the third produced a clear gain.
 
 **Step 2 — search raw bytes instead of UTF-8 strings (minor gain).** The baseline reads each file with `read_to_string` (UTF-8 validation + heap allocation), then falls back to `read → String::from_utf8_lossy().to_string()` (a second allocation) for files that fail UTF-8 decoding. The fix switches to `regex::bytes::Regex`, reads every file as raw bytes with a thread-local reused buffer, and matches directly on `&[u8]` — no UTF-8 conversion at all. This eliminates the double-allocation fallback path but the overall gain was small because most files decode as valid UTF-8 on the first attempt.
 
-**Step 3 — use `DirEntry::file_type()` instead of `Path::is_dir()` (dominant gain).** The baseline calls `path.is_dir()` for every entry inside the directory scan loop. `is_dir()` on a `Path` issues a separate `stat` syscall to query the file type — one extra kernel round-trip per entry. `DirEntry::file_type()`, by contrast, returns the type already cached by the OS as part of the `readdir` response; no extra syscall is needed. Fixing this one call reduced elapsed time from ~0.91 s to ~0.61 s (median), a 33% improvement, and accounts for nearly all of the gap closed between `RustTextFinder` and `RustTextFinderOpt`.
+**Step 3 — use `DirEntry::file_type()` instead of `Path::is_dir()` (dominant gain).** The baseline calls `path.is_dir()` for every entry inside the directory scan loop. `is_dir()` on a `Path` issues a separate `stat` syscall to query the file type — one extra kernel round-trip per entry. `DirEntry::file_type()`, by contrast, returns the type already cached by the OS as part of the `readdir` response; no extra syscall is needed. Fixing this one call reduced elapsed time from ~0.91 s to ~0.61 s (median), a 33% improvement, and accounts for nearly all of the gap closed between `EntryPoint` and `EntryPointOpt`.
 
 The remaining gap between Rust (~0.61 s median) and Python (~0.28 s median) is attributable to per-path string manipulation in `DirNav` (`replace_sep` on every directory entry) and Python's tighter integration between `os.scandir()` and the OS page cache.
 

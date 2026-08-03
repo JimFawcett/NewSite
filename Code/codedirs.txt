@@ -130,9 +130,9 @@ C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustDirNav/e
 C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustDirNav/src
 C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustDirNav/test_dir
 C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustDirNav/test_dir/test_sub1_dir
-C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustTextFinder/src
-C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustTextFinder/test_dir
-C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustTextFinder/test_dir/test_sub1_dir
+C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/EntryPoint/src
+C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/EntryPoint/test_dir
+C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/EntryPoint/test_dir/test_sub1_dir
 C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder/RustTfVerify/src
 C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/RustCmdLine/examples
 C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/RustCmdLine/src
@@ -140,9 +140,9 @@ C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/RustDirN
 C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/RustDirNav/src
 C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/RustDirNav/test_dir
 C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/RustDirNav/test_dir/test_sub1_dir
-C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/RustTextFinder/src
-C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/RustTextFinder/test_dir
-C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/RustTextFinder/test_dir/test_sub1_dir
+C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/EntryPoint/src
+C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/EntryPoint/test_dir
+C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/EntryPoint/test_dir/test_sub1_dir
 C:/github/JimFawcett/NewSite/Code/Projects/TextFinder/rs_textfinder_opt/RustTfVerify/src
 C:/github/JimFawcett/NewSite/Code/Rust/Basics/src
 C:/github/JimFawcett/NewSite/Code/Rust/Hello/src

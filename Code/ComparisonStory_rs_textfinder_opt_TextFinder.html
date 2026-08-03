@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html id="top" lang="en">
 <!--
-  ComparisonStory_rs_textfinder_opt_TextFinder.html - RustTextFinder discussion
+  ComparisonStory_rs_textfinder_opt_TextFinder.html - EntryPoint discussion
 -->
 <head>
-  <title>Comparison Story: RustTextFinder</title>
+  <title>Comparison Story: EntryPoint</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
@@ -57,24 +57,31 @@
   <content-block>
     <header>
       <div id="pagetitle" class="header">
-        <h2 id="title">Comparison Story: RustTextFinder</h2>
-        <h4 class="indent" id="subtitle">4. &nbsp;<code>TextFinder</code>, <code>TfAppl</code>, <code>read_file</code>, and <code>main</code></h4>
+        <h2 id="title">Comparison Story: EntryPoint</h2>
+        <h4 class="indent" id="subtitle">4. &nbsp;<code>TextFinder</code>, <code>read_file</code>, and <code>main</code></h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="ComparisonStory_rs_textfinder_opt_TextFinder.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="ComparisonStory_CppTextFinder_EntryPoint.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
       </div>
     </header>
 
     <div class="indent">
 
       <a id="textfinder"></a>
-      <h3>4. &nbsp;RustTextFinder</h3>
+      <h3>4. &nbsp;EntryPoint</h3>
       <t-b>
-        <code>RustTextFinder</code> is the application binary — the crate
+        <code>EntryPoint</code> is the application binary — the crate
         that composes <code>RustCmdLine</code> and <code>RustDirNav</code>
-        into the finished <code>text_finder</code> executable.  Its single
-        source file, <code>text_finder.rs</code>, houses the
-        <code>read_file</code> module, the <code>TextFinder</code> struct,
-        the <code>main</code> function, and (documented separately on the
-        <a href="ComparisonStory_rs_textfinder_Output.html">Output</a> page)
-        the <code>TfAppl</code> struct.
+        into the finished <code>text_finder</code> executable.  The crate
+        root, <code>text_finder.rs</code>, houses the <code>read_file</code>
+        module, the <code>TextFinder</code> struct, and the
+        <code>main</code> function; it declares a sibling module,
+        <code>tf_appl.rs</code>, which supplies the <code>TfAppl</code>
+        struct (documented on its own page:
+        <a href="ComparisonStory_rs_textfinder_Output.html">Output (TfAppl)</a>).
       </t-b>
 
       <a id="readfile"></a>
@@ -149,15 +156,17 @@
       </t-b>
 
       <a id="source"></a>
-      <h4>4.4 &nbsp;Source — <code>RustTextFinder/src/text_finder.rs</code></h4>
+      <h4>4.4 &nbsp;Source — <code>EntryPoint/src/text_finder.rs</code></h4>
       <t-b>
-        The <code>TfAppl</code> struct definition and its two <code>impl</code>
-        blocks have been extracted to a companion page —
-        <a href="ComparisonStory_rs_textfinder_Output.html">Output (TfAppl)</a>.
-        The listing below shows the rest of <code>text_finder.rs</code>:
-        the <code>read_file</code> module, the <code>TextFinder</code>
-        struct, its unit tests, and the executable's <code>verbose</code>,
-        <code>help</code>, and <code>main</code> functions.
+        <code>TfAppl</code> lives in a sibling module,
+        <code>tf_appl.rs</code>, declared and imported at the top of
+        <code>text_finder.rs</code>.  The full <code>tf_appl.rs</code>
+        source is shown on the
+        <a href="ComparisonStory_rs_textfinder_Output.html">Output</a> page.
+        <code>TextFinder</code>'s <code>last_path</code> and
+        <code>get_last_path</code> methods are declared
+        <code>pub(crate)</code> so the sibling module can call them without
+        exposing them outside this crate.
       </t-b>
 <pre><code class="language-rust">/////////////////////////////////////////////////////////////
 // rust_textfinder::main.rs - recursive search for text    //
@@ -178,6 +187,9 @@
 */
 #![allow(unused_variables)]
 #![allow(dead_code)]
+
+mod tf_appl;
+use tf_appl::TfAppl;
 
 /*-- read_file: drop-in replacement for std::fs::read with a reused buffer --*/
 mod read_file {
@@ -235,10 +247,10 @@ impl TextFinder {
     pub fn get_regex(&amp;self) -&gt; &amp;str {
         &amp;self.re_str
     }
-    fn last_path(&amp;mut self, p:&amp;str) {
+    pub(crate) fn last_path(&amp;mut self, p:&amp;str) {
         self.last_dir = p.to_string();
     }
-    fn get_last_path(&amp;self) -&gt; &amp;str {
+    pub(crate) fn get_last_path(&amp;self) -&gt; &amp;str {
         &amp;self.last_dir
     }
     pub fn find(&amp;self, file_path: &amp;str) -&gt; bool {
@@ -255,7 +267,7 @@ impl TextFinder {
     }
 }
 
-/*-- TfAppl definition and impls are documented on the Output page --*/
+/*-- TfAppl is defined in tf_appl.rs and imported above --*/
 
 /*-- Unit tests for white-box requirements --*/
 #[cfg(test)]
@@ -290,7 +302,7 @@ mod tests {
         assert_eq!(tf.get_last_path(), "some/dir");
     }
 
-    /*-- TA-prefixed tests for TfAppl are on the Output page --*/
+    /*-- TA-prefixed tests for TfAppl live in tf_appl.rs --*/
 }
 
 /*-- display title, display options if v(erbose) is true --*/
@@ -395,7 +407,7 @@ fn main() {
       <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
       <div class="menuBody">
         <a href="#top">top</a>
-        <menu-elem class="secElem"><a href="#textfinder">RustTextFinder</a></menu-elem>
+        <menu-elem class="secElem"><a href="#textfinder">EntryPoint</a></menu-elem>
         <menu-elem class="secElem"><a href="#readfile">read_file</a></menu-elem>
         <menu-elem class="secElem"><a href="#tf-struct">TextFinder</a></menu-elem>
         <menu-elem class="secElem"><a href="#tf-main">main</a></menu-elem>

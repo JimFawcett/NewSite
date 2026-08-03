@@ -24,7 +24,7 @@ Benchmark harness for the five TextFinder implementations. Runs a warm-up, disca
 python tf_timer.py
 ```
 
-Targets: `PyTextFinder`, `CsTextFinder`, `CppTextFinder`, `RustTextFinder`, `RustTextFinderOpt`.
+Targets: `PyTextFinder`, `CsTextFinder`, `CppTextFinder`, `EntryPoint`, `EntryPointOpt`.
 
 ### pa_timer.py
 
@@ -49,7 +49,7 @@ Recursively searches a directory tree for files whose contents match a regex. Fi
 | `PyTextFinder` | Python 3 | none |
 | `CsTextFinder` | C# / .NET 10 | `dotnet build` in `EntryPoint/` |
 | `CppTextFinder` | C++23 / CMake | `cmake -B build && cmake --build build` |
-| `RustTextFinder` | Rust | `cargo build` in `RustTextFinder/` |
+| `EntryPoint` | Rust | `cargo build` in `EntryPoint/` |
 | `rs_textfinder_opt` | Rust (optimized) | `cargo build` in `rs_textfinder_opt/` |
 
 CLI (all implementations):

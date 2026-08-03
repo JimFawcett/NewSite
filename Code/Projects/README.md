@@ -27,7 +27,7 @@ python tf_timer.py <program> [--runs N] [TextFinder options ...]
 
 | Argument | Description |
 |----------|-------------|
-| `<program>` | Required: `PyTextFinder`, `CsTextFinder`, `CppTextFinder`, `RustTextFinder`, or `RustTextFinderOpt` |
+| `<program>` | Required: `PyTextFinder`, `CsTextFinder`, `CppTextFinder`, `EntryPoint`, or `EntryPointOpt` |
 | `--runs N` | Timed runs after discarding warm-up (default: `20`) |
 | TextFinder flags | Any TextFinder options, e.g. `/P . /p py /r "def "` — forwarded to the chosen program |
 

@@ -2,7 +2,7 @@
 
 Recursively searches a directory tree for files whose content matches a
 regular expression. C++23 port of
-[RustTextFinder](../Projects/TextFinder1/RustTextFinder).
+[EntryPoint](../Projects/TextFinder1/EntryPoint).
 
 ---
 
@@ -123,5 +123,5 @@ match in each directory.
 
 ## Source
 
-C++23 port of `Code/Projects/TextFinder1/RustTextFinder`.  
+C++23 port of `Code/Projects/TextFinder1/EntryPoint`.  
 Author: Jim Fawcett — https://JimFawcett.github.io

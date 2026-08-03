@@ -23,11 +23,11 @@ names differ per language convention:
 |----------------------------|--------------|--------------|--------------|-------------------------|
 | Argument parsing           | CommandLine/ | CommandLine/ | CommandLine/ | RustCmdLine/            |
 | Directory traversal        | DirNav/      | DirNav/      | DirNav/      | RustDirNav/             |
-| Result formatting          | Output/      | Output/      | Output/      | *(merged into TextFinder)* |
-| Executable / wiring        | EntryPoint/  | EntryPoint/  | EntryPoint/  | RustTextFinder/         |
+| Result formatting          | Output/      | Output/      | Output/      | *(merged into EntryPoint)* |
+| Executable / wiring        | EntryPoint/  | EntryPoint/  | EntryPoint/  | EntryPoint/             |
 | Independent verifier       | *(planned)*  | *(planned)*  | *(planned)*  | RustTfVerify/           |
 
-The Rust version merges output formatting into the top-level TextFinder crate
+The Rust version merges output formatting into the top-level EntryPoint crate
 rather than exposing it as a separate library. Verifiers for C++, C#, and
 Python are planned as counterparts to `RustTfVerify`.
 
@@ -193,14 +193,14 @@ TextFinder/
 │   │       │   └── test_file2.exe
 │   │       └── test_sub2_dir/
 │   │           └── test_file3.txt
-│   ├── RustTextFinder/
+│   ├── EntryPoint/
 │   │   ├── .gitignore
 │   │   ├── Cargo.lock
 │   │   ├── Cargo.toml
 │   │   ├── CLAUDE.md
 │   │   ├── README.md
 │   │   ├── Req_TextFinder.md
-│   │   ├── RustTextFinder_Spec.md
+│   │   ├── EntryPoint_Spec.md
 │   │   ├── test1.txt
 │   │   ├── test2.txt
 │   │   ├── src/
@@ -266,14 +266,14 @@ TextFinder/
     │       │   └── test_file2.exe
     │       └── test_sub2_dir/
     │           └── test_file3.txt
-    ├── RustTextFinder/
+    ├── EntryPoint/
     │   ├── .gitignore
     │   ├── Cargo.lock
     │   ├── Cargo.toml
     │   ├── CLAUDE.md
     │   ├── README.md
     │   ├── Req_TextFinder.md
-    │   ├── RustTextFinder_Spec.md
+    │   ├── EntryPoint_Spec.md
     │   ├── test1.txt
     │   ├── test2.txt
     │   ├── src/

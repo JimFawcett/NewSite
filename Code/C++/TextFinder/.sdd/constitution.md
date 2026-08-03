@@ -4,7 +4,7 @@
 
 `TextFinder` is a CLI tool that recursively searches a directory tree for files
 whose content matches a regular expression. It is a C++17 port of the Rust
-`RustTextFinder` crate found in `Code/Projects/TextFinder1/RustTextFinder`.
+`EntryPoint` crate found in `Code/Projects/TextFinder1/EntryPoint`.
 
 ---
 

@@ -14,7 +14,7 @@ function buildPages() {
       <a href='ComparisonStory_rs_textfinder_opt_CmdLine.html'>2. RustCmdLine</a>\
       <a href='ComparisonStory_rs_textfinder_opt_DirNav.html'>3. RustDirNav</a>\
       <a href='ComparisonStory_rs_textfinder_Output.html'>4. Output</a>\
-      <a href='ComparisonStory_rs_textfinder_opt_TextFinder.html'>5. RustTextFinder</a>\
+      <a href='ComparisonStory_rs_textfinder_opt_TextFinder.html'>5. EntryPoint</a>\
       <a href='ComparisonStory_rs_textfinder_opt_Conclusion.html'>6. Conclusion</a>\
       </div>\
     <div style='height:0.5em;'></div>";

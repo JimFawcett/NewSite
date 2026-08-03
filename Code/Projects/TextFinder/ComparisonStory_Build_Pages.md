@@ -33,7 +33,7 @@ performed.
 > - **2A.1** Project layout and Cargo wiring
 > - **2A.2** `RustCmdLine` — design + full `cmd_line_lib.rs`
 > - **2A.3** `RustDirNav` — design + full `dir_nav_lib.rs`
-> - **2A.4** `RustTextFinder` — with subsections for `read_file`,
+> - **2A.4** `EntryPoint` — with subsections for `read_file`,
 >   `TextFinder`, `TfAppl`, `main`; full `text_finder.rs`
 > - **2A.5** `RustTfVerify` — design + full 760-line `main.rs`
 > - **2A.6** Build & run
@@ -58,7 +58,7 @@ performed.
 - Read all four Rust source files:
   - `RustCmdLine/src/cmd_line_lib.rs`
   - `RustDirNav/src/dir_nav_lib.rs`
-  - `RustTextFinder/src/text_finder.rs`
+  - `EntryPoint/src/text_finder.rs`
   - `RustTfVerify/src/main.rs`
 - Read `Code/Projects/TextFinder/rs_textfinder_opt/README.md`
 - **Created** `Code/ProjectStory_rs_textfinder_opt.html` — one large HTML page
@@ -132,7 +132,7 @@ performed.
 >    TextFinder/rs_textfinder_opt README.md
 > 2. discussion of RustCmdLine
 > 3. discussion of RustDirNav
-> 4. discussion of RustTextFinder
+> 4. discussion of EntryPoint
 > 5. Conclusion showing sample output
 
 ### Assistant reply
@@ -152,7 +152,7 @@ performed.
 >   (design points, API summary, full source)
 > - `ComparisonStory_rs_textfinder_opt_DirNav.html` — **3. RustDirNav**
 >   (`DirEvent` trait, design points, `visit()` walkthrough, full source)
-> - `ComparisonStory_rs_textfinder_opt_TextFinder.html` — **4. RustTextFinder**
+> - `ComparisonStory_rs_textfinder_opt_TextFinder.html` — **4. EntryPoint**
 >   (`read_file`, `TextFinder`, `TfAppl`, `main`, full source)
 > - `ComparisonStory_rs_textfinder_opt_Conclusion.html` — **5. Conclusion**
 >   (three sample-output blocks: default matches, `/H false` traversal, `/v`
@@ -191,7 +191,7 @@ performed.
   takeaways, and cross-linked references table.
 - **Rewrote** `Code/js/ComparisonStoryPages.js` (version `1.1`) with all
   five nav entries in reading order (Introduction, RustCmdLine, RustDirNav,
-  RustTextFinder, Conclusion).
+  EntryPoint, Conclusion).
 
 ---
 

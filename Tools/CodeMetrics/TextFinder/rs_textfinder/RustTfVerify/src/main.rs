@@ -10,7 +10,7 @@
    Usage:
        tf_verify [path/to/text_finder[.exe]]
 
-   Default binary: ../RustTextFinder/target/debug/text_finder[.exe]
+   Default binary: ../EntryPoint/target/debug/text_finder[.exe]
 */
 
 use std::process::Command;
@@ -212,12 +212,12 @@ fn test_tf_01() -> Vec<TestResult> {
         TestResult::new(
             "REQ-TF-01",
             "TextFinder::new() re_str == \"\"",
-            Status::Skip("covered by unit test tf_new_re_str_is_empty in RustTextFinder".to_string()),
+            Status::Skip("covered by unit test tf_new_re_str_is_empty in EntryPoint".to_string()),
         ),
         TestResult::new(
             "REQ-TF-01",
             "TextFinder::new() last_dir == \"\"",
-            Status::Skip("covered by unit test tf_new_last_dir_is_empty in RustTextFinder".to_string()),
+            Status::Skip("covered by unit test tf_new_last_dir_is_empty in EntryPoint".to_string()),
         ),
     ]
 }
@@ -230,7 +230,7 @@ fn test_tf_02() -> Vec<TestResult> {
     vec![TestResult::new(
         "REQ-TF-02",
         "After regex(s), get_regex() returns s",
-        Status::Skip("covered by unit test tf_regex_round_trip in RustTextFinder".to_string()),
+        Status::Skip("covered by unit test tf_regex_round_trip in EntryPoint".to_string()),
     )]
 }
 
@@ -327,7 +327,7 @@ fn test_tf_06() -> Vec<TestResult> {
     vec![TestResult::new(
         "REQ-TF-06",
         "After last_path(p), get_last_path() returns p",
-        Status::Skip("covered by unit test tf_last_path_round_trip in RustTextFinder".to_string()),
+        Status::Skip("covered by unit test tf_last_path_round_trip in EntryPoint".to_string()),
     )]
 }
 
@@ -340,17 +340,17 @@ fn test_ta_01() -> Vec<TestResult> {
         TestResult::new(
             "REQ-TA-01",
             "TfAppl::new() hide == true",
-            Status::Skip("covered by unit test ta_new_hide_is_true in RustTextFinder".to_string()),
+            Status::Skip("covered by unit test ta_new_hide_is_true in EntryPoint".to_string()),
         ),
         TestResult::new(
             "REQ-TA-01",
             "TfAppl::new() recurse == true",
-            Status::Skip("covered by unit test ta_new_recurse_is_true in RustTextFinder".to_string()),
+            Status::Skip("covered by unit test ta_new_recurse_is_true in EntryPoint".to_string()),
         ),
         TestResult::new(
             "REQ-TA-01",
             "TfAppl::new() curr_dir == \"\"",
-            Status::Skip("covered by unit test ta_new_curr_dir_is_empty in RustTextFinder".to_string()),
+            Status::Skip("covered by unit test ta_new_curr_dir_is_empty in EntryPoint".to_string()),
         ),
     ]
 }
@@ -444,7 +444,7 @@ fn test_ta_04() -> Vec<TestResult> {
     vec![TestResult::new(
         "REQ-TA-04",
         "After hide(p), get_hide() returns p",
-        Status::Skip("covered by unit test ta_hide_round_trip in RustTextFinder".to_string()),
+        Status::Skip("covered by unit test ta_hide_round_trip in EntryPoint".to_string()),
     )]
 }
 
@@ -485,7 +485,7 @@ fn test_ta_06() -> Vec<TestResult> {
     vec![TestResult::new(
         "REQ-TA-06",
         "TfAppl::regex(s) sets embedded TextFinder regex",
-        Status::Skip("covered by unit test ta_regex_delegates_to_text_finder in RustTextFinder".to_string()),
+        Status::Skip("covered by unit test ta_regex_delegates_to_text_finder in EntryPoint".to_string()),
     )]
 }
 
@@ -688,7 +688,7 @@ fn main() {
     // Resolve binary path
     let args: Vec<String> = std::env::args().collect();
     let default_bin = format!(
-        "../RustTextFinder/target/debug/text_finder{}",
+        "../EntryPoint/target/debug/text_finder{}",
         if cfg!(windows) { ".exe" } else { "" }
     );
     let tf = if args.len() > 1 { args[1].as_str() } else { &default_bin };
@@ -699,7 +699,7 @@ fn main() {
 
     if !Path::new(tf).exists() {
         eprintln!("  ERROR: binary not found at '{}'", tf);
-        eprintln!("  Build RustTextFinder first (cargo build) or pass path as argument.");
+        eprintln!("  Build EntryPoint first (cargo build) or pass path as argument.");
         std::process::exit(2);
     }
 

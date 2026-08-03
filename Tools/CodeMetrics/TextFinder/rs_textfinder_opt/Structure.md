@@ -30,7 +30,7 @@ rs_textfinder/
 │   ├── Cargo.toml              ← library crate: rust_dir_nav
 │   └── src/
 │       └── dir_nav_lib.rs      ← DirNav<App> struct + DirEvent trait
-├── RustTextFinder/
+├── EntryPoint/
 │   ├── Cargo.toml              ← binary crate: rust_text_finder
 │   └── src/
 │       └── text_finder.rs      ← TextFinder, TfAppl structs + main()
@@ -60,7 +60,7 @@ doctest = false
 
 ---
 
-## Cargo.toml — Binary (RustTextFinder)
+## Cargo.toml — Binary (EntryPoint)
 
 ```toml
 [package]
@@ -86,7 +86,7 @@ regex = "1.7.0"
 RustCmdLine   RustDirNav
      \            /
       \          /
-    RustTextFinder
+    EntryPoint
 
 RustTfVerify  ──(subprocess)──►  text_finder binary
 ```
@@ -113,14 +113,14 @@ other Unix shells.
 ## Build Steps
 
 ```bash
-# Build and run the search tool (from RustTextFinder/)
-cd RustTextFinder
+# Build and run the search tool (from EntryPoint/)
+cd EntryPoint
 cargo build
 cargo run -- /P "." /p "rs,txt" /r "abc" /s /H   # Windows / PowerShell
 cargo run -- -P "." -p "rs,txt" -r "abc" -s -H   # bash / Unix
 
 # Build and run the verification harness (from RustTfVerify/)
-# Requires text_finder already built in RustTextFinder/target/debug/
+# Requires text_finder already built in EntryPoint/target/debug/
 cd ../RustTfVerify
 cargo run
 
@@ -150,8 +150,8 @@ Each library crate contains `#[cfg(test)]` modules in its single source file.
 cd RustDirNav
 cargo test -- --test-threads=1 --show-output
 
-# RustTextFinder — white-box tests for TextFinder and TfAppl structs
-cd RustTextFinder
+# EntryPoint — white-box tests for TextFinder and TfAppl structs
+cd EntryPoint
 cargo test -- --show-output
 ```
 
@@ -161,7 +161,7 @@ cargo test -- --show-output
 against requirement assertions drawn from `Req_TextFinder.md`.
 
 ```bash
-cd RustTextFinder && cargo build   # build the binary first
+cd EntryPoint && cargo build   # build the binary first
 cd ../RustTfVerify && cargo run
 ```
 
