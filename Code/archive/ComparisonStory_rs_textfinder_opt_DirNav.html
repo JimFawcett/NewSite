@@ -73,23 +73,22 @@
       <a id="dirnav"></a>
       <h3>3. &nbsp;RustDirNav - <code>DirNav&lt;App: DirEvent&gt;</code></h3>
       <t-b>
-        <code>RustDirNav</code> is a generic depth-first directory walker,
-        parameterized by an application type <code>App</code> that implements
-        the <code>DirEvent</code> trait.  The trait exposes two callbacks - one
-        fires when the walker enters a directory, the other when it encounters
-        a matching file:
+        <code>RustDirNav</code> is a generic depth-first directory walker.  It is
+        parameterized by an application type <code>App</code> that must implement
+        the <code>DirEvent</code> trait - two callbacks that fire when the walker
+        enters a directory and when it encounters a matching file:
       </t-b>
 <pre><code class="language-rust">pub trait DirEvent {
     fn do_dir(&amp;mut self, d: &amp;str);
     fn do_file(&amp;mut self, f: &amp;str);
 }</code></pre>
       <t-b>
-        That trait is the entire contract between navigator and application.
+        This trait is the entire contract between navigator and application.
         Every <code>rs_textfinder_opt</code>-specific behavior - regex matching,
         hide/show, path-relative printing - lives in <code>TfAppl</code>, an
-        implementor supplied by the EntryPoint binary crate.  The DirNav library itself carries
-        no TextFinder concepts and works just as well behind a line-counting
-        tool, a build-artifact scrubber, or a checksum walker.
+        implementor supplied by the binary crate.  The library itself remains
+        free of any TextFinder concepts and could equally well be reused by a
+        line-counting tool, a build-artifact scrubber, or a checksum walker.
       </t-b>
 
       <a id="design"></a>
@@ -97,40 +96,40 @@
       <t-b>
         <ul class="tight">
           <li>
-            <strong>Skip list is baked in.</strong>  The constructor pre-loads
-            <code>skip_dirs</code> with build directories (<code>target</code>,
-            <code>bin</code>, <code>obj</code>, <code>build</code>,
-            <code>out</code>), Python caches, VCS/IDE folders, and
-            <code>archive</code>, so callers never have to know the list.
-            <code>add_skip()</code> appends any extra names.
+            <strong>Skip list is baked in.</strong>  Build directories
+            (<code>target</code>, <code>bin</code>, <code>obj</code>,
+            <code>build</code>, <code>out</code>), Python caches, VCS/IDE folders,
+            and <code>archive</code> are pre-loaded into <code>skip_dirs</code>
+            at construction so no callers have to know the list.  Extra names
+            can be added via <code>add_skip()</code>.
           </li>
           <li>
             <strong><code>DirEntry::file_type()</code>, not
-            <code>Path::is_dir()</code>.</strong>  The <code>readdir</code>
-            response already carries the file type on both Windows and Unix, so
-            this path avoids an extra <code>stat</code> syscall per entry.  That
-            single change drove most of the gain over the baseline
+            <code>Path::is_dir()</code>.</strong>  The type is already carried by
+            the <code>readdir</code> response on both Windows and Unix, so no
+            extra <code>stat</code> syscall is issued per entry.  This single
+            call was the dominant optimization gain over the baseline
             <code>rs_textfinder</code> - median elapsed time dropped from
             ~0.91&nbsp;s to ~0.61&nbsp;s, a 33% improvement.
           </li>
           <li>
-            <strong>Directory printed only when it has matches.</strong>  The
-            scan pass accumulates matching files into a <code>Vec</code>; the
-            directory callback fires only when that vector is non-empty, or when
-            <code>hide</code> is off.  This inverts the natural traversal order
+            <strong>Directory printed only when it has matches.</strong>  Files
+            are accumulated in a <code>Vec</code> during the scan pass; the
+            directory callback fires only if that vector is non-empty (or if
+            <code>hide</code> is off).  This inverts the natural traversal order
             but produces cleaner grouped output.
           </li>
           <li>
-            <strong>Windows separator normalization.</strong>  Paths convert to
-            forward slashes at the emit site, so downstream printing and regex
-            matching see one path style regardless of host OS.
+            <strong>Windows separator normalization.</strong>  Paths are
+            converted to forward slashes at the emit site, so downstream
+            printing and regex matching see one path style regardless of host OS.
           </li>
           <li>
             <strong>App owned by DirNav.</strong>  <code>DirNav&lt;App&gt;</code>
-            constructs its <code>App</code> via <code>App::default()</code> and
-            owns it for the walker's lifetime.  <code>get_app()</code> hands
-            back a mutable reference so callers can configure the app (regex,
-            hide flag) before calling <code>visit()</code>.
+            constructs an instance of <code>App</code> via <code>App::default()</code>
+            and owns it for the lifetime of the walker.  <code>get_app()</code>
+            returns a mutable reference so callers can configure the app (regex,
+            hide flag) before <code>visit()</code>.
           </li>
         </ul>
       </t-b>
@@ -138,28 +137,29 @@
       <a id="visit"></a>
       <h4>3.2 &nbsp;<code>visit()</code> - the traversal loop</h4>
       <t-b>
-        <code>visit()</code> is a straight recursion.  For each entry that
-        <code>fs::read_dir</code> yields:
+        <code>visit()</code> is a straight recursion.  For each entry produced by
+        <code>fs::read_dir</code>:
       </t-b>
       <t-b>
         <ol class="tight">
-          <li>Read the cached <code>file_type()</code> - no extra syscall.</li>
-          <li>If it is a directory, check the skip list.  If not skipped,
-              buffer its normalized path for the recursion pass.</li>
+          <li>Grab the cached <code>file_type()</code> - no extra syscall.</li>
+          <li>If it is a directory, check the skip list; if not skipped, buffer
+              its normalized path for the recursion pass.</li>
           <li>If it is a file and its extension is in the pattern list (or the
               pattern list is empty), buffer its name and bump the file counter.</li>
-          <li>After the scan, fire <code>do_dir</code> only when the buffered
-              file list is non-empty or <code>hide</code> is off, then fire
+          <li>After the scan, fire <code>do_dir</code> only if the buffered file
+              list is non-empty or <code>hide</code> is off; fire
               <code>do_file</code> for each buffered file.</li>
-          <li>Recurse into each buffered subdirectory when <code>recurse</code>
-              is on.</li>
+          <li>Recurse into each buffered subdirectory if <code>recurse</code> is
+              on.</li>
         </ol>
       </t-b>
       <t-b>
-        Separating the file-emit pass from the directory-emit decision lets
-        <code>hide=true</code> suppress the directory header for no-match
-        folders without a look-ahead: by the time <code>do_dir</code> runs,
-        the walker already knows whether any file will follow.
+        Separating the file-emit pass from the directory-emit decision is what
+        lets <code>hide=true</code> suppress the directory header for
+        no-match folders without a look-ahead: by the time
+        <code>do_dir</code> is called, the walker already knows whether any file
+        will follow.
       </t-b>
 
       <a id="source"></a>

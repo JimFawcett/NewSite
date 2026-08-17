@@ -73,15 +73,15 @@
       <a id="cmdline"></a>
       <h3>2. &nbsp;RustCmdLine - <code>CmdLineParse</code></h3>
       <t-b>
-        <code>CmdLineParse</code> splits the raw <code>env::args()</code> stream
-        into two containers: a <code>HashMap&lt;char, String&gt;</code> of options
-        and a <code>Vec&lt;String&gt;</code> of file-extension patterns.  Any token
-        that starts with <code>/</code> or <code>-</code> becomes an option key.
-        If the following token starts with <code>/</code> or <code>-</code>, or
-        no token follows, the key takes the value <code>"true"</code>; otherwise
-        that token becomes its value.  Supporting both prefixes lets the same
-        CLI run under PowerShell (<code>/P .</code>) and bash (<code>-P .</code>)
-        with no path rewriting.
+        <code>CmdLineParse</code> converts raw <code>env::args()</code> tokens into
+        a <code>HashMap&lt;char, String&gt;</code> of options and a
+        <code>Vec&lt;String&gt;</code> of file-extension patterns.  A token
+        starting with <code>/</code> or <code>-</code> is treated as an option
+        key; the next token (if it does not itself start with <code>/</code> or
+        <code>-</code>) becomes its value, otherwise the value defaults to
+        <code>"true"</code>.  Accepting both prefixes lets the same CLI work in
+        PowerShell (<code>/P .</code>) and in bash (<code>-P .</code>) without
+        path conversion.
       </t-b>
 
       <a id="design"></a>
@@ -89,27 +89,27 @@
       <t-b>
         <ul class="tight">
           <li>
-            <strong>Two storage layers.</strong>  Options key on a single
-            <code>char</code>.  The comma-separated <code>/p</code> value expands
-            into a separate <code>Vec&lt;String&gt;</code> of patterns that
-            <code>DirNav</code> consumes directly.
+            <strong>Two storage layers.</strong>  Options are keyed on a single
+            <code>char</code>; the comma-separated <code>/p</code> value is
+            expanded into a separate <code>Vec&lt;String&gt;</code> of patterns
+            for direct consumption by <code>DirNav</code>.
           </li>
           <li>
             <strong>Absolute-path normalization.</strong>  <code>abs_path()</code>
-            canonicalizes the path, strips the Windows <code>\\?\</code> UNC
-            prefix, and converts backslashes to forward slashes so output looks
-            the same on every platform.
+            canonicalizes the path and strips the Windows <code>\\?\</code> UNC
+            prefix, then replaces backslashes with forward slashes so output is
+            uniform across platforms.
           </li>
           <li>
-            <strong>Ownership discipline.</strong>  The struct owns all its data
-            - no borrowed <code>&amp;str</code> fields - so it constructs in one
-            scope and moves into another with no lifetime annotations.
+            <strong>Ownership discipline.</strong>  The struct owns all data (no
+            borrowed <code>&amp;str</code> fields), so it can be constructed in
+            one scope and consumed in another with no lifetime plumbing.
           </li>
           <li>
             <strong>Defaults applied first, then overridden.</strong>
             <code>main</code> calls <code>default_options()</code> before
-            <code>parse()</code>.  Any argv value overwrites the matching default;
-            a missing argument leaves the default in place.
+            <code>parse()</code>, so any argv value simply overwrites the default
+            entry in the map.  A missing argument leaves the default in place.
           </li>
         </ul>
       </t-b>

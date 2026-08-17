@@ -31,6 +31,22 @@
     #github pre { width: max-content; padding: 1rem 2rem; }
     #github table { table-layout: fixed; }
     #github a.disabled { opacity: 0.5; text-decoration: none; cursor: default; }
+    #github details.constitution { margin: 0.5rem 0 1rem 0; }
+    #github details.constitution > summary {
+      cursor: pointer;
+      background-color: var(--dark);
+      color: var(--light);
+      border: 1px solid var(--dark);
+      padding: 0.25rem 0.75rem;
+      display: list-item;
+      list-style-position: inside;
+      width: fit-content;
+    }
+    #github details.constitution > summary::marker { color: var(--light); }
+    #github details.constitution > summary::-webkit-details-marker { color: var(--light); }
+    #github details.constitution > .body { padding: 0.5rem 0 0 0; max-width: 90ch; }
+    #github details.constitution h6 { margin-left: 1rem; }
+    #github details.constitution ul { max-width: 90ch; }
   </style>
   <script>
     function loadInExplorer() {
@@ -81,14 +97,14 @@
         up in language idioms rather than design choices.
       </t-b>
       <t-b>
-        Each language has its own thread &mdash; a six-page walkthrough that follows the
+        Each language has its own page-thread &dash; a six-page walkthrough that follows the
         same part order (Introduction, CmdLine, DirNav, Output, EntryPoint, Conclusion),
         so the reader can jump between languages at any part.  Every page carries
         multi-language cross-links in its header for quick comparisons.
       </t-b>
 
       <a id="threads"></a>
-      <h4>Language Threads</h4>
+      <h4>1.0 Language Threads</h4>
       <table>
         <colgroup>
           <col style="width:10rem;" />
@@ -131,8 +147,178 @@
         the resulting implementations by size, complexity, and performance.
       </t-b>
 
+      <a id="design"></a>
+      <h4>2.0 Design</h4>
+      <t-b>
+        All four implementations share the same four-part decomposition &mdash; argument
+        parsing, directory traversal, result formatting, and an executable that wires them
+        together.  Folder names differ per language convention, but the roles map one-to-one
+        so the reader can move between languages without re-learning the layout.
+      </t-b>
+
+      <h5>2.1 Cross-Language Part Mapping</h5>
+      <table>
+        <colgroup>
+          <col style="width:14rem;" />
+          <col style="width:8rem;" />
+          <col style="width:8rem;" />
+          <col style="width:8rem;" />
+          <col style="width:12rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Role</th>
+          <th class="darkItem">C++</th>
+          <th class="darkItem">C#</th>
+          <th class="darkItem">Python</th>
+          <th class="darkItem">Rust</th>
+        </tr>
+        <tr>
+          <td class="lightItem">Argument parsing</td>
+          <td class="lightItem">CommandLine/</td>
+          <td class="lightItem">CommandLine/</td>
+          <td class="lightItem">CommandLine/</td>
+          <td class="lightItem">RustCmdLine/</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Directory traversal</td>
+          <td class="lightItem">DirNav/</td>
+          <td class="lightItem">DirNav/</td>
+          <td class="lightItem">DirNav/</td>
+          <td class="lightItem">RustDirNav/</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Result formatting</td>
+          <td class="lightItem">Output/</td>
+          <td class="lightItem">Output/</td>
+          <td class="lightItem">Output/</td>
+          <td class="lightItem"><em>(merged into EntryPoint)</em></td>
+        </tr>
+        <tr>
+          <td class="lightItem">Executable / wiring</td>
+          <td class="lightItem">EntryPoint/</td>
+          <td class="lightItem">EntryPoint/</td>
+          <td class="lightItem">EntryPoint/</td>
+          <td class="lightItem">EntryPoint/</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Independent verifier</td>
+          <td class="lightItem"><em>(planned)</em></td>
+          <td class="lightItem"><em>(planned)</em></td>
+          <td class="lightItem"><em>(planned)</em></td>
+          <td class="lightItem">RustTfVerify/</td>
+        </tr>
+      </table>
+      <t-b>
+        The Rust version merges output formatting into the top-level EntryPoint crate
+        rather than exposing it as a separate library.  Verifiers for C++, C#, and Python
+        are planned as counterparts to <code>RustTfVerify</code>.
+      </t-b>
+
+      <h5>2.2 Language &amp; Toolchain Versions</h5>
+      <table>
+        <colgroup>
+          <col style="width:14rem;" />
+          <col style="width:16rem;" />
+          <col style="width:18rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Implementation</th>
+          <th class="darkItem">Language / Standard</th>
+          <th class="darkItem">Build System</th>
+        </tr>
+        <tr>
+          <td class="lightItem">CppTextFinder</td>
+          <td class="lightItem">C++23 (named modules)</td>
+          <td class="lightItem">CMake 3.28+</td>
+        </tr>
+        <tr>
+          <td class="lightItem">CsTextFinder</td>
+          <td class="lightItem">C# / .NET 10</td>
+          <td class="lightItem"><code>dotnet</code> / <code>CsTextFinder.sln</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">PyTextFinder</td>
+          <td class="lightItem">Python 3.x</td>
+          <td class="lightItem">none (interpreted)</td>
+        </tr>
+        <tr>
+          <td class="lightItem">rs_textfinder / rs_textfinder_opt</td>
+          <td class="lightItem">Rust, edition 2018</td>
+          <td class="lightItem">Cargo</td>
+        </tr>
+      </table>
+
+      <h5>2.3 Comparison Baseline</h5>
+      <t-b>
+        <strong>rs_textfinder_opt</strong> is the canonical Rust implementation used when
+        comparing designs and performance against C++, C#, and Python.
+        <strong>rs_textfinder</strong> is the pre-optimization Rust baseline, retained so
+        the Rust-internal optimization discussion can reference concrete before/after code.
+        <strong>TextFinder_CodeMetrics.pdf</strong> captures the size and complexity metrics
+        that feed the tables further down this page.
+      </t-b>
+
+      <h4>3.0 Governance</h4>
+      <t-b>
+        A top-level <code>Constitution.md</code> governs agent work across all four
+        implementations: edits are confined to the <code>TextFinder/</code> subtree, and
+        any request whose scope, target implementation, or intended effect is ambiguous is
+        answered with a question rather than a guess.  Each implementation
+        (<code>CppTextFinder/</code>, <code>CsTextFinder/</code>, <code>PyTextFinder/</code>,
+        <code>rs_textfinder_opt/</code>) then carries its own <code>Constitution.md</code>
+        that governs design decisions specific to that language.  The discipline keeps the
+        four variants aligned closely enough for the cross-language comparison to be
+        meaningful.
+      </t-b>
+
+      <details class="constitution">
+        <summary>Constitution.md &mdash; TextFinder</summary>
+        <div class="body">
+          <t-b>
+            Governing directives for any agent (Claude Code or otherwise) working in this
+            project.  These rules apply to the whole TextFinder tree and take precedence
+            over general defaults.
+          </t-b>
+          <t-b>
+            Per-implementation <code>Constitution.md</code> files (under
+            <code>CppTextFinder/</code>, <code>CsTextFinder/</code>,
+            <code>PyTextFinder/</code>, <code>rs_textfinder_opt/</code>, etc.) govern the
+            design of each implementation.  This document governs agent behavior across
+            all of them.
+          </t-b>
+
+          <h5>Directives</h5>
+
+          <h6>1. Stay inside the TextFinder directory</h6>
+          <ul class="tight">
+            <li>Edit, create, or delete files <strong>only</strong> within
+              <code>Code/Projects/TextFinder/</code> and its subdirectories.</li>
+            <li>Do not modify files elsewhere in the repository &mdash; including sibling
+              <code>Code/</code> folders, root-level HTML/CSS/JS, or shared site assets
+              &mdash; without explicit authorization for that specific change.</li>
+            <li>Read-only access to files outside TextFinder is permitted when needed for
+              context (e.g. checking site conventions), but any resulting edit must target
+              a file inside TextFinder.</li>
+          </ul>
+
+          <h6>2. Think carefully; ask when ambiguous</h6>
+          <ul class="tight">
+            <li>Before acting on a request, restate the intent to yourself and check that
+              the requested change is unambiguous in <strong>scope</strong> (which files),
+              <strong>target</strong> (which implementation &mdash; Cpp, Cs, Py, Rust, or
+              all), and <strong>effect</strong> (what the change is meant to accomplish).</li>
+            <li>If any of scope, target, or effect is unclear &mdash; <strong>stop and
+              ask</strong> before editing.  Do not guess, do not pick the &ldquo;most
+              likely&rdquo; interpretation, and do not proceed with a partial answer.</li>
+            <li>When a request could reasonably apply to more than one implementation
+              (e.g. &ldquo;update the verifier&rdquo;), ask which one is meant unless the
+              context makes it obvious.</li>
+          </ul>
+        </div>
+      </details>
+
       <a id="performance"></a>
-      <h4>Performance</h4>
+      <h4>4.0 Performance</h4>
       <t-b>
         Timings over 20 warm-cache runs (first discarded), searching the NewSite root for
         <code>class</code> across source files.  Median = average of the 10th and 11th
@@ -204,7 +390,7 @@
       </t-b>
 
       <a id="metrics"></a>
-      <h4>Code Metrics</h4>
+      <h4>5.0 Code Metrics</h4>
       <t-b>
         Generated by <code>code_metrics.py</code> from the Projects directory.
         <strong>Lines</strong> = total line count (code + comments + blanks).
@@ -340,6 +526,7 @@
         <a href="#top">top</a>
         <menu-elem class="secElem"><a href="#overview">overview</a></menu-elem>
         <menu-elem class="secElem"><a href="#threads">language threads</a></menu-elem>
+        <menu-elem class="secElem"><a href="#design">design</a></menu-elem>
         <menu-elem class="secElem"><a href="#performance">performance</a></menu-elem>
         <menu-elem class="secElem"><a href="#metrics">code metrics</a></menu-elem>
         <a href="#bottom">bottom</a>

@@ -78,17 +78,17 @@
         <code>rs_textfinder_opt</code> is a recursive, regex-based file-content
         search tool written in Rust.  Given a root directory, a set of file
         extensions, and a regular expression, it walks the directory tree and
-        prints every file whose content matches.  It serves as the canonical
-        Rust implementation for design and performance comparisons against the
-        C++, C#, and Python TextFinders.
+        prints every file whose content contains a match.  It is the canonical
+        Rust implementation used when comparing designs and performance against
+        the C++, C#, and Python TextFinders.
       </t-b>
 
       <a id="crates"></a>
       <h4>1.1 &nbsp;Crates</h4>
       <t-b>
-        Four independent crates make up the project, linked by relative paths.
-        No library references another library or the application binary - all
-        composition happens in <code>EntryPoint</code>.
+        The project is composed of four independent crates linked by relative
+        paths.  Library crates never reference each other or the application
+        binary - all composition happens in <code>EntryPoint</code>.
       </t-b>
       <table>
         <colgroup>
@@ -146,8 +146,8 @@ cargo run -- -P ".." -p "rs" -r "struct"</code></pre>
       <h4>1.3 &nbsp;Command-Line Options</h4>
       <t-b>
         Options accept either a <code>/</code> prefix (Windows / PowerShell) or a
-        <code>-</code> prefix (bash / Unix); the two forms are equivalent.  An
-        option supplied without a following value receives the value
+        <code>-</code> prefix (bash / Unix); both are equivalent.  Any option that
+        appears on the command line without a following value receives the value
         <code>"true"</code>.
       </t-b>
       <table>
@@ -221,7 +221,7 @@ cargo run -- /P ".." /p "rs" /r "fn main" /v</code></pre>
       <a id="design"></a>
       <h4>1.5 &nbsp;Design at a Glance</h4>
       <t-b>
-        The following pages walk through the design and full source of each
+        The next three pages walk through the design and full source of each
         component in composition order:
       </t-b>
       <table>
@@ -272,14 +272,14 @@ cargo run -- /P ".." /p "rs" /r "fn main" /v</code></pre>
       </table>
       <t-b>
         Two design threads run through every part.  <strong>First</strong>, no
-        library depends on another library or on the binary; <code>EntryPoint</code>
-        owns all composition and supplies a <code>DirEvent</code> implementor
-        that carries the regex-matching logic.  <strong>Second</strong>, every
-        performance win over the baseline <code>rs_textfinder</code> comes from
-        cutting per-file work: caching <code>DirEntry::file_type()</code>
-        eliminates a <code>stat</code> syscall per entry, a raw-byte regex skips
-        UTF-8 conversion, and a thread-local buffer removes one heap allocation
-        per file.
+        library depends on another library or on the binary; all composition
+        happens in <code>EntryPoint</code>, which supplies a
+        <code>DirEvent</code> implementor that carries the regex-matching logic.
+        <strong>Second</strong>, every observable performance win over the
+        baseline <code>rs_textfinder</code> comes from reducing per-file work:
+        cached <code>DirEntry::file_type()</code> avoids a <code>stat</code>
+        syscall per entry, raw-byte regex avoids UTF-8 conversion, and a
+        thread-local buffer avoids one heap allocation per file.
       </t-b>
 
     </div>
