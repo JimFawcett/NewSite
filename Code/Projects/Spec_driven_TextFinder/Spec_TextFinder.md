@@ -45,11 +45,7 @@ A line is a maximal run of characters bounded by a line terminator. The recogniz
 
 The regular expression uses ECMAScript syntax. Each implementation compiles the expression exactly once per invocation and reuses the compiled engine for every line evaluated.
 
-A match consists of:
-
-- the file path,
-- a 1-based line number,
-- the text of the matching line.
+The expression signifies a match by finding at least one occurrence anywhere within the line.
 
 ### 3.4 Output
 
