@@ -5,7 +5,7 @@ The Cpp_TextFinder project comprises three libraries and one binary. The binary 
 ## Libraries
 
 - **Cpp_Cmdline** — parses the command line into a `struct` of program commands that control the behavior of `Cpp_Dirnav` and `Cpp_Output`.
-- **Cpp_Dirnav** — directory navigation. Reads file contents, runs regex matching, and formats matches into a grep-style string (`path:line:text`) before emitting them. Creates the regex state machine once per run, not once per file. Defines the abstract base class:
+- **Cpp_Dirnav** — directory navigation. Reads file contents, runs regex matching, and formats matches into a string with fields joined by ` - ` (space-hyphen-space, per Spec_TextFinder.md §3.4) before emitting them. Creates the regex state machine once per run, not once per file. Defines the abstract base class:
   ```cpp
   class Output {
   public:
