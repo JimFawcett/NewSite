@@ -28,9 +28,9 @@ Each library's CMake target name matches its component name above.
 
 ## Build
 
-- Language: C++23.
-- Build system: CMake.
+- Language: C++23. Build system: CMake. These apply to every target below, and each component's `Spec_*.md` names only its own target.
 - C++ Modules used for `Cpp_TextFinder_Cmdline`, `Cpp_TextFinder_Dirnav`, and `Cpp_TextFinder_Output`, and for the standard library (`import std;`). `Cpp_TextFinder_Entry` remains a conventional translation unit.
+- Toolchain minimums for C++ Modules with `import std;`: GCC 14+, Clang 17+, or MSVC 19.36+ (Visual Studio 2022 17.6+). CMake 3.28+ recommended for module support.
 
 ## Notes
 

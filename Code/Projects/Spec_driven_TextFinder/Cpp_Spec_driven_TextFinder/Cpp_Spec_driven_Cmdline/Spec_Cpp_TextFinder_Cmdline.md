@@ -58,14 +58,14 @@ The field comments are the switch-to-field mapping, and the initializers are the
 
 1. **Switch tokens.** A token in switch position is valid only when it is exactly two characters, the first `/` or `-`, the second one of the nine letters in Spec_TextFinder.md §5. A token with no introducer is *not a switch*; any other introducer-led token, including a bare `/` or `-`, is an *unrecognized switch*.
 2. **Arguments.** Each switch consumes the following token verbatim, including when that token begins with `/` or `-`, since there are no bare flags. A switch with no following token is *missing its argument*.
-3. **Conversion.** Boolean switches (`/s`, `/h`, `/v`, `/H`, `/n`, `/L`) accept only `true` or `false` under ASCII case folding. `/r` and `/P` take the token verbatim; an empty `/P` argument is *an empty root path*. `/p` is normalized per §7.
+3. **Conversion.** Boolean switches (`/s`, `/h`, `/v`, `/H`, `/n`, `/L`) accept only `true` or `false` under ASCII case folding. `/r` and `/P` take the token verbatim, and each rejects an empty argument — *an empty root path* for `/P`, *an empty expression* for `/r`. `/p` is normalized per §7.
 4. **Accumulation.** `/P` clears the default `{"."}` on its first occurrence and appends thereafter, preserving argv order. Every other switch overwrites any earlier value, silently discarding it.
 
 ## 6. Error Conditions
 
-Every violation in §5 is a usage error. `parse` returns the usage diagnostic that Spec_TextFinder.md §5.2 fixes for that condition — its reason line verbatim, a newline, then `usageLine()`. `Cpp_TextFinder_Entry` writes the returned string to stderr unaltered and exits with code `1` (Spec_Cpp_TextFinder_Entry.md §4 step 1). §5's five conditions are the first five rows of that table; the sixth, a malformed `/r`, is detected later, when `Cpp_TextFinder_Dirnav` compiles the expression, and is composed there from the same table.
+Every violation in §5 is a usage error. `parse` returns the usage diagnostic that Spec_TextFinder.md §5.2 fixes for that condition — its reason line verbatim, a newline, then `usageLine()`. `Cpp_TextFinder_Entry` writes the returned string to stderr unaltered and exits with code `1` (Spec_Cpp_TextFinder_Entry.md §4 step 1). §5's six conditions are the first six rows of that table; the last, a malformed `/r`, is detected later, when `Cpp_TextFinder_Dirnav` compiles the expression, and is composed there from the same table.
 
-There is no error condition for a duplicated switch, an empty `/p` list, or an empty `/r` argument: duplicates resolve by §5 rule 4, an empty extension list means every file is searched, and an empty regex is passed through for `Cpp_TextFinder_Dirnav` to accept or reject at compilation.
+There is no error condition for a duplicated switch or an empty `/p` list: duplicates resolve by §5 rule 4, and an empty extension list means every file is searched. `regexText` therefore reaches `Cpp_TextFinder_Dirnav` non-empty, and the compiled expression can never be one that matches every position by matching nothing.
 
 ## 7. Extension-List Normalization
 
@@ -90,10 +90,8 @@ All three functions end their returned string with a newline; none writes to a s
 
 Per [Cpp_TextFinder_Structure.md](../Cpp_TextFinder_Structure.md):
 
-- Language: C++23.
-- Build system: CMake library target `Cpp_TextFinder_Cmdline`.
+- CMake library target `Cpp_TextFinder_Cmdline`.
 - Implemented as a C++ module; consumes the standard library via `import std;`. Depends on neither `Cpp_TextFinder_Dirnav` nor `Cpp_TextFinder_Output`.
-- Toolchain minimums for C++ Modules with `import std;`: GCC 14+, Clang 17+, or MSVC 19.36+ (Visual Studio 2022 17.6+). CMake 3.28+ recommended for module support.
 
 ## 10. Non-Goals
 

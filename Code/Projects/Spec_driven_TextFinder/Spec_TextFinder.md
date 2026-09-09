@@ -17,17 +17,19 @@ Each language folder contains a `<Lang>_TextFinder_Structure.md` describing inte
 
 Higher-level principles that constrain every implementation are recorded in [Constitution.md](Constitution.md) in this folder.
 
-No code, design, or example outside Spec_driven_TextFinder is used as a reference. This project is entirely specification driven.
-
 ## 3. Functional Requirements
 
 ### 3.1 Input
 
-TextFinder accepts, from its command line, a sequence of switch/value pairs defined in §5. Every switch has a default value; a command line with no switches runs TextFinder against the current directory using the default regular expression and default settings.
+TextFinder accepts a sequence of switch/value pairs, defined in §5 and parsed per §4. Every switch has a default, so a command line with no switches searches the current directory with default settings.
 
 ### 3.2 Traversal
 
-Starting at the root path, TextFinder visits every subdirectory and every file that passes the active filters. Recursion is controlled by /s (see §5) and is enabled by default; when /s is set to `false`, only the root path itself is searched. Symbolic links are not followed. When the root path resolves to a regular file rather than a directory, TextFinder searches that single file.
+Starting at the root path, TextFinder visits every subdirectory and every file that passes the active filters. Recursion is controlled by /s (see §5) and is enabled by default; when /s is set to `false`, only the root path itself is searched. When the root path resolves to a regular file rather than a directory, TextFinder searches that single file; when it resolves to anything else, it is not searched and is reported per §3.4.
+
+Symbolic links are never opened. One met during traversal is passed over silently, since TextFinder makes no attempt to open it. A root path that is a symbolic link is reported per §3.4, because the user named it explicitly and it will not be searched.
+
+Traversal is depth-first: on reaching a directory that is not pruned, TextFinder descends into it and completes its subtree before returning to the next entry of the parent. Within a directory, entries are visited in the order the platform's directory-reading facility presents them, files and directories interleaved rather than grouped — a directory is descended at the point it is reached in that order. TextFinder does not reorder a directory's entries, so the visit order is the filesystem's own; §6 records what that leaves guaranteed.
 
 TextFinder maintains a skip list of directory names that are never entered during traversal. When a directory whose name appears in the skip list is encountered, its entire subtree is pruned. The default skip list holds directories that typically contain version-control metadata or intermediate build output:
 
@@ -39,7 +41,9 @@ A skip-list entry is compared against the directory's basename — the final com
 
 ### 3.3 Matching
 
-For each candidate file, TextFinder reads the content as UTF-8 text and evaluates the regular expression against each line.
+For each candidate file, TextFinder reads the file in full — so that a file failing a test is skipped entirely rather than searched in part — and admits it for searching only if it passes three tests: its size does not exceed 10 MB (10,485,760 bytes), its content holds no NUL byte, and its content is valid UTF-8. The NUL test is the binary-file test of §7; UTF-8 validity alone does not serve, because a UTF-16 file of ASCII text is valid UTF-8. A leading UTF-8 BOM is consumed and does not belong to the first line. A file that fails any test is not searched and is reported per §3.4.
+
+TextFinder evaluates the regular expression against each line of an admitted file.
 
 A line is a maximal run of characters bounded by a line terminator. The recognized terminators are LF (U+000A), CRLF (U+000D U+000A), and bare CR (U+000D); this covers Windows, Linux, and macOS conventions. If the final line of a file lacks a terminator, it is nevertheless treated as a line.
 
@@ -53,11 +57,24 @@ Matches are written to stdout, one match per line, with fields joined by the thr
 
     <path> - <lineNumber> - <matchedLine>
 
-The `<lineNumber>` field is emitted only when /n is `true` (the default); when `false`, `<lineNumber>` and its trailing separator are omitted. The `<matchedLine>` field is emitted only when /L is `true` (the default); when `false`, `<matchedLine>` and its leading separator are omitted. When both /n and /L are `false`, only `<path>` is emitted, once per match encountered.
+The `<lineNumber>` field is emitted only when /n is `true` (the default); when `false`, `<lineNumber>` and its trailing separator are omitted. The `<matchedLine>` field is emitted only when /L is `true` (the default); when `false`, `<matchedLine>` and its leading separator are omitted. When both /n and /L are `false`, only `<path>` is emitted, once per matching line however many occurrences that line holds.
 
-Matches are emitted as they occur — each match is written to stdout as soon as its line is evaluated, before the next line is read. This defines emission order across all implementations: matches appear in directory-traversal order, and within a file in line order.
+`<path>` is the path by which the file was reached from the root path supplied on /P, normalized so that a root of `.` contributes no leading `./`, and rendered with `/` separators on every platform.
 
-Usage diagnostics, whose exact text §5.2 fixes, are written to stderr. File-level announcements, including unreadable and skipped files, are routed through the output component per /h in §5, not to stderr. The process exit code is 0 when invocation succeeded (whether or not matches were found) and non-zero when the command line was invalid; a root path that cannot be opened is announced through the output component and does not affect the exit code. When /H is `true`, TextFinder prints the help text of §5.1 to stdout, exits with code 0, and does not traverse.
+Matches are emitted as they occur — each match is written to stdout as soon as its line is evaluated, before the next line is evaluated. Matches therefore appear in the depth-first traversal order of §3.2, and within a file in line order; §6 records how far that order is reproducible.
+
+Besides match records, TextFinder announces the files and directories it meets, through the same destination and in the same stream position as the records they relate to. Each announcement is a fixed form followed by a path rendered as above:
+
+| Announcement          | Emitted when                                                                                              |
+|-----------------------|-----------------------------------------------------------------------------------------------------------|
+| `searched <path>`     | a file was admitted by §3.3 and searched                                                                    |
+| `skipped <path>`      | a file was rejected by the NUL or UTF-8 test of §3.3                                                        |
+| `too large <path>`    | a file exceeded the size limit of §3.3                                                                      |
+| `cannot open <path>`  | a file, directory, or root path could not be opened, is a symbolic link named as a root, or is neither a regular file nor a directory |
+
+`searched` and `skipped` are emitted only when /h is `false`; under the default /h `true` no file announcement appears and the output holds match records alone. `too large` and `cannot open` are emitted whatever /h says.
+
+Usage diagnostics, whose exact text §5.2 fixes, are written to stderr. The announcements above are routed through the output component, not to stderr. The process exit code is 0 when invocation succeeded (whether or not matches were found) and non-zero when the command line was invalid; nothing announced above affects the exit code.
 
 ### 3.5 Public Interface
 
@@ -92,10 +109,10 @@ When a switch other than /P appears more than once on the command line, the last
 | Switch | Argument (default)      | Meaning                                                                                                  |
 |--------|-------------------------|----------------------------------------------------------------------------------------------------------|
 | /P     | path (`.`)              | Root path for traversal. May be an absolute or a relative path. /P may be given more than once; each occurrence adds a root path, and the paths are traversed in the order given. |
-| /p     | `"ext, ext, ..."` (`""`)| Comma-separated list of file extensions to search, quoted. The extension of a file is its last dot-suffix. Each item is trimmed of surrounding whitespace and loses one leading dot if present, so `cpp` and `.cpp` are equivalent; empty items are discarded, so `"cpp,,rs"` and `"cpp, rs"` name the same two extensions. When the resulting list is empty, every file is searched, including files with no extension. When it is non-empty, files with no extension are not searched. |
-| /r     | regex (`"."`)           | Regular expression evaluated against each line. Syntax is ECMAScript; the expression is compiled once per invocation. |
+| /p     | `"ext, ext, ..."` (`""`)| Comma-separated list of file extensions to search, quoted. The extension of a file is its last dot-suffix, a leading dot on the name notwithstanding: `.gitignore` has extension `gitignore`, so a dot-file is searched like any other and is excluded only by /p or by the skip list. Each item is trimmed of surrounding whitespace and loses one leading dot if present, so `cpp` and `.cpp` are equivalent; empty items are discarded, so `"cpp,,rs"` and `"cpp, rs"` name the same two extensions. Extensions compare case-sensitively on POSIX and case-insensitively on Windows, as skip-list entries do. When the resulting list is empty, every file is searched, including files with no extension. When it is non-empty, files with no extension are not searched. |
+| /r     | regex (`"."`)           | Regular expression evaluated against each line. Syntax is ECMAScript; the expression is compiled once per invocation. It must not be empty — the default `.` is the way to match every line. |
 | /s     | `true` \| `false` (`true`)  | Recursive search. When `false`, only the root path itself is searched.                              |
-| /h     | `true` \| `false` (`true`)  | Suppress announcement of files that contain no match. When `false`, every file searched is announced through the implementation's output component, not on stderr. |
+| /h     | `true` \| `false` (`true`)  | Suppress the per-file `searched` and `skipped` announcements of §3.4, leaving match records alone. When `false`, every file searched or skipped is announced through the implementation's output component, not on stderr. |
 | /v     | `true` \| `false` (`false`) | When `true`, list the resolved option set at the top of output, one key/value pair per line.        |
 | /H     | `true` \| `false` (`false`) | When `true`, print help text to stdout, exit with code 0, and do not traverse.                      |
 | /n     | `true` \| `false` (`true`)  | When `true`, include the 1-based line-number field in each match line.                              |
@@ -114,7 +131,7 @@ usage: <executable> [/P path] [/p "ext, ext"] [/r regex] [/s bool] [/h bool] [/v
   /p  "ext, ext" ()        comma-separated bare extensions to search; empty searches every file
   /r  regex (.)            ECMAScript regular expression evaluated against each line
   /s  true|false (true)    recurse into subdirectories
-  /h  true|false (true)    suppress announcement of files that contain no match
+  /h  true|false (true)    suppress per-file announcements, leaving match records alone
   /v  true|false (false)   list the resolved option set before traversal
   /H  true|false (false)   print this help and exit
   /n  true|false (true)    include the line-number field in each match line
@@ -136,21 +153,22 @@ A usage diagnostic reports a command line TextFinder will not act on. Every impl
 | Switch is the last token, with no argument token following   | `missing argument for switch: <switch>` |
 | Boolean switch given a value other than `true` or `false`    | `invalid boolean for <switch>: <token>` |
 | /P given an empty argument                                   | `empty root path for switch: <switch>`  |
+| /r given an empty argument                                   | `empty expression for switch: <switch>` |
 | /r given an expression the regex engine will not compile     | `invalid regex for switch: /r`          |
 
-These reason lines are fixed text, identical across implementations, so that a rejected command line produces the same stderr output from any of them. Failures that are not about what the user typed — a search that cannot initialize its output component, for instance — are not usage diagnostics and are specified per implementation.
+These reason lines are fixed text, identical across implementations. Failures that are not about what the user typed — a search that cannot initialize its output component, for instance — are not usage diagnostics and are specified per implementation.
 
 ## 6. Non-Functional Requirements
 
 - Portability: each implementation must run on Windows and on POSIX systems (Linux, macOS).
 - Dependencies: implementations use only the standard library and, where necessary, packages from the language's supported package ecosystem for regex and filesystem access. No third-party TextFinder library is used.
-- Consistency: every implementation uses the ECMAScript regular-expression syntax fixed in §3.3. For the same inputs, every implementation must produce the same match set and emit matches in the same order — directory-traversal order as specified in §3.4 — so that runs from any implementation can be compared line-for-line.
+- Consistency: every implementation uses the ECMAScript regular-expression syntax fixed in §3.3, and for the same inputs produces the same match set, emitted in depth-first traversal order and, within a file, in line order. Because §3.2 leaves a directory's entries in filesystem order, the total emission order is reproducible only across runs over the same tree on the same platform and filesystem; there every implementation agrees, each reading directories through the same platform facility, and runs can be compared line-for-line. Elsewhere the match set still agrees but the order of matches from different directory entries may not.
 
 ## 7. Non-Goals
 
 - TextFinder does not modify files.
 - TextFinder does not follow symbolic links.
-- TextFinder does not search binary files. Files whose contents cannot be decoded as UTF-8 are skipped; when /h is `false`, each skipped file is announced through the output component along with the files that were searched.
+- TextFinder does not search binary files. A file holding a NUL byte, or whose contents cannot be decoded as UTF-8, is skipped per §3.3.
 
 ## 8. Development Order
 

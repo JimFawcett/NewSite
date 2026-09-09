@@ -18,8 +18,13 @@ Spec_driven_TextFinder/
     │   ├── Prompts_Spec_Cpp_TextFinder_Entry.md
     │   └── Prompts_Fix_Spec_Cpp_TextFinder_Entry.md
     ├── Cpp_Spec_driven_Cmdline/
-    │   └── Spec_Cpp_TextFinder_Cmdline.md
-    ├── Cpp_Spec_driven_Dirnav/     (empty — reserved for Spec_Cpp_TextFinder_Dirnav.md)
+    │   ├── Spec_Cpp_TextFinder_Cmdline.md
+    │   ├── Prompts_Spec_Cpp_TextFinder_Cmdline.md
+    │   └── Prompts_Fix_Spec_Cpp_TextFinder_Cmdline.md
+    ├── Cpp_Spec_driven_Dirnav/
+    │   ├── Spec_Cpp_TextFinder_Dirnav.md
+    │   ├── Prompts_Spec_Cpp_TextFinder_Dirnav.md
+    │   └── Prompts_Fix_Spec_Cpp_TextFinder_Dirnav.md
     └── Cpp_Spec_driven_Output/     (empty — reserved for Spec_Cpp_TextFinder_Output.md)
 ```
 

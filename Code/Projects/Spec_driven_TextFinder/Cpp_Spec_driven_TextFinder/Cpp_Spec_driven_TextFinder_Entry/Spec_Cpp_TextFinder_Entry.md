@@ -33,7 +33,7 @@ The binary:
 4. Instantiate `Cpp_TextFinder_Output`, passing formatting information derived from the parsed commands to its constructor. If construction fails, write `cannot initialize output` to stderr and exit with code `1`.
 5. Finalize the skip list: begin with the defaults from §5, then apply any `addSkipDirectory` calls compiled into the binary.
 6. Instantiate `Cpp_TextFinder_Dirnav<Cpp_TextFinder_Output>` with the `Cpp_TextFinder_Output` instance, the finalized skip list, and the parsed commands as constructor arguments. Regex compilation occurs here; a malformed `/r` argument is an invalid command argument — write the usage diagnostic Spec_TextFinder.md §5.2 fixes for it, `invalid regex for switch: /r` followed by a newline and `Cpp_TextFinder_Cmdline::usageLine()`, to stderr and exit with code `1`.
-7. For each root path collected from `/P` (in the order given, defaulting to `.` when `/P` is omitted), invoke the `Cpp_TextFinder_Dirnav` traversal entry on the same `Cpp_TextFinder_Dirnav` instance. If a root path cannot be opened, pass the string `cannot open [path]` (with the actual path substituted) to `Cpp_TextFinder_Output` for display and continue with the next root path; unopenable root paths do not affect the exit code.
+7. For each root path collected from `/P` (in the order given, defaulting to `.` when `/P` is omitted), invoke the `Cpp_TextFinder_Dirnav` traversal entry on the same `Cpp_TextFinder_Dirnav` instance, then continue with the next root path. A root path that cannot be searched — unopenable, a symbolic link, or neither a regular file nor a directory — is announced by `Cpp_TextFinder_Dirnav` itself, per Spec_TextFinder.md §3.4; the binary neither formats nor inspects that notice, and no root-path outcome affects the exit code.
 8. Return exit code 0.
 
 ## 5. Skip List
@@ -52,16 +52,14 @@ Per Spec_TextFinder.md §3.2 and §5, `/P` may appear multiple times and each oc
 
 - Exit code 0: all startup steps and traversal completed, or `/H true` printed help. Match count and unopenable root paths do not affect the exit code.
 - Exit code 1: `Cpp_TextFinder_Cmdline` parsing failed, `/r` was a malformed regex, or `Cpp_TextFinder_Output` construction failed.
-- Match records are always emitted through `Cpp_TextFinder_Output`. Per-file announcements — emitted by `Cpp_TextFinder_Dirnav` — also flow through `Cpp_TextFinder_Output`: under `/h true` (the default), no announcement is emitted for files without matches; under `/h false`, every file examined is announced through `Cpp_TextFinder_Output` regardless of match state. Unopenable-path notices are formatted by the binary as `cannot open [path]` and passed to `Cpp_TextFinder_Output` for display. Diagnostics for the three failure modes are written to stderr by the binary. A parse failure and a malformed regex are usage diagnostics, whose text Spec_TextFinder.md §5.2 fixes byte for byte: the binary writes the string `Cpp_TextFinder_Cmdline` composed for a parse failure unaltered, and composes the malformed-regex one itself from the same table. An output-construction failure is not about what the user typed, so it is not a usage diagnostic and carries no usage line.
+- Match records and every announcement are emitted through `Cpp_TextFinder_Output` by `Cpp_TextFinder_Dirnav`, in the forms and under the gating Spec_TextFinder.md §3.4 fixes. The binary formats none of them, including notices about root paths it supplied. Diagnostics for the three failure modes are written to stderr by the binary. A parse failure and a malformed regex are usage diagnostics, whose text Spec_TextFinder.md §5.2 fixes byte for byte: the binary writes the string `Cpp_TextFinder_Cmdline` composed for a parse failure unaltered, and composes the malformed-regex one itself from the same table. An output-construction failure is not about what the user typed, so it is not a usage diagnostic and carries no usage line.
 
 ## 8. Build
 
 Per [Cpp_TextFinder_Structure.md](../Cpp_TextFinder_Structure.md):
 
-- Language: C++23.
-- Build system: CMake target that produces the executable `Cpp_TextFinder`.
+- CMake target producing the executable `Cpp_TextFinder`.
 - `Cpp_TextFinder_Entry` is a conventional translation unit (not a module); consumes the three libraries via `import` and `std` via `import std;`.
-- Toolchain minimums for C++ Modules with `import std;`: GCC 14+, Clang 17+, or MSVC 19.36+ (Visual Studio 2022 17.6+). CMake 3.28+ recommended for module support.
 
 ## 9. Non-Goals
 
