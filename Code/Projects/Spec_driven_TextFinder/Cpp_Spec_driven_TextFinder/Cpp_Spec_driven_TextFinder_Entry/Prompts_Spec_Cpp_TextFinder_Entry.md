@@ -47,7 +47,7 @@ Read [Spec_TextFinder.md](../../Spec_TextFinder.md) (Cpp_Structure.md was alread
 
 Flagged two open questions:
 
-- **Format discrepancy**: [Cpp_Structure.md](../Cpp_Structure.md) said `path:line:text`; parent [Spec_TextFinder.md:56](../../Spec_TextFinder.md#L56) fixes the separator at ` - ` (space-hyphen-space).
+- **Format discrepancy**: [Cpp_Structure.md](../Cpp_TextFinder_Structure.md) said `path:line:text`; parent [Spec_TextFinder.md:56](../../Spec_TextFinder.md#L56) fixes the separator at ` - ` (space-hyphen-space).
 - **Multi-path exit-code**: parent Spec §3.4 predates `/P` accumulation. Interpreted as "any unopenable root → non-zero, continue with the rest." Asked whether to short-circuit or ignore per-path failures instead.
 
 ---
@@ -63,7 +63,7 @@ Flagged two open questions:
 
 Applied both:
 
-- Updated [Cpp_Structure.md](../Cpp_Structure.md) to replace the `path:line:text` phrasing with "fields joined by ` - ` (space-hyphen-space, per Spec_TextFinder.md §3.4)."
+- Updated [Cpp_Structure.md](../Cpp_TextFinder_Structure.md) to replace the `path:line:text` phrasing with "fields joined by ` - ` (space-hyphen-space, per Spec_TextFinder.md §3.4)."
 - Updated [Spec_Cpp_TextFinder_Entry.md](Spec_Cpp_TextFinder_Entry.md) Section 4 step 7, step 8, and Section 7 so unopenable root paths are diagnosed on stderr but no longer affect the exit code. Exit code non-zero is now reserved for invalid command lines only.
 
 ---

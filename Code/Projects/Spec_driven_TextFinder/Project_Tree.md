@@ -10,16 +10,17 @@ Spec_driven_TextFinder/
 ├── Prompts_Fix_Spec_TextFinder.md
 ├── Project_Tree.md
 └── Cpp_Spec_driven_TextFinder/
-    ├── Cpp_Structure.md
+    ├── Cpp_TextFinder_Structure.md
     ├── Prompts_Cpp_Structure.md
     ├── Prompts_Fix_Cpp_Structure.md
     ├── Cpp_Spec_driven_TextFinder_Entry/
     │   ├── Spec_Cpp_TextFinder_Entry.md
     │   ├── Prompts_Spec_Cpp_TextFinder_Entry.md
     │   └── Prompts_Fix_Spec_Cpp_TextFinder_Entry.md
-    ├── Cpp_Spec_driven_Cmdline/    (empty — reserved for Spec_Cpp_Cmdline.md)
-    ├── Cpp_Spec_driven_Dirnav/     (empty — reserved for Spec_Cpp_Dirnav.md)
-    └── Cpp_Spec_driven_Output/     (empty — reserved for Spec_Cpp_Output.md)
+    ├── Cpp_Spec_driven_Cmdline/
+    │   └── Spec_Cpp_TextFinder_Cmdline.md
+    ├── Cpp_Spec_driven_Dirnav/     (empty — reserved for Spec_Cpp_TextFinder_Dirnav.md)
+    └── Cpp_Spec_driven_Output/     (empty — reserved for Spec_Cpp_TextFinder_Output.md)
 ```
 
 ## Legend

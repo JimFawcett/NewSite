@@ -1,6 +1,6 @@
 # Prompts and Replies — Cpp_Structure Refinement
 
-This file records the prompts and replies exchanged while refining [Cpp_Structure.md](Cpp_Structure.md) after its initial draft. Turns 1–7 (initial creation and early edits) are recorded in [Prompts_Cpp_Structure.md](Prompts_Cpp_Structure.md).
+This file records the prompts and replies exchanged while refining [Cpp_Structure.md](Cpp_TextFinder_Structure.md) after its initial draft. Turns 1–7 (initial creation and early edits) are recorded in [Prompts_Cpp_Structure.md](Prompts_Cpp_Structure.md).
 
 ---
 
@@ -12,7 +12,7 @@ This file records the prompts and replies exchanged while refining [Cpp_Structur
 
 ### Assistant
 
-Reviewed [Cpp_Structure.md](Cpp_Structure.md) and listed twelve items across four groups, without editing. Awaited user decisions.
+Reviewed [Cpp_Structure.md](Cpp_TextFinder_Structure.md) and listed twelve items across four groups, without editing. Awaited user decisions.
 
 **Interface signature:**
 
@@ -61,7 +61,7 @@ Provided decisions on all twelve items:
 
 ### Assistant
 
-Rewrote [Cpp_Structure.md](Cpp_Structure.md) applying all twelve decisions:
+Rewrote [Cpp_Structure.md](Cpp_TextFinder_Structure.md) applying all twelve decisions:
 
 - Fixed `std::String` to `std::string`; parameter is now `const std::string&`.
 - Cpp_Dirnav now stated to format matches into grep-style `path:line:text` before emitting.

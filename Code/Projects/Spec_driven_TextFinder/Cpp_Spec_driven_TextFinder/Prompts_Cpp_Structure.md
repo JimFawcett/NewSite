@@ -1,6 +1,6 @@
 # Prompts and Replies — Cpp_Structure Development
 
-This file records the prompts and replies exchanged while drafting [Cpp_Structure.md](Cpp_Structure.md).
+This file records the prompts and replies exchanged while drafting [Cpp_Structure.md](Cpp_TextFinder_Structure.md).
 
 ---
 
@@ -24,7 +24,7 @@ Created the [Cpp_Spec_driven_TextFinder/](.) subdirectory under `Spec_driven_Tex
 
 ### Assistant
 
-Created [Cpp_Structure.md](Cpp_Structure.md) with two sections:
+Created [Cpp_Structure.md](Cpp_TextFinder_Structure.md) with two sections:
 
 - **Libraries** — `Cpp_Cmdline`, `Cpp_Dirnav`, `Cpp_Output` listed with brief placeholder descriptions (command-line parsing, directory navigation, output formatting).
 - **Binary** — `Cpp_TextFinder_Entry` as the entry point that links the three libraries.
@@ -39,7 +39,7 @@ Created [Cpp_Structure.md](Cpp_Structure.md) with two sections:
 
 ### Assistant
 
-Rewrote [Cpp_Structure.md](Cpp_Structure.md) with fuller library responsibilities:
+Rewrote [Cpp_Structure.md](Cpp_TextFinder_Structure.md) with fuller library responsibilities:
 
 - `Cpp_Cmdline` — parses the command line into commands that control `Cpp_Dirnav` and `Cpp_Output`.
 - `Cpp_Dirnav` — defines an abstract type `Output` with a single function `void output(std::String& match_str);` (fenced C++ block).
@@ -70,7 +70,7 @@ Appended two bullet items to the Binary section describing runtime behavior: com
 
 ### Assistant
 
-Added a `## Note` section at the end of [Cpp_Structure.md](Cpp_Structure.md) stating that the design forms a data pipeline that emits output immediately after each regex match evaluation.
+Added a `## Note` section at the end of [Cpp_Structure.md](Cpp_TextFinder_Structure.md) stating that the design forms a data pipeline that emits output immediately after each regex match evaluation.
 
 ---
 
@@ -94,4 +94,4 @@ Added a third runtime bullet to the Binary section: the `Cpp_Dirnav` instance st
 
 ### Assistant
 
-Created this file, [Prompts_Cpp_Structure.md](Prompts_Cpp_Structure.md), summarizing each prompt and reply that shaped [Cpp_Structure.md](Cpp_Structure.md). User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.
+Created this file, [Prompts_Cpp_Structure.md](Prompts_Cpp_Structure.md), summarizing each prompt and reply that shaped [Cpp_Structure.md](Cpp_TextFinder_Structure.md). User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.
