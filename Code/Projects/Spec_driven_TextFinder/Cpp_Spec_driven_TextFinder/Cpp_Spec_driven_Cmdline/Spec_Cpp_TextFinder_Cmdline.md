@@ -17,7 +17,7 @@ The library:
 - Is implemented as a C++ module targeting C++23, using modern idiomatic C++ constructs.
 - Exports a `ProgramCommands` struct and a parse entry that converts `argc`/`argv` into it, applying the syntax rules, defaults, and multiple-occurrence rules of Spec_TextFinder.md §4–§5.
 - Reports every command-line error by returning a diagnostic string; it opens no stream and does not terminate the process.
-- Renders the help text of Spec_TextFinder.md §5.1 and the resolved-option listing as strings, which `Cpp_TextFinder_Entry` writes to stdout.
+- Renders the help text of Spec_TextFinder.md §5.1, its usage line, and the resolved-option listing as strings, for `Cpp_TextFinder_Entry` to write — help and options to stdout, the usage line to stderr within a diagnostic.
 
 ## 4. Public Interface
 
@@ -50,7 +50,7 @@ The field comments are the switch-to-field mapping, and the initializers are the
 
 `ProgramCommands` is a copyable value type with no invariants: every field combination the parser can produce is valid. `Cpp_TextFinder_Dirnav` holds a reference to the instance owned by `Cpp_TextFinder_Entry` rather than a copy, so that instance must outlive the `Cpp_TextFinder_Dirnav` it was passed to.
 
-`parse` returns the resolved commands on success and a usage diagnostic (§7) on failure; it writes nothing. `regexText` is the `/r` argument verbatim — compilation happens at `Cpp_TextFinder_Dirnav` construction, per Spec_Cpp_TextFinder_Entry.md §4 step 6.
+`parse` returns the resolved commands on success and a usage diagnostic (§6) on failure; it writes nothing. `regexText` is the `/r` argument verbatim — compilation happens at `Cpp_TextFinder_Dirnav` construction, per Spec_Cpp_TextFinder_Entry.md §4 step 6.
 
 ## 5. Parsing Rules
 
@@ -65,13 +65,13 @@ The field comments are the switch-to-field mapping, and the initializers are the
 
 Every violation in §5 is a usage error. `parse` returns the usage diagnostic that Spec_TextFinder.md §5.2 fixes for that condition — its reason line verbatim, a newline, then `usageLine()`. `Cpp_TextFinder_Entry` writes the returned string to stderr unaltered and exits with code `1` (Spec_Cpp_TextFinder_Entry.md §4 step 1). §5's six conditions are the first six rows of that table; the last, a malformed `/r`, is detected later, when `Cpp_TextFinder_Dirnav` compiles the expression, and is composed there from the same table.
 
-There is no error condition for a duplicated switch or an empty `/p` list: duplicates resolve by §5 rule 4, and an empty extension list means every file is searched. `regexText` therefore reaches `Cpp_TextFinder_Dirnav` non-empty, and the compiled expression can never be one that matches every position by matching nothing.
+There is no error condition for a duplicated switch or an empty `/p` list: duplicates resolve by §5 rule 4, and an empty extension list means every file is searched.
 
 ## 7. Extension-List Normalization
 
 The `/p` argument arrives as one token; the shell has already removed the quotes. Normalization implements the `/p` rules of Spec_TextFinder.md §5: split the token on commas, trim each item, strip one leading `.` if present, discard empty items, and preserve the order of the survivors. Whitespace is any character for which `std::isspace` returns true in the C locale.
 
-Duplicates are retained — they are harmless to the membership test `Cpp_TextFinder_Dirnav` performs. Case folding is not applied; `Cpp_TextFinder_Dirnav` decides how extensions compare against file names, following the platform conventions of Spec_TextFinder.md §3.2.
+Duplicates are retained — they are harmless to the membership test `Cpp_TextFinder_Dirnav` performs. Case folding is not applied here; the platform-dependent comparison fixed by Spec_TextFinder.md §5 is performed by `Cpp_TextFinder_Dirnav` when it matches a file name against the list.
 
 ## 8. Help Text and Option Listing
 
@@ -95,7 +95,6 @@ Per [Cpp_TextFinder_Structure.md](../Cpp_TextFinder_Structure.md):
 
 ## 10. Non-Goals
 
-- The library does not compile or validate the regular expression.
+- The library does not compile the regular expression; it checks only that the argument is non-empty.
 - The library does not access the filesystem or verify that a root path exists.
-- The library does not write to stdout or stderr, and does not terminate the process.
 - The library does not support non-ASCII characters in argv (on Windows, system-codepage `argv` is not decoded to Unicode).

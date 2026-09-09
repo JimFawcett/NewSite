@@ -1,16 +1,16 @@
 # Cpp_TextFinder — Project Structure
 
-The Cpp_TextFinder project comprises three libraries and one binary. The binary imports the three libraries.
+The Cpp_TextFinder project comprises three libraries and one binary. The binary imports all three. The libraries themselves form a chain: `Cpp_TextFinder_Dirnav` imports `Cpp_TextFinder_Cmdline` for the program-command struct, and `Cpp_TextFinder_Output` imports `Cpp_TextFinder_Dirnav` for the `Output` base class. Nothing imports `Cpp_TextFinder_Output` but the binary.
 
 ## Libraries
 
-- **Cpp_TextFinder_Cmdline** — parses the command line into a `struct` of program commands that control the behavior of `Cpp_TextFinder_Dirnav` and `Cpp_TextFinder_Output`. Specified in [Spec_Cpp_TextFinder_Cmdline.md](Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md).
+- **Cpp_TextFinder_Cmdline** — parses the command line into a `struct` of program commands that control the behavior of `Cpp_TextFinder_Dirnav`. Specified in [Spec_Cpp_TextFinder_Cmdline.md](Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md).
 - **Cpp_TextFinder_Dirnav** — directory navigation. Reads file contents, runs regex matching, and formats matches into a string with fields joined by ` - ` (space-hyphen-space, per Spec_TextFinder.md §3.4) before emitting them. Creates the regex state machine once per run, not once per file. Defines the abstract base class:
   ```cpp
   class Output {
   public:
       virtual ~Output() = default;
-      virtual void output(const std::string& match_str) = 0;
+      virtual void output(const std::string& text) = 0;
   };
   ```
   `Cpp_TextFinder_Dirnav` binds to a concrete `Output` via a template parameter. Specified in [Spec_Cpp_TextFinder_Dirnav.md](Cpp_Spec_driven_Dirnav/Spec_Cpp_TextFinder_Dirnav.md).
@@ -24,7 +24,7 @@ Each library's CMake target name matches its component name above.
 - Owns the skip list and passes it to `Cpp_TextFinder_Dirnav` for use during traversal.
 - On execution, the binary command line is parsed into a program-command struct using `Cpp_TextFinder_Cmdline`.
 - An instance of `Cpp_TextFinder_Output` is created and bound to a `Cpp_TextFinder_Dirnav` instance via a template parameter.
-- The `Cpp_TextFinder_Dirnav` instance is started at the specified (possibly default) path and performs a DFS for regex matches on files in the directory tree.
+- The `Cpp_TextFinder_Dirnav` instance is started at each of the specified (possibly default) root paths in turn and performs a DFS for regex matches on files in each directory tree.
 
 ## Build
 

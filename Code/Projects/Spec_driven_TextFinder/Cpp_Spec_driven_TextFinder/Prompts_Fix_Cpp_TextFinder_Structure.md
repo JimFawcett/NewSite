@@ -1,6 +1,6 @@
 # Prompts and Replies — Cpp_Structure Refinement
 
-This file records the prompts and replies exchanged while refining [Cpp_Structure.md](Cpp_TextFinder_Structure.md) after its initial draft. Turns 1–7 (initial creation and early edits) are recorded in [Prompts_Cpp_Structure.md](Prompts_Cpp_Structure.md).
+This file records the prompts and replies exchanged while refining [Cpp_Structure.md](Cpp_TextFinder_Structure.md) after its initial draft. Turns 1–7 (initial creation and early edits) are recorded in [Prompts_Cpp_TextFinder_Structure.md](Prompts_Cpp_TextFinder_Structure.md).
 
 ---
 
@@ -121,4 +121,4 @@ Amended [Constitution.md](../Constitution.md):
 
 ### Assistant
 
-Created this file, [Prompts_Fix_Cpp_Structure.md](Prompts_Fix_Cpp_Structure.md), summarizing the review, twelve decisions, the token-scope discussion, and the Constitution amendment that followed. User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.
+Created this file, [Prompts_Fix_Cpp_TextFinder_Structure.md](Prompts_Fix_Cpp_TextFinder_Structure.md), summarizing the review, twelve decisions, the token-scope discussion, and the Constitution amendment that followed. User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.

@@ -4,7 +4,7 @@ Specification for the `Cpp_TextFinder_Dirnav` library of the C++ TextFinder impl
 
 ## 1. Purpose
 
-`Cpp_TextFinder_Dirnav` walks a directory tree, reads each selected file, evaluates the regular expression against each line, formats every match into a record, and emits it. It is the only component that touches file contents. It writes to no stream: every record and announcement leaves through the `Output` interface it defines.
+`Cpp_TextFinder_Dirnav` walks a directory tree, reads each selected file, evaluates the regular expression against each line, formats every match into a record, and emits it. It is the only component that touches file contents, and it writes to no stream.
 
 ## 2. Scope
 
@@ -32,7 +32,7 @@ import Cpp_TextFinder_Cmdline;
 export class Output {
 public:
     virtual ~Output() = default;
-    virtual void output(const std::string& match_str) = 0;
+    virtual void output(const std::string& text) = 0;
 };
 
 export using SkipList = std::vector<std::string>;
@@ -59,7 +59,7 @@ The constructor compiles `commands.regexText` as an ECMAScript expression and le
 3. **Recursion.** Subdirectories are descended only when `/s` is `true`. When `/s` is `false`, only the entries of the root path itself are considered.
 4. **Skip list.** A directory matching a skip-list entry per Spec_TextFinder.md §3.2 is pruned silently — a pruned directory is not a failure and is not announced. The list is consulted for every directory, root paths included, and applies to directory names only, so a root path that is a regular file is searched whatever its name.
 5. **Symbolic links.** A directory entry that is a symbolic link is passed over silently, whatever its target, since no attempt is made to open it.
-6. **Failed opens.** Any file or directory that cannot be opened is announced through `Output` as `cannot open <path>`; a directory so announced is pruned, a file so announced is not searched. These announcements are not gated on `/h`, per Spec_TextFinder.md §3.4.
+6. **Failed opens.** Any file or directory that cannot be opened draws the error announcement `cannot open <path>`; a directory so announced is pruned, a file so announced is not searched. Error announcements are not gated on `/h`, per Spec_TextFinder.md §3.4.
 
 ## 6. File Selection
 
@@ -83,7 +83,7 @@ The compiled expression is evaluated against each line with `std::regex_search`,
 
 Record forms, field separator, emission timing, and path rendering are fixed by Spec_TextFinder.md §3.4; `<path>` is produced with `path::generic_u8string()` after removing a leading `./` contributed by a root path of `.`.
 
-Announcements are emitted through the same `Output` in the forms and under the gating of Spec_TextFinder.md §3.4. Their placement: a `searched` or `skipped` announcement is emitted after the file has been read and admitted or rejected, and so precedes any record from that file; a `too large` or `cannot open` announcement is emitted at the point the failure is met.
+Announcements are emitted through the same `Output` in the forms and under the gating of Spec_TextFinder.md §3.4. Their placement: a file announcement is emitted once the file has been read and admitted or rejected, and so precedes any record from that file; an error announcement is emitted at the point the failure is met.
 
 ## 9. Build
 

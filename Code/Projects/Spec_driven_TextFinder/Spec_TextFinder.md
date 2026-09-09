@@ -6,14 +6,7 @@ TextFinder is a command-line utility that traverses a directory tree — recursi
 
 ## 2. Scope
 
-This document specifies behavior common to all TextFinder implementations. Implementations live in sibling folders under Spec_driven_TextFinder:
-
-- [Cpp_Spec_driven_TextFinder/](Cpp_Spec_driven_TextFinder/) — C++ implementation (initial focus)
-- `Rust_Spec_driven_TextFinder/` — Rust implementation (planned)
-- `CSharp_Spec_driven_TextFinder/` — C# implementation (planned)
-- `Python_Spec_driven_TextFinder/` — Python implementation (planned)
-
-Each language folder contains a `<Lang>_TextFinder_Structure.md` describing internal design, and one subfolder per component holding that component's `Spec_*.md`.
+This document specifies behavior common to all TextFinder implementations. Each lives in its own `<Lang>_Spec_driven_TextFinder/` folder holding a `<Lang>_TextFinder_Structure.md` and one subfolder per component, and refines this document without redefining it. [Cpp_Spec_driven_TextFinder/](Cpp_Spec_driven_TextFinder/) is the first; Rust, C#, and Python follow.
 
 Higher-level principles that constrain every implementation are recorded in [Constitution.md](Constitution.md) in this folder.
 
@@ -25,7 +18,7 @@ TextFinder accepts a sequence of switch/value pairs, defined in §5 and parsed p
 
 ### 3.2 Traversal
 
-Starting at the root path, TextFinder visits every subdirectory and every file that passes the active filters. Recursion is controlled by /s (see §5) and is enabled by default; when /s is set to `false`, only the root path itself is searched. When the root path resolves to a regular file rather than a directory, TextFinder searches that single file; when it resolves to anything else, it is not searched and is reported per §3.4.
+Starting at the root path, TextFinder visits every subdirectory and every file that passes the active filters. Recursion is controlled by /s (see §5) and is enabled by default; when /s is set to `false`, TextFinder searches the files directly within the root path but descends into none of its subdirectories. When the root path resolves to a regular file rather than a directory, TextFinder searches that single file; when it resolves to anything else, it is not searched and is reported per §3.4.
 
 Symbolic links are never opened. One met during traversal is passed over silently, since TextFinder makes no attempt to open it. A root path that is a symbolic link is reported per §3.4, because the user named it explicitly and it will not be searched.
 
@@ -41,7 +34,7 @@ A skip-list entry is compared against the directory's basename — the final com
 
 ### 3.3 Matching
 
-For each candidate file, TextFinder reads the file in full — so that a file failing a test is skipped entirely rather than searched in part — and admits it for searching only if it passes three tests: its size does not exceed 10 MB (10,485,760 bytes), its content holds no NUL byte, and its content is valid UTF-8. The NUL test is the binary-file test of §7; UTF-8 validity alone does not serve, because a UTF-16 file of ASCII text is valid UTF-8. A leading UTF-8 BOM is consumed and does not belong to the first line. A file that fails any test is not searched and is reported per §3.4.
+Each candidate file is tested before it is searched. Its size, taken from the filesystem, must not exceed 10 MB (10,485,760 bytes); a file above the limit is never read. A file within the limit is read in full — so that one failing a later test is skipped entirely rather than searched in part — and is admitted only if its content holds no NUL byte and is valid UTF-8. The NUL test is the binary-file test of §7; UTF-8 validity alone does not serve, because a UTF-16 file of ASCII text is valid UTF-8. A leading UTF-8 BOM is consumed and does not belong to the first line. A file that fails any test is not searched and is reported per §3.4.
 
 TextFinder evaluates the regular expression against each line of an admitted file.
 
@@ -63,22 +56,31 @@ The `<lineNumber>` field is emitted only when /n is `true` (the default); when `
 
 Matches are emitted as they occur — each match is written to stdout as soon as its line is evaluated, before the next line is evaluated. Matches therefore appear in the depth-first traversal order of §3.2, and within a file in line order; §6 records how far that order is reproducible.
 
-Besides match records, TextFinder announces the files and directories it meets, through the same destination and in the same stream position as the records they relate to. Each announcement is a fixed form followed by a path rendered as above:
+Besides match records, TextFinder announces the files and directories it meets, through the same destination and in the same stream position as the records they relate to. Each announcement is a fixed form followed by a path rendered as above, and falls into one of two kinds.
 
-| Announcement          | Emitted when                                                                                              |
-|-----------------------|-----------------------------------------------------------------------------------------------------------|
-| `searched <path>`     | a file was admitted by §3.3 and searched                                                                    |
-| `skipped <path>`      | a file was rejected by the NUL or UTF-8 test of §3.3                                                        |
-| `too large <path>`    | a file exceeded the size limit of §3.3                                                                      |
-| `cannot open <path>`  | a file, directory, or root path could not be opened, is a symbolic link named as a root, or is neither a regular file nor a directory |
+**File announcements** report the outcome of examining a file. They are emitted only when /h is `false`:
 
-`searched` and `skipped` are emitted only when /h is `false`; under the default /h `true` no file announcement appears and the output holds match records alone. `too large` and `cannot open` are emitted whatever /h says.
+| Announcement      | Emitted when                                         |
+|-------------------|------------------------------------------------------|
+| `searched <path>` | a file was admitted by §3.3 and searched              |
+| `skipped <path>`  | a file was rejected by the NUL or UTF-8 test of §3.3  |
+
+**Error announcements** report work TextFinder was asked to do and could not. They are emitted whatever /h says:
+
+| Announcement         | Emitted when                                                                                              |
+|----------------------|-----------------------------------------------------------------------------------------------------------|
+| `too large <path>`   | a file exceeded the size limit of §3.3                                                                      |
+| `cannot open <path>` | a file, directory, or root path could not be opened, is a symbolic link named as a root, or is neither a regular file nor a directory |
+
+Under the default /h `true`, the output holds match records and error announcements.
+
+Every match record and every announcement is terminated by a single LF (U+000A) on every platform. An implementation must prevent its runtime from translating that terminator to CRLF, or the same tree would yield byte-different output on Windows and POSIX and the comparison of §6 would hold only within a platform.
 
 Usage diagnostics, whose exact text §5.2 fixes, are written to stderr. The announcements above are routed through the output component, not to stderr. The process exit code is 0 when invocation succeeded (whether or not matches were found) and non-zero when the command line was invalid; nothing announced above affects the exit code.
 
 ### 3.5 Public Interface
 
-Each implementation exposes its search functionality through a small public interface. That interface includes a function that adds a directory name to the skip list:
+Each implementation exposes a function that adds a directory name to the skip list:
 
     addSkipDirectory(name)
 
@@ -111,8 +113,8 @@ When a switch other than /P appears more than once on the command line, the last
 | /P     | path (`.`)              | Root path for traversal. May be an absolute or a relative path. /P may be given more than once; each occurrence adds a root path, and the paths are traversed in the order given. |
 | /p     | `"ext, ext, ..."` (`""`)| Comma-separated list of file extensions to search, quoted. The extension of a file is its last dot-suffix, a leading dot on the name notwithstanding: `.gitignore` has extension `gitignore`, so a dot-file is searched like any other and is excluded only by /p or by the skip list. Each item is trimmed of surrounding whitespace and loses one leading dot if present, so `cpp` and `.cpp` are equivalent; empty items are discarded, so `"cpp,,rs"` and `"cpp, rs"` name the same two extensions. Extensions compare case-sensitively on POSIX and case-insensitively on Windows, as skip-list entries do. When the resulting list is empty, every file is searched, including files with no extension. When it is non-empty, files with no extension are not searched. |
 | /r     | regex (`"."`)           | Regular expression evaluated against each line. Syntax is ECMAScript; the expression is compiled once per invocation. It must not be empty — the default `.` is the way to match every line. |
-| /s     | `true` \| `false` (`true`)  | Recursive search. When `false`, only the root path itself is searched.                              |
-| /h     | `true` \| `false` (`true`)  | Suppress the per-file `searched` and `skipped` announcements of §3.4, leaving match records alone. When `false`, every file searched or skipped is announced through the implementation's output component, not on stderr. |
+| /s     | `true` \| `false` (`true`)  | Recursive search. When `false`, the files directly within the root path are searched but no subdirectory is entered. |
+| /h     | `true` \| `false` (`true`)  | Suppress the file announcements of §3.4, leaving match records and error announcements. When `false`, every file searched or skipped is announced through the implementation's output component, not on stderr. |
 | /v     | `true` \| `false` (`false`) | When `true`, list the resolved option set at the top of output, one key/value pair per line.        |
 | /H     | `true` \| `false` (`false`) | When `true`, print help text to stdout, exit with code 0, and do not traverse.                      |
 | /n     | `true` \| `false` (`true`)  | When `true`, include the 1-based line-number field in each match line.                              |
@@ -131,7 +133,7 @@ usage: <executable> [/P path] [/p "ext, ext"] [/r regex] [/s bool] [/h bool] [/v
   /p  "ext, ext" ()        comma-separated bare extensions to search; empty searches every file
   /r  regex (.)            ECMAScript regular expression evaluated against each line
   /s  true|false (true)    recurse into subdirectories
-  /h  true|false (true)    suppress per-file announcements, leaving match records alone
+  /h  true|false (true)    suppress file announcements; error announcements still appear
   /v  true|false (false)   list the resolved option set before traversal
   /H  true|false (false)   print this help and exit
   /n  true|false (true)    include the line-number field in each match line
@@ -167,10 +169,4 @@ These reason lines are fixed text, identical across implementations. Failures th
 ## 7. Non-Goals
 
 - TextFinder does not modify files.
-- TextFinder does not follow symbolic links.
-- TextFinder does not search binary files. A file holding a NUL byte, or whose contents cannot be decoded as UTF-8, is skipped per §3.3.
-
-## 8. Development Order
-
-1. C++ implementation, driven by [Cpp_TextFinder_Structure.md](Cpp_Spec_driven_TextFinder/Cpp_TextFinder_Structure.md) and the per-component `Spec_Cpp_TextFinder_*.md` files beneath it.
-2. Rust, C#, and Python implementations follow, each derived from this specification together with its own language-level spec and structure documents.
+- TextFinder does not follow symbolic links (§3.2) and does not search binary files (§3.3).

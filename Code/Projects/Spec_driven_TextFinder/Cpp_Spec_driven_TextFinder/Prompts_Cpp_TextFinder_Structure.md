@@ -94,4 +94,4 @@ Added a third runtime bullet to the Binary section: the `Cpp_Dirnav` instance st
 
 ### Assistant
 
-Created this file, [Prompts_Cpp_Structure.md](Prompts_Cpp_Structure.md), summarizing each prompt and reply that shaped [Cpp_Structure.md](Cpp_TextFinder_Structure.md). User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.
+Created this file, [Prompts_Cpp_TextFinder_Structure.md](Prompts_Cpp_TextFinder_Structure.md), summarizing each prompt and reply that shaped [Cpp_Structure.md](Cpp_TextFinder_Structure.md). User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.
