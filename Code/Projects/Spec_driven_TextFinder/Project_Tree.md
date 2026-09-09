@@ -14,6 +14,7 @@ Spec_driven_TextFinder/
     ├── Prompts_Cpp_TextFinder_Structure.md
     ├── Prompts_Fix_Cpp_TextFinder_Structure.md
     ├── Prompts_Fix_Spec_Cpp_TextFinder.md
+    ├── Prompts_Build_Cpp_TextFinder.md
     ├── CMakeLists.txt
     ├── Cpp_Spec_driven_TextFinder_Entry/
     │   ├── Spec_Cpp_TextFinder_Entry.md
@@ -53,5 +54,6 @@ Spec_driven_TextFinder/
 - `Prompts_*.md` — records of the spec-driven design conversations; not inputs to code
 - `Prompts_Fix_*.md` — records of subsequent refinement conversations for the same artifact
 - `Prompts_Fix_Spec_Cpp_TextFinder.md` — refinements reaching across every C++ component and the project spec
+- `Prompts_Build_Cpp_TextFinder.md` — record of turning the C++ specifications into working code
 - `src/` — implementation of the sibling `Spec_*.md`, one per component
 - `CMakeLists.txt` — build definition; the top-level one configures the whole project
