@@ -67,8 +67,8 @@ void testDefaults(Checker& check) {
     check.expect(parsed->suppressNoMatch, "default /h is true");
     check.expect(!parsed->verbose, "default /v is false");
     check.expect(!parsed->help, "default /H is false");
-    check.expect(parsed->lineNumbers, "default /n is true");
-    check.expect(parsed->matchedLine, "default /L is true");
+    check.expect(!parsed->lineNumbers, "default /n is false");
+    check.expect(!parsed->matchedLine, "default /L is false");
 }
 
 void testSyntax(Checker& check) {
@@ -157,12 +157,12 @@ void testOptionsText(Checker& check) {
     commands.recurse = false;
 
     check.equal(optionsText(commands),
-                "/P src\n/P doc\n/p cpp, h\n/r int main\n/s false\n/h true\n/v false\n/H false\n/n true\n/L true\n",
+                "/P src\n/P doc\n/p cpp, h\n/r int main\n/s false\n/h true\n/v false\n/H false\n/n false\n/L false\n",
                 "option listing follows §5 order");
 
     ProgramCommands defaults;
     check.equal(optionsText(defaults),
-                "/P .\n/p \n/r .\n/s true\n/h true\n/v false\n/H false\n/n true\n/L true\n",
+                "/P .\n/p \n/r .\n/s true\n/h true\n/v false\n/H false\n/n false\n/L false\n",
                 "an empty /p list keeps its trailing space");
 }
 

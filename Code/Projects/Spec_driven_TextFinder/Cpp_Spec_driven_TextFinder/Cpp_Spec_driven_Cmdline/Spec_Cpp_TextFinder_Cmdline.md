@@ -36,8 +36,8 @@ export struct ProgramCommands {
     bool                     suppressNoMatch{true}; // /h
     bool                     verbose{false};        // /v
     bool                     help{false};           // /H
-    bool                     lineNumbers{true};     // /n
-    bool                     matchedLine{true};     // /L
+    bool                     lineNumbers{false};    // /n
+    bool                     matchedLine{false};    // /L
 };
 
 export std::expected<ProgramCommands, std::string> parse(int argc, char* argv[]);

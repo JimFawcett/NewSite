@@ -35,3 +35,24 @@ target_compile_definitions(Cpp_TextFinder_IntegrationTest_Driver
 add_dependencies(Cpp_TextFinder_IntegrationTest_Driver Cpp_TextFinder)
 
 add_test(NAME IntegrationTest COMMAND Cpp_TextFinder_IntegrationTest_Driver)
+
+# The demonstration searches this project's own tree, rooted one level up at Spec_driven_TextFinder.
+get_filename_component(DEMO_ROOT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
+
+add_library(Cpp_TextFinder_Demo)
+
+target_sources(Cpp_TextFinder_Demo
+  PUBLIC
+    FILE_SET CXX_MODULES FILES
+      src/Cpp_TextFinder_Demo.ixx
+)
+
+target_compile_features(Cpp_TextFinder_Demo PUBLIC cxx_std_23)
+
+add_executable(Cpp_TextFinder_Demo_Driver src/Cpp_TextFinder_Demo_Driver.cpp)
+target_link_libraries(Cpp_TextFinder_Demo_Driver PRIVATE Cpp_TextFinder_Demo)
+target_compile_definitions(Cpp_TextFinder_Demo_Driver
+  PRIVATE
+    TEXTFINDER_EXE="$<TARGET_FILE:Cpp_TextFinder>"
+    DEMO_ROOT="${DEMO_ROOT_PATH}")
+add_dependencies(Cpp_TextFinder_Demo_Driver Cpp_TextFinder)

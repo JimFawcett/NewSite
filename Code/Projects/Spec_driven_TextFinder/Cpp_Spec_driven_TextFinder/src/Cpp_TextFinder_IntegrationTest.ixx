@@ -134,8 +134,16 @@ void testSearch(Checker& check, const std::filesystem::path& exe, const std::fil
     check.equal(sortedLines(whole.out), "src/a.cpp\nsrc/notes.txt\nsrc/sub/b.cpp\n",
                 "build/ is pruned by the default skip list");
 
-    const Run full = invoke(exe, R"(-P src/a.cpp -r "return")", tree);
-    check.equal(full.out, "src/a.cpp - 2 - return 0;\n", "the default record form carries all three fields");
+    const Run full = invoke(exe, R"(-P src/a.cpp -r "return" -n true -L true)", tree);
+    check.equal(full.out, "src/a.cpp - 2 - return 0;\n", "/n and /L true carry all three fields");
+
+    const Run once = invoke(exe, R"(-P src/a.cpp -r "\{|\}")", tree);
+    check.equal(once.out, "src/a.cpp\n", "a path-only record is emitted once per matching file");
+
+    const Run bare = invoke(exe, "-P src", tree);
+    check.equal(sortedLines(bare.out),
+                "src/a.cpp\nsrc/binary.cpp\nsrc/notes.txt\nsrc/sub/b.cpp\n",
+                "a bare command line lists every selected file without reading it");
 
     const Run filtered = invoke(exe, R"(-P src -r "int main" -p cpp -n false -L false)", tree);
     check.equal(sortedLines(filtered.out), "src/a.cpp\nsrc/sub/b.cpp\n", "/p filters by extension");

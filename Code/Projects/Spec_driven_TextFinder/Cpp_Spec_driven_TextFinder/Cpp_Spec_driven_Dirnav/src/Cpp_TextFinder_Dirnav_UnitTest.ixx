@@ -143,24 +143,43 @@ void testRecordForms(Checker& check, const std::filesystem::path& root) {
     commands.regexText = "return";
     commands.extensions = {"cpp"};
 
-    check.equal(relative(search(root / "a.cpp", commands), root), "a.cpp - 2 - return 0;",
-                "default record carries path, line number, and text");
+    ProgramCommands both = commands;
+    both.lineNumbers = true;
+    both.matchedLine = true;
+    check.equal(relative(search(root / "a.cpp", both), root), "a.cpp - 2 - return 0;",
+                "/n and /L true carry path, line number, and text");
 
-    ProgramCommands noNumber = commands;
-    noNumber.lineNumbers = false;
-    check.equal(relative(search(root / "a.cpp", noNumber), root), "a.cpp - return 0;",
+    ProgramCommands textOnly = commands;
+    textOnly.matchedLine = true;
+    check.equal(relative(search(root / "a.cpp", textOnly), root), "a.cpp - return 0;",
                 "/n false omits the line number and its separator");
 
-    ProgramCommands noText = commands;
-    noText.matchedLine = false;
-    check.equal(relative(search(root / "a.cpp", noText), root), "a.cpp - 2",
+    ProgramCommands numberOnly = commands;
+    numberOnly.lineNumbers = true;
+    check.equal(relative(search(root / "a.cpp", numberOnly), root), "a.cpp - 2",
                 "/L false omits the matched line and its separator");
 
-    ProgramCommands pathOnly = commands;
-    pathOnly.lineNumbers = false;
-    pathOnly.matchedLine = false;
-    check.equal(relative(search(root / "a.cpp", pathOnly), root), "a.cpp",
-                "both false leaves the path alone");
+    check.equal(relative(search(root / "a.cpp", commands), root), "a.cpp",
+                "the default record is the path alone");
+
+    // Spec_TextFinder.md §3.4: a path-only record tells no two matches in a file apart.
+    const std::filesystem::path repeated =
+        std::filesystem::temp_directory_path() / "Cpp_TextFinder_Dirnav_UnitTest_Repeat";
+    std::filesystem::remove_all(repeated);
+    writeFile(repeated / "many.txt", "hit one\nmiss\nhit two\nhit three");
+
+    ProgramCommands pathOnly;
+    pathOnly.regexText = "hit";
+    check.equal(relative(search(repeated / "many.txt", pathOnly), repeated), "many.txt",
+                "three matching lines yield one path-only record");
+
+    ProgramCommands numbered = pathOnly;
+    numbered.lineNumbers = true;
+    check.equal(relative(search(repeated / "many.txt", numbered), repeated),
+                "many.txt - 1|many.txt - 3|many.txt - 4",
+                "asking for the line number brings every matching line back");
+
+    std::filesystem::remove_all(repeated);
 }
 
 void testAnnouncements(Checker& check, const std::filesystem::path& root) {
@@ -196,7 +215,7 @@ void testLineHandling(Checker& check) {
 
     ProgramCommands commands;
     commands.regexText = "^t";
-    commands.matchedLine = false;
+    commands.lineNumbers = true;
 
     check.equal(relative(search(root / "crlf.txt", commands), root), "crlf.txt - 2|crlf.txt - 3",
                 "CRLF terminates a line and is not part of it");
@@ -205,12 +224,34 @@ void testLineHandling(Checker& check) {
 
     ProgramCommands anchored;
     anchored.regexText = "^first$";
-    anchored.matchedLine = false;
-    anchored.lineNumbers = false;
     check.equal(relative(search(root / "bom.txt", anchored), root), "bom.txt",
                 "a leading BOM is not part of the first line");
 
     std::filesystem::remove_all(root);
+}
+
+// Spec_TextFinder.md §3.3: the default expression with no line or text field needs no content.
+void testNoContentCase(Checker& check, const std::filesystem::path& root) {
+    ProgramCommands defaults;
+    check.equal(relative(search(root, defaults), root),
+                ".gitignore|a.cpp|binary.cpp|notes.txt|sub/b.cpp",
+                "a bare command line reports every selected file, the NUL file among them");
+
+    const std::filesystem::path empties =
+        std::filesystem::temp_directory_path() / "Cpp_TextFinder_Dirnav_UnitTest_Empty";
+    std::filesystem::remove_all(empties);
+    writeFile(empties / "empty.txt", "");
+    writeFile(empties / "content.txt", "x");
+
+    check.equal(relative(search(empties, defaults), empties), "content.txt",
+                "an empty file is not reported, having no line to match");
+
+    ProgramCommands withText = defaults;
+    withText.matchedLine = true;
+    check.equal(relative(search(empties / "content.txt", withText), empties), "content.txt - x",
+                "asking for the matched line reads the file again");
+
+    std::filesystem::remove_all(empties);
 }
 
 void testSizeLimit(Checker& check) {
@@ -245,6 +286,7 @@ int runDirnavUnitTests(std::ostream& log) {
     testSelectionAndPruning(check, root);
     testRecordForms(check, root);
     testAnnouncements(check, root);
+    testNoContentCase(check, root);
     testLineHandling(check);
     testSizeLimit(check);
 

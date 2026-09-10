@@ -104,7 +104,9 @@ class Cpp_TextFinder_Dirnav {
 public:
     Cpp_TextFinder_Dirnav(Out& out, const SkipList& skips, const ProgramCommands& commands)
         : out_{out}, skips_{skips}, commands_{commands},
-          expression_{commands.regexText, std::regex_constants::ECMAScript} {}
+          expression_{commands.regexText, std::regex_constants::ECMAScript},
+          pathOnly_{!commands.lineNumbers && !commands.matchedLine},
+          contentNotNeeded_{pathOnly_ && commands.regexText == "."} {}
 
     void search(const std::filesystem::path& root) {
         std::error_code error;
@@ -160,6 +162,15 @@ private:
         if (error) { announceCannotOpen(file); return; }
         if (size > sizeLimit) { emit("too large " + displayPath(file)); return; }
 
+        // Spec_TextFinder.md §3.3: with the default expression and no line or text field,
+        // any non-empty file matches and the record is its path, so the content is not needed.
+        if (contentNotNeeded_) {
+            if (size == 0) return;
+            announceFile("searched " + displayPath(file));
+            emit(displayPath(file));
+            return;
+        }
+
         std::ifstream input{file, std::ios::binary};
         if (!input) { announceCannotOpen(file); return; }
 
@@ -189,6 +200,10 @@ private:
             if (commands_.lineNumbers) record += " - " + std::to_string(number);
             if (commands_.matchedLine) record += " - " + std::string{line};
             emit(record);
+
+            // Spec_TextFinder.md §3.4: a path-only record cannot distinguish matches
+            // within a file, so the first one settles it.
+            if (pathOnly_) return;
         }
     }
 
@@ -218,4 +233,6 @@ private:
     const SkipList&         skips_;
     const ProgramCommands&  commands_;
     std::regex              expression_;
+    bool                    pathOnly_;
+    bool                    contentNotNeeded_;
 };

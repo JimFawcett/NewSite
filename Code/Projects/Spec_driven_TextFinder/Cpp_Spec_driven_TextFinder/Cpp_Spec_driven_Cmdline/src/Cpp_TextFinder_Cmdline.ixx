@@ -12,8 +12,8 @@ export struct ProgramCommands {
     bool                     suppressNoMatch{true}; // /h
     bool                     verbose{false};        // /v
     bool                     help{false};           // /H
-    bool                     lineNumbers{true};     // /n
-    bool                     matchedLine{true};     // /L
+    bool                     lineNumbers{false};    // /n
+    bool                     matchedLine{false};    // /L
 };
 
 export std::string usageLine();
@@ -74,8 +74,8 @@ std::string helpText() {
   /h  true|false (true)    suppress file announcements; error announcements still appear
   /v  true|false (false)   list the resolved option set before traversal
   /H  true|false (false)   print this help and exit
-  /n  true|false (true)    include the line-number field in each match line
-  /L  true|false (true)    include the matched-line field in each match line
+  /n  true|false (false)   include the line-number field in each match line
+  /L  true|false (false)   include the matched-line field in each match line
 
 Switch introducers / and - are equivalent. Switch letters are case-sensitive,
 so /h and /H differ. Every switch takes exactly one argument; there are no bare

@@ -38,6 +38,8 @@ Each candidate file is tested before it is searched. Its size, taken from the fi
 
 TextFinder evaluates the regular expression against each line of an admitted file.
 
+One case needs no file content at all. When the expression is the default `.`, and /n and /L are both `false` — all three being defaults, so this is what a bare command line does — a record carries only the path and a single match settles it, so TextFinder reports every selected file of non-zero size without opening it. The size test still applies, reading only filesystem metadata, but the NUL and UTF-8 tests do not, and no `skipped` announcement arises. Two consequences are accepted for the speed this buys: a file those tests would have rejected, a binary file among them, is reported; and so is a file whose lines are all empty, which `.` would not in fact have matched.
+
 A line is a maximal run of characters bounded by a line terminator. The recognized terminators are LF (U+000A), CRLF (U+000D U+000A), and bare CR (U+000D); this covers Windows, Linux, and macOS conventions. If the final line of a file lacks a terminator, it is nevertheless treated as a line.
 
 The regular expression uses ECMAScript syntax. Each implementation compiles the expression exactly once per invocation and reuses the compiled engine for every line evaluated.
@@ -46,11 +48,13 @@ The expression signifies a match by finding at least one occurrence anywhere wit
 
 ### 3.4 Output
 
-Matches are written to stdout, one match per line, with fields joined by the three-character separator ` - ` (space, hyphen, space). The default full form is:
+Matches are written to stdout, one match per line, with fields joined by the three-character separator ` - ` (space, hyphen, space). The full form is:
 
     <path> - <lineNumber> - <matchedLine>
 
-The `<lineNumber>` field is emitted only when /n is `true` (the default); when `false`, `<lineNumber>` and its trailing separator are omitted. The `<matchedLine>` field is emitted only when /L is `true` (the default); when `false`, `<matchedLine>` and its leading separator are omitted. When both /n and /L are `false`, only `<path>` is emitted, once per matching line however many occurrences that line holds.
+The `<lineNumber>` field is emitted only when /n is `true`; when `false` (the default), `<lineNumber>` and its trailing separator are omitted. The `<matchedLine>` field is emitted only when /L is `true`; when `false` (the default), `<matchedLine>` and its leading separator are omitted.
+
+When either field is present, a record is emitted for every matching line, however many occurrences that line holds. With both at their defaults a record carries `<path>` alone, which tells no two matches in one file apart, so a single record is emitted per matching file and evaluation of that file stops at its first match.
 
 `<path>` is the path by which the file was reached from the root path supplied on /P, normalized so that a root of `.` contributes no leading `./`, and rendered with `/` separators on every platform.
 
@@ -117,8 +121,8 @@ When a switch other than /P appears more than once on the command line, the last
 | /h     | `true` \| `false` (`true`)  | Suppress the file announcements of §3.4, leaving match records and error announcements. When `false`, every file searched or skipped is announced through the implementation's output component, not on stderr. |
 | /v     | `true` \| `false` (`false`) | When `true`, list the resolved option set at the top of output, one key/value pair per line.        |
 | /H     | `true` \| `false` (`false`) | When `true`, print help text to stdout, exit with code 0, and do not traverse.                      |
-| /n     | `true` \| `false` (`true`)  | When `true`, include the 1-based line-number field in each match line.                              |
-| /L     | `true` \| `false` (`true`)  | When `true`, include the matched-line-text field in each match line.                                |
+| /n     | `true` \| `false` (`false`) | When `true`, include the 1-based line-number field in each match line.                              |
+| /L     | `true` \| `false` (`false`) | When `true`, include the matched-line-text field in each match line.                                |
 
 Omitting a switch is equivalent to supplying its default value. Language-specific specifications may extend this table but must not redefine any switch listed here.
 
@@ -136,8 +140,8 @@ usage: <executable> [/P path] [/p "ext, ext"] [/r regex] [/s bool] [/h bool] [/v
   /h  true|false (true)    suppress file announcements; error announcements still appear
   /v  true|false (false)   list the resolved option set before traversal
   /H  true|false (false)   print this help and exit
-  /n  true|false (true)    include the line-number field in each match line
-  /L  true|false (true)    include the matched-line field in each match line
+  /n  true|false (false)   include the line-number field in each match line
+  /L  true|false (false)   include the matched-line field in each match line
 
 Switch introducers / and - are equivalent. Switch letters are case-sensitive,
 so /h and /H differ. Every switch takes exactly one argument; there are no bare

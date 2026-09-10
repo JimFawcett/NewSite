@@ -73,13 +73,15 @@ Selection applies uniformly: a root path that is a regular file is filtered by `
 
 A selected file is put to the three admission tests of Spec_TextFinder.md §3.3. The size test is applied to the size reported by the filesystem, so a file above the limit is never read into memory; the NUL and UTF-8 tests are applied to the bytes read.
 
+The constructor records whether the run satisfies §3.3's no-content case — `regexText` equal to `.` with `lineNumbers` and `matchedLine` both `false`. When it does, a selected file that passes the size test and is not empty is reported from its path alone, and `std::ifstream` is never opened for it.
+
 UTF-8 validation rejects truncated sequences, overlong encodings, encoded surrogates, and scalar values above U+10FFFF.
 
 Lines are then split per Spec_TextFinder.md §3.3, and line numbers count every line, including those that do not match.
 
 ## 8. Matching and Emission
 
-The compiled expression is evaluated against each line with `std::regex_search`, which gives the anywhere-in-the-line match Spec_TextFinder.md §3.3 requires.
+The compiled expression is evaluated against each line with `std::regex_search`, which gives the anywhere-in-the-line match Spec_TextFinder.md §3.3 requires. When a record would carry the path alone — `lineNumbers` and `matchedLine` both `false` — the loop over a file's lines returns after emitting the first match, per §3.4.
 
 Record forms, field separator, emission timing, and path rendering are fixed by Spec_TextFinder.md §3.4; `<path>` is produced with `path::generic_u8string()` after removing a leading `./` contributed by a root path of `.`.
 
