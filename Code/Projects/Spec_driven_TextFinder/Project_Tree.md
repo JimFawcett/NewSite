@@ -15,7 +15,13 @@ Spec_driven_TextFinder/
     ├── Prompts_Fix_Cpp_TextFinder_Structure.md
     ├── Prompts_Fix_Spec_Cpp_TextFinder.md
     ├── Prompts_Build_Cpp_TextFinder.md
+    ├── Prompts_Cpp_Spec_driven_TextFinder_Tests.md
     ├── CMakeLists.txt
+    ├── run_unit_tests.bat
+    ├── run_integration_tests.bat
+    ├── src/
+    │   ├── Cpp_TextFinder_IntegrationTest.ixx
+    │   └── Cpp_TextFinder_IntegrationTest_Driver.cpp
     ├── Cpp_Spec_driven_TextFinder_Entry/
     │   ├── Spec_Cpp_TextFinder_Entry.md
     │   ├── Prompts_Spec_Cpp_TextFinder_Entry.md
@@ -29,21 +35,27 @@ Spec_driven_TextFinder/
     │   ├── Prompts_Fix_Spec_Cpp_TextFinder_Cmdline.md
     │   ├── CMakeLists.txt
     │   └── src/
-    │       └── Cpp_TextFinder_Cmdline.ixx
+    │       ├── Cpp_TextFinder_Cmdline.ixx
+    │       ├── Cpp_TextFinder_Cmdline_UnitTest.ixx
+    │       └── Cpp_TextFinder_Cmdline_TestDriver.cpp
     ├── Cpp_Spec_driven_Dirnav/
     │   ├── Spec_Cpp_TextFinder_Dirnav.md
     │   ├── Prompts_Spec_Cpp_TextFinder_Dirnav.md
     │   ├── Prompts_Fix_Spec_Cpp_TextFinder_Dirnav.md
     │   ├── CMakeLists.txt
     │   └── src/
-    │       └── Cpp_TextFinder_Dirnav.ixx
+    │       ├── Cpp_TextFinder_Dirnav.ixx
+    │       ├── Cpp_TextFinder_Dirnav_UnitTest.ixx
+    │       └── Cpp_TextFinder_Dirnav_TestDriver.cpp
     └── Cpp_Spec_driven_Output/
         ├── Spec_Cpp_TextFinder_Output.md
         ├── Prompts_Spec_Cpp_TextFinder_Output.md
         ├── Prompts_Fix_Spec_Cpp_TextFinder_Output.md
         ├── CMakeLists.txt
         └── src/
-            └── Cpp_TextFinder_Output.ixx
+            ├── Cpp_TextFinder_Output.ixx
+            ├── Cpp_TextFinder_Output_UnitTest.ixx
+            └── Cpp_TextFinder_Output_TestDriver.cpp
 ```
 
 ## Legend
@@ -55,5 +67,9 @@ Spec_driven_TextFinder/
 - `Prompts_Fix_*.md` — records of subsequent refinement conversations for the same artifact
 - `Prompts_Fix_Spec_Cpp_TextFinder.md` — refinements reaching across every C++ component and the project spec
 - `Prompts_Build_Cpp_TextFinder.md` — record of turning the C++ specifications into working code
+- `Prompts_Cpp_Spec_driven_TextFinder_Tests.md` — record of building and running the test suites
 - `src/` — implementation of the sibling `Spec_*.md`, one per component
+- `*_UnitTest.ixx` — tests for that component, exporting one entry point; `*_TestDriver.cpp` runs it
+- `Cpp_TextFinder_IntegrationTest.ixx` — drives the built executable end to end, covering the Entry binary
+- `run_unit_tests.bat`, `run_integration_tests.bat` — run the suites, announcing each and its exit status
 - `CMakeLists.txt` — build definition; the top-level one configures the whole project
