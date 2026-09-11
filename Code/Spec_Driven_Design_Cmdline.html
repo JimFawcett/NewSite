@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Cmdline.html - the Cpp_TextFinder_Cmdline library
+-->
+<head>
+  <title>Spec-Driven Design: Cmdline</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github table { table-layout: fixed; }
+    #github details { border: 1px solid var(--atten); margin: 0.5em 0em; padding: 0.25em 0.75em; }
+    #github details summary { cursor: pointer; font-weight: bold; padding: 0.25em 0em; }
+    #github details pre { width: auto; max-width: 100%; overflow-x: auto; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Cmdline.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/10/2026
+  </div>
+
+  <content-block>
+    <header>
+      <div id="pagetitle" class="header">
+        <h2 id="title">TextFinder Spec-Driven Design: Cmdline</h2>
+        <h4 class="indent" id="subtitle">the one place that knows switch letters, syntax, and defaults</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">About</a>
+        <a class="repoLinks" target="_blank" href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Project Repo</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="purpose"></a>
+      <h3>1. &nbsp;Purpose</h3>
+      <t-b>
+        <code>Cpp_TextFinder_Cmdline</code> converts <code>argc</code> and
+        <code>argv</code> into a struct of program commands.  Spec_Cpp_TextFinder_Cmdline.md
+        §1 makes it the single place in the C++ implementation where switch letters,
+        argument syntax, and defaults are known, and the document calls itself the C++
+        binding of Spec_TextFinder.md §4 and §5 rather than a restatement of them.
+      </t-b>
+      <t-b>
+        The library opens no stream and terminates no process.  It performs no
+        traversal, no matching, and no file I/O, and it touches no filesystem: a root
+        path is never tested for existence, an extension is never compared against a
+        file name.  What the library decides, it decides from the tokens alone.
+      </t-b>
+
+      <a id="interface"></a>
+      <h3>2. &nbsp;Public Interface</h3>
+      <t-b>
+        The module interface unit exports one struct and four functions at global
+        scope, matching the unqualified type usage in Spec_Cpp_TextFinder_Entry.md.
+      </t-b>
+<pre><code class="language-cpp">export module Cpp_TextFinder_Cmdline;
+
+import std;
+
+export struct ProgramCommands {
+    std::vector&lt;std::string&gt; rootPaths{"."};        // /P
+    std::vector&lt;std::string&gt; extensions{};          // /p
+    std::string              regexText{"."};        // /r
+    bool                     recurse{true};         // /s
+    bool                     suppressNoMatch{true}; // /h
+    bool                     verbose{false};        // /v
+    bool                     help{false};           // /H
+    bool                     lineNumbers{false};    // /n
+    bool                     matchedLine{false};    // /L
+};
+
+export std::expected&lt;ProgramCommands, std::string&gt; parse(int argc, char* argv[]);
+export std::string usageLine();
+export std::string helpText();
+export std::string optionsText(const ProgramCommands&amp; commands);</code></pre>
+      <t-b>
+        <ul class="tight">
+          <li>
+            <strong>The member initializers are the defaults.</strong>  They are the
+            sole authority in code for the defaults Spec_TextFinder.md §5 tabulates,
+            so a default-constructed <code>ProgramCommands</code> equals the result of
+            parsing an empty command line.  The unit suite asserts exactly that, one
+            test per field.
+          </li>
+          <li>
+            <strong>The field comments are the switch mapping.</strong>  Nine fields,
+            nine switches, one comment each.  A reader tracing <code>/L</code> through
+            the implementation starts here.
+          </li>
+          <li>
+            <strong><code>ProgramCommands</code> has no invariants.</strong>  Every
+            field combination the parser can produce is valid, so the struct stays a
+            copyable value type with no accessors.
+            <code>Cpp_TextFinder_Dirnav</code> holds a reference to the instance
+            <code>Cpp_TextFinder_Entry</code> owns, which is why that instance must
+            outlive it.
+          </li>
+          <li>
+            <strong><code>parse</code> returns
+            <code>std::expected&lt;ProgramCommands, std::string&gt;</code>.</strong>  A
+            command-line error travels back as a value, and
+            <code>Cpp_TextFinder_Entry</code> decides what to do with it.  The library
+            writes nothing, so the choice of stream and exit code stays with the
+            binary, per Spec_Cpp_TextFinder_Cmdline.md §2.
+          </li>
+        </ul>
+      </t-b>
+
+      <a id="parsing"></a>
+      <h3>3. &nbsp;Parsing Rules</h3>
+      <t-b>
+        <code>parse</code> scans <code>argv[1]</code> through
+        <code>argv[argc-1]</code> left to right, alternating switch token and argument
+        token.  It stops at the first violation and returns that diagnostic; no
+        partial result is produced.  Spec_Cpp_TextFinder_Cmdline.md §5 fixes four
+        rules.
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li>
+            <strong>Switch tokens.</strong>  A token in switch position is valid only
+            when it is exactly two characters, the first <code>/</code> or
+            <code>-</code>, the second one of the nine letters of Spec_TextFinder.md
+            §5.  <code>constexpr std::string_view switchLetters = "PprshvHnL";</code>
+            holds them, and the order of the two tests separates a token with no
+            introducer, which is <em>not a switch</em>, from any other
+            introducer-led token, which is an <em>unrecognized switch</em>.  A bare
+            <code>/</code> falls in the second group.
+          </li>
+          <li>
+            <strong>Arguments.</strong>  Each switch consumes the following token
+            verbatim, including when that token begins with <code>/</code> or
+            <code>-</code>, since §4 defines no bare flags.  A switch with no
+            following token is <em>missing its argument</em>.
+          </li>
+          <li>
+            <strong>Conversion.</strong>  The six boolean switches accept only
+            <code>true</code> or <code>false</code> under ASCII case folding.
+            <code>/r</code> and <code>/P</code> take the token verbatim and each
+            rejects an empty argument.
+            <code>/p</code> is normalized per Section 4 below.
+          </li>
+          <li>
+            <strong>Accumulation.</strong>  <code>/P</code> clears the default
+            <code>{"."}</code> on its first occurrence and appends thereafter,
+            preserving argv order.  Every other switch overwrites any earlier value,
+            silently discarding it, which is the last-wins rule of Spec_TextFinder.md
+            §4.  The <code>sawRootPath</code> flag is what distinguishes the first
+            <code>/P</code> from the rest.
+          </li>
+        </ol>
+      </t-b>
+      <t-b>
+        Two conditions that look like errors are not.  A duplicated switch resolves by
+        rule 4, and an empty <code>/p</code> list means every file is searched, so
+        Spec_Cpp_TextFinder_Cmdline.md §6 defines no diagnostic for either.
+      </t-b>
+
+      <a id="diagnostics"></a>
+      <h3>3.1 &nbsp;Where the Seven Diagnostics Arise</h3>
+      <t-b>
+        Spec_TextFinder.md §5.2 fixes seven usage diagnostics as reason lines
+        identical across implementations.  Six of them arise in this library, one
+        does not.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><code>not a switch: &lt;token&gt;</code> - rule 1, no introducer.</li>
+          <li><code>unrecognized switch: &lt;token&gt;</code> - rule 1, introducer led, letter unknown or token over-long.</li>
+          <li><code>missing argument for switch: &lt;switch&gt;</code> - rule 2.</li>
+          <li><code>invalid boolean for &lt;switch&gt;: &lt;token&gt;</code> - rule 3, a boolean switch given anything else.</li>
+          <li><code>empty root path for switch: &lt;switch&gt;</code> - rule 3, <code>/P</code> given an empty argument.</li>
+          <li><code>empty expression for switch: &lt;switch&gt;</code> - rule 3, <code>/r</code> given an empty argument.</li>
+          <li><code>invalid regex for switch: /r</code> - not here.  §6 defers it to
+              <code>Cpp_TextFinder_Dirnav</code>, which compiles the expression at
+              construction, and the diagnostic is composed there from the same
+              table.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Each returned string is its reason line, a newline, then
+        <code>usageLine()</code>, which one private helper assembles:
+        <code>diagnostic(reason)</code>.  Because the offending token is interpolated
+        as typed, the introducer the user chose is reproduced, so
+        <code>-q</code> comes back as <code>unrecognized switch: -q</code> and not as
+        <code>/q</code>.  The unit suite tests that directly.
+      </t-b>
+
+      <a id="extensions"></a>
+      <h3>4. &nbsp;Extension-List Normalization</h3>
+      <t-b>
+        The <code>/p</code> argument arrives as one token, the shell having removed the
+        quotes.  <code>normalizeExtensions</code> implements the <code>/p</code> rules
+        of Spec_TextFinder.md §5: split on commas, trim each item, strip one leading
+        <code>.</code> if present, discard empty items, and preserve the order of the
+        survivors.  Whitespace is any character for which <code>std::isspace</code>
+        returns true in the C locale.
+      </t-b>
+      <t-b>
+        Two decisions in Spec_Cpp_TextFinder_Cmdline.md §7 are worth naming.
+        Duplicates are retained, because they are harmless to the membership test
+        <code>Cpp_TextFinder_Dirnav</code> performs.  Case folding is not applied here:
+        §5 makes the comparison case-sensitive on POSIX and case-insensitive on
+        Windows, and the component that performs the comparison is the one that can
+        apply the platform rule.
+      </t-b>
+      <t-b>
+        The rules make <code>"cpp,,rs"</code> and <code>"cpp, rs"</code> name the same
+        two extensions, and <code>cpp</code> and <code>.cpp</code> the same one.  An
+        all-whitespace list normalizes to an empty list, which means every file is
+        searched.
+      </t-b>
+
+      <a id="help"></a>
+      <h3>5. &nbsp;Help Text and Option Listing</h3>
+      <t-b>
+        <code>helpText()</code> returns the text Spec_TextFinder.md §5.1 fixes, with
+        <code>&lt;executable&gt;</code> replaced by <code>Cpp_TextFinder</code>.
+        <code>usageLine()</code> returns its first line, exported so
+        <code>Cpp_TextFinder_Entry</code> can compose the malformed-regex diagnostic
+        from the same source the parser uses.  A raw string literal carries both, so
+        the quotes inside <code>[/p "ext, ext"]</code> need no escaping and the text
+        in the source matches the specification character for character.
+      </t-b>
+      <t-b>
+        <code>optionsText(commands)</code> returns what <code>/v true</code> writes:
+        one key/value pair per line, in §5 table order, formatted
+        <code>&lt;switch&gt; &lt;value&gt;</code> with a single separating space.
+        <code>/P</code> emits one line per root path in traversal order,
+        <code>/p</code> joins the normalized list with <code>, </code>,
+        <code>/r</code> emits the regex verbatim, and the six booleans emit
+        <code>true</code> or <code>false</code> lowercase.  An empty
+        <code>/p</code> list emits the line <code>/p </code> with its trailing space
+        retained, which the unit suite asserts, since the alternative would be a line
+        whose shape depends on the option value.
+      </t-b>
+      <t-b>
+        All three functions end their returned string with a newline, and none writes
+        to a stream.
+      </t-b>
+
+      <a id="source"></a>
+      <h3>6. &nbsp;Source - <code>Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline.ixx</code></h3>
+      <t-b>
+        The helpers sit in an unnamed namespace, so they have module linkage and stay
+        invisible to importers.  <code>parse</code> comes last, and its body is the
+        four rules of Section 3 in order.
+      </t-b>
+<pre><code class="language-cpp">// Cpp_TextFinder_Cmdline.ixx - converts argc/argv into ProgramCommands per Spec_Cpp_TextFinder_Cmdline.md
+
+export module Cpp_TextFinder_Cmdline;
+
+import std;
+
+export struct ProgramCommands {
+    std::vector&lt;std::string&gt; rootPaths{"."};        // /P
+    std::vector&lt;std::string&gt; extensions{};          // /p
+    std::string              regexText{"."};        // /r
+    bool                     recurse{true};         // /s
+    bool                     suppressNoMatch{true}; // /h
+    bool                     verbose{false};        // /v
+    bool                     help{false};           // /H
+    bool                     lineNumbers{false};    // /n
+    bool                     matchedLine{false};    // /L
+};
+
+export std::string usageLine();
+export std::string helpText();
+export std::string optionsText(const ProgramCommands&amp; commands);
+export std::expected&lt;ProgramCommands, std::string&gt; parse(int argc, char* argv[]);
+
+namespace {
+
+constexpr std::string_view switchLetters = "PprshvHnL";
+
+bool isSpace(char c) { return std::isspace(static_cast&lt;unsigned char&gt;(c)) != 0; }
+
+std::string trim(std::string_view text) {
+    while (!text.empty() &amp;&amp; isSpace(text.front())) text.remove_prefix(1);
+    while (!text.empty() &amp;&amp; isSpace(text.back())) text.remove_suffix(1);
+    return std::string{text};
+}
+
+std::vector&lt;std::string&gt; normalizeExtensions(const std::string&amp; argument) {
+    std::vector&lt;std::string&gt; items;
+    const std::string_view all{argument};
+    for (std::size_t pos = 0; pos &lt;= all.size();) {
+        const std::size_t comma = all.find(',', pos);
+        const std::size_t end = (comma == std::string_view::npos) ? all.size() : comma;
+        std::string item = trim(all.substr(pos, end - pos));
+        if (!item.empty() &amp;&amp; item.front() == '.') item.erase(0, 1);
+        if (!item.empty()) items.push_back(std::move(item));
+        if (comma == std::string_view::npos) break;
+        pos = comma + 1;
+    }
+    return items;
+}
+
+std::optional&lt;bool&gt; toBool(const std::string&amp; token) {
+    std::string folded;
+    for (char c : token) folded += static_cast&lt;char&gt;(std::tolower(static_cast&lt;unsigned char&gt;(c)));
+    if (folded == "true") return true;
+    if (folded == "false") return false;
+    return std::nullopt;
+}
+
+std::string diagnostic(const std::string&amp; reason) { return reason + "\n" + usageLine(); }
+
+} // namespace
+
+std::string usageLine() {
+    return R"(usage: Cpp_TextFinder [/P path] [/p "ext, ext"] [/r regex] [/s bool] [/h bool] [/v bool] [/H bool] [/n bool] [/L bool])"
+           "\n";
+}
+
+std::string helpText() {
+    return usageLine() + R"HELP(
+  /P  path (.)             root path for traversal; repeat to add more root paths
+  /p  "ext, ext" ()        comma-separated bare extensions to search; empty searches every file
+  /r  regex (.)            ECMAScript regular expression evaluated against each line
+  /s  true|false (true)    recurse into subdirectories
+  /h  true|false (true)    suppress file announcements; error announcements still appear
+  /v  true|false (false)   list the resolved option set before traversal
+  /H  true|false (false)   print this help and exit
+  /n  true|false (false)   include the line-number field in each match line
+  /L  true|false (false)   include the matched-line field in each match line
+
+Switch introducers / and - are equivalent. Switch letters are case-sensitive,
+so /h and /H differ. Every switch takes exactly one argument; there are no bare
+flags. Arguments containing whitespace or commas must be quoted.
+)HELP";
+}
+
+std::string optionsText(const ProgramCommands&amp; commands) {
+    const auto boolText = [](bool value) { return value ? "true" : "false"; };
+
+    std::string text;
+    for (const std::string&amp; path : commands.rootPaths) text += "/P " + path + "\n";
+
+    text += "/p ";
+    for (std::size_t i = 0; i &lt; commands.extensions.size(); ++i) {
+        if (i != 0) text += ", ";
+        text += commands.extensions[i];
+    }
+    text += "\n";
+
+    text += "/r " + commands.regexText + "\n";
+    text += std::string{"/s "} + boolText(commands.recurse) + "\n";
+    text += std::string{"/h "} + boolText(commands.suppressNoMatch) + "\n";
+    text += std::string{"/v "} + boolText(commands.verbose) + "\n";
+    text += std::string{"/H "} + boolText(commands.help) + "\n";
+    text += std::string{"/n "} + boolText(commands.lineNumbers) + "\n";
+    text += std::string{"/L "} + boolText(commands.matchedLine) + "\n";
+    return text;
+}
+
+std::expected&lt;ProgramCommands, std::string&gt; parse(int argc, char* argv[]) {
+    ProgramCommands commands;
+    bool sawRootPath = false;
+
+    for (int i = 1; i &lt; argc; ++i) {
+        const std::string token = argv[i];
+
+        if (token.empty() || (token.front() != '/' &amp;&amp; token.front() != '-'))
+            return std::unexpected(diagnostic("not a switch: " + token));
+        if (token.size() != 2 || switchLetters.find(token[1]) == std::string_view::npos)
+            return std::unexpected(diagnostic("unrecognized switch: " + token));
+        if (i + 1 &gt;= argc)
+            return std::unexpected(diagnostic("missing argument for switch: " + token));
+
+        const std::string argument = argv[++i];
+
+        const auto asBool = [&amp;](bool&amp; field) -&gt; std::optional&lt;std::string&gt; {
+            const auto value = toBool(argument);
+            if (!value) return diagnostic("invalid boolean for " + token + ": " + argument);
+            field = *value;
+            return std::nullopt;
+        };
+
+        std::optional&lt;std::string&gt; failure;
+        switch (token[1]) {
+        case 'P':
+            if (argument.empty()) {
+                failure = diagnostic("empty root path for switch: " + token);
+                break;
+            }
+            if (!sawRootPath) {
+                commands.rootPaths.clear();
+                sawRootPath = true;
+            }
+            commands.rootPaths.push_back(argument);
+            break;
+        case 'p':
+            commands.extensions = normalizeExtensions(argument);
+            break;
+        case 'r':
+            if (argument.empty()) {
+                failure = diagnostic("empty expression for switch: " + token);
+                break;
+            }
+            commands.regexText = argument;
+            break;
+        case 's': failure = asBool(commands.recurse); break;
+        case 'h': failure = asBool(commands.suppressNoMatch); break;
+        case 'v': failure = asBool(commands.verbose); break;
+        case 'H': failure = asBool(commands.help); break;
+        case 'n': failure = asBool(commands.lineNumbers); break;
+        case 'L': failure = asBool(commands.matchedLine); break;
+        }
+
+        if (failure) return std::unexpected(*failure);
+    }
+
+    return commands;
+}</code></pre>
+
+      <a id="prompts"></a>
+      <h3>7. &nbsp;Prompts</h3>
+      <t-b>
+        Two <code>Prompts_*.md</code> files sit in
+        <code>Cpp_Spec_driven_Cmdline/</code>, one recording the conversation that
+        produced <code>Spec_Cpp_TextFinder_Cmdline.md</code> and one recording the
+        refinements that followed.
+      </t-b>
+      <details>
+        <summary>Prompts_Spec_Cpp_TextFinder_Cmdline.md</summary>
+<pre class="language-markdown"><code class="language-markdown"># Prompts and Replies — Spec_Cpp_TextFinder_Cmdline Development
+
+This file records the prompts and replies that produced the initial draft of [Spec_Cpp_TextFinder_Cmdline.md](Spec_Cpp_TextFinder_Cmdline.md). The library was named `Cpp_Cmdline` during these turns; a later turn renamed it to `Cpp_TextFinder_Cmdline`.
+
+---
+
+## Turn 1
+
+### User
+
+&gt; create Spec_Cpp_TextFinder_Cmdline.md in Cpp_Spec_driven_Cmdline directory. Contents are specifications for the Cmdline library. You may use the project level Spec_TextFinder.md as an example of content and Spec_Cpp_TextFinder_Entry.md as example of structure and style.
+
+### Assistant
+
+Read [Spec_TextFinder.md](../../Spec_TextFinder.md), [Spec_Cpp_TextFinder_Entry.md](../Cpp_Spec_driven_TextFinder_Entry/Spec_Cpp_TextFinder_Entry.md), [Cpp_TextFinder_Structure.md](../Cpp_TextFinder_Structure.md), [Constitution.md](../../Constitution.md), and the two Entry prompts files, then created [Spec_Cpp_TextFinder_Cmdline.md](Spec_Cpp_TextFinder_Cmdline.md) with eleven sections following the Entry spec&#x27;s structure:
+
+1. **Purpose** — converts `argc`/`argv` into a program-command struct; no traversal, matching, file I/O, or stream writing.
+2. **Scope** — covers only the library; switch meanings stay in the parent Spec.
+3. **Responsibilities** — exports the struct and parser, recognizes both introducers, applies the multiple-occurrence rules, normalizes `/p`, reports errors without writing.
+4. **Public Interface** — `ProgramCommands` struct with one field per switch, plus `parse`, `helpText`, and `optionsText`.
+5. **Program Commands and Defaults** — switch-to-field mapping table with types, defaults, and accumulation.
+6. **Parsing Algorithm** — eight steps from token classification through the resolved result.
+7. **Error Conditions and Diagnostics** — four exact diagnostic strings; no error for duplicates or empty `/p` and `/r`.
+8. **Extension-List Normalization** — split, trim, strip one leading dot, discard empties, dedupe.
+9. **Help Text and Option Listing** — content of `/H` help and `/v` option listing.
+10. **Build** — C++23, CMake library target, C++ module, toolchain minimums.
+11. **Non-Goals** — no regex compilation, no filesystem access, no stream writing, no quote removal, no skip-list switch, no non-ASCII argv.
+
+Flagged four decisions made where the parent specs were silent:
+
+- **Help text ownership** — the Entry spec gives the binary `/H` and `/v` handling but never says where the text comes from. Placed `helpText()` and `optionsText()` in the library, since it owns the switch table, with Entry doing the writing.
+- **Return type** — `std::expected&lt;ProgramCommands, std::string&gt;`, because Entry needs both a failure signal and a diagnostic to write.
+- **Leading dot in `/p`** — parent §5 says extensions are bare but is silent on `.cpp`; specified stripping one leading dot so both forms work.
+- **Diagnostic wording** — fixed four message forms in a table rather than leaving the strings to the implementer.
+
+Also noted that the parent&#x27;s &quot;files with no extension are not searched&quot; rule is `Cpp_Dirnav` behavior, referenced but not specified here.
+
+---
+
+## Turn 2
+
+### User
+
+&gt; add to Responsibilities list: Implement as a module using C++23, and modern idomatic C++ constructs
+
+### Assistant
+
+Added &quot;Is implemented as a C++ module targeting C++23, using modern idiomatic C++ constructs&quot; as the first bullet of Section 3 in [Spec_Cpp_TextFinder_Cmdline.md](Spec_Cpp_TextFinder_Cmdline.md). Noted that it restates what Section 10 says about the module and language level, which is acceptable: Build covers the toolchain, Responsibilities now states the implementation obligation.</code></pre>
+      </details>
+      <details>
+        <summary>Prompts_Fix_Spec_Cpp_TextFinder_Cmdline.md</summary>
+<pre class="language-markdown"><code class="language-markdown"># Prompts and Replies — Spec_Cpp_TextFinder_Cmdline Refinement
+
+This file records the prompts and replies exchanged while refining [Spec_Cpp_TextFinder_Cmdline.md](Spec_Cpp_TextFinder_Cmdline.md) after its initial draft. The two turns that created it are recorded in [Prompts_Spec_Cpp_TextFinder_Cmdline.md](Prompts_Spec_Cpp_TextFinder_Cmdline.md). Several turns below also changed [Spec_TextFinder.md](../../Spec_TextFinder.md), [Spec_Cpp_TextFinder_Entry.md](../Cpp_Spec_driven_TextFinder_Entry/Spec_Cpp_TextFinder_Entry.md), [Cpp_TextFinder_Structure.md](../Cpp_TextFinder_Structure.md), and [Project_Tree.md](../../Project_Tree.md).
+
+---
+
+## Turn 1
+
+### User
+
+&gt; Are there any ambiguities or other issues with this spec
+
+### Assistant
+
+Reviewed the spec and listed twelve items in five groups, without editing. Awaited user decisions.
+
+**Switch classification:**
+
+1. The two &quot;not a switch&quot; and &quot;unrecognized switch&quot; error rows overlap — `/ss`, `-abc`, and a bare `/` satisfy both. Needs a deterministic rule.
+2. The claim that each error condition maps to a failure mode in parent §4 overreaches; parent §4 names three, and `not a switch` was a fourth introduced by this spec.
+
+**Cross-document gaps:**
+
+3. Entry §4 step 1 says the binary writes a *usage* diagnostic, but `parse` returns only a one-line reason. Ownership of the usage portion undefined.
+4. `/P &quot;&quot;` unspecified — usage error, or pass through to `cannot open []`?
+5. Entry passes the parsed commands to Dirnav, but nothing says whether Dirnav copies or references.
+
+**Normalization precision:**
+
+6. Duplicates discarded &quot;after trimming&quot; should be after the dot-strip, or `/p &quot;.cpp, cpp&quot;` keeps both.
+7. &quot;Whitespace&quot; undefined.
+8. The empty `/p` listing line leaves a trailing space ambiguous.
+
+**Underspecified for code generation:**
+
+9. `helpText()` content described but not fixed, so two builds differ.
+10. The interface code block omits `export module` and names no interface unit.
+11. Defaults live in three places — parent §5, this spec&#x27;s §5 table, and the §4 initializers.
+
+**Naming:**
+
+12. The file is `Spec_Cpp_TextFinder_Cmdline.md` but the library is `Cpp_Cmdline`; `Cpp_Structure.md` links to `Spec_Cpp_Output.md` as a sibling, resolving to the wrong directory. Parent §2 and §8 link to `Cpp_TextFinder/` and `Constitution_TextFinder.md`, neither of which exists.
+
+Also noted, without listing it, that parent §5 sent `/h false` announcements to stderr while Entry §7 routed them through the output component — a conflict already tracked in the Entry prompts file.
+
+---
+
+## Turn 2
+
+### User
+
+Provided decisions on all twelve items:
+
+&gt; 1. implement
+&gt; 2. implement
+&gt; 3. I can&#x27;t find &quot;usage diagnostic&quot; please advise
+&gt; 4. Usage error
+&gt; 5. Dirnav should reference
+&gt; 6. fix
+&gt; 7. std::isspace
+&gt; 8. use trailing space
+&gt; 9. pin verbatim
+&gt; 10. fix
+&gt; 11. Make contents of 5. a note instead of binding specc
+&gt; 12. Change library name to Cpp_TextFinder_Cmdline. Change Cpp_Structure.md to Cpp_TextFinder_Structure.md. Change target names to link form.  Make parent /h false  announcements should be routed to Cpp_TextFinder_Output
+
+### Assistant
+
+Answered item 3: &quot;usage diagnostic&quot; does appear — in Spec_TextFinder.md §4 and in Entry §4 steps 1, 4, 6 and §7 — but no document defined its content. Resolved it by adding `usageLine()` to the library and defining a usage diagnostic as *reason line + newline + `usageLine()`*, with `helpText()`&#x27;s first line being `usageLine()` so the synopsis has one definition. `parse` returns that complete string; Entry writes it unaltered and composes the same form itself for the two failures the library cannot see.
+
+Applied the remaining eleven decisions:
+
+- Introducer-present versus introducer-absent now partitions the two classification errors (1, 2).
+- `/P &quot;&quot;` became a fifth error condition (4).
+- `ProgramCommands` declared a copyable value type with no invariants; Dirnav holds a reference and Entry owns the instance for its lifetime (5).
+- Dedup moved after the dot-strip (6); whitespace fixed as `std::isspace` in the C locale (7); the empty `/p` line keeps its trailing space (8).
+- `usageLine()` and `helpText()` pinned verbatim (9).
+- The code block gained `export module Cpp_TextFinder_Cmdline;` and named `Cpp_TextFinder_Cmdline.ixx` (10).
+- Section 5 marked non-binding, with the §4 initializers as sole authority (11).
+
+For item 12, renamed `Cpp_Structure.md` to [Cpp_TextFinder_Structure.md](../Cpp_TextFinder_Structure.md) with `git mv`; renamed the three libraries and their CMake targets to `Cpp_TextFinder_Cmdline`, `Cpp_TextFinder_Dirnav`, and `Cpp_TextFinder_Output`; repointed the structure doc&#x27;s component links into the component subfolders; repaired the parent §2 and §8 links. Read &quot;change target names to link form&quot; as both the `Cpp_TextFinder_*` naming and the link repair. Prompts records kept their original prose, with only link targets repointed.
+
+Flagged two judgment calls: the parent&#x27;s `/h` routing change was phrased language-neutrally, naming `Cpp_TextFinder_Output` only as the C++ binding, because the parent governs four languages; and `Prompts_Cpp_Structure.md` and `Prompts_Fix_Cpp_Structure.md` were left unrenamed since only one file had been named.
+
+---
+
+## Turn 3
+
+### User
+
+&gt; The combination of Spec_TextFinder.md and Spec_Cpp_TextFinder_Cmdline.md see quite complex for the relatively simple parser.  Thinking carefully analyze these files to see if they can be simplified, perhaps by removing some of the spec details from the parent spec.  Do not make any changes without my authorization.
+
+### Assistant
+
+Analyzed both — 295 lines of specification around roughly 60 lines of parser — and reported without editing.
+
+Two findings beyond bulk:
+
+- The `/p` dot-strip and empty-item rules change which files get searched, so parent §6 Consistency makes them binding on all four implementations, yet they lived only in the C++ spec.
+- The previous turn&#x27;s `/h` edit had put `Cpp_TextFinder_Output` into a language-neutral parent table.
+
+Measured the duplication: the switch table existed four times (parent §5, the struct&#x27;s field comments, this spec&#x27;s §5 table, the verbatim help block); the `/P` accumulation rule was stated five times; the syntax rules twice.
+
+Proposed seven cuts with line estimates — drop the verbatim help block, delete the §5 table, collapse the five-row error table, replace the eight procedural steps with four declarative rules, trim §3 and §11, drop dedup, and remove the parent&#x27;s duplicate `/P` statements — projecting 295 lines down to about 213. Noted that pinning help text in the C++ spec looks like cross-language determinism but binds only C++, so the alternative to dropping it is moving it to the parent. Separately proposed dropping the `usageLine()` export by treating the malformed regex and output-construction failures as ordinary errors rather than usage diagnostics.
+
+---
+
+## Turn 4
+
+### User
+
+&gt; implement all changes. move block to parent instead of dropping
+
+### Assistant
+
+Applied all seven cuts, both findings, and the `usageLine()` simplification.
+
+- Parent gained [§5.1 Help Text](../../Spec_TextFinder.md) holding the verbatim block, parameterized on `&lt;executable&gt;` so it binds every implementation. The `/p` row absorbed the trim, dot-strip, and empty-item rules; the `/h` row lost the C++ type name; the duplicate `/P` statements in §3.2 and §4 were removed, the quoting paragraph compressed, and §4&#x27;s restatement of &quot;every switch has a default&quot; dropped.
+- This spec lost its §5 table — the struct&#x27;s field comments carry the mapping and its initializers the defaults. The eight-step algorithm became four declarative rules, the five-row error table became one paragraph, normalization became two sentences with dedup dropped, and §3 and §11 were cut to four bullets each. Sections renumbered 1–10.
+- Entry dropped `usageLine()` from the interface: a parse failure wrote the diagnostic the library had composed, while the malformed regex and output-construction failures wrote plain reason lines.
+
+Result: 295 lines to 245, with the switch table down from four copies to two. Noted that diagnostic wording was now deliberately unfixed, and that making it byte-identical would mean moving it to the parent alongside §5.1.
+
+---
+
+## Turn 5
+
+### User
+
+&gt; yes, make them byte-identical
+
+### Assistant
+
+Added [§5.2 Usage Diagnostics](../../Spec_TextFinder.md) to the parent: a six-row table of exact reason lines, with the format fixed as reason line + newline + the §5.1 usage line. Parent §3.4 and §4 now point at it instead of re-enumerating conditions.
+
+This forced a reversal of the previous turn&#x27;s simplification for one case. Once the reason lines are byte-fixed cross-language, `invalid regex for switch: /r` belongs in the same table as the other five — it complains about what the user typed — so a malformed regex became a full usage diagnostic again and `usageLine()` was re-exported, with a real caller in Entry §4 step 6. Regex compilation happens in Dirnav rather than the library, so §6 records that the library owns rows 1–5 and Entry composes row 6 from the same table.
+
+`cannot initialize output` stayed out of the table and remains a bare line: it reports a runtime failure, not a bad command line. Its wording is fixed in the Entry spec, which binds C++ only.
+
+Totals: parent 143 to 158 lines, this spec unchanged at 103, Entry 72.
+
+---
+
+## Turn 6
+
+### User
+
+&gt; create Prompts_Spec_Cpp_TextFinder_Cmdline.md containing the first two prompts in today&#x27;s conversation
+
+### Assistant
+
+Created [Prompts_Spec_Cpp_TextFinder_Cmdline.md](Prompts_Spec_Cpp_TextFinder_Cmdline.md) covering the two turns that produced the initial draft, and added it to [Project_Tree.md](../../Project_Tree.md). Noted that the library was named `Cpp_Cmdline` during those turns, and that the section list recorded there describes the spec as it stood at that point — several parts have since changed.
+
+---
+
+## Turn 7
+
+### User
+
+&gt; create Prompts_Fix_Spec_Cpp_TextFinder_Cmdline.md containing the remaining prompts and replies
+
+### Assistant
+
+Created this file, [Prompts_Fix_Spec_Cpp_TextFinder_Cmdline.md](Prompts_Fix_Spec_Cpp_TextFinder_Cmdline.md), documenting the twelve-item review, the decisions applied, the renames, the complexity analysis, the seven cuts, and the byte-identical diagnostics. User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.</code></pre>
+      </details>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#purpose">purpose</a></menu-elem>
+        <menu-elem class="secElem"><a href="#interface">interface</a></menu-elem>
+        <menu-elem class="secElem"><a href="#parsing">parsing rules</a></menu-elem>
+        <menu-elem class="secElem"><a href="#diagnostics">diagnostics</a></menu-elem>
+        <menu-elem class="secElem"><a href="#extensions">extensions</a></menu-elem>
+        <menu-elem class="secElem"><a href="#help">help and options</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <menu-elem class="secElem"><a href="#prompts">prompts</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenDesignPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>

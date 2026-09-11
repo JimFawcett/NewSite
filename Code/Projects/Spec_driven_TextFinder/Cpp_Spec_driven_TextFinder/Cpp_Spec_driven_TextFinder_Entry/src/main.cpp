@@ -11,7 +11,7 @@ namespace {
 SkipList skipList{"archive", ".git",         ".svn", ".hg", "build",        "out",
                   "target",  "bin",          "obj",  "__pycache__",         "node_modules"};
 
-// Spec_TextFinder.md §3.5 — a code-level extension point, not exposed at runtime.
+// Spec_TextFinder.md §3.5 - a code-level extension point, not exposed at runtime.
 [[maybe_unused]] void addSkipDirectory(const std::string& name) {
     if (std::ranges::find(skipList, name) == skipList.end()) skipList.push_back(name);
 }
