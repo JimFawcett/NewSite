@@ -127,9 +127,9 @@ Two optional arguments override the executable and the search root.
 Seven pages under `NewSite/Code/` discuss the project, built to [Page_Structure.md](Page_Structure.md). Each carries the full text of the `Prompts_*.md` files at the directory level it covers, in collapsed blocks at the end.
 
 1. `Spec_Driven_Design_Introduction.html` - the project and its specification
-2. `Spec_Driven_Design_Entry.html` - the C++ structure and the binary
-3. `Spec_Driven_Design_Cmdline.html` - command-line parsing
-4. `Spec_Driven_Design_Dirnav.html` - traversal, matching, and emission
-5. `Spec_Driven_Design_Output.html` - the stdout sink
-6. `Spec_Driven_Design_Testing.html` - the four suites and their output
-7. `Spec_Driven_Design_Demonstration.html` - the executable run against its own project
+2. `Spec_Driven_Design_Cpp_Entry.html` - the C++ structure and the binary
+3. `Spec_Driven_Design_Cpp_Cmdline.html` - command-line parsing
+4. `Spec_Driven_Design_Cpp_Dirnav.html` - traversal, matching, and emission
+5. `Spec_Driven_Design_Cpp_Output.html` - the stdout sink
+6. `Spec_Driven_Design_Cpp_Testing.html` - the four suites and their output
+7. `Spec_Driven_Design_Cpp_Demonstration.html` - the executable run against its own project

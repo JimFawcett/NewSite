@@ -38,7 +38,7 @@ Prompts, every file at the top of the project:
 
 ## 2. Entry Binary
 
-Page: `Code/Spec_Driven_Design_Entry.html`. Title: Spec-Driven Design: Entry Binary.
+Page: `Code/Spec_Driven_Design_Cpp_Entry.html`. Title: Spec-Driven Design: Entry Binary.
 
 The first implementation page. It gives the C++ project its shape, then specifies the binary that wires the shape together. `Cpp_TextFinder_Entry` produces the executable `Cpp_TextFinder` and contains no matching, no file I/O, and no formatting.
 
@@ -64,7 +64,7 @@ Prompts, the pair in `Cpp_Spec_driven_TextFinder_Entry/` plus the four that belo
 
 ## 3. Cmdline Library
 
-Page: `Code/Spec_Driven_Design_Cmdline.html`. Title: Spec-Driven Design: Cmdline.
+Page: `Code/Spec_Driven_Design_Cpp_Cmdline.html`. Title: Spec-Driven Design: Cmdline.
 
 `Cpp_TextFinder_Cmdline` is the single place in the C++ implementation where switch letters, argument syntax, and defaults are known. It opens no stream and terminates no process.
 
@@ -86,7 +86,7 @@ Prompts, both files in `Cpp_Spec_driven_Cmdline/`:
 
 ## 4. Dirnav Library
 
-Page: `Code/Spec_Driven_Design_Dirnav.html`. Title: Spec-Driven Design: Dirnav.
+Page: `Code/Spec_Driven_Design_Cpp_Dirnav.html`. Title: Spec-Driven Design: Dirnav.
 
 `Cpp_TextFinder_Dirnav` walks the tree, reads each selected file, evaluates the expression, formats every match, and emits it. It is the only component that touches file contents, and it writes to no stream.
 
@@ -109,7 +109,7 @@ Prompts, both files in `Cpp_Spec_driven_Dirnav/`:
 
 ## 5. Output Library
 
-Page: `Code/Spec_Driven_Design_Output.html`. Title: Spec-Driven Design: Output.
+Page: `Code/Spec_Driven_Design_Cpp_Output.html`. Title: Spec-Driven Design: Output.
 
 `Cpp_TextFinder_Output` is the sink. It receives fully formed strings, writes each as one line to stdout, and absorbs every write failure so that neither the traversal nor the binary has to reason about it.
 
@@ -130,7 +130,7 @@ Prompts, both files in `Cpp_Spec_driven_Output/`:
 
 ## 6. Unit and Integration Testing
 
-Page: `Code/Spec_Driven_Design_Testing.html`. Title: Spec-Driven Design: Testing.
+Page: `Code/Spec_Driven_Design_Cpp_Testing.html`. Title: Spec-Driven Design: Testing.
 
 Where the specification earns its keep. A specification that fixes text byte for byte can be tested against; one that paraphrases cannot.
 
@@ -148,7 +148,7 @@ Prompts: [Prompts_Cpp_Spec_driven_TextFinder_Tests.md](Cpp_Spec_driven_TextFinde
 
 ## 7. Demonstration
 
-Page: `Code/Spec_Driven_Design_Demonstration.html`. Title: Spec-Driven Design: Demonstration.
+Page: `Code/Spec_Driven_Design_Cpp_Demonstration.html`. Title: Spec-Driven Design: Demonstration.
 
 The last page of the set. `Cpp_TextFinder_Demo.ixx` runs the built executable against this project's own tree, with `-p "md, ixx, cpp"` fixed for every invocation, and prints what comes back.
 
