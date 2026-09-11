@@ -25,7 +25,7 @@ Two further documents govern the generated prose rather than the code: [Text_Ton
 ### The Constitution
 
 1. **Spec-driven code.** All code creation and modification derives from the `Spec*.md` and `*Structure.md` files in this directory or any subdirectory. Example code, sample implementations, and other projects are excluded as sources. General language knowledge - idioms, standard libraries, toolchains - stays available.
-2. **Stay inside.** Nothing outside `Spec_driven_TextFinder/` is modified without an explicit request naming the file.
+2. **Stay inside.** Nothing outside `Spec_driven_TextFinder/` is modified without an explicit request naming the file, and no `archive` directory is read, wherever it sits.
 
 ### The Project Specification
 

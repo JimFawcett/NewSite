@@ -6,7 +6,7 @@ Rules for `Spec_driven_TextFinder/` and its children. Override defaults on confl
 
 1. **Spec-driven code.** All code creation and modification in this project must derive from `Spec*.md` and `*Structure.md` files (case-insensitive) in this directory or any subdirectory. To change code, change the spec or structure first. Do not copy, pattern-match, or draw from example code, sample implementations, or other projects. General language knowledge — idioms, standard libraries, toolchains — is fine; example code is not.
 
-2. **Stay inside.** Do not modify any file outside `Spec_driven_TextFinder/` without an explicit user request naming the file. Reading outside is permitted only for: standard toolchains, project `CLAUDE.md`, auto-memory, and git status/history. Other outside reads require explicit permission, which lasts the session.
+2. **Stay inside.** Do not modify any file outside `Spec_driven_TextFinder/` without an explicit user request naming the file. Reading outside is permitted only for: standard toolchains, project `CLAUDE.md`, auto-memory, and git status/history. Other outside reads require explicit permission, which lasts the session. Do not read any `archive` directory or its contents, wherever it sits, inside this directory or outside it, without an explicit user request naming it.
 
 ## Notes
 
