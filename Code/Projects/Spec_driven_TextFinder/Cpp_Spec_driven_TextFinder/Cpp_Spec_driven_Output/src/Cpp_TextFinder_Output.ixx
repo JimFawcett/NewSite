@@ -22,6 +22,8 @@ private:
     bool failed_{false};
 };
 
+// §5: puts stdout into the state Spec_TextFinder.md §3.4 requires. §7: stdio synchronization
+// is disabled, so nothing outside this library drains the deferred buffer.
 Cpp_TextFinder_Output::Cpp_TextFinder_Output() {
     std::ios::sync_with_stdio(false);
 #ifdef _WIN32
@@ -31,14 +33,21 @@ Cpp_TextFinder_Output::Cpp_TextFinder_Output() {
 #endif
 }
 
+// §7: no flush per line - this is the one flush, and Cpp_TextFinder_Entry reaches it on
+// every path out of the program because each of its exits is a return from main.
 Cpp_TextFinder_Output::~Cpp_TextFinder_Output() { std::cout.flush(); }
 
+// §5: the string unchanged, then the single LF, and nothing else.
 void Cpp_TextFinder_Output::output(const std::string& text) {
     if (failed_) return;
 
     std::cout << text << '\n';
     if (!std::cout) {
+        // §6: the failed state is permanent and reaches no caller. §7: stdout goes out
+        // ahead of any stderr write, since std::cerr is unit-buffered and this is not.
+        // Best-effort - whatever broke the write may break the flush too.
         failed_ = true;
+        std::cout.flush();
         std::cerr << "output failed\n";
     }
 }

@@ -43,7 +43,7 @@ Every switch is a single case-sensitive letter introduced by `/` or `-`, the two
 |--------|--------------------|---------|
 | `/P` | path (`.`) | Root path. Repeat to add more, traversed in the order given |
 | `/p` | `"ext, ext"` (`""`) | Extensions to search; empty searches every file |
-| `/r` | regex (`.`) | ECMAScript expression evaluated against each line |
+| `/r` | regex (`.`) | Regular expression evaluated against each line; Spec_TextFinder.md §6.1 names the engine per language and the portable pattern subset |
 | `/s` | bool (`true`) | Recurse into subdirectories |
 | `/h` | bool (`true`) | Suppress file announcements; error announcements still appear |
 | `/v` | bool (`false`) | List the resolved option set before traversal |
@@ -124,7 +124,7 @@ Two optional arguments override the executable and the search root.
 
 ## Web Pages
 
-Seven pages under `NewSite/Code/` discuss the project, built to [Page_Structure.md](Page_Structure.md). Each carries the full text of the `Prompts_*.md` files at the directory level it covers, in collapsed blocks at the end.
+Pages under `NewSite/Code/` discuss the project, built to [Page_Structure.md](Page_Structure.md). Each carries the full text of the `Prompts_*.md` files that document the artifacts it covers, in collapsed blocks at the end. Seven pages exist today; the structure they are moving to defines more.
 
 1. `Spec_Driven_Design_Introduction.html` - the project and its specification
 2. `Spec_Driven_Design_Cpp_Entry.html` - the C++ structure and the binary

@@ -64,7 +64,7 @@ void testDefaults(Checker& check) {
     check.equal(joined(parsed->extensions), "", "default /p is empty");
     check.equal(parsed->regexText, ".", "default /r is .");
     check.expect(parsed->recurse, "default /s is true");
-    check.expect(parsed->suppressNoMatch, "default /h is true");
+    check.expect(parsed->suppressOnNoMatch, "default /h is true");
     check.expect(!parsed->verbose, "default /v is false");
     check.expect(!parsed->help, "default /H is false");
     check.expect(!parsed->lineNumbers, "default /n is false");
@@ -86,7 +86,7 @@ void testSyntax(Checker& check) {
     check.expect(lastWins && lastWins->regexText == "second", "last occurrence wins for /r");
 
     const auto caseSensitive = parseArgs({"/h", "false", "/H", "true"});
-    check.expect(caseSensitive && !caseSensitive->suppressNoMatch && caseSensitive->help,
+    check.expect(caseSensitive && !caseSensitive->suppressOnNoMatch && caseSensitive->help,
                  "/h and /H are distinct switches");
 
     const auto dashArgument = parseArgs({"/r", "-x"});
@@ -147,6 +147,11 @@ void testRenderedText(Checker& check) {
     for (std::string_view letter : {"/P", "/p", "/r", "/s", "/h", "/v", "/H", "/n", "/L"})
         check.expect(help.find(std::string{"  "} + std::string{letter} + "  ") != std::string::npos,
                      std::string{"help lists "} + std::string{letter});
+
+    check.expect(help.find("A path is never printed twice.") != std::string::npos,
+                 "help describes the block layout of Spec_TextFinder.md §3.4");
+    check.expect(help.find("Run with no switches at all") != std::string::npos,
+                 "help describes the bare command line of Spec_TextFinder.md §3.1");
 }
 
 void testOptionsText(Checker& check) {
@@ -162,8 +167,8 @@ void testOptionsText(Checker& check) {
 
     ProgramCommands defaults;
     check.equal(optionsText(defaults),
-                "/P .\n/p \n/r .\n/s true\n/h true\n/v false\n/H false\n/n false\n/L false\n",
-                "an empty /p list keeps its trailing space");
+                "/P .\n/p\n/r .\n/s true\n/h true\n/v false\n/H false\n/n false\n/L false\n",
+                "an empty /p list emits /p alone, ending no line in whitespace");
 }
 
 } // namespace

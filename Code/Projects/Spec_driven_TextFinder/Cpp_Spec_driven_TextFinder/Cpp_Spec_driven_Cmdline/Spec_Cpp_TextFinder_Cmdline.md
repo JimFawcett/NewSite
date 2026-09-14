@@ -29,15 +29,15 @@ export module Cpp_TextFinder_Cmdline;
 import std;
 
 export struct ProgramCommands {
-    std::vector<std::string> rootPaths{"."};        // /P
-    std::vector<std::string> extensions{};          // /p
-    std::string              regexText{"."};        // /r
-    bool                     recurse{true};         // /s
-    bool                     suppressNoMatch{true}; // /h
-    bool                     verbose{false};        // /v
-    bool                     help{false};           // /H
-    bool                     lineNumbers{false};    // /n
-    bool                     matchedLine{false};    // /L
+    std::vector<std::string> rootPaths{"."};          // /P
+    std::vector<std::string> extensions{};            // /p
+    std::string              regexText{"."};          // /r
+    bool                     recurse{true};           // /s
+    bool                     suppressOnNoMatch{true}; // /h
+    bool                     verbose{false};          // /v
+    bool                     help{false};             // /H
+    bool                     lineNumbers{false};      // /n
+    bool                     matchedLine{false};      // /L
 };
 
 export std::expected<ProgramCommands, std::string> parse(int argc, char* argv[]);
@@ -50,7 +50,7 @@ The field comments are the switch-to-field mapping, and the initializers are the
 
 `ProgramCommands` is a copyable value type with no invariants: every field combination the parser can produce is valid. `Cpp_TextFinder_Dirnav` holds a reference to the instance owned by `Cpp_TextFinder_Entry` rather than a copy, so that instance must outlive the `Cpp_TextFinder_Dirnav` it was passed to.
 
-`parse` returns the resolved commands on success and a usage diagnostic (§6) on failure; it writes nothing. `regexText` is the `/r` argument verbatim — compilation happens at `Cpp_TextFinder_Dirnav` construction, per Spec_Cpp_TextFinder_Entry.md §4 step 6.
+`parse` returns the resolved commands on success and a usage diagnostic (§6) on failure; it writes nothing. `regexText` is the `/r` argument verbatim — compilation happens at `Cpp_TextFinder_Dirnav` construction, per Spec_Cpp_TextFinder_Entry.md §4 step 7.
 
 ## 5. Parsing Rules
 
@@ -63,7 +63,7 @@ The field comments are the switch-to-field mapping, and the initializers are the
 
 ## 6. Error Conditions
 
-Every violation in §5 is a usage error. `parse` returns the usage diagnostic that Spec_TextFinder.md §5.2 fixes for that condition — its reason line verbatim, a newline, then `usageLine()`. `Cpp_TextFinder_Entry` writes the returned string to stderr unaltered and exits with code `1` (Spec_Cpp_TextFinder_Entry.md §4 step 1). §5's six conditions are the first six rows of that table; the last, a malformed `/r`, is detected later, when `Cpp_TextFinder_Dirnav` compiles the expression, and is composed there from the same table.
+Every violation in §5 is a usage error. `parse` returns the usage diagnostic that Spec_TextFinder.md §5.2 fixes for that condition — its reason line verbatim, a newline, then `usageLine()`. `Cpp_TextFinder_Entry` writes the returned string to stderr unaltered and exits with code `1` (Spec_Cpp_TextFinder_Entry.md §4 step 1). §5's six conditions are the first six rows of that table. The last, a malformed `/r`, is detected later: `Cpp_TextFinder_Dirnav` compiles the expression and lets the failure propagate, and `Cpp_TextFinder_Entry` composes the diagnostic from the same table, drawing its usage line from `usageLine()` below (§8). Neither this library nor `Cpp_TextFinder_Dirnav` composes it — the one supplies a string, the other raises the failure, and the binary joins them.
 
 There is no error condition for a duplicated switch or an empty `/p` list: duplicates resolve by §5 rule 4, and an empty extension list means every file is searched.
 
@@ -77,12 +77,9 @@ Duplicates are retained — they are harmless to the membership test `Cpp_TextFi
 
 `helpText()` returns the text fixed by Spec_TextFinder.md §5.1 with `<executable>` replaced by `Cpp_TextFinder`. `usageLine()` returns its first line — the line that terminates every usage diagnostic (§6), exported so that `Cpp_TextFinder_Entry` can compose the malformed-regex diagnostic.
 
-`optionsText(commands)` returns the resolved option set written under `/v true` — one key/value pair per line, in Spec_TextFinder.md §5 table order, formatted `<switch> <value>` with a single separating space:
+`optionsText(commands)` returns the resolved option set, in the form Spec_TextFinder.md §5.3 fixes: one key/value pair per line, in §5 table order, `<switch> <value>` with a single separating space, one `/P` line per root path, the `/p` list joined by `, ` and emitting `/p` alone when empty, `/r` verbatim, and booleans in lower case. §5.3 gives the nine lines a bare `-v true` produces, and this function reproduces them. It chooses none of that form and must not be read as the place the form is decided.
 
-- `/P` emits one line per root path, in traversal order.
-- `/p` emits the normalized extension list joined by `, `; an empty list emits the line `/p ` with its trailing space retained.
-- `/r` emits the regex text verbatim.
-- Boolean switches emit `true` or `false` lowercase.
+One function serves all three cases §5.3 calls for, since the text is the same in each and only the caller's next move differs: `/v true`, after which traversal follows; the bare command line of §3.1, after which the process exits 0; and the invalid-regex diagnostic of §5.2, where the listing precedes that diagnostic on stdout whatever `/v` says and the process then exits 1. The listing reflects whatever `commands` holds, so its `/v` line reads `false` in the latter two unless `/v` was itself typed.
 
 All three functions end their returned string with a newline; none writes to a stream.
 

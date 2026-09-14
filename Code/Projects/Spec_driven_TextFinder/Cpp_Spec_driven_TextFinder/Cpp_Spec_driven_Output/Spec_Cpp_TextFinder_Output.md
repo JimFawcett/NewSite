@@ -36,9 +36,9 @@ public:
 };
 ```
 
-The constructor prepares stdout per §5 and throws `std::runtime_error` if it cannot; `Cpp_TextFinder_Entry` catches that and exits with `cannot initialize output` (Spec_Cpp_TextFinder_Entry.md §4 step 3). Once constructed, the object never throws and never reports failure to a caller.
+The constructor prepares stdout per §5 and throws `std::runtime_error` if it cannot; `Cpp_TextFinder_Entry` catches that and exits with `cannot initialize output` (Spec_Cpp_TextFinder_Entry.md §4 step 2). Once constructed, the object never throws and never reports failure to a caller.
 
-The class takes no configuration. `Cpp_TextFinder_Dirnav` formats every record and announcement in full before emitting it, so there is nothing left here to parameterize.
+The class takes no configuration. `Cpp_TextFinder_Dirnav` formats every line in full before emitting it — a block's path line, a block's indented detail lines, and every announcement alike — so there is nothing left here to parameterize.
 
 ## 5. Destination and Line Termination
 
@@ -50,17 +50,17 @@ Meeting §3.4's requirement that no runtime translate the terminator obliges the
 
 ## 6. Error Handling
 
-A write that fails — a closed pipe, a full disk — sets an internal failed state. On the first such failure the library writes the single line `output failed` to stderr; thereafter it discards every string it is given and writes nothing more, to stdout or stderr. It never throws, never returns a status, and never lets the failure reach `Cpp_TextFinder_Dirnav`, which goes on traversing.
+A write that fails — a closed pipe, a full disk — sets an internal failed state. On the first such failure the library flushes stdout and then writes the single line `output failed` to stderr. The flush comes first so that every record already buffered reaches the stream ahead of the notice explaining why the records stop; it is best-effort, since whatever broke the write may break it too. Thereafter the library discards every string it is given and writes nothing more, to stdout or stderr. It never throws, never returns a status, and never lets the failure reach `Cpp_TextFinder_Dirnav`, which goes on traversing.
 
 A failed write does not affect the exit code, which Spec_Cpp_TextFinder_Entry.md §6 reserves for command-line and startup failures.
 
 ## 7. Buffering and Flushing
 
-No flush is performed per record; flushing each line would dominate the runtime of a search that emits many. The stream is flushed when the instance is destroyed, which `Cpp_TextFinder_Entry` reaches before returning from `main`.
+No flush is performed per line; flushing each would dominate the runtime of a search that emits many. The stream is flushed when the instance is destroyed, and `Cpp_TextFinder_Entry` reaches that destructor on every path out of the program, since each of its exits is a `return` from `main` rather than a call to `std::exit` (Spec_Cpp_TextFinder_Entry.md §4).
 
-Deferring the flush is safe here because every stderr write in this implementation — the three startup diagnostics of Spec_Cpp_TextFinder_Entry.md §4 — precedes traversal and is followed at once by process exit.
+The constructor also disables synchronization between the C++ streams and C stdio, so nothing else drains the deferred buffer. One rule keeps that from reordering the output: **stdout is flushed before any write to stderr.** `std::cerr` is unit-buffered and stdout is not, so a diagnostic would otherwise overtake the records and listings written before it. This library applies the rule to its own `output failed` notice (§6), and `Cpp_TextFinder_Entry` applies it to the diagnostic that follows the option listing on an invalid `/r` (Spec_Cpp_TextFinder_Entry.md §4 step 7).
 
-The constructor also disables synchronization between the C++ streams and C stdio.
+Writes to stdout from outside this library — `Cpp_TextFinder_Entry`'s help text and option listing — go to the same `std::cout` this library buffers, so they interleave with the search output in the order written and need no coordination beyond that rule.
 
 ## 8. Build
 
@@ -71,6 +71,6 @@ Per [Cpp_TextFinder_Structure.md](../Cpp_TextFinder_Structure.md):
 
 ## 9. Non-Goals
 
-- The library does not format records or announcements, does not know one from the other, and does not apply `/h`, `/n`, or `/L`; all of that is settled before a string reaches it.
+- The library does not format block lines or announcements, does not know one from the other, does not indent a detail line, and does not apply `/h`, `/n`, or `/L`; all of that is settled before a string reaches it.
 - The library does not read files, paths, or the command line.
 - The library does not write usage diagnostics; those go to stderr from `Cpp_TextFinder_Entry`.

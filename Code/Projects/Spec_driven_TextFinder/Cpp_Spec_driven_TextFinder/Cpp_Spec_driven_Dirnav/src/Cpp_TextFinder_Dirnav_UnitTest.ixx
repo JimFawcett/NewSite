@@ -75,28 +75,36 @@ std::filesystem::path buildTree() {
     return root;
 }
 
+// Emitted lines in emission order, joined with '|'. A block's path line and its detail
+// lines are ordered by Spec_TextFinder.md §3.4, so block tests compare this directly.
 std::string search(const std::filesystem::path& root, const ProgramCommands& commands,
                    const SkipList& skips = defaultSkips) {
     Recorder recorder;
     Cpp_TextFinder_Dirnav<Recorder> navigator{recorder, skips, commands};
     navigator.search(root);
+    return recorder.joined();
+}
+
+// Sorts those lines, for tree-wide tests that must not depend on the filesystem's
+// entry order (Spec_TextFinder.md §3.2). Only used where every file yields one line.
+std::string sorted(const std::string& joined) {
+    if (joined.empty()) return joined;
 
     std::vector<std::string> lines;
-    std::string text = recorder.joined();
-    for (std::size_t pos = 0; !text.empty() && pos <= text.size();) {
-        const std::size_t bar = text.find('|', pos);
-        lines.push_back(text.substr(pos, bar == std::string::npos ? std::string::npos : bar - pos));
+    for (std::size_t pos = 0; pos <= joined.size();) {
+        const std::size_t bar = joined.find('|', pos);
+        lines.push_back(joined.substr(pos, bar == std::string::npos ? std::string::npos : bar - pos));
         if (bar == std::string::npos) break;
         pos = bar + 1;
     }
     std::ranges::sort(lines);
 
-    std::string sorted;
+    std::string text;
     for (std::size_t i = 0; i < lines.size(); ++i) {
-        if (i != 0) sorted += "|";
-        sorted += lines[i];
+        if (i != 0) text += "|";
+        text += lines[i];
     }
-    return sorted;
+    return text;
 }
 
 // Strips the temp-directory prefix so expectations stay readable.
@@ -114,31 +122,44 @@ void testSelectionAndPruning(Checker& check, const std::filesystem::path& root) 
     commands.lineNumbers = false;
     commands.matchedLine = false;
 
-    check.equal(relative(search(root, commands), root), ".gitignore|a.cpp|notes.txt|sub/b.cpp",
+    check.equal(relative(sorted(search(root, commands)), root), ".gitignore|a.cpp|notes.txt|sub/b.cpp",
                 "skip list prunes build/, and the NUL file is not searched");
 
     ProgramCommands byExtension = commands;
     byExtension.extensions = {"cpp"};
-    check.equal(relative(search(root, byExtension), root), "a.cpp|sub/b.cpp",
+    check.equal(relative(sorted(search(root, byExtension)), root), "a.cpp|sub/b.cpp",
                 "/p selects by extension");
 
     ProgramCommands dotFile = commands;
     dotFile.extensions = {"gitignore"};
-    check.equal(relative(search(root, dotFile), root), ".gitignore",
+    check.equal(relative(sorted(search(root, dotFile)), root), ".gitignore",
                 "a dot-file's extension is its last dot-suffix");
 
     ProgramCommands shallow = commands;
     shallow.recurse = false;
-    check.equal(relative(search(root, shallow), root), ".gitignore|a.cpp|notes.txt",
+    check.equal(relative(sorted(search(root, shallow)), root), ".gitignore|a.cpp|notes.txt",
                 "/s false searches the root's own files only");
 
     ProgramCommands unpruned = commands;
-    check.equal(relative(search(root, unpruned, SkipList{}), root),
+    check.equal(relative(sorted(search(root, unpruned, SkipList{})), root),
                 ".gitignore|a.cpp|build/skipme.cpp|notes.txt|sub/b.cpp",
                 "an empty skip list prunes nothing");
 }
 
-void testRecordForms(Checker& check, const std::filesystem::path& root) {
+// Spec_TextFinder.md §3.2: the skip list governs directories met during traversal,
+// never a root path the user named.
+void testSkipListRootExemption(Checker& check, const std::filesystem::path& root) {
+    ProgramCommands commands;
+    commands.regexText = "int main";
+
+    check.equal(relative(sorted(search(root / "build", commands)), root), "build/skipme.cpp",
+                "a root whose name is in the skip list is traversed, not pruned");
+
+    check.equal(relative(sorted(search(root, commands)), root), ".gitignore|a.cpp|notes.txt|sub/b.cpp",
+                "the same directory reached during traversal is still pruned");
+}
+
+void testBlockForms(Checker& check, const std::filesystem::path& root) {
     ProgramCommands commands;
     commands.regexText = "return";
     commands.extensions = {"cpp"};
@@ -146,23 +167,23 @@ void testRecordForms(Checker& check, const std::filesystem::path& root) {
     ProgramCommands both = commands;
     both.lineNumbers = true;
     both.matchedLine = true;
-    check.equal(relative(search(root / "a.cpp", both), root), "a.cpp - 2 - return 0;",
-                "/n and /L true carry path, line number, and text");
+    check.equal(relative(search(root / "a.cpp", both), root), "a.cpp|  2 - return 0;",
+                "/n and /L true give a path line and an indented number-and-text detail line");
 
     ProgramCommands textOnly = commands;
     textOnly.matchedLine = true;
-    check.equal(relative(search(root / "a.cpp", textOnly), root), "a.cpp - return 0;",
-                "/n false omits the line number and its separator");
+    check.equal(relative(search(root / "a.cpp", textOnly), root), "a.cpp|  return 0;",
+                "/n false leaves the detail line carrying the text alone");
 
     ProgramCommands numberOnly = commands;
     numberOnly.lineNumbers = true;
-    check.equal(relative(search(root / "a.cpp", numberOnly), root), "a.cpp - 2",
-                "/L false omits the matched line and its separator");
+    check.equal(relative(search(root / "a.cpp", numberOnly), root), "a.cpp|  2",
+                "/L false leaves the detail line carrying the number alone");
 
     check.equal(relative(search(root / "a.cpp", commands), root), "a.cpp",
-                "the default record is the path alone");
+                "with neither /n nor /L a block is its path line alone");
 
-    // Spec_TextFinder.md §3.4: a path-only record tells no two matches in a file apart.
+    // Spec_TextFinder.md §3.4: the path is written once per block, whatever the match count.
     const std::filesystem::path repeated =
         std::filesystem::temp_directory_path() / "Cpp_TextFinder_Dirnav_UnitTest_Repeat";
     std::filesystem::remove_all(repeated);
@@ -171,13 +192,12 @@ void testRecordForms(Checker& check, const std::filesystem::path& root) {
     ProgramCommands pathOnly;
     pathOnly.regexText = "hit";
     check.equal(relative(search(repeated / "many.txt", pathOnly), repeated), "many.txt",
-                "three matching lines yield one path-only record");
+                "a block with no detail lines stops at the first match");
 
     ProgramCommands numbered = pathOnly;
     numbered.lineNumbers = true;
-    check.equal(relative(search(repeated / "many.txt", numbered), repeated),
-                "many.txt - 1|many.txt - 3|many.txt - 4",
-                "asking for the line number brings every matching line back");
+    check.equal(relative(search(repeated / "many.txt", numbered), repeated), "many.txt|  1|  3|  4",
+                "three matching lines yield three detail lines under one path line");
 
     std::filesystem::remove_all(repeated);
 }
@@ -185,14 +205,25 @@ void testRecordForms(Checker& check, const std::filesystem::path& root) {
 void testAnnouncements(Checker& check, const std::filesystem::path& root) {
     ProgramCommands quiet;
     quiet.regexText = "nothing matches this";
-    check.equal(relative(search(root, quiet), root), "",
-                "/h true emits no file announcement");
+    check.equal(relative(sorted(search(root, quiet)), root), "",
+                "/h true emits nothing for a file that matched nothing");
 
-    ProgramCommands loud = quiet;
-    loud.suppressNoMatch = false;
+    // Only a.cpp holds "return", so the other three are searched without matching.
+    ProgramCommands loud;
+    loud.regexText = "return";
+    loud.suppressOnNoMatch = false;
+    check.equal(relative(sorted(search(root, loud)), root),
+                "a.cpp|searched .gitignore|searched notes.txt|searched sub/b.cpp|skipped binary.cpp",
+                "/h false announces every file that produced no block, and only those");
+
+    ProgramCommands hushed = loud;
+    hushed.suppressOnNoMatch = true;
+    check.equal(relative(sorted(search(root, hushed)), root), "a.cpp",
+                "/h true leaves the matching file's block and nothing else");
+
     const std::string announced = relative(search(root, loud), root);
-    check.expect(announced.find("searched a.cpp") != std::string::npos,
-                 "/h false announces a searched file");
+    check.expect(announced.find("searched a.cpp") == std::string::npos,
+                 "a file that matched is never announced - its block already names it");
     check.expect(announced.find("skipped binary.cpp") != std::string::npos,
                  "/h false announces a file rejected by the NUL test");
     check.expect(announced.find("build/") == std::string::npos,
@@ -217,9 +248,9 @@ void testLineHandling(Checker& check) {
     commands.regexText = "^t";
     commands.lineNumbers = true;
 
-    check.equal(relative(search(root / "crlf.txt", commands), root), "crlf.txt - 2|crlf.txt - 3",
+    check.equal(relative(search(root / "crlf.txt", commands), root), "crlf.txt|  2|  3",
                 "CRLF terminates a line and is not part of it");
-    check.equal(relative(search(root / "cr.txt", commands), root), "cr.txt - 2|cr.txt - 3",
+    check.equal(relative(search(root / "cr.txt", commands), root), "cr.txt|  2|  3",
                 "a bare CR terminates a line");
 
     ProgramCommands anchored;
@@ -233,9 +264,9 @@ void testLineHandling(Checker& check) {
 // Spec_TextFinder.md §3.3: the default expression with no line or text field needs no content.
 void testNoContentCase(Checker& check, const std::filesystem::path& root) {
     ProgramCommands defaults;
-    check.equal(relative(search(root, defaults), root),
+    check.equal(relative(sorted(search(root, defaults)), root),
                 ".gitignore|a.cpp|binary.cpp|notes.txt|sub/b.cpp",
-                "a bare command line reports every selected file, the NUL file among them");
+                "the default options report every selected file, the NUL file among them");
 
     const std::filesystem::path empties =
         std::filesystem::temp_directory_path() / "Cpp_TextFinder_Dirnav_UnitTest_Empty";
@@ -243,13 +274,13 @@ void testNoContentCase(Checker& check, const std::filesystem::path& root) {
     writeFile(empties / "empty.txt", "");
     writeFile(empties / "content.txt", "x");
 
-    check.equal(relative(search(empties, defaults), empties), "content.txt",
+    check.equal(relative(sorted(search(empties, defaults)), empties), "content.txt",
                 "an empty file is not reported, having no line to match");
 
     ProgramCommands withText = defaults;
     withText.matchedLine = true;
-    check.equal(relative(search(empties / "content.txt", withText), empties), "content.txt - x",
-                "asking for the matched line reads the file again");
+    check.equal(relative(search(empties / "content.txt", withText), empties), "content.txt|  x",
+                "asking for the matched line reads the file again and adds a detail line");
 
     std::filesystem::remove_all(empties);
 }
@@ -284,7 +315,8 @@ int runDirnavUnitTests(std::ostream& log) {
     const std::filesystem::path root = buildTree();
 
     testSelectionAndPruning(check, root);
-    testRecordForms(check, root);
+    testSkipListRootExemption(check, root);
+    testBlockForms(check, root);
     testAnnouncements(check, root);
     testNoContentCase(check, root);
     testLineHandling(check);

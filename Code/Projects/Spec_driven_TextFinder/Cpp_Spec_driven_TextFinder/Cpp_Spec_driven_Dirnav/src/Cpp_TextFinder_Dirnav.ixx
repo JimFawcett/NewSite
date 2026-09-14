@@ -18,10 +18,6 @@ export using SkipList = std::vector<std::string>;
 
 inline constexpr std::uintmax_t sizeLimit = 10u * 1024u * 1024u;   // Spec_TextFinder.md §3.3
 
-inline std::string toUtf8(const std::u8string& text) {
-    return std::string{reinterpret_cast<const char*>(text.data()), text.size()};
-}
-
 // Case-sensitive on POSIX, case-insensitive on Windows, per Spec_TextFinder.md §3.2 and §5.
 inline bool sameName(std::string_view left, std::string_view right) {
 #ifdef _WIN32
@@ -39,15 +35,17 @@ inline bool sameName(std::string_view left, std::string_view right) {
 
 inline std::string baseName(const std::filesystem::path& path) {
     const std::filesystem::path base = path.has_filename() ? path : path.parent_path();
-    return toUtf8(base.filename().u8string());
+    return base.filename().string();
 }
 
+// §8: generic_string(), not generic_u8string(), whose std::u8string Output::output will not take.
 inline std::string displayPath(const std::filesystem::path& path) {
-    std::string text = toUtf8(path.generic_u8string());
-    if (text.starts_with("./")) text.erase(0, 2);
+    std::string text = path.generic_string();
+    if (text.starts_with("./")) text.erase(0, 2);   // a root of . contributes no leading ./
     return text;
 }
 
+// §7: rejects truncated sequences, overlong encodings, encoded surrogates, and values above U+10FFFF.
 inline bool validUtf8(std::string_view bytes) {
     for (std::size_t i = 0; i < bytes.size();) {
         const auto lead = static_cast<unsigned char>(bytes[i]);
@@ -102,12 +100,15 @@ export template <typename Out>
     requires std::derived_from<Out, Output>
 class Cpp_TextFinder_Dirnav {
 public:
+    // §4: all three arguments are retained by reference and outlive this instance. The
+    // expression is compiled once here; std::regex_error propagates to Cpp_TextFinder_Entry.
     Cpp_TextFinder_Dirnav(Out& out, const SkipList& skips, const ProgramCommands& commands)
         : out_{out}, skips_{skips}, commands_{commands},
           expression_{commands.regexText, std::regex_constants::ECMAScript},
           pathOnly_{!commands.lineNumbers && !commands.matchedLine},
           contentNotNeeded_{pathOnly_ && commands.regexText == "."} {}
 
+    // §5 rule 1. Carries no state from one call to the next.
     void search(const std::filesystem::path& root) {
         std::error_code error;
 
@@ -119,12 +120,14 @@ public:
 
         if (std::filesystem::is_regular_file(status)) { examine(root); return; }
         if (!std::filesystem::is_directory(status)) { announceCannotOpen(root); return; }
-        if (pruned(root)) return;
 
+        // §5 rule 4: the skip list is never consulted for a root path.
         walk(root);
     }
 
 private:
+    // §5 rule 2: one level per call, entries taken as directory_iterator yields them -
+    // neither collected nor reordered - with explicit recursion into each subdirectory entered.
     void walk(const std::filesystem::path& directory) {
         std::error_code error;
         std::filesystem::directory_iterator entry{directory, error};
@@ -138,7 +141,7 @@ private:
             std::error_code kind;
             const bool link = entry->is_symlink(kind);
             if (kind) { announceCannotOpen(path); continue; }
-            if (link) continue;
+            if (link) continue;   // §5 rule 5: passed over silently, never opened
 
             const bool folder = entry->is_directory(kind);
             if (kind) { announceCannotOpen(path); continue; }
@@ -154,6 +157,7 @@ private:
         }
     }
 
+    // §7: the three admission tests of Spec_TextFinder.md §3.3.
     void examine(const std::filesystem::path& file) {
         if (!selected(file)) return;
 
@@ -162,11 +166,11 @@ private:
         if (error) { announceCannotOpen(file); return; }
         if (size > sizeLimit) { emit("too large " + displayPath(file)); return; }
 
-        // Spec_TextFinder.md §3.3: with the default expression and no line or text field,
-        // any non-empty file matches and the record is its path, so the content is not needed.
+        // §7: with the default expression and neither /n nor /L, every non-empty file
+        // matches and its block is the path line, so no file is opened and - nothing
+        // having been read or rejected - no file announcement arises under either /h.
         if (contentNotNeeded_) {
             if (size == 0) return;
-            announceFile("searched " + displayPath(file));
             emit(displayPath(file));
             return;
         }
@@ -174,39 +178,51 @@ private:
         std::ifstream input{file, std::ios::binary};
         if (!input) { announceCannotOpen(file); return; }
 
+        // Read in full, so a file failing a later test is skipped entirely, not searched in part.
         std::string bytes(static_cast<std::size_t>(size), '\0');
         input.read(bytes.data(), static_cast<std::streamsize>(size));
         if (input.bad()) { announceCannotOpen(file); return; }
         bytes.resize(static_cast<std::size_t>(input.gcount()));
 
         if (bytes.find('\0') != std::string::npos || !validUtf8(bytes)) {
-            announceFile("skipped " + displayPath(file));
+            announceNoMatch("skipped " + displayPath(file));
             return;
         }
         if (bytes.starts_with("\xEF\xBB\xBF")) bytes.erase(0, 3);
 
-        announceFile("searched " + displayPath(file));
-        scan(file, bytes);
+        // §8: a file that matched names itself in its block, so only one that did not is announced.
+        if (!scan(file, bytes)) announceNoMatch("searched " + displayPath(file));
     }
 
-    void scan(const std::filesystem::path& file, const std::string& bytes) {
-        const std::string path = displayPath(file);
+    // §8: writes the block of Spec_TextFinder.md §3.4 and answers whether the file matched.
+    bool scan(const std::filesystem::path& file, const std::string& bytes) {
+        bool opened = false;
         std::size_t number = 0;
+
         for (std::string_view line : splitLines(bytes)) {
             ++number;
             if (!std::regex_search(line.begin(), line.end(), expression_)) continue;
 
-            std::string record = path;
-            if (commands_.lineNumbers) record += " - " + std::to_string(number);
-            if (commands_.matchedLine) record += " - " + std::string{line};
-            emit(record);
+            if (!opened) {
+                emit(displayPath(file));   // the block's path line, written once
+                opened = true;
 
-            // Spec_TextFinder.md §3.4: a path-only record cannot distinguish matches
-            // within a file, so the first one settles it.
-            if (pathOnly_) return;
+                // With neither /n nor /L the block has no detail lines, so the first
+                // match settles the file.
+                if (pathOnly_) return true;
+            }
+
+            std::string detail = "  ";
+            if (commands_.lineNumbers) detail += std::to_string(number);
+            if (commands_.lineNumbers && commands_.matchedLine) detail += " - ";
+            if (commands_.matchedLine) detail += std::string{line};
+            emit(detail);
         }
+
+        return opened;
     }
 
+    // §6: the extension is the text after the last dot in the file name, dot-files included.
     bool selected(const std::filesystem::path& file) const {
         if (commands_.extensions.empty()) return true;
 
@@ -226,7 +242,7 @@ private:
     }
 
     void emit(const std::string& text) { out_.output(text); }
-    void announceFile(const std::string& text) { if (!commands_.suppressNoMatch) emit(text); }
+    void announceNoMatch(const std::string& text) { if (!commands_.suppressOnNoMatch) emit(text); }
     void announceCannotOpen(const std::filesystem::path& path) { emit("cannot open " + displayPath(path)); }
 
     Out&                    out_;

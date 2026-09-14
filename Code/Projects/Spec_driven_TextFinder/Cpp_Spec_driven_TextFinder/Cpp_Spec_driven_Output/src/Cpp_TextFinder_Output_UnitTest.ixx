@@ -70,10 +70,19 @@ void testTermination(Checker& check) {
 
 void testPassThrough(Checker& check) {
     const std::string spaced = captured([](Cpp_TextFinder_Output& out) {
-        out.output("src/a.cpp - 12 -   indented  text  ");
+        out.output("  12 -   indented  text  ");
     });
-    check.equal(visible(spaced), "src/a.cpp - 12 -   indented  text  \\n",
+    check.equal(visible(spaced), "  12 -   indented  text  \\n",
                 "the string is written unchanged, with nothing added but the terminator");
+
+    // A block's detail line carries its own two-space indent (Spec_TextFinder.md §3.4);
+    // the sink neither adds one to a path line nor strips one from a detail line.
+    const std::string block = captured([](Cpp_TextFinder_Output& out) {
+        out.output("src/a.cpp");
+        out.output("  2 - return 0;");
+    });
+    check.equal(visible(block), "src/a.cpp\\n  2 - return 0;\\n",
+                "a path line and its detail line pass through with their own leading space");
 
     const std::string empty = captured([](Cpp_TextFinder_Output& out) { out.output(""); });
     check.equal(visible(empty), "\\n", "an empty string still terminates a line");

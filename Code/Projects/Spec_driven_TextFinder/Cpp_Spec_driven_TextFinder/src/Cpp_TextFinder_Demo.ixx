@@ -75,7 +75,7 @@ void show(std::ostream& log, const std::filesystem::path& executable,
           const std::filesystem::path& projectRoot, std::string_view purpose,
           const std::string& arguments) {
     log << "\n" << purpose << "\n";
-    log << "  $ Cpp_TextFinder " << arguments << "\n\n";
+    log << "  $ Cpp_TextFinder" << (arguments.empty() ? "" : " ") << arguments << "\n\n";
 
     const Run run = invoke(executable, arguments, projectRoot);
     const std::vector<std::string> out = lines(run.out);
@@ -111,28 +111,41 @@ int runDemo(std::ostream& log, const std::filesystem::path& executable,
     const std::string root = "-P . -p " + extensions;
 
     show(log, executable, projectRoot,
-         "1. Bare expression. The default /r of . with no /n or /L needs no file content,\n"
-         "   so every selected file is listed from its path alone (Spec_TextFinder.md §3.3).",
+         "1. No switch at all. The command line names no work, so Cpp_TextFinder lists the\n"
+         "   options a real invocation would start from and exits 0 (Spec_TextFinder.md §3.1).",
+         "");
+
+    show(log, executable, projectRoot,
+         "2. Default expression. The default /r of . with no /n or /L needs no file content,\n"
+         "   so each selected file is reported by its path line alone (Spec_TextFinder.md §3.3).",
          root);
 
     show(log, executable, projectRoot,
-         "2. Where each C++ module is declared, with line numbers and matched text.",
-         root + R"( -r "^export module" -n true -L true)");
+         "3. The two-level block of §3.4: a path written once, then an indented detail line\n"
+         "   per match carrying the line number and the line's text.",
+         root + R"( -r "too large" -n true -L true)");
 
     show(log, executable, projectRoot,
-         "3. Which documents cite the parent specification, paths only.",
+         "4. The same search with /L false, leaving the line number alone on each detail line.",
+         root + R"( -r "too large" -n true)");
+
+    show(log, executable, projectRoot,
+         "5. Which documents cite the parent specification. Neither /n nor /L, so every block\n"
+         "   is its path line and no path is written twice.",
          root + R"( -r "Spec_TextFinder\.md")");
 
     show(log, executable, projectRoot,
-         "4. The same search one level deep, /s false entering no subdirectory.",
+         "6. The same search one level deep, /s false entering no subdirectory.",
          root + R"( -r "Spec_TextFinder\.md" -s false)");
 
     show(log, executable, projectRoot,
-         "5. Announcements turned on with /h false, alongside the resolved option set from /v true.",
-         root + R"( -r "usageLine" -h false -v true -n true)");
+         "7. /h false adds a line for each file that matched nothing - the files case 5 left\n"
+         "   silent - alongside the resolved option set from /v true.",
+         root + R"( -r "Spec_TextFinder\.md" -h false -v true)");
 
     show(log, executable, projectRoot,
-         "6. A malformed expression, refused before traversal with the diagnostic of §5.2.",
+         "8. A malformed expression. §5.2 puts the option listing on stdout first, so the /r\n"
+         "   line shows what failed, then the diagnostic on stderr, and the exit code is 1.",
          root + R"( -r "export(")");
 
     log << "\ndemonstration complete\n";
