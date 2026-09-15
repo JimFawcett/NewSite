@@ -31,6 +31,12 @@
     #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
     #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
     #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
   </style>
   <script>
     function loadInExplorer() {
@@ -624,6 +630,47 @@ Created this file, [Prompts_Build_Cpp_TextFinder.md](Prompts_Build_Cpp_TextFinde
   <script src="../js/link-nav.js" defer></script>
   <script>
     setCookie('#pages', 0, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
   </script>
 </body>
 </html>
