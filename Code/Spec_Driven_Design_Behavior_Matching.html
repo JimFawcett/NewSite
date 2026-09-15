@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Behavior_Matching.html - Behavior thread, page 3
+-->
+<head>
+  <title>Spec-Driven Behavior: Matching and Output</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Behavior_Matching.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Behavior: Matching and Output</h2>
+        <h4 class="indent" id="subtitle">one compilation, three terminators, four block forms, and the case that reads nothing</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Dirnav.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="compile"></a>
+      <h3>1. &nbsp;One Compilation per Invocation</h3>
+      <t-b>
+        Each implementation compiles the <code>/r</code> expression exactly once per invocation and
+        reuses the compiled engine for every line of every file across every root path (&sect;3.3).
+        A build that compiled per file would do the same work once per candidate rather than once,
+        and the requirement exists to rule that out.
+      </t-b>
+      <t-b>
+        The rule has a structural consequence every implementation shares: compilation happens
+        before traversal begins, so a malformed expression is refused before any file is opened.
+        &sect;5.2 gives that its own diagnostic, <code>invalid regex for switch: /r</code>, and
+        exit code 1. A run with a bad pattern reads no files at all.
+      </t-b>
+      <t-b>
+        &sect;6.1 names the engine per language rather than leaving it to the implementation -
+        <code>std::regex</code> with <code>std::regex::ECMAScript</code> for C++, the
+        <code>regex</code> crate for Rust, <code>System.Text.RegularExpressions.Regex</code> for
+        C#, and the <code>re</code> module for Python. What those four agree on, and what a pattern
+        outside the agreement costs, is on the
+        <a target="_blank" href="Spec_Driven_Design_Behavior_Contracts.html">Contracts page</a>.
+      </t-b>
+      <t-b>
+        The expression must not be empty. The default <code>.</code> is the way to match every
+        line, and <code>/r ""</code> draws <code>empty expression for switch: /r</code> rather than
+        matching everything.
+      </t-b>
+
+      <a id="lines"></a>
+      <h3>2. &nbsp;Lines and Their Terminators</h3>
+      <t-b>
+        A line is a maximal run of characters bounded by a line terminator. Three terminators are
+        recognized, which covers the Windows, Linux, and macOS conventions:
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:12rem;" />
+          <col style="width:18rem;" />
+          <col style="width:26rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Terminator</th>
+          <th class="darkItem">Bytes</th>
+          <th class="darkItem">Convention</th>
+        </tr>
+        <tr>
+          <td class="lightItem">LF</td>
+          <td class="lightItem">U+000A</td>
+          <td class="lightItem">Linux, macOS</td>
+        </tr>
+        <tr>
+          <td class="lightItem">CRLF</td>
+          <td class="lightItem">U+000D U+000A</td>
+          <td class="lightItem">Windows</td>
+        </tr>
+        <tr>
+          <td class="lightItem">bare CR</td>
+          <td class="lightItem">U+000D</td>
+          <td class="lightItem">classic Mac OS</td>
+        </tr>
+      </table>
+      <t-b>
+        If the final line of a file lacks a terminator, it is treated as a line all the same. Line
+        numbers count every line, including the ones that do not match, so a number reported under
+        <code>/n</code> is the number an editor shows.
+      </t-b>
+      <t-b>
+        Splitting happens before matching, and that ordering does more work than it appears to.
+        &sect;6.1 leans on it: <code>.</code>, <code>^</code>, and <code>$</code> agree across the
+        four engines because a line holds no terminator by the time the engine sees it, so the
+        engines' differing treatment of a terminator inside the subject never arises.
+      </t-b>
+
+      <a id="anywhere"></a>
+      <h3>3. &nbsp;The Anywhere-in-the-Line Match</h3>
+      <t-b>
+        The expression signifies a match by finding at least one occurrence anywhere within the
+        line. It is not anchored, and a pattern that should be anchored says so with
+        <code>^</code> or <code>$</code>.
+      </t-b>
+      <t-b>
+        TextFinder asks the engine one question and uses one bit of the answer. Under
+        <code>/L</code> it reports the whole line, never a match position, a matched substring, or
+        a capture group. Greediness, alternation preference, and capture-group numbering are
+        therefore unobservable, which is the ground &sect;6.1 stands on when it claims the four
+        engines differ on nothing TextFinder observes so long as the pattern is one they all
+        accept.
+      </t-b>
+      <t-b>
+        One consequence shows up in the output. A line holding three occurrences of the pattern
+        produces one detail line, not three: &sect;3.4 says one detail line is emitted for every
+        matching line, however many occurrences that line holds.
+      </t-b>
+
+      <a id="forms"></a>
+      <h3>4. &nbsp;Block Forms and Their Gating</h3>
+      <t-b>
+        <code>/n</code> and <code>/L</code> select the fields a detail line carries, and their four
+        combinations give four block forms. Both default to <code>false</code>.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:6rem;" />
+          <col style="width:6rem;" />
+          <col style="width:20rem;" />
+          <col style="width:24rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">/n</th>
+          <th class="darkItem">/L</th>
+          <th class="darkItem">Detail line carries</th>
+          <th class="darkItem">Detail lines per block</th>
+        </tr>
+        <tr>
+          <td class="lightItem">false</td>
+          <td class="lightItem">false</td>
+          <td class="lightItem">nothing - the block has none</td>
+          <td class="lightItem">0; the path line says everything</td>
+        </tr>
+        <tr>
+          <td class="lightItem">true</td>
+          <td class="lightItem">false</td>
+          <td class="lightItem">the line number, after its indent</td>
+          <td class="lightItem">one per matching line</td>
+        </tr>
+        <tr>
+          <td class="lightItem">false</td>
+          <td class="lightItem">true</td>
+          <td class="lightItem">the line text, after its indent</td>
+          <td class="lightItem">one per matching line</td>
+        </tr>
+        <tr>
+          <td class="lightItem">true</td>
+          <td class="lightItem">true</td>
+          <td class="lightItem">number, <code>&nbsp;-&nbsp;</code>, text</td>
+          <td class="lightItem">one per matching line</td>
+        </tr>
+      </table>
+      <t-b>
+        The three-character separator <code>&nbsp;-&nbsp;</code> appears only when both fields are
+        present. Each detail line is indented exactly two spaces, and the indent is fixed in
+        &sect;3.4 rather than left to the implementation, because a comparison of two runs would
+        otherwise diff on whitespace.
+      </t-b>
+      <t-b>
+        The first row is the interesting one. With no detail lines, a block's path line says
+        everything the block can say, so one block is emitted per matching file and evaluation of
+        that file stops at its first match. A 4,000-line file whose second line matches costs two
+        lines of reading.
+      </t-b>
+      <t-b>
+        Emission is incremental. A block's path line is written the moment that file's first match
+        is found, ahead of the detail line for that same match, and each further detail line as its
+        own line is evaluated. Nothing is buffered to the end of a file, a directory, or the run.
+        Announcements go out the same way, at the point TextFinder deals with the entry they name,
+        so none waits on the directory holding it to finish.
+      </t-b>
+      <t-b>
+        The gating interacts with <code>/h</code> exactly once. A file that matched is never
+        announced, its block already naming it, so a file announcement reports only a file that
+        produced no block. Under the default <code>/h true</code> the output holds blocks and error
+        announcements; under <code>/h false</code> every examined file appears exactly once, as
+        either a block or an announcement.
+      </t-b>
+
+      <a id="nocontent"></a>
+      <h3>5. &nbsp;The No-Content Case and Its Two Costs</h3>
+      <t-b>
+        One state needs no file content at all. When the expression is the default <code>.</code>
+        and <code>/n</code> and <code>/L</code> are both <code>false</code> - the state any command
+        line reaches that overrides none of the three - a block carries only its path line and a
+        single match settles it. TextFinder reports every selected file of non-zero size without
+        opening it.
+      </t-b>
+      <t-b>
+        The size test still applies, since it reads only filesystem metadata, but the NUL and UTF-8
+        tests do not. No file is opened, so no file announcement arises: not <code>searched</code>,
+        which reports a file that was read and matched nothing, and not <code>skipped</code>, which
+        reports one a content test rejected. Every selected file matches, so every one produces a
+        block instead. A selected file of zero size produces neither a block nor an announcement,
+        having no line to match.
+      </t-b>
+      <t-b>
+        &sect;3.3 names the two costs it accepts for the speed this buys:
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li>A file the content tests would have rejected, a binary file among them, is
+            reported.</li>
+          <li>So is a file whose lines are all empty, which <code>.</code> would not in fact have
+            matched.</li>
+        </ol>
+      </t-b>
+      <t-b>
+        Both are visible in a demonstration run. Invocation 2 of the C++ demonstration uses the
+        default expression and reports 46 lines against the project tree, one per selected
+        non-empty file, and it opens none of them.
+      </t-b>
+      <t-b>
+        The error announcements still work in this case, because they rest on metadata too: a file
+        above the size limit draws <code>too large</code>, and one whose metadata cannot be read
+        draws <code>cannot open</code>.
+      </t-b>
+
+      <a id="terminator"></a>
+      <h3>6. &nbsp;The LF Terminator</h3>
+      <t-b>
+        Every line of a block and every announcement is terminated by a single LF on every
+        platform. An implementation must prevent its runtime from translating that terminator to
+        CRLF, or the same tree would yield byte-different output on Windows and POSIX and the
+        comparison of &sect;6 would hold only within a platform.
+      </t-b>
+      <t-b>
+        The rule binds the implementation rather than describing the platform, and that phrasing is
+        deliberate: three of the four target runtimes translate by default or by idiom. C#'s
+        <code>Console.WriteLine</code> uses <code>Environment.NewLine</code>; the C runtime behind
+        C++'s <code>std::cout</code> translates on Windows unless the descriptor is put into binary
+        mode. The rule lived in the C++ output specification for several turns, where it bound one
+        language, and was moved to the parent for exactly the C# reason.
+      </t-b>
+      <t-b>
+        The rule governs stdout alone. What terminator an implementation writes to stderr is
+        whatever its runtime and platform produce, and the specification does not fix it. The
+        reasoning is stated: comparing one implementation against another means comparing stdout,
+        a run that writes to stderr has written a usage diagnostic and traversed nothing, so it
+        has no search output to compare, and holding its stderr to the byte would test the platform
+        rather than the implementation.
+      </t-b>
+      <t-b>
+        One boundary case follows from the binary-mode requirement and caught the C++
+        implementation. Text the binary writes itself - help and the option listing - reaches the
+        same stdout, so it must be written after the output component has configured the stream,
+        not before. The C++ Entry specification states that as a step ordering with the reason
+        attached, and the integration suite tests it: "help text carries LF only, being written
+        after the sink configures stdout."
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#compile">one compilation</a></menu-elem>
+        <menu-elem class="secElem"><a href="#lines">lines</a></menu-elem>
+        <menu-elem class="secElem"><a href="#anywhere">anywhere</a></menu-elem>
+        <menu-elem class="secElem"><a href="#forms">block forms</a></menu-elem>
+        <menu-elem class="secElem"><a href="#nocontent">no-content case</a></menu-elem>
+        <menu-elem class="secElem"><a href="#terminator">LF terminator</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenBehaviorPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+</body>
+</html>

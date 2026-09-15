@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Behavior_Overview.html - Behavior thread, page 0
+-->
+<head>
+  <title>Spec-Driven Behavior: What TextFinder Does</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Behavior_Overview.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Behavior: What TextFinder Does</h2>
+        <h4 class="indent" id="subtitle">a root path, an expression, a walk, and blocks on stdout</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Structure.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="whole"></a>
+      <h3>1. &nbsp;The Utility in One Page</h3>
+      <t-b>
+        TextFinder takes a root path and a regular expression, walks the tree below the root,
+        evaluates the expression against each line of each file it selects, and writes every
+        matching file to stdout. That is the whole of it, per Spec_TextFinder.md &sect;1.
+      </t-b>
+      <t-b>
+        Nine switches control the search, every one of them with a default, so any partial command
+        line resolves to a full option set (&sect;3.1). The
+        <a target="_blank" href="Spec_Driven_Design_Behavior_CommandLine.html">Command Line page</a>
+        covers them.
+      </t-b>
+      <t-b>
+        One command line names no work at all. Given the bare executable name, TextFinder writes
+        the resolved option listing, exits 0, and traverses nothing, so a user who types the
+        program's name learns the settings a real invocation would start from instead of waiting
+        on a search of the current tree (&sect;3.1).
+      </t-b>
+      <t-b>
+        <code>Spec_TextFinder.md</code> &sect;2 scopes all of this: the document specifies behavior
+        common to every implementation, in no particular language, and each language's own
+        documents refine it without redefining it. Four implementations are planned - C++, Rust,
+        C#, and Python - and the C++ one is complete.
+      </t-b>
+
+      <a id="block"></a>
+      <h3>2. &nbsp;The Shape of a Block</h3>
+      <t-b>
+        Matches reach stdout as blocks, one block per matching file. A block opens with a line
+        naming the file and continues with a detail line for each matching line, when
+        <code>/n</code> or <code>/L</code> asks for one (&sect;3.4).
+      </t-b>
+<pre><code class="language-text">&lt;path&gt;
+  &lt;lineNumber&gt; - &lt;matchedLine&gt;
+  &lt;lineNumber&gt; - &lt;matchedLine&gt;</code></pre>
+      <t-b>
+        The first line is <code>&lt;path&gt;</code> alone, with nothing before or after it. Each
+        detail line is indented exactly two spaces and carries the fields <code>/n</code> and
+        <code>/L</code> select, joined by the three-character separator <code>&nbsp;-&nbsp;</code>
+        when both are present.
+      </t-b>
+      <t-b>
+        The two-level form exists to write a path once and once only. A file's path appears on its
+        block's first line whatever the number of its matches, and nothing below repeats it. No
+        announcement names a file that produced a block, so within a single root no path is ever
+        written twice.
+      </t-b>
+      <t-b>
+        With <code>/n</code> and <code>/L</code> both at their defaults a block has no detail
+        lines. Its path line then says everything the block can say, so one block is emitted per
+        matching file and evaluation of that file stops at its first match. The
+        <a target="_blank" href="Spec_Driven_Design_Behavior_Matching.html">Matching page</a>
+        covers the four field combinations and the case that needs no file content at all.
+      </t-b>
+      <t-b>
+        Blocks are emitted as they occur. A block's path line is written the moment that file's
+        first match is found, and each detail line as its own line is evaluated. Nothing is
+        buffered to the end of a file, a directory, or the run, so blocks appear in the
+        depth-first traversal order of &sect;3.2.
+      </t-b>
+
+      <a id="announce"></a>
+      <h3>3. &nbsp;The Four Announcements</h3>
+      <t-b>
+        Besides blocks, TextFinder announces the files and directories that produced no block,
+        through the same destination. An announcement is a fixed form followed by a path, emitted
+        as TextFinder deals with the entry it names. There are four, in two kinds, and the kind
+        decides whether <code>/h</code> can hide it.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:15rem;" />
+          <col style="width:8rem;" />
+          <col style="width:35rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Announcement</th>
+          <th class="darkItem">Kind</th>
+          <th class="darkItem">Emitted when</th>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>searched &lt;path&gt;</code></td>
+          <td class="lightItem">file</td>
+          <td class="lightItem">a file was admitted, read, searched, and matched nothing</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>skipped &lt;path&gt;</code></td>
+          <td class="lightItem">file</td>
+          <td class="lightItem">a file was rejected by the NUL or UTF-8 test of &sect;3.3</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>too large &lt;path&gt;</code></td>
+          <td class="lightItem">error</td>
+          <td class="lightItem">a file exceeded the size limit of &sect;3.3</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>cannot open &lt;path&gt;</code></td>
+          <td class="lightItem">error</td>
+          <td class="lightItem">a file, directory, or root path could not be opened, is a symbolic link named as a root, or is neither a regular file nor a directory</td>
+        </tr>
+      </table>
+      <t-b>
+        File announcements report a file that was examined and yielded no match. They appear only
+        when <code>/h</code> is <code>false</code>; under the default <code>true</code> such a file
+        contributes nothing. Error announcements report work TextFinder was asked to do and could
+        not, and appear whatever <code>/h</code> says.
+      </t-b>
+      <t-b>
+        The division was not there at first. An earlier &sect;3.4 contradicted itself in
+        consecutive sentences, saying that under the default no file announcement appears and then
+        that <code>too large</code> and <code>cannot open</code> are emitted whatever
+        <code>/h</code> says - and both are file announcements under the old naming. Splitting the
+        two kinds into separate tables retired the contradiction, and the reason the split falls
+        where it does is that silencing a 10 MB skip under the default would hide requested work
+        that did not happen.
+      </t-b>
+      <t-b>
+        Every file TextFinder examines therefore contributes at most one of two things, never both:
+        a block if it matched, a file announcement if it did not. Under <code>/h false</code> every
+        examined file appears exactly once.
+      </t-b>
+      <t-b>
+        Announcements route through the implementation's output component, not to stderr, and
+        nothing announced affects the exit code. Usage diagnostics are the only text that goes to
+        stderr, and &sect;5.2 fixes their content.
+      </t-b>
+
+      <a id="exit"></a>
+      <h3>4. &nbsp;The Three Exit Codes</h3>
+      <t-b>
+        &sect;3.4 fixes the three values rather than leaving them to the implementation, so that
+        two implementations can be compared by exit code as well as by output. No other value is
+        returned.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:6rem;" />
+          <col style="width:52rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Code</th>
+          <th class="darkItem">Returned when</th>
+        </tr>
+        <tr>
+          <td class="lightItem">0</td>
+          <td class="lightItem">The invocation succeeded. Whether matches were found, and whether any file or root path drew an error announcement, does not change this. <code>/H</code> returns 0, as does the bare command line of &sect;3.1</td>
+        </tr>
+        <tr>
+          <td class="lightItem">1</td>
+          <td class="lightItem">The command line was invalid. TextFinder wrote the usage diagnostic &sect;5.2 fixes for the violation, to stderr, and traversed nothing. An invalid <code>/r</code> writes the &sect;5.3 listing to stdout ahead of that diagnostic; every other violation leaves stdout empty</td>
+        </tr>
+        <tr>
+          <td class="lightItem">2</td>
+          <td class="lightItem">TextFinder could not start, for a reason that is not about what the user typed - a failure to initialize its output component, for instance. No usage diagnostic is written, and traversal does not begin</td>
+        </tr>
+      </table>
+      <t-b>
+        Code 2 separates a failure of the program from a failure of the command line, so a test can
+        tell the two apart. &sect;5.2 fixes the text a code-1 failure writes and leaves the text of
+        a code-2 failure to the implementation, which is why <code>cannot initialize output</code>
+        appears in the C++ Entry specification rather than in the project specification.
+      </t-b>
+      <t-b>
+        Two things deliberately do not reach the exit code. An error announcement does not: a root
+        path that cannot be opened is reported and the run still exits 0. Neither does an empty
+        result: finding nothing is a successful search.
+      </t-b>
+
+      <a id="pipeline"></a>
+      <h3>5. &nbsp;The Pipeline the Components Form</h3>
+      <t-b>
+        The project specification names no components; that is each language's own structure
+        document. Every implementation so far divides the work the same way, and the division is
+        worth stating here because the remaining Behavior pages are organized by it.
+      </t-b>
+<pre><code class="language-text">Cmdline ---> Dirnav ---> Output
+   ^           ^            ^
+   |           |            |
+   +----- Entry (binary) ---+</code></pre>
+      <t-b>
+        <ul class="tight">
+          <li><strong>Cmdline</strong> - converts the argument vector into a resolved option set,
+            every switch carrying its supplied value or its default. Opens no stream and touches no
+            filesystem.</li>
+          <li><strong>Dirnav</strong> - walks, selects, reads, matches, and formats. The only
+            component that touches file contents, and it writes to no stream.</li>
+          <li><strong>Output</strong> - the sink. Receives fully formed strings and writes each as
+            one line to stdout, absorbing any write failure.</li>
+          <li><strong>Entry</strong> - the binary. Owns the skip list, wires the three together,
+            drives traversal across the root paths, and owns the exit code.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Emission is a pipeline rather than a report: a line leaves Dirnav for Output the moment it
+        is produced, which is what &sect;3.4's "as they occur" requires and what makes the output
+        of a long search start immediately.
+      </t-b>
+      <t-b>
+        The remaining four pages of this thread follow the boundaries above. The
+        <a target="_blank" href="Spec_Driven_Design_Behavior_CommandLine.html">Command Line page</a>
+        covers &sect;4 and &sect;5; the
+        <a target="_blank" href="Spec_Driven_Design_Behavior_Traversal.html">Traversal page</a>
+        covers &sect;3.2 and &sect;3.3; the
+        <a target="_blank" href="Spec_Driven_Design_Behavior_Matching.html">Matching page</a>
+        covers &sect;3.3 and &sect;3.4; and the
+        <a target="_blank" href="Spec_Driven_Design_Behavior_Contracts.html">Contracts page</a>
+        covers &sect;3.5, &sect;6, &sect;6.1, and &sect;7. For one language's realization of the
+        same boundaries, cross with the header row above.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#whole">the whole</a></menu-elem>
+        <menu-elem class="secElem"><a href="#block">block form</a></menu-elem>
+        <menu-elem class="secElem"><a href="#announce">announcements</a></menu-elem>
+        <menu-elem class="secElem"><a href="#exit">exit codes</a></menu-elem>
+        <menu-elem class="secElem"><a href="#pipeline">pipeline</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenBehaviorPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 0, 10);
+  </script>
+</body>
+</html>

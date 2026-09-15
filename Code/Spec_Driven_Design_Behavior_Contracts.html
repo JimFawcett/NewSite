@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Behavior_Contracts.html - Behavior thread, page 4
+-->
+<head>
+  <title>Spec-Driven Behavior: Interface, Portability, and Non-Goals</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Behavior_Contracts.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Behavior: Interface, Portability, and Non-Goals</h2>
+        <h4 class="indent" id="subtitle">one public function, four regex engines, and the limit on the reproducibility claim</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="interface"></a>
+      <h3>1. &nbsp;The One Public Function</h3>
+      <t-b>
+        The skip list of &sect;3.2 is extended at build time, not at run time. &sect;3.5 defines
+        one function for it:
+      </t-b>
+<pre><code class="language-text">addSkipDirectory(name)</code></pre>
+      <t-b>
+        Every call is compiled into the program and takes effect before traversal begins; once
+        traversal begins the list is fixed for the run. The function <strong>extends</strong> the
+        defaults of &sect;3.2 rather than replacing them, successive calls accumulate, and
+        duplicate entries are ignored.
+      </t-b>
+      <t-b>
+        The extend-rather-than-replace rule is what keeps the 11 defaults from becoming optional. A
+        replacing function would let a build that wanted to add <code>.vs</code> lose
+        <code>.git</code> by accident, and two implementations could then prune different trees
+        while both satisfying the specification.
+      </t-b>
+      <t-b>
+        Each language's specification fixes the exact function name, parameter type, and return
+        type in its own idiom, and says whether the function is exported from a library or confined
+        to the component that owns the list. Nothing in &sect;3.5 requires it to be callable from
+        outside the program. The C++ implementation takes the narrow reading: the function is
+        <code>void addSkipDirectory(const std::string&amp; name)</code>, defined in the binary's own
+        translation unit and exported from nothing, so no library and no test can call it.
+      </t-b>
+      <t-b>
+        &sect;3.5 also says what has not been decided. A run-time mechanism - a configuration file
+        read at startup, say - may be specified later; until it is, a deployed build searches with
+        the skip list compiled into it and the user has no means of changing that. Naming the
+        absent feature is the point: a reader who wants it knows it was considered, and an
+        implementer knows not to invent one.
+      </t-b>
+      <t-b>
+        This is the whole of the public interface. TextFinder is a command-line program, so its
+        real interface is the command line, and &sect;3.5 exists because the skip list is the one
+        thing the command line deliberately cannot reach.
+      </t-b>
+
+      <a id="nonfunctional"></a>
+      <h3>2. &nbsp;Three Non-Functional Requirements</h3>
+      <t-b>
+        &sect;6 carries three, and they constrain the implementations more than their length
+        suggests.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>Portability.</strong> Each implementation runs on Windows and on POSIX
+            systems. That is what forces the platform-dependent comparison rules for skip-list
+            entries and extensions, the three line terminators, and the binary-mode requirement
+            behind the LF rule.</li>
+          <li><strong>Dependencies.</strong> Implementations use only the standard library and,
+            where necessary, packages from the language's supported ecosystem for regex and
+            filesystem access. No third-party TextFinder library is used. That rule is why the C++
+            test suites carry a hand-written <code>Checker</code> struct rather than a test
+            framework.</li>
+          <li><strong>Consistency.</strong> For the same inputs, every implementation produces the
+            same match set, emitted in depth-first traversal order and, within a file, in line
+            order.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Three further things are fixed rather than left to the implementation, so that a comparison
+        can rest on them: the two-level block form and its indent, the exit code, and the form of
+        the option listing.
+      </t-b>
+
+      <a id="limit"></a>
+      <h3>3. &nbsp;The Limit on the Reproducibility Claim</h3>
+      <t-b>
+        The consistency requirement carries its own boundary, stated in the same paragraph rather
+        than in a footnote. Because &sect;3.2 leaves a directory's entries in filesystem order,
+        the total emission order is reproducible only across runs over the same tree on the same
+        platform and filesystem. There every implementation agrees, because &sect;3.2 requires
+        each to enumerate through its platform's own facility and forbids reordering what that
+        facility yields, and two runs can be compared line for line. Elsewhere the match set still
+        agrees but the order of matches from different directory entries may not.
+      </t-b>
+      <t-b>
+        Two further scopings narrow it. &sect;6.1 confines the guarantee to the patterns the four
+        engines accept alike, and &sect;4 confines it to the command lines every implementation's
+        argument vector can carry - which for C++ means ASCII, since it takes
+        <code>char* argv[]</code> and Windows does not decode that system-codepage vector to
+        Unicode.
+      </t-b>
+      <t-b>
+        Three statements, each narrowing the one before, describe a guarantee that is smaller than
+        "the four implementations agree" and true. The alternative was on the table: an earlier
+        draft required sorted sibling order and could claim reproducibility across platforms. The
+        project traded the stronger claim for simpler traversal and rewrote the claim to match.
+      </t-b>
+
+      <a id="engines"></a>
+      <h3>4. &nbsp;Four Regex Engines and the Portable Subset</h3>
+      <t-b>
+        No regex engine in common use spans the four languages, and no third-party engine gives one
+        syntax across all four without violating the dependency rule. Each implementation therefore
+        uses the engine its own language uses, and &sect;6.1 names it rather than leaving it to the
+        implementation.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:10rem;" />
+          <col style="width:40rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Language</th>
+          <th class="darkItem">Engine</th>
+        </tr>
+        <tr>
+          <td class="lightItem">C++</td>
+          <td class="lightItem"><code>std::regex</code> constructed with <code>std::regex::ECMAScript</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">Rust</td>
+          <td class="lightItem">the <code>regex</code> crate</td>
+        </tr>
+        <tr>
+          <td class="lightItem">C#</td>
+          <td class="lightItem"><code>System.Text.RegularExpressions.Regex</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">Python</td>
+          <td class="lightItem">the <code>re</code> module of the standard library</td>
+        </tr>
+      </table>
+      <t-b>
+        A language-specific specification names the engine assigned to it and no other.
+        Substituting a different engine is a change to that table, not a local decision.
+      </t-b>
+      <t-b>
+        What the four agree on rests on how little TextFinder asks. It asks one question of a line -
+        does the pattern occur anywhere in it - and under <code>/L</code> reports the whole line,
+        never a match position, a matched substring, or a capture group. Greediness, alternation
+        preference, and capture-group numbering are unobservable, so the four engines differ on
+        nothing TextFinder observes so long as the pattern is one they all accept. That portable
+        subset is:
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li>literal characters, and <code>\</code> before any of <code>. \ * + ? ( ) [ ] { } | ^ $ /</code></li>
+          <li><code>.</code></li>
+          <li>the quantifiers <code>*</code>, <code>+</code>, <code>?</code>, <code>{n}</code>, <code>{n,}</code>, and <code>{n,m}</code>, each also in its lazy form</li>
+          <li>alternation <code>|</code>, grouping <code>(...)</code>, and non-capturing grouping <code>(?:...)</code></li>
+          <li>character classes <code>[...]</code> and <code>[^...]</code>, ranges included</li>
+          <li>the anchors <code>^</code> and <code>$</code></li>
+          <li>the class escapes <code>\d</code>, <code>\D</code>, <code>\w</code>, <code>\W</code>, <code>\s</code>, <code>\S</code>, <code>\b</code>, <code>\B</code></li>
+          <li>the character escapes <code>\n</code>, <code>\r</code>, <code>\t</code>, <code>\f</code>, <code>\v</code>, and <code>\xHH</code></li>
+        </ul>
+      </t-b>
+      <t-b>
+        Two entries in that list rest on rules stated elsewhere. <code>.</code>, <code>^</code>, and
+        <code>$</code> agree because &sect;3.3 splits lines before matching and a line holds no
+        terminator, so the engines' differing treatment of a terminator inside the subject never
+        arises. The rest agree <em>on ASCII lines</em>: <code>std::regex</code> over
+        <code>char</code> matches one byte where the other three engines match one Unicode scalar
+        value, and <code>\d</code>, <code>\w</code>, <code>\s</code>, and <code>\b</code> are
+        Unicode-aware in those three and ASCII-only in <code>std::regex</code>. On a line holding a
+        non-ASCII character, a pattern using <code>.</code>, a character class, or a class escape
+        can match in three implementations and not the fourth.
+      </t-b>
+
+      <a id="outside"></a>
+      <h3>5. &nbsp;What Falls Outside, and What It Costs</h3>
+      <t-b>
+        Outside the subset: backreferences, lookahead, lookbehind, named groups, inline flag groups
+        such as <code>(?i)</code>, atomic and possessive quantifiers, Unicode property escapes such
+        as <code>\p{L}</code>, POSIX class names such as <code>[[:alpha:]]</code>, and the anchors
+        <code>\A</code>, <code>\z</code>, and <code>\Z</code>. Each is accepted by some of the four
+        engines and rejected by others, and two that accept the same construct do not always spell
+        it the same way.
+      </t-b>
+      <t-b>
+        TextFinder accepts a pattern outside the subset. It does not inspect a pattern for
+        portability, and &sect;5.2 defines no diagnostic for one. Two costs follow, and the
+        specification accepts both:
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li>An engine that rejects the pattern reports <code>invalid regex for switch: /r</code>
+            and exits non-zero, while an engine that accepts it searches the tree and exits 0. The
+            two runs then differ in exit code, in stderr, and in every record. This is the larger
+            cost of the two, and it is not a difference in output so much as a difference in
+            whether there is output.</li>
+          <li>Two engines that both accept the pattern may still disagree on which lines it
+            matches.</li>
+        </ol>
+      </t-b>
+      <t-b>
+        The match-set guarantee holds for a pattern in the subset over ASCII lines. Outside that,
+        each implementation's output is the output of the engine named above for it, and a
+        difference between two implementations is evidence about those engines rather than a defect
+        in either.
+      </t-b>
+      <t-b>
+        One sentence in &sect;6.1 is a rule for whoever writes the next test: a test that compares
+        implementations states the pattern it uses and stays inside the subset, or it is testing the
+        engines. The demonstration set applies it. Every pattern in that set stays inside the
+        subset, and none of the patterns that match uses <code>.</code>, a character class, or a
+        class escape, so none turns on which engine an implementation names.
+      </t-b>
+
+      <a id="nongoals"></a>
+      <h3>6. &nbsp;Two Non-Goals</h3>
+      <t-b>
+        &sect;7 holds two:
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li>TextFinder does not modify files.</li>
+          <li>TextFinder does not follow symbolic links (&sect;3.2) and does not search binary
+            files (&sect;3.3).</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Both restate a decision &sect;3 already made, and restating it is the point. &sect;3.2
+        says a symbolic link is never opened and &sect;3.3 gives the NUL test, so a reader who
+        works through &sect;3 already knows. A reader who wants to know what the program will not
+        do reads &sect;7, and finding the answer there rather than inferring it from two scattered
+        sentences is the difference between a stated non-goal and an accident.
+      </t-b>
+      <t-b>
+        The second bullet also carries the cross-reference that names <em>which</em> test makes a
+        file binary. Without it, "does not search binary files" would be a claim with no
+        operational meaning, and two implementations could disagree about what a binary file is
+        while both satisfying &sect;7. With it, the non-goal is a test case.
+      </t-b>
+      <t-b>
+        The list was longer once. An earlier version carried three, and a trimming pass folded them
+        to two after the reviews had moved their content into &sect;3. The Non-Goals sections of
+        the four C++ component specifications were trimmed in the same pass - Entry from five
+        bullets to two, and Cmdline's regex bullet corrected from a claim of no validation to
+        "does not compile the regular expression; it checks only that the argument is non-empty",
+        which is what the code does.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#interface">public function</a></menu-elem>
+        <menu-elem class="secElem"><a href="#nonfunctional">non-functional</a></menu-elem>
+        <menu-elem class="secElem"><a href="#limit">the limit</a></menu-elem>
+        <menu-elem class="secElem"><a href="#engines">four engines</a></menu-elem>
+        <menu-elem class="secElem"><a href="#outside">outside the subset</a></menu-elem>
+        <menu-elem class="secElem"><a href="#nongoals">non-goals</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenBehaviorPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+</body>
+</html>

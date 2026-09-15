@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Cpp_Entry.html - C++ thread, page 2
+-->
+<head>
+  <title>Spec-Driven C++: Entry</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Cpp_Entry.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder_Entry">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven C++: Entry</h2>
+        <h4 class="indent" id="subtitle">nine steps, one skip list, three exit codes, and no call to std::exit</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Contracts.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="owns"></a>
+      <h3>1. &nbsp;What the Binary Owns</h3>
+      <t-b>
+        <code>Cpp_TextFinder_Entry</code> is the command-line entry point. It parses invocation
+        arguments through <code>Cpp_TextFinder_Cmdline</code>, wires the three libraries together,
+        and drives traversal. Matching and file I/O belong to <code>Cpp_TextFinder_Dirnav</code> and
+        <code>Cpp_TextFinder_Output</code>; the binary performs neither.
+      </t-b>
+      <t-b>
+        The binary does write process-level text of its own - help, the resolved option listing,
+        and startup diagnostics - but it composes none of it. Each is a string
+        <code>Cpp_TextFinder_Cmdline</code> hands it, and the binary decides only when to write it
+        and to which stream. Block lines and announcements it neither composes nor writes.
+      </t-b>
+      <t-b>
+        Three things it owns outright:
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>The skip list</strong>, and <code>addSkipDirectory</code> as the build-time
+            extension point Spec_TextFinder.md &sect;3.5 defines. Section 3 covers it.</li>
+          <li><strong>The lifetime of all three objects.</strong>
+            <code>Cpp_TextFinder_Dirnav</code> holds references rather than copies, so the
+            <code>Cpp_TextFinder_Output</code> instance, the finalized skip list, and the parsed
+            commands must outlive it. All three are owned here.</li>
+          <li><strong>The exit code.</strong> Section 4 covers the three values and how they map
+            onto this binary's failure modes.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        It is 83 lines, and the specification that fixes it is 86. That ratio is the point of the
+        component: the design goal is to make the wiring itself readable, and everything harder
+        than wiring lives in a library.
+      </t-b>
+
+      <a id="startup"></a>
+      <h3>2. &nbsp;The Startup Sequence</h3>
+      <t-b>
+        <code>main(int argc, char* argv[])</code> performs nine steps in order. The order is the
+        specification rather than a consequence of it: three of the nine are placed where they are
+        for reasons that would not survive rearranging.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:4rem;" />
+          <col style="width:52rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Step</th>
+          <th class="darkItem">What happens</th>
+        </tr>
+        <tr>
+          <td class="lightItem">1</td>
+          <td class="lightItem">Invoke <code>parse(argc, argv)</code>. On failure, write the returned usage diagnostic to stderr unaltered and return 1. A malformed <code>/r</code> is not detected here; step 7 reaches it</td>
+        </tr>
+        <tr>
+          <td class="lightItem">2</td>
+          <td class="lightItem">Construct <code>Cpp_TextFinder_Output</code>. If the constructor throws, write <code>cannot initialize output</code> to stderr and return 2</td>
+        </tr>
+        <tr>
+          <td class="lightItem">3</td>
+          <td class="lightItem">If <code>/H true</code>, write <code>helpText()</code> to stdout and return 0</td>
+        </tr>
+        <tr>
+          <td class="lightItem">4</td>
+          <td class="lightItem">If <code>argc</code> is 1, write <code>optionsText(commands)</code> to stdout and return 0. This is the bare command line of &sect;3.1</td>
+        </tr>
+        <tr>
+          <td class="lightItem">5</td>
+          <td class="lightItem">If <code>/v true</code>, write <code>optionsText(commands)</code> to stdout before traversal begins</td>
+        </tr>
+        <tr>
+          <td class="lightItem">6</td>
+          <td class="lightItem">Finalize the skip list: the defaults, then the <code>addSkipDirectory</code> calls compiled into the binary</td>
+        </tr>
+        <tr>
+          <td class="lightItem">7</td>
+          <td class="lightItem">Construct <code>Cpp_TextFinder_Dirnav&lt;Cpp_TextFinder_Output&gt;</code>. Regex compilation happens here, and the constructor throws when <code>/r</code> will not compile</td>
+        </tr>
+        <tr>
+          <td class="lightItem">8</td>
+          <td class="lightItem">For each root path, in the order <code>/P</code> gave them, invoke <code>search</code> on the same instance</td>
+        </tr>
+        <tr>
+          <td class="lightItem">9</td>
+          <td class="lightItem">Return 0</td>
+        </tr>
+      </table>
+      <t-b>
+        <strong>Step 2 precedes every write to stdout.</strong> Constructing
+        <code>Cpp_TextFinder_Output</code> puts the stream into the mode Spec_TextFinder.md
+        &sect;3.4 requires - an LF written verbatim, never translated to CRLF - so every subsequent
+        write carries that terminator, the binary's own writes included. Help text in particular is
+        written after this step and not before, or the fixed text of &sect;5.1 would carry CRLF on
+        Windows while the rest of the program's stdout carried LF. That ordering was a defect once:
+        an earlier specification wrote the <code>/v</code> listing before constructing the sink, and
+        the cross-document review caught it.
+      </t-b>
+      <t-b>
+        <strong>Step 4 reads <code>argc</code> and nothing else.</strong> It inspects no element of
+        <code>argv</code>, because "no switch at all" is exactly "no tokens after the executable
+        name". <code>commands</code> here is a default-constructed <code>ProgramCommands</code>, so
+        the listing names every default and its <code>/v</code> line reads <code>false</code>.
+        Steps 4 and 5 are mutually exclusive: a command line bearing <code>/v</code> is not bare.
+      </t-b>
+      <t-b>
+        <strong>Step 7 is where a bad pattern is refused</strong>, and it takes four sub-steps to
+        report:
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li>If step 5 did not already write it, write <code>optionsText(commands)</code> to
+            stdout now, so the user sees the <code>/r</code> line carrying the expression that
+            failed.</li>
+          <li>Flush stdout, so the listing reaches the stream ahead of the diagnostic that explains
+            it. <code>std::cerr</code> is unit-buffered and <code>Cpp_TextFinder_Output</code>
+            buffers stdout without per-line flushing, so without this the two arrive out of
+            order.</li>
+          <li>Compose the diagnostic - <code>invalid regex for switch: /r</code>, a newline, then
+            <code>usageLine()</code> - and write it to stderr. The binary composes it; neither
+            library does, the one supplying only <code>usageLine()</code> and the other only the
+            failure that triggers it.</li>
+          <li>Return 1, having traversed nothing.</li>
+        </ol>
+      </t-b>
+      <t-b>
+        Step 8 passes a root-path failure to nobody. A root that cannot be searched - unopenable,
+        a symbolic link, or neither a regular file nor a directory - is announced by
+        <code>Cpp_TextFinder_Dirnav</code> itself, and the binary neither formats nor inspects that
+        notice. No root-path outcome affects the exit code.
+      </t-b>
+
+      <a id="skiplist"></a>
+      <h3>3. &nbsp;The Skip List and addSkipDirectory</h3>
+      <t-b>
+        The binary owns the process-wide skip list, initialized with the 11 defaults of
+        Spec_TextFinder.md &sect;3.2, and implements the extension point as
+      </t-b>
+<pre><code class="language-cpp">void addSkipDirectory(const std::string&amp; name);</code></pre>
+      <t-b>
+        It is defined in the binary's own translation unit and exported from nothing, so no library
+        and no test can call it; the calls that extend the list are written into the binary's source
+        and compiled with it. Duplicate entries are ignored, and
+        <code>[[maybe_unused]]</code> marks the function so a build that adds no directory compiles
+        without a warning.
+      </t-b>
+      <t-b>
+        That is the narrow reading of &sect;3.5, which requires each language's specification to
+        say whether the function is exported from a library or confined to the component that owns
+        the list, and does not require it to be callable from outside the program. Narrow is the
+        right reading here, because a callable <code>addSkipDirectory</code> would be an interface
+        with no caller and one more thing a test could hold wrong.
+      </t-b>
+      <t-b>
+        The calls run at step 6, before the list is handed to <code>Cpp_TextFinder_Dirnav</code>,
+        which consults but never modifies it. Nothing extends the list once traversal has begun,
+        and the binary reads no configuration file.
+      </t-b>
+
+      <a id="exit"></a>
+      <h3>4. &nbsp;Exit Codes</h3>
+      <t-b>
+        The three codes Spec_TextFinder.md &sect;3.4 fixes map onto three failure modes. No other
+        value is returned from <code>main</code>.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:5rem;" />
+          <col style="width:20rem;" />
+          <col style="width:31rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Code</th>
+          <th class="darkItem">Cause in this binary</th>
+          <th class="darkItem">What reaches which stream</th>
+        </tr>
+        <tr>
+          <td class="lightItem">0</td>
+          <td class="lightItem">Startup and traversal completed; or <code>/H</code>; or the bare command line</td>
+          <td class="lightItem">Search output, help, or the option listing on stdout. Match count and unopenable roots do not change it</td>
+        </tr>
+        <tr>
+          <td class="lightItem">1</td>
+          <td class="lightItem">Parse failure, or a malformed <code>/r</code></td>
+          <td class="lightItem">A usage diagnostic on stderr. Parse failure leaves stdout empty; a malformed <code>/r</code> puts the option listing there first</td>
+        </tr>
+        <tr>
+          <td class="lightItem">2</td>
+          <td class="lightItem"><code>Cpp_TextFinder_Output</code> construction failed</td>
+          <td class="lightItem"><code>cannot initialize output</code> on stderr, no usage line, stdout empty</td>
+        </tr>
+      </table>
+      <t-b>
+        Only one exit-code-1 path writes to stdout, and the asymmetry is deliberate: &sect;5.2
+        requires the listing ahead of the invalid-regex diagnostic so the <code>/r</code> line
+        shows what failed, and leaves stdout empty for every other violation.
+      </t-b>
+      <t-b>
+        The code-2 text is fixed in the C++ specification rather than the project specification,
+        and that placement follows a rule. &sect;5.2's reason lines are fixed byte for byte because
+        they complain about what the user typed; <code>cannot initialize output</code> reports a
+        runtime failure, so its wording binds C++ alone while its exit code binds everyone.
+      </t-b>
+      <t-b>
+        A malformed regex taking code 1 is a decision rather than a deduction. The review asked
+        which code a regex compilation failure should take, and the answer classified it as an
+        invalid command argument - the expression is something the user typed, so the failure is a
+        usage failure even though it surfaces inside a library constructor.
+      </t-b>
+
+      <a id="return"></a>
+      <h3>5. &nbsp;Why Every Exit Is a Return</h3>
+      <t-b>
+        Every exit in the sequence is a <code>return</code> from <code>main</code>, never a call to
+        <code>std::exit</code>. The <code>Cpp_TextFinder_Output</code> instance is a local of
+        <code>main</code>, and only a return destroys it and flushes its stdout buffer. Steps 3, 4,
+        and 7 each write to stdout and then leave, and <code>std::exit</code> would discard what
+        they wrote.
+      </t-b>
+      <t-b>
+        One rule pairs with it: nothing writes to stderr before stdout has been flushed. Step 1
+        predates the <code>Cpp_TextFinder_Output</code> instance and so has no buffer to flush;
+        step 2 fails before one exists; step 7 flushes explicitly. The Output library applies the
+        same rule to its own <code>output failed</code> notice.
+      </t-b>
+      <t-b>
+        Both rules exist because the sink defers flushing to destruction, which the
+        <a target="_blank" href="Spec_Driven_Design_Cpp_Output.html">Output page</a> covers.
+        Deferred flushing plus a unit-buffered <code>std::cerr</code> is a reordering hazard, and
+        two rules stated in the specifications are what keeps it from being one in practice. The
+        code uses <code>std::optional</code> for both objects, which is what lets construction be
+        attempted inside a <code>try</code> while the object's lifetime still belongs to
+        <code>main</code>'s scope.
+      </t-b>
+
+      <a id="limits"></a>
+      <h3>6. &nbsp;Stated Limits</h3>
+      <t-b>
+        Two non-goals, and one of them is a portability limit rather than a design choice.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>No per-file state in the binary.</strong> A single
+            <code>Cpp_TextFinder_Dirnav</code> instance is reused across every root path, and it
+            carries no state from one <code>search</code> call to the next.</li>
+          <li><strong>No non-ASCII characters in argv.</strong> The binary takes
+            <code>main</code>'s <code>char* argv[]</code>, and on Windows that system-codepage
+            vector is not decoded to Unicode. Spec_TextFinder.md &sect;4 leaves the argument type
+            and its encoding to this document, so this is a stated limit of the C++ implementation
+            rather than a departure from the parent specification. It does mean a root path or
+            expression holding non-ASCII characters may reach this implementation differently than
+            it reaches the Rust, C#, and Python ones, and &sect;6's consistency guarantee speaks
+            only to the command lines all four accept.</li>
+        </ul>
+      </t-b>
+
+      <a id="source"></a>
+      <h3>7. &nbsp;Source</h3>
+      <t-b>
+        <code>main.cpp</code> in full, then the build definition. The step numbers in the comments
+        are the nine steps of Section 2, and the citations name the specification section each step
+        satisfies.
+      </t-b>
+      <h5 class="indent">main.cpp</h5>
+<pre><code class="language-cpp">// main.cpp - Cpp_TextFinder entry point, per Spec_Cpp_TextFinder_Entry.md
+
+import std;
+import Cpp_TextFinder_Cmdline;
+import Cpp_TextFinder_Dirnav;
+import Cpp_TextFinder_Output;
+
+namespace {
+
+// §5: the defaults of Spec_TextFinder.md §3.2, owned by the binary.
+SkipList skipList{"archive", ".git", ".svn", ".hg",          "build", "out",
+                  "target",  "bin",  "obj",  "__pycache__",  "node_modules"};
+
+// §5: the build-time extension point of Spec_TextFinder.md §3.5. Defined here and exported
+// from nothing, so no library and no test can call it; calls are compiled in alongside it.
+[[maybe_unused]] void addSkipDirectory(const std::string&amp; name) {
+    if (std::ranges::find(skipList, name) == skipList.end()) skipList.push_back(name);
+}
+
+} // namespace
+
+// §4: the startup sequence, in order. Every exit below is a return from main, never
+// std::exit, so the Cpp_TextFinder_Output destructor flushes stdout on every path out.
+int main(int argc, char* argv[]) {
+    // Step 1. Nothing has reached stdout yet, so this diagnostic needs no flush before it.
+    const auto parsed = parse(argc, argv);
+    if (!parsed) {
+        std::cerr &lt;&lt; parsed.error();
+        return 1;
+    }
+    const ProgramCommands&amp; commands = *parsed;
+
+    // Step 2. Before anything reaches stdout: constructing it puts the stream into the
+    // mode Spec_TextFinder.md §3.4 requires, and the help text below depends on that too.
+    std::optional&lt;Cpp_TextFinder_Output&gt; out;
+    try {
+        out.emplace();
+    }
+    catch (const std::exception&amp;) {
+        std::cerr &lt;&lt; "cannot initialize output\n";
+        return 2;
+    }
+
+    // Step 3.
+    if (commands.help) {
+        std::cout &lt;&lt; helpText();
+        return 0;
+    }
+
+    // Step 4. Spec_TextFinder.md §3.1: a command line bearing no switch at all names no
+    // work. argc is read for this and nothing else; no element of argv is inspected.
+    if (argc == 1) {
+        std::cout &lt;&lt; optionsText(commands);
+        return 0;
+    }
+
+    // Step 5. Mutually exclusive with step 4: a command line bearing /v is not bare.
+    if (commands.verbose) std::cout &lt;&lt; optionsText(commands);
+
+    // Step 6.
+    const SkipList&amp; skips = skipList;
+
+    // Step 7. Regex compilation happens in the constructor.
+    std::optional&lt;Cpp_TextFinder_Dirnav&lt;Cpp_TextFinder_Output&gt;&gt; dirnav;
+    try {
+        dirnav.emplace(*out, skips, commands);
+    }
+    catch (const std::regex_error&amp;) {
+        // Spec_TextFinder.md §5.2: the listing goes to stdout whatever /v says, so the /r
+        // line shows the expression that failed, and is not repeated when /v produced it.
+        if (!commands.verbose) std::cout &lt;&lt; optionsText(commands);
+        std::cout.flush();   // ahead of stderr, which is unit-buffered where stdout is not
+        std::cerr &lt;&lt; "invalid regex for switch: /r\n" &lt;&lt; usageLine();
+        return 1;
+    }
+
+    // Step 8. One reused instance, one root path at a time, in the order /P gave them.
+    // Every root-path failure is announced by Cpp_TextFinder_Dirnav and affects nothing here.
+    for (const std::string&amp; root : commands.rootPaths) dirnav-&gt;search(std::filesystem::path{root});
+
+    // Step 9.
+    return 0;
+}</code></pre>
+      <h5 class="indent">Cpp_Spec_driven_TextFinder_Entry/CMakeLists.txt</h5>
+<pre><code class="language-cmake">add_executable(Cpp_TextFinder src/main.cpp)
+
+target_link_libraries(Cpp_TextFinder
+  PRIVATE
+    Cpp_TextFinder_Cmdline
+    Cpp_TextFinder_Dirnav
+    Cpp_TextFinder_Output
+)
+
+target_compile_features(Cpp_TextFinder PRIVATE cxx_std_23)</code></pre>
+
+      <a id="records"></a>
+      <h3>8. &nbsp;Prompt Records</h3>
+      <t-b>
+        The two conversations that produced <code>Spec_Cpp_TextFinder_Entry.md</code>. The first
+        covers the component directories, the nine-section draft, and the two turns that routed
+        <code>cannot open</code> through the output component; the second covers the 13-item review,
+        the 13 decisions that reordered the startup sequence, and a compression pass.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Prompts_Spec_Cpp_TextFinder_Entry.md</summary>
+<pre><code class="language-markdown"># Prompts and Replies — Spec_Cpp_TextFinder_Entry Development
+
+This file records the prompts and replies exchanged while drafting [Spec_Cpp_TextFinder_Entry.md](Spec_Cpp_TextFinder_Entry.md).
+
+---
+
+## Turn 1
+
+### User
+
+&gt; create subdirectories
+&gt; Cpp_Spec_driven_TextFinder_Entry,
+&gt; Cpp_Spec_driven_Cmdline,
+&gt; Cpp_Spec_driven_Dirnav,
+&gt; Cpp_Spec_driven_Output
+
+### Assistant
+
+Created the four component subdirectories under [Cpp_Spec_driven_TextFinder/](..):
+
+- [Cpp_Spec_driven_TextFinder_Entry/](.)
+- [Cpp_Spec_driven_Cmdline/](../Cpp_Spec_driven_Cmdline/)
+- [Cpp_Spec_driven_Dirnav/](../Cpp_Spec_driven_Dirnav/)
+- [Cpp_Spec_driven_Output/](../Cpp_Spec_driven_Output/)
+
+---
+
+## Turn 2
+
+### User
+
+&gt; Create Spec_Cpp_TextFinder_Entry.md using Spec_TextFinder.md and Cpp_Structure.md which will be used to build its code
+
+### Assistant
+
+Read [Spec_TextFinder.md](../../Spec_TextFinder.md) (Cpp_Structure.md was already in context), then created [Spec_Cpp_TextFinder_Entry.md](Spec_Cpp_TextFinder_Entry.md) with nine sections:
+
+1. **Purpose** — binary is the command-line entry point; contains no matching, I/O, or formatting.
+2. **Scope** — covers only the binary; switch behavior lives in the parent Spec.
+3. **Responsibilities** — imports the three libraries and `std`, owns the skip list, constructs Cpp_Output and Cpp_Dirnav (Dirnav templated on and bound to Output), drives traversal, handles `/H`, `/v`, exit codes, and top-level diagnostics.
+4. **Startup Sequence** — `main(int argc, char* argv[])` in eight steps: parse via Cpp_Cmdline; handle `/H`; handle `/v`; instantiate Cpp_Output; instantiate Cpp_Dirnav; pass skip list to Cpp_Dirnav; traverse each `/P` root path; return exit code.
+5. **Skip List** — binary-owned, initialized with the defaults from parent Spec §3.2, extended via `addSkipDirectory`.
+6. **Multi-Path Handling** — `/P` accumulates roots in argv order; default `.` when none supplied.
+7. **Exit Codes and Diagnostics** — 0 on success, non-zero when the command line was invalid or a root path could not be opened. Matches to stdout, diagnostics to stderr.
+8. **Build** — C++23, CMake target producing executable `Cpp_TextFinder`. Entry is a conventional TU consuming the three modules and `import std;`.
+9. **Non-Goals** — no file I/O, regex evaluation, formatting, or per-file state in the binary.
+
+Flagged two open questions:
+
+- **Format discrepancy**: [Cpp_Structure.md](../Cpp_TextFinder_Structure.md) said `path:line:text`; parent [Spec_TextFinder.md:56](../../Spec_TextFinder.md#L56) fixes the separator at ` - ` (space-hyphen-space).
+- **Multi-path exit-code**: parent Spec §3.4 predates `/P` accumulation. Interpreted as "any unopenable root → non-zero, continue with the rest." Asked whether to short-circuit or ignore per-path failures instead.
+
+---
+
+## Turn 3
+
+### User
+
+&gt; 1. use " - " format
+&gt; 2. change to display paths that cannot be opened.
+
+### Assistant
+
+Applied both:
+
+- Updated [Cpp_Structure.md](../Cpp_TextFinder_Structure.md) to replace the `path:line:text` phrasing with "fields joined by ` - ` (space-hyphen-space, per Spec_TextFinder.md §3.4)."
+- Updated [Spec_Cpp_TextFinder_Entry.md](Spec_Cpp_TextFinder_Entry.md) Section 4 step 7, step 8, and Section 7 so unopenable root paths are diagnosed on stderr but no longer affect the exit code. Exit code non-zero is now reserved for invalid command lines only.
+
+---
+
+## Turn 4
+
+### User
+
+&gt; In section 4., item 7. instead of writing error to stderr pass a "cannot open [directory] string to Output for display.
+
+### Assistant
+
+Edited Section 4 step 7 and Section 7 diagnostics bullet in [Spec_Cpp_TextFinder_Entry.md](Spec_Cpp_TextFinder_Entry.md):
+
+- Step 7 now passes the string `cannot open [path]` (with the actual path substituted) to `Cpp_Output` for display rather than writing to stderr.
+- Section 7 now records that unopenable-path notices flow through `Cpp_Output`, while other diagnostics (usage errors, per-file skip announcements when `/h false`) continue to go to stderr.
+
+Flagged an inconsistency with parent [Spec_TextFinder.md:64](../../Spec_TextFinder.md#L64), which routes diagnostics to stderr. Routing "cannot open" through `Cpp_Output` sends the notice to whatever stream `Cpp_Output` writes to (stdout if unchanged from the current design). To be reconciled in `Spec_Cpp_Output.md`.
+
+---
+
+## Turn 5
+
+### User
+
+&gt; create Prompts_Spec_Cpp_TextFinder_Entry.md that contains all the prompts and replies used to create Spec_Cpp_TextFinder_Entry.md
+
+### Assistant
+
+Created this file, [Prompts_Spec_Cpp_TextFinder_Entry.md](Prompts_Spec_Cpp_TextFinder_Entry.md), summarizing the subdirectory-creation setup, the initial nine-section draft, and the two refinement turns (format decision plus routing "cannot open" through `Cpp_Output`). User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.</code></pre>
+        </details>
+      </indent-blocks>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Prompts_Fix_Spec_Cpp_TextFinder_Entry.md</summary>
+<pre><code class="language-markdown"># Prompts and Replies — Spec_Cpp_TextFinder_Entry Refinement
+
+This file records the prompts and replies exchanged while refining [Spec_Cpp_TextFinder_Entry.md](Spec_Cpp_TextFinder_Entry.md) after its initial draft and early edits. Turns 1–5 (subdirectory creation, initial draft, format decision, `cannot open` routing, and the first Prompts file) are recorded in [Prompts_Spec_Cpp_TextFinder_Entry.md](Prompts_Spec_Cpp_TextFinder_Entry.md).
+
+---
+
+## Turn 1
+
+### User
+
+&gt; are there any ambiguities, omitted content, or other fixes needed for Spec_Cpp_TextFinder_Entry.md
+
+### Assistant
+
+Reviewed [Spec_Cpp_TextFinder_Entry.md](Spec_Cpp_TextFinder_Entry.md) and listed thirteen items across four groups, without editing. Awaited user decisions.
+
+**Ordering and lifecycle:**
+
+1. Skip-list timing — Section 5 says Dirnav "receives the finalized list at construction," but Section 4 constructed Dirnav in step 5 and passed the skip list separately in step 6. Two-phase or constructor-argument?
+2. `addSkipDirectory` in a CLI — the parent Spec exposes it as a public search interface; the CLI never calls it. Drop, keep, or reframe?
+3. Multi-path Dirnav reuse — same instance across roots or fresh per root?
+
+**Binding mechanisms:**
+
+4. Step 5 "bound to the Cpp_Output instance" — constructor argument, setter?
+5. Cpp_Output receives no configuration — is that correct, or does it need `/n`/`/L`/stream selection?
+
+**Error handling holes:**
+
+6. Regex compilation failure — when discovered, what exit code?
+7. Cpp_Output construction failure — not addressed.
+
+**Diagnostics precision:**
+
+8. `/h false` — current wording says "skip announcements"; parent Spec covers every-file-searched and non-UTF-8 skip; needs broader wording.
+
+**Platform / build gaps:**
+
+9. Windows argv encoding — `char* argv[]` is system codepage.
+10. Toolchain minimums for C++ Modules with `import std;`.
+11. Concrete non-zero exit code value.
+
+**Structural:**
+
+12. Section 3 restates Section 4.
+13. `argc` missing from Section 3.
+
+---
+
+## Turn 2
+
+### User
+
+Provided decisions on all thirteen items:
+
+&gt; 1. pass skip-list at Dirnav construction
+&gt; 2. allow Entry to call addSkipDirectory as a code change for new version.
+&gt; 3. reuse Dirnav
+&gt; 4. pass Output template type as Dirnav constructor argument
+&gt; 5. change Cpp_Output constructor to accept formatting information
+&gt; 6. Classify a malformed regex as invalid command argument.
+&gt; 7. Cpp_Output construction failure is program failure and should result in non-zero exit code.
+&gt; 8. "/h false" should send every found file to Output regardless of its match state.  "/h true" sends only matching files to Output.
+&gt; 9. Accept ASCII chars for C++
+&gt; 10. Place here
+&gt; 11. replace with 1
+&gt; 12. leave as is
+&gt; 13. fix as you've stated
+
+### Assistant
+
+Rewrote [Spec_Cpp_TextFinder_Entry.md](Spec_Cpp_TextFinder_Entry.md) applying all thirteen decisions:
+
+- Section 3: added Cpp_Output construction with formatting info; `Cpp_Dirnav` constructor takes the Cpp_Output instance and skip list; `argc` added alongside `argv`; `addSkipDirectory` reframed as code-level extension point.
+- Section 4: startup sequence reordered. Step 5 finalizes the skip list; step 6 constructs `Cpp_Dirnav&lt;Cpp_Output&gt;` taking the Output instance, skip list, and parsed commands as constructor arguments — regex compilation happens here and a malformed regex classifies as invalid command argument. Malformed regex and Cpp_Output construction failure both exit `1`. Step 8 returns `0`.
+- Section 5: `addSkipDirectory` documented as a code-level extension point (not runtime-exposed); skip list is a Dirnav constructor argument.
+- Section 6: states a single reused `Cpp_Dirnav` instance across all roots; regex reused.
+- Section 7: concrete exit code `1` covers three failure modes. `/h` semantics rewritten: `/h true` announces only files with matches through `Cpp_Output`; `/h false` announces every file examined through `Cpp_Output` regardless of match state. Usage diagnostics still go to stderr from the binary.
+- Section 8: added toolchain minimums — GCC 14+, Clang 17+, MSVC 19.36+ (VS 2022 17.6+), CMake 3.28+.
+- Section 9: added non-goal for non-ASCII argv on Windows (system-codepage argv not decoded to Unicode; ASCII only).
+
+Section 3 vs Section 4 redundancy left as-is per decision 12.
+
+---
+
+## Turn 3
+
+### User
+
+&gt; are there any text changes that would signiicantly reduce token count without losing precision of definition
+
+### Assistant
+
+Yes — estimated ~10–15%. Proposed five compressions with before/after excerpts:
+
+- **Section 4 step 6** — merge Dirnav template-and-constructor sentences into one.
+- **Section 5** — collapse the `addSkipDirectory` paragraph.
+- **Section 7 bullets 1–2** — drop redundant enumeration ("regex compiled successfully," parse-failure list).
+- **Section 8** — shorten the module bullet by referring to "the three libraries."
+- **Section 9** — fold the non-ASCII bullet into a single sentence.
+
+Confirmed precision preserved: same interfaces, exit codes, `/h` semantics, and toolchain minimums. Asked before applying.
+
+---
+
+## Turn 4
+
+### User
+
+&gt; apply your fixes
+
+### Assistant
+
+Applied all five compressions to [Spec_Cpp_TextFinder_Entry.md](Spec_Cpp_TextFinder_Entry.md): step 6 collapsed; §5 addSkipDirectory paragraph shortened; §7 first two bullets tightened; §8 module bullet compacted; §9 non-ASCII bullet folded.
+
+---
+
+## Turn 5
+
+### User
+
+&gt; create Prompts_Fix_Spec_Cpp_TextFinder_Entry.md with the prompts and replys that have not yet been written to an md file
+
+### Assistant
+
+Created this file, [Prompts_Fix_Spec_Cpp_TextFinder_Entry.md](Prompts_Fix_Spec_Cpp_TextFinder_Entry.md), documenting the review, the thirteen decisions, the compression proposals, and the applied compressions. User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.</code></pre>
+        </details>
+      </indent-blocks>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#owns">what it owns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#startup">startup</a></menu-elem>
+        <menu-elem class="secElem"><a href="#skiplist">skip list</a></menu-elem>
+        <menu-elem class="secElem"><a href="#exit">exit codes</a></menu-elem>
+        <menu-elem class="secElem"><a href="#return">every exit returns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#limits">stated limits</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenCppPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>

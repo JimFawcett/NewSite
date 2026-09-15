@@ -2,7 +2,7 @@
 
 Rules for generating prose on this site. [PageExample.html](../../PageExample.html) is the reference. Match the voice it shows, with the adjustments in Section 2.
 
-Readers are experienced software engineers. Write for someone who will understand a language feature once you name it, but who has not seen this codebase before.
+Readers are experienced software engineers. Write for someone who has not seen this codebase before.
 
 ## 1. What to take from the reference
 
@@ -24,7 +24,7 @@ Four rules override what the example does.
 
 ## 3. Sentence shape
 
-Write short declarative sentences in present tense. One idea per sentence.
+Write declarative sentences in present tense. One idea per sentence.
 
 Use a colon to introduce an enumeration: "the design goal is to make the wiring itself readable: parse args, configure `Output`, configure `DirNav`, register two lambda callbacks, run the walk, print a summary."
 
@@ -65,7 +65,7 @@ Put the source last. Prose explains what to look for, then the reader looks.
 
 Before publishing generated prose, confirm:
 
-1. Every sentence names its actor.
+1. Most sentences name their actor.
 2. No em dashes appear outside Markdown.
 3. Each adjective earns its place.
 4. Counts are given as numbers.

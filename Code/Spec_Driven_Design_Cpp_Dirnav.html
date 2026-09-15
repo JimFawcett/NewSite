@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Cpp_Dirnav.html - C++ thread, page 4
+-->
+<head>
+  <title>Spec-Driven C++: Dirnav</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Cpp_Dirnav.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven C++: Dirnav</h2>
+        <h4 class="indent" id="subtitle">traversal, admission, matching, and emission in one class template</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Traversal.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="interface"></a>
+      <h3>1. &nbsp;Public Interface</h3>
+      <t-b>
+        <code>Cpp_TextFinder_Dirnav</code> walks a directory tree, reads each selected file,
+        evaluates the expression against each line, and formats every matching file into the block
+        Spec_TextFinder.md &sect;3.4 fixes, emitting each of its lines as it is produced. It is the
+        only component that touches file contents, and it writes to no stream.
+      </t-b>
+      <t-b>
+        The module interface unit exports three things at global scope.
+      </t-b>
+<pre><code class="language-cpp">export class Output {
+public:
+    virtual ~Output() = default;
+    virtual void output(const std::string&amp; text) = 0;
+};
+
+export using SkipList = std::vector&lt;std::string&gt;;
+
+export template &lt;typename Out&gt;
+    requires std::derived_from&lt;Out, Output&gt;
+class Cpp_TextFinder_Dirnav {
+public:
+    Cpp_TextFinder_Dirnav(Out&amp; out, const SkipList&amp; skips, const ProgramCommands&amp; commands);
+    void search(const std::filesystem::path&amp; root);
+};</code></pre>
+      <t-b>
+        The class template declares the <code>Output</code> base class it does not implement, which
+        is what puts <code>Cpp_TextFinder_Output</code> downstream of it in the import chain. The
+        concept constraint makes the base class the requirement and the template parameter makes
+        the call direct, so the polymorphism is a compile-time check rather than a runtime
+        dispatch.
+      </t-b>
+      <t-b>
+        The constructor compiles <code>commands.regexText</code> with <code>std::regex</code>,
+        constructed with <code>std::regex::ECMAScript</code> - the engine Spec_TextFinder.md
+        &sect;6.1 assigns to C++ - and lets <code>std::regex_error</code> propagate when it will
+        not compile. <code>Cpp_TextFinder_Cmdline</code> guarantees the text is non-empty, so the
+        constructor never sees an empty expression. All three arguments are retained by reference
+        and owned by <code>Cpp_TextFinder_Entry</code>; the skip list and the commands are consulted
+        but never modified.
+      </t-b>
+      <t-b>
+        <code>search</code> returns nothing. Every failure it meets is announced through
+        <code>Output</code>, so the caller has nothing to report on its behalf. That return type is
+        a review outcome rather than a first draft: the original <code>bool</code> came back
+        <code>false</code> both for a root that could not be opened and for one that was neither
+        file nor directory, which would have had the binary print <code>cannot open</code> for
+        <code>/dev/null</code>. Once Dirnav announces root failures itself, the
+        <code>bool</code> has no consumer.
+      </t-b>
+      <t-b>
+        A single instance is reused across every root path, so the compiled expression is built once
+        per run, and <code>search</code> carries no state from one call to the next. Member
+        definitions live in the interface unit, since the class is a template.
+      </t-b>
+
+      <a id="traversal"></a>
+      <h3>2. &nbsp;Traversal</h3>
+      <t-b>
+        <code>search</code> resolves a root before walking it. A symbolic link or a status query
+        that fails draws <code>cannot open</code>; a regular file is examined as a single file; a
+        directory is walked; anything else draws <code>cannot open</code>. The skip list is never
+        consulted for the root, which Spec_TextFinder.md &sect;3.2 exempts because the user named
+        it explicitly.
+      </t-b>
+      <t-b>
+        The recursion is written explicitly. <code>walk</code> iterates one directory and calls
+        itself on each subdirectory it decides to enter, so entries are handled as
+        <code>std::filesystem::directory_iterator</code> yields them, without being collected or
+        reordered.
+      </t-b>
+      <t-b>
+        Two standard-library choices are stated in the specification by name, and each rules out a
+        plausible alternative.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong><code>recursive_directory_iterator</code> is not used.</strong> The library
+            controls its own descent, because <code>/s</code> and the skip list both decide whether
+            to enter a directory and a recursive iterator would have to be told after the fact.</li>
+          <li><strong><code>directory_iterator</code> enumerates a single level only.</strong> Its
+            order is unspecified by the standard and is whatever <code>readdir</code> or
+            <code>FindFirstFileW</code> returns, which is exactly the platform facility
+            Spec_TextFinder.md &sect;3.2 requires an implementation to enumerate through. Entries
+            are neither sorted nor grouped, as &sect;3.2 forbids.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        The loop advances with <code>entry.increment(error)</code> rather than <code>++</code>,
+        because the throwing overload would turn a directory that becomes unreadable mid-iteration
+        into an exception the library has no way to report through <code>Output</code>. Each of the
+        three entry queries - <code>is_symlink</code>, <code>is_directory</code>,
+        <code>is_regular_file</code> - takes its own <code>std::error_code</code> for the same
+        reason.
+      </t-b>
+      <t-b>
+        The order of those three queries matters. A symbolic link is tested first and passed over
+        silently whatever its target, since no attempt is made to open it, so a link to a directory
+        never reaches the descent branch. A pruned directory draws no announcement either: pruning
+        is work the library chose not to do, and <code>cannot open</code> reports work it could not
+        do.
+      </t-b>
+
+      <a id="selection"></a>
+      <h3>3. &nbsp;File Selection</h3>
+      <t-b>
+        Selection follows the <code>/p</code> rules of Spec_TextFinder.md &sect;5, and the list
+        arrives from <code>Cpp_TextFinder_Cmdline</code> already normalized to bare extensions. An
+        empty list selects every file; a non-empty list selects a file whose extension matches an
+        entry.
+      </t-b>
+      <t-b>
+        <code>std::filesystem::path::extension()</code> does not implement those rules, and the
+        specification rejects it by name: it returns an empty string for
+        <code>.gitignore</code>, whereas &sect;5 gives that file the extension
+        <code>gitignore</code>. The extension is therefore taken as the text after the last
+        <code>.</code> in <code>path::filename().string()</code>, with no special case for a
+        leading dot, and a name holding no <code>.</code> at all has no extension.
+      </t-b>
+      <t-b>
+        <code>u8string()</code> is rejected by name too, for a duller reason: it returns
+        <code>std::u8string</code>, which will not compare against the <code>std::string</code>
+        extensions the parser supplies. Both warnings survived every trimming pass, on the ground
+        that each stops an implementer writing something plausible and wrong.
+      </t-b>
+      <t-b>
+        Comparison goes through <code>sameName</code>, which is case-sensitive on POSIX and
+        case-insensitive on Windows per &sect;3.2 and &sect;5. The same function serves the skip
+        list, since the platform rule is the same for both, and it is the one place in the file
+        where <code>_WIN32</code> changes behavior rather than only including a header.
+      </t-b>
+      <t-b>
+        Selection applies uniformly: a root path that is a regular file is filtered by
+        <code>/p</code> like any other file. A root named on <code>/P</code> escapes the skip list
+        and does not escape the extension filter.
+      </t-b>
+
+      <a id="admission"></a>
+      <h3>4. &nbsp;Admission and the No-Content Case</h3>
+      <t-b>
+        <code>examine</code> applies the three admission tests of Spec_TextFinder.md &sect;3.3 in
+        the order the specification fixes. The size test reads filesystem metadata, so a file above
+        the limit is never read into memory; the NUL and UTF-8 tests read bytes.
+      </t-b>
+      <t-b>
+        The constructor records once, for the whole run, whether the no-content case applies -
+        <code>regexText</code> equal to <code>.</code> with <code>lineNumbers</code> and
+        <code>matchedLine</code> both <code>false</code>. Two flags carry it:
+      </t-b>
+<pre><code class="language-cpp">pathOnly_{!commands.lineNumbers &amp;&amp; !commands.matchedLine},
+contentNotNeeded_{pathOnly_ &amp;&amp; commands.regexText == "."}</code></pre>
+      <t-b>
+        When <code>contentNotNeeded_</code> holds, a selected file that passes the size test and is
+        not empty produces a block of its path line alone, and <code>std::ifstream</code> is never
+        opened for it. No file announcement accompanies that block: <code>searched</code> reports a
+        file that was read and matched nothing and <code>skipped</code> reports one a content test
+        rejected, and neither happened, so the library emits neither whatever <code>/h</code> says.
+        A selected file of zero size produces no block and draws no announcement either.
+      </t-b>
+      <t-b>
+        Both error announcements still work in this case, because both rest on metadata: a file
+        above the limit draws <code>too large</code>, and one whose metadata cannot be read draws
+        <code>cannot open</code>.
+      </t-b>
+      <t-b>
+        A file that needs reading is read in full, so one failing a later test is skipped entirely
+        rather than searched in part. The read allocates a string of the reported size, reads into
+        it, and resizes to <code>gcount()</code>, which is what makes a file that shrank between
+        the <code>file_size</code> call and the read produce a correct short string rather than a
+        buffer with garbage at the end.
+      </t-b>
+      <t-b>
+        <code>validUtf8</code> rejects truncated sequences, overlong encodings, encoded surrogates,
+        and scalar values above U+10FFFF. All four rejections are one line each in the source, with
+        the reason named in the comment, because "valid UTF-8" is a phrase two implementers read
+        differently and four named rejections are four test cases. A leading BOM is erased after
+        the tests, not before, so the three bytes count toward the size limit and toward the NUL
+        scan like any others.
+      </t-b>
+
+      <a id="matching"></a>
+      <h3>5. &nbsp;Matching and Emission</h3>
+      <t-b>
+        <code>splitLines</code> divides the bytes at LF, CRLF, or bare CR, and treats a final
+        unterminated run as a line. It returns <code>std::string_view</code> into the buffer rather
+        than copies, so a 10 MB file costs one allocation for its contents and one vector of views.
+        Line numbers count every line, matching or not.
+      </t-b>
+      <t-b>
+        Each line is evaluated with <code>std::regex_search</code>, which gives the
+        anywhere-in-the-line match &sect;3.3 requires. The line is passed as its bytes, so
+        <code>.</code>, a character class, and a class escape each match one byte rather than one
+        Unicode scalar value; &sect;6.1 records that as this implementation's divergence from the
+        other three on a non-ASCII line, and the divergence is a consequence of
+        <code>std::regex</code> over <code>char</code> rather than a choice made here.
+      </t-b>
+      <t-b>
+        <code>scan</code> writes the block and answers whether the file matched. Three rules
+        govern it, and all three are visible in a dozen lines:
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li><strong>The path line goes out at the first match</strong>, ahead of the detail line
+            for that same match, and an <code>opened</code> flag makes sure it goes out once. A
+            file that never matches produces no line at all; a file that matches many produces its
+            path line once.</li>
+          <li><strong>With neither <code>/n</code> nor <code>/L</code>, the loop returns as soon as
+            the path line is written.</strong> The block has no detail lines, so the first match
+            settles the file.</li>
+          <li><strong>Otherwise the loop runs to the end of the file</strong>, writing one detail
+            line - two spaces of indent, then the fields <code>/n</code> and <code>/L</code> select
+            - as each matching line is evaluated.</li>
+        </ol>
+      </t-b>
+      <t-b>
+        Nothing is accumulated for the file. <code>Output</code> receives each line as it is
+        produced, which is the pipeline behavior &sect;3.4's "as they occur" requires. Announcements
+        go through the same <code>Output</code>, at the point the failure or the finding is met, and
+        an error announcement is not gated on <code>/h</code>.
+      </t-b>
+      <t-b>
+        The <code>/h</code> gate is one line, <code>announceNoMatch</code>, and it reads as the rule
+        it implements: emit unless <code>suppressOnNoMatch</code>. A file announcement reports only
+        a file that produced no block, so it never repeats a path the output already carries -
+        <code>searched</code> at the moment the last line has been evaluated, which is the first
+        moment the library knows the file matched nothing, and <code>skipped</code> at the point of
+        rejection.
+      </t-b>
+      <t-b>
+        Path rendering uses <code>generic_string()</code> and strips a leading <code>./</code>
+        contributed by a root of <code>.</code>, per &sect;3.4.
+        <code>generic_u8string()</code> is rejected by name for the same reason
+        <code>u8string()</code> is: <code>Output::output</code> takes a <code>std::string</code>.
+      </t-b>
+
+      <a id="linkage"></a>
+      <h3>6. &nbsp;Module Linkage and the inline Helpers</h3>
+      <t-b>
+        Five helpers sit at module scope, not exported and marked <code>inline</code>:
+        <code>sameName</code>, <code>baseName</code>, <code>displayPath</code>,
+        <code>validUtf8</code>, and <code>splitLines</code>. The combination is deliberate and the
+        source says why.
+      </t-b>
+      <t-b>
+        They were written first in an anonymous namespace, which is the reflex for "private to this
+        file". That gives them internal linkage, and the class template that calls them is
+        instantiated in <code>main.cpp</code>'s translation unit, which therefore could not resolve
+        them: the build compiled every translation unit and failed at link with five unresolved
+        externals.
+      </t-b>
+      <t-b>
+        Non-exported <code>inline</code> functions at module scope solve both halves. Module
+        linkage keeps them invisible to importers, so the module's interface is still the three
+        exported names. <code>inline</code> lets the instantiating translation unit emit its own
+        copy, so the template's calls resolve.
+      </t-b>
+      <t-b>
+        This is the one place in the project where the code carries a comment about the language
+        rather than about the specification, and it earns it: the reflex answer compiles and does
+        not link, and the failure names five symbols rather than the rule that was broken.
+      </t-b>
+
+      <a id="source"></a>
+      <h3>7. &nbsp;Source</h3>
+      <t-b>
+        <code>Cpp_TextFinder_Dirnav.ixx</code> in full - 254 lines, the largest file in the
+        project. The comments cite the C++ specification's sections, which cite
+        Spec_TextFinder.md in turn.
+      </t-b>
+      <h5 class="indent">Cpp_TextFinder_Dirnav.ixx</h5>
+<pre><code class="language-cpp">// Cpp_TextFinder_Dirnav.ixx - traversal, file admission, matching, and emission per Spec_Cpp_TextFinder_Dirnav.md
+
+export module Cpp_TextFinder_Dirnav;
+
+import std;
+import Cpp_TextFinder_Cmdline;
+
+export class Output {
+public:
+    virtual ~Output() = default;
+    virtual void output(const std::string&amp; text) = 0;
+};
+
+export using SkipList = std::vector&lt;std::string&gt;;
+
+// These helpers are not exported, so they have module linkage and stay invisible to importers.
+// They are inline because the class template below is instantiated in the importing translation unit.
+
+inline constexpr std::uintmax_t sizeLimit = 10u * 1024u * 1024u;   // Spec_TextFinder.md §3.3
+
+// Case-sensitive on POSIX, case-insensitive on Windows, per Spec_TextFinder.md §3.2 and §5.
+inline bool sameName(std::string_view left, std::string_view right) {
+#ifdef _WIN32
+    if (left.size() != right.size()) return false;
+    for (std::size_t i = 0; i &lt; left.size(); ++i) {
+        const auto l = std::tolower(static_cast&lt;unsigned char&gt;(left[i]));
+        const auto r = std::tolower(static_cast&lt;unsigned char&gt;(right[i]));
+        if (l != r) return false;
+    }
+    return true;
+#else
+    return left == right;
+#endif
+}
+
+inline std::string baseName(const std::filesystem::path&amp; path) {
+    const std::filesystem::path base = path.has_filename() ? path : path.parent_path();
+    return base.filename().string();
+}
+
+// §8: generic_string(), not generic_u8string(), whose std::u8string Output::output will not take.
+inline std::string displayPath(const std::filesystem::path&amp; path) {
+    std::string text = path.generic_string();
+    if (text.starts_with("./")) text.erase(0, 2);   // a root of . contributes no leading ./
+    return text;
+}
+
+// §7: rejects truncated sequences, overlong encodings, encoded surrogates, and values above U+10FFFF.
+inline bool validUtf8(std::string_view bytes) {
+    for (std::size_t i = 0; i &lt; bytes.size();) {
+        const auto lead = static_cast&lt;unsigned char&gt;(bytes[i]);
+        std::size_t trailing = 0;
+        char32_t point = 0;
+
+        if (lead &lt; 0x80) { ++i; continue; }
+        else if ((lead &amp; 0xE0) == 0xC0) { trailing = 1; point = lead &amp; 0x1Fu; }
+        else if ((lead &amp; 0xF0) == 0xE0) { trailing = 2; point = lead &amp; 0x0Fu; }
+        else if ((lead &amp; 0xF8) == 0xF0) { trailing = 3; point = lead &amp; 0x07u; }
+        else return false;
+
+        if (i + trailing &gt;= bytes.size()) return false;
+        for (std::size_t k = 1; k &lt;= trailing; ++k) {
+            const auto next = static_cast&lt;unsigned char&gt;(bytes[i + k]);
+            if ((next &amp; 0xC0) != 0x80) return false;
+            point = (point &lt;&lt; 6) | (next &amp; 0x3Fu);
+        }
+
+        if (trailing == 1 &amp;&amp; point &lt; 0x80) return false;        // overlong
+        if (trailing == 2 &amp;&amp; point &lt; 0x800) return false;       // overlong
+        if (trailing == 3 &amp;&amp; point &lt; 0x10000) return false;     // overlong
+        if (point &gt; 0x10FFFF) return false;                     // beyond Unicode
+        if (point &gt;= 0xD800 &amp;&amp; point &lt;= 0xDFFF) return false;   // encoded surrogate
+
+        i += trailing + 1;
+    }
+    return true;
+}
+
+// LF, CRLF, and bare CR terminate a line; a final unterminated run is still a line.
+inline std::vector&lt;std::string_view&gt; splitLines(std::string_view text) {
+    std::vector&lt;std::string_view&gt; lines;
+    std::size_t start = 0;
+    for (std::size_t i = 0; i &lt; text.size();) {
+        if (text[i] == '\n') {
+            lines.push_back(text.substr(start, i - start));
+            start = ++i;
+        }
+        else if (text[i] == '\r') {
+            lines.push_back(text.substr(start, i - start));
+            i += (i + 1 &lt; text.size() &amp;&amp; text[i + 1] == '\n') ? 2 : 1;
+            start = i;
+        }
+        else ++i;
+    }
+    if (start &lt; text.size()) lines.push_back(text.substr(start));
+    return lines;
+}
+
+export template &lt;typename Out&gt;
+    requires std::derived_from&lt;Out, Output&gt;
+class Cpp_TextFinder_Dirnav {
+public:
+    // §4: all three arguments are retained by reference and outlive this instance. The
+    // expression is compiled once here; std::regex_error propagates to Cpp_TextFinder_Entry.
+    Cpp_TextFinder_Dirnav(Out&amp; out, const SkipList&amp; skips, const ProgramCommands&amp; commands)
+        : out_{out}, skips_{skips}, commands_{commands},
+          expression_{commands.regexText, std::regex_constants::ECMAScript},
+          pathOnly_{!commands.lineNumbers &amp;&amp; !commands.matchedLine},
+          contentNotNeeded_{pathOnly_ &amp;&amp; commands.regexText == "."} {}
+
+    // §5 rule 1. Carries no state from one call to the next.
+    void search(const std::filesystem::path&amp; root) {
+        std::error_code error;
+
+        const bool link = std::filesystem::is_symlink(root, error);
+        if (error || link) { announceCannotOpen(root); return; }
+
+        const std::filesystem::file_status status = std::filesystem::status(root, error);
+        if (error) { announceCannotOpen(root); return; }
+
+        if (std::filesystem::is_regular_file(status)) { examine(root); return; }
+        if (!std::filesystem::is_directory(status)) { announceCannotOpen(root); return; }
+
+        // §5 rule 4: the skip list is never consulted for a root path.
+        walk(root);
+    }
+
+private:
+    // §5 rule 2: one level per call, entries taken as directory_iterator yields them -
+    // neither collected nor reordered - with explicit recursion into each subdirectory entered.
+    void walk(const std::filesystem::path&amp; directory) {
+        std::error_code error;
+        std::filesystem::directory_iterator entry{directory, error};
+        if (error) { announceCannotOpen(directory); return; }
+
+        const std::filesystem::directory_iterator end;
+        for (; entry != end; entry.increment(error)) {
+            if (error) { announceCannotOpen(directory); return; }
+            const std::filesystem::path&amp; path = entry-&gt;path();
+
+            std::error_code kind;
+            const bool link = entry-&gt;is_symlink(kind);
+            if (kind) { announceCannotOpen(path); continue; }
+            if (link) continue;   // §5 rule 5: passed over silently, never opened
+
+            const bool folder = entry-&gt;is_directory(kind);
+            if (kind) { announceCannotOpen(path); continue; }
+            if (folder) {
+                if (commands_.recurse &amp;&amp; !pruned(path)) walk(path);
+                continue;
+            }
+
+            const bool file = entry-&gt;is_regular_file(kind);
+            if (kind) { announceCannotOpen(path); continue; }
+            if (file) examine(path);
+            else announceCannotOpen(path);
+        }
+    }
+
+    // §7: the three admission tests of Spec_TextFinder.md §3.3.
+    void examine(const std::filesystem::path&amp; file) {
+        if (!selected(file)) return;
+
+        std::error_code error;
+        const std::uintmax_t size = std::filesystem::file_size(file, error);
+        if (error) { announceCannotOpen(file); return; }
+        if (size &gt; sizeLimit) { emit("too large " + displayPath(file)); return; }
+
+        // §7: with the default expression and neither /n nor /L, every non-empty file
+        // matches and its block is the path line, so no file is opened and - nothing
+        // having been read or rejected - no file announcement arises under either /h.
+        if (contentNotNeeded_) {
+            if (size == 0) return;
+            emit(displayPath(file));
+            return;
+        }
+
+        std::ifstream input{file, std::ios::binary};
+        if (!input) { announceCannotOpen(file); return; }
+
+        // Read in full, so a file failing a later test is skipped entirely, not searched in part.
+        std::string bytes(static_cast&lt;std::size_t&gt;(size), '\0');
+        input.read(bytes.data(), static_cast&lt;std::streamsize&gt;(size));
+        if (input.bad()) { announceCannotOpen(file); return; }
+        bytes.resize(static_cast&lt;std::size_t&gt;(input.gcount()));
+
+        if (bytes.find('\0') != std::string::npos || !validUtf8(bytes)) {
+            announceNoMatch("skipped " + displayPath(file));
+            return;
+        }
+        if (bytes.starts_with("\xEF\xBB\xBF")) bytes.erase(0, 3);
+
+        // §8: a file that matched names itself in its block, so only one that did not is announced.
+        if (!scan(file, bytes)) announceNoMatch("searched " + displayPath(file));
+    }
+
+    // §8: writes the block of Spec_TextFinder.md §3.4 and answers whether the file matched.
+    bool scan(const std::filesystem::path&amp; file, const std::string&amp; bytes) {
+        bool opened = false;
+        std::size_t number = 0;
+
+        for (std::string_view line : splitLines(bytes)) {
+            ++number;
+            if (!std::regex_search(line.begin(), line.end(), expression_)) continue;
+
+            if (!opened) {
+                emit(displayPath(file));   // the block's path line, written once
+                opened = true;
+
+                // With neither /n nor /L the block has no detail lines, so the first
+                // match settles the file.
+                if (pathOnly_) return true;
+            }
+
+            std::string detail = "  ";
+            if (commands_.lineNumbers) detail += std::to_string(number);
+            if (commands_.lineNumbers &amp;&amp; commands_.matchedLine) detail += " - ";
+            if (commands_.matchedLine) detail += std::string{line};
+            emit(detail);
+        }
+
+        return opened;
+    }
+
+    // §6: the extension is the text after the last dot in the file name, dot-files included.
+    bool selected(const std::filesystem::path&amp; file) const {
+        if (commands_.extensions.empty()) return true;
+
+        const std::string name = baseName(file);
+        const std::size_t dot = name.rfind('.');
+        if (dot == std::string::npos) return false;
+
+        const std::string_view extension{name.data() + dot + 1, name.size() - dot - 1};
+        return std::ranges::any_of(commands_.extensions,
+                                   [&amp;](const std::string&amp; item) { return sameName(item, extension); });
+    }
+
+    bool pruned(const std::filesystem::path&amp; directory) const {
+        const std::string name = baseName(directory);
+        return std::ranges::any_of(skips_,
+                                   [&amp;](const std::string&amp; item) { return sameName(item, name); });
+    }
+
+    void emit(const std::string&amp; text) { out_.output(text); }
+    void announceNoMatch(const std::string&amp; text) { if (!commands_.suppressOnNoMatch) emit(text); }
+    void announceCannotOpen(const std::filesystem::path&amp; path) { emit("cannot open " + displayPath(path)); }
+
+    Out&amp;                    out_;
+    const SkipList&amp;         skips_;
+    const ProgramCommands&amp;  commands_;
+    std::regex              expression_;
+    bool                    pathOnly_;
+    bool                    contentNotNeeded_;
+};</code></pre>
+
+      <a id="records"></a>
+      <h3>8. &nbsp;Prompt Records</h3>
+      <t-b>
+        The two conversations that produced <code>Spec_Cpp_TextFinder_Dirnav.md</code>. The first
+        covers the draft, the move of traversal order into the parent specification, and the
+        decision to write the recursion by hand over <code>directory_iterator</code>; the second
+        covers the 13-item review whose answers promoted ten rules upward, the discussion that
+        removed sibling sorting, and a text reduction.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Prompts_Spec_Cpp_TextFinder_Dirnav.md</summary>
+<pre><code class="language-markdown"># Prompts and Replies — Spec_Cpp_TextFinder_Dirnav Development
+
+This file records the prompts and replies that produced [Spec_Cpp_TextFinder_Dirnav.md](Spec_Cpp_TextFinder_Dirnav.md). Two of the turns below also changed [Spec_TextFinder.md](../../Spec_TextFinder.md) and [Project_Tree.md](../../Project_Tree.md).
+
+---
+
+## Turn 1
+
+### User
+
+&gt; create Spec_Cpp_TextFinder_Dirnav in directory Cpp_Spec_driven_Dirnav.  You may use the project spec Spec_TextFinder.md for content and Spec_Cpp_TextFinder_Cmdline.md for structure and style example
+
+### Assistant
+
+Read [Spec_TextFinder.md](../../Spec_TextFinder.md), [Spec_Cpp_TextFinder_Cmdline.md](../Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md), [Spec_Cpp_TextFinder_Entry.md](../Cpp_Spec_driven_TextFinder_Entry/Spec_Cpp_TextFinder_Entry.md), and [Cpp_TextFinder_Structure.md](../Cpp_TextFinder_Structure.md), then created [Spec_Cpp_TextFinder_Dirnav.md](Spec_Cpp_TextFinder_Dirnav.md) with ten sections mirroring the Cmdline spec's shape:
+
+1. **Purpose** — the only component that touches file contents; writes to no stream.
+2. **Scope** — parsing, skip-list ownership, and the destination of emitted strings belong to the other three specs.
+3. **Responsibilities** — defines `Output`, compiles the expression once, traverses, selects files, formats records and announcements.
+4. **Public Interface** — the `Output` abstract base class, `SkipList`, and the `Cpp_TextFinder_Dirnav&lt;Out&gt;` class template with its constructor and `search`.
+5. **Traversal Rules** — root paths, order, recursion, skip list, symbolic links, unopenable subdirectories.
+6. **File Selection** — the `/p` extension filter and its platform-dependent comparison.
+7. **Content Decoding and Line Splitting** — whole-file UTF-8 validation, BOM handling, line terminators.
+8. **Matching and Emission** — `regex_search` per line, the four record forms under `/n` and `/L`, and the `/h` announcement rules.
+9. **Build** — C++23, CMake library target, C++ module, dependency on `Cpp_TextFinder_Cmdline` for `ProgramCommands`.
+10. **Non-Goals** — no parsing, no skip-list ownership, no stream writing, no file modification.
+
+Interface decisions taken from the surrounding specs: the constructor compiles the expression and lets `std::regex_error` propagate, since Entry already owns reporting the malformed-regex diagnostic; `search` returns `false` for a root that cannot be opened, because Entry formats that notice itself; and all three constructor arguments are held by reference, matching the `ProgramCommands` lifetime rule already fixed in the Cmdline spec.
+
+Reported one finding: parent §6 requires every implementation to emit matches in the same order, but nothing fixed the order of entries within a directory, and every language's directory iterator returns them in filesystem order. Two implementations would diverge at the first directory with more than one entry.
+
+Flagged five decisions made where the parent was silent, three of them affecting emitted output and therefore candidates for the parent:
+
+- **Traversal order** — ascending basename, bytewise, files and directories interleaved.
+- **Path rendering** — generic form with `/` separators on every platform.
+- **Announcement wording** — `searched &lt;path&gt;`, `skipped &lt;path&gt;`, `cannot open &lt;path&gt;`, the last reusing the string Entry already fixed; distinct wording is needed because `/n false /L false` makes a match record a bare path.
+- **Skip list versus root paths** — a root named on `/P` traversed even when its basename is in the list.
+- **Symbolic links and UTF-8** — a symlink skipped whatever its target; a file validated in full before any line is evaluated, since parent §7 says such files are *skipped* and streaming would emit matches from the valid prefix of a file the spec says to skip.
+
+---
+
+## Turn 2
+
+### User
+
+&gt; Specify traversal order as DFS in the project level spec
+
+### Assistant
+
+Added the visit order to parent [Spec_TextFinder.md](../../Spec_TextFinder.md) §3.2, where it binds all four implementations: depth-first descent completing each subtree before returning to the parent, and within a directory, entries visited in ascending order of basename compared bytewise, files and directories interleaved rather than grouped.
+
+Included the sibling ordering alongside DFS because depth-first alone does not fix the order — it says how to descend, not which entry to take first, so §6 still could not be satisfied without it.
+
+Repaired two cross-references while there: §6 pointed at §3.4 for "directory-traversal order," but §3.4 only used the phrase without defining it. Both now point at §3.2.
+
+Reduced §5 rule 2 of the Dirnav spec to a deferral, keeping only the C++-specific consequence — `directory_iterator` returns entries in an unspecified order, so a directory's entries must be collected and sorted before any is visited.
+
+---
+
+## Turn 3
+
+### User
+
+&gt; Don't use directory_iterator.  write code to traverse the directory recursively in DFS order.  Prevent using directory name in skiplist
+
+### Assistant
+
+Applied the skip-list decision first, since it was unambiguous: §5 rule 4 lost its carve-out, so the list is consulted for every directory including root paths, and `/P build` is pruned before any entry is read. `search` returns `true` for a pruned root rather than `false`, which is reserved for a root that cannot be opened and drives Entry's `cannot open` notice. Noted that no parent change was needed — parent §3.2 already said any directory whose name appears in the list has its subtree pruned, so the carve-out had been the deviation.
+
+Asked which API should list a single directory level, since hand-written recursion still needs one and the standard library offers only the filesystem iterators. Presented two options with code previews: `directory_iterator` for one level with the recursion hand-written, or POSIX `opendir`/`readdir` and Windows `FindFirstFileW`/`FindNextFileW` behind a platform shim — noting the second costs a platform-abstraction section and conflicts with parent §6, which restricts implementations to the standard library.
+
+### User
+
+Selected: **directory_iterator, one level only**
+
+### Assistant
+
+Rewrote §5 rule 2 as "Order and descent": the recursion is written explicitly as one function that lists a directory, sorts its entries, then calls itself on each subdirectory it decides to enter; `std::filesystem::recursive_directory_iterator` is excluded by name so the library controls its own descent; `std::filesystem::directory_iterator` enumerates a single level only, with the sort still required because it yields entries in an unspecified order.
+
+---
+
+## Turn 4
+
+### User
+
+&gt; create file Prompts_Spec_Cpp_TextFinder_Dirnav.md with content with prompts and replies used to create Spec_Cpp_TextFinder_Dirvnav.md
+
+### Assistant
+
+Created this file, [Prompts_Spec_Cpp_TextFinder_Dirnav.md](Prompts_Spec_Cpp_TextFinder_Dirnav.md), covering the initial draft, the move of traversal order into the parent, and the recursion and skip-list decisions. User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.</code></pre>
+        </details>
+      </indent-blocks>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Prompts_Fix_Spec_Cpp_TextFinder_Dirnav.md</summary>
+<pre><code class="language-markdown"># Prompts and Replies — Spec_Cpp_TextFinder_Dirnav Refinement
+
+This file records the prompts and replies exchanged while refining [Spec_Cpp_TextFinder_Dirnav.md](Spec_Cpp_TextFinder_Dirnav.md) after its initial draft. The four turns that produced it are recorded in [Prompts_Spec_Cpp_TextFinder_Dirnav.md](Prompts_Spec_Cpp_TextFinder_Dirnav.md). Most turns below changed [Spec_TextFinder.md](../../Spec_TextFinder.md) as well, and the last two also changed [Spec_Cpp_TextFinder_Cmdline.md](../Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md), [Spec_Cpp_TextFinder_Entry.md](../Cpp_Spec_driven_TextFinder_Entry/Spec_Cpp_TextFinder_Entry.md), and [Cpp_TextFinder_Structure.md](../Cpp_TextFinder_Structure.md).
+
+---
+
+## Turn 1
+
+### User
+
+&gt; thinking carfully, analyze this spec or ambiguities and parts that need improvement
+
+### Assistant
+
+Reviewed the spec and listed thirteen items in six groups, without editing.
+
+**Internal inconsistencies:**
+
+1. §8 said a record is emitted "before the next line is read," but §7 reads the whole file first — every line is already read. Introduced when whole-file validation was added.
+2. `search` returned `false` both for a root that cannot be opened and for one that is neither file nor directory, so Entry would report `cannot open` for `/dev/null`.
+
+**Gaps:**
+
+3. A file that cannot be opened or read was unspecified — §5 rule 6 covered directories only, §7 covered UTF-8 failure only.
+4. A root path that is itself a symbolic link fell through to rule 1, which would follow it.
+5. The sort key was unspecified in C++ terms: on Windows `path::filename().native()` is UTF-16, which orders differently from UTF-8 above the BMP, defeating the cross-platform order the rule existed to guarantee.
+
+**Behavior worth confirming:**
+
+6. Under `/h true`, a matching file was announced and then emitted its records, printing the path twice — the literal reading of parent §5 and Entry §7, but not the common expectation.
+7. "Last dot-suffix" disagrees with `std::filesystem::path::extension()`, which returns `""` for `.gitignore`.
+8. With the default root `.`, every record would read `./src/foo.cpp`.
+
+**Claims that may not hold:**
+
+9. The assertion that an empty `/r` compiles and matches every line — `std::regex` handling of an empty pattern has varied across implementations.
+10. A UTF-16LE file of ASCII text is valid UTF-8, so it passed validation and was searched fruitlessly, though parent §7 says binary files are not searched.
+
+**Parent candidates:** 11. extension case-sensitivity by platform; 12. generic path rendering and the announcement wording, both raised before and still only in this spec.
+
+**Practical:** 13. no size bound on the whole-file read.
+
+Noted that items 1, 3, 5, and 10 were worth fixing whatever the preferences on the rest.
+
+---
+
+## Turn 2
+
+### User
+
+Provided decisions on all thirteen items:
+
+&gt; 1. fix
+&gt; 2. wording change in Entry
+&gt; 3. Intent is to react to any file or directory opening attempt that fails, with an identifying error message.
+&gt; 4. A rootpath failure is treated like any other failure (child directories will not be opened)
+&gt; 5. name u8string()
+&gt; 6. skip announcement, just show the match
+&gt; 7. show .[somefile] unless it is in the skiplist
+&gt; 8. normalize it away
+&gt; 9. The intent is to never have empty regex, e.g., use "." default to match all files
+&gt; 10. Use NUL-byte test
+&gt; 11. move to parent spec
+&gt; 12. fix
+&gt; 13. set bound at 10 MBytes, provide error message if exceeded.
+&gt;
+&gt; It looks like all of these belong in the Project spec
+
+### Assistant
+
+Agreed, and put ten of the thirteen in the parent, since each changes emitted output and so binds all four implementations.
+
+[Spec_TextFinder.md](../../Spec_TextFinder.md) gained: symlink and non-file/non-directory root handling in §3.2; the three admission tests in §3.3 — 10 MB, no NUL byte, valid UTF-8 — with whole-file reading justified by "skipped entirely rather than searched in part"; path rendering and a four-row announcement table in §3.4 (`searched`, `skipped`, `too large`, `cannot open`) with the `/h` gating; the dotfile rule, extension case-sensitivity, the non-empty-regex requirement, and the new `/h` meaning across the `/p`, `/r`, and `/h` rows of §5; an empty-`/r` row in §5.2; and the NUL test named in §7.
+
+This spec kept only the C++ bindings: `u8string()` as the extension source with the UTF-16 hazard stated, `path::extension()` rejected by name because it disagrees with §5 on dotfiles, `generic_u8string()` for records, and the size test applied to the filesystem-reported size so an oversized file is never read into memory. [Spec_Cpp_TextFinder_Cmdline.md](../Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md) now rejects an empty `/r`; [Spec_Cpp_TextFinder_Entry.md](../Cpp_Spec_driven_TextFinder_Entry/Spec_Cpp_TextFinder_Entry.md) no longer formats root-path notices.
+
+Flagged three consequences that went beyond the literal decisions:
+
+- **`search` returns `void`.** Once Dirnav announces root failures too, the `bool` had no consumer, which dissolves item 2 rather than rewording it — Entry has nothing left to mislabel.
+- **`too large` and `cannot open` ignore `/h`; `searched` and `skipped` obey it.** Item 6 suppressed announcements but item 3 wanted failures visible; silencing a 10 MB skip under the default would hide requested work that did not happen.
+- **Symlinks are asymmetric.** One met during traversal is passed over silently, since no open is attempted and there is no failure to report; one named on `/P` is announced, per item 4.
+
+---
+
+## Turn 3
+
+### User
+
+&gt; I don't like the idea of sorting filenames while processing a directory.  I think DFS requires visiting the elements, e.g., both files and subdirectories, in the order presented by the std library. Do you have any comments? Don't implement without my authorization
+
+### Assistant
+
+Gave comments without editing, including a correction.
+
+On the definition: sorting does not stop it being DFS. Depth-first constrains descent — finish a subtree before moving on — not which sibling is taken first, so sorted order and library order are both DFS. The choice is about determinism.
+
+On the risk, which the earlier review had overstated: the claim that two implementations would diverge at the first multi-entry directory is too strong. `directory_iterator`, Rust's `read_dir`, Python's `os.scandir`, and C#'s `EnumerateFileSystemEntries` all bottom out in `readdir` or `FindFirstFileW`, so on one machine against one tree the four implementations agree, and the cross-implementation purpose of parent §6 largely survives without sorting.
+
+What does not survive: cross-platform runs, since NTFS returns uppercased-name index order while ext4 with `dir_index` returns hash order; stability over time, since ext4 hash order shifts as entries are added and removed, making golden-file tests unreliable; and agreement across filesystems. Also noted that the C++ standard leaves `directory_iterator` order unspecified, so "the order presented by the std library" is not itself a fixed thing.
+
+Acknowledged the merit of the objection — library order streams instead of buffering a level, and reads more cleanly, which counts for a teaching codebase — and listed the three places that must change together so the spec would not claim what it no longer delivers: parent §3.2, parent §6 Consistency, and this spec's §5 rule 2.
+
+---
+
+## Turn 4
+
+### User
+
+&gt; eliminate the file sorting
+
+### Assistant
+
+Removed sorting from all three places. Parent §3.2 keeps depth-first descent but visits entries in the order the platform's directory-reading facility presents them, with no reordering. Parent §6 Consistency now claims only what it delivers: the match set always agrees, and the full emission order is reproducible over the same tree on the same platform and filesystem, where all four implementations agree by reading through the same facility. Parent §3.4's emission paragraph stopped claiming a fixed cross-implementation order and points at §6.
+
+In this spec, §5 rule 2 became one function that iterates a directory and recurses, entries handled as `directory_iterator` yields them, nothing collected; the `u8string()` sort key is gone, while `recursive_directory_iterator` remains excluded so the library keeps control of its own descent. Noted that `u8string()` survives in §6 for the unrelated purpose of extracting an extension.
+
+---
+
+## Turn 5
+
+### User
+
+&gt; is there any text that can be removed without significantly affecting quality of the specification? Don't implement without my authorization
+
+### Assistant
+
+Read all four specs and reported removable text in three groups, without editing.
+
+**Cross-document duplication:** toolchain minimums appeared verbatim in three component specs, and `Language: C++23` in those three plus the structure doc — a four-place edit whenever a floor moves.
+
+**Duplication inside this spec:** six Responsibilities bullets all restated below; the same three root failures enumerated in §4 and §5 rule 1 four lines apart; the POSIX/Windows comparison rule restated in §5 rule 4 while also citing §3.2; §5 rule 5's second sentence pointing back to rule 1; §7's BOM and line-terminator sentences duplicating parent §3.3; §8's "occurs anywhere" and "one record per line" duplicating parent §3.3 and §3.4; and "everything leaves through `Output`" stated four times.
+
+**Rationale in the parent:** nine tails a spec can leave implicit — the separator justification, the `/h` gating reason, the duplicate `/H` sentence, the UTF-16 explanation, the fixed-text reason, §7's announcement clause, §2's restatement of Constitution rule 1, §3.1's restatement of §4 and §5, and a five-sentence Consistency paragraph.
+
+Recommended keeping the §5.1 help block and §5.2 table, whose redundancy against §5 is deliberate, and this spec's two warnings — `path::extension()` and `directory_iterator` — because each stops an implementer writing something plausible and wrong.
+
+---
+
+## Turn 6
+
+### User
+
+&gt; cut all the text you recommend
+
+### Assistant
+
+Applied every cut. `Language: C++23`, the CMake declaration, and the toolchain floors moved to [Cpp_TextFinder_Structure.md](../Cpp_TextFinder_Structure.md), leaving each component spec's Build section with its own target name and module-versus-TU status. This spec went 105 to 99 lines and the parent 181 to 176; across the four specs, 460 to 446 lines and roughly 300 words, with no rule changed.
+
+Noted afterward that parent §3.3 is now a denser paragraph carrying the whole-file read, all three admission tests, the NUL rationale, BOM handling, and the failure route, and that splitting the tests back into a list would cost about three lines.
+
+---
+
+## Turn 7
+
+### User
+
+&gt; create Prompts_Fix_Cpp_TextFinder_Dirnav.md using all the prompts and replies not already recorded in Prompts_Cpp_TextFinder_Dirnav.md
+
+### Assistant
+
+Created this file, [Prompts_Fix_Spec_Cpp_TextFinder_Dirnav.md](Prompts_Fix_Spec_Cpp_TextFinder_Dirnav.md), covering the thirteen-item review, the decisions applied, the sorting discussion and its removal, and the text reduction. User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.</code></pre>
+        </details>
+      </indent-blocks>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#interface">interface</a></menu-elem>
+        <menu-elem class="secElem"><a href="#traversal">traversal</a></menu-elem>
+        <menu-elem class="secElem"><a href="#selection">selection</a></menu-elem>
+        <menu-elem class="secElem"><a href="#admission">admission</a></menu-elem>
+        <menu-elem class="secElem"><a href="#matching">matching</a></menu-elem>
+        <menu-elem class="secElem"><a href="#linkage">module linkage</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenCppPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+</body>
+</html>

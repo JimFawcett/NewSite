@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Process_Specification.html - Process thread, page 2
+-->
+<head>
+  <title>Spec-Driven Process: Writing the Project Specification</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Process_Specification.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Process: Writing the Project Specification</h2>
+        <h4 class="indent" id="subtitle">how Spec_TextFinder.md reached its form, and what makes it testable</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="artifact"></a>
+      <h3>1. &nbsp;The Specification as an Artifact</h3>
+      <t-b>
+        <code>Spec_TextFinder.md</code> fixes behavior common to every implementation, in no
+        particular language. It runs seven sections: purpose, scope, functional requirements,
+        command-line syntax, defined switches, non-functional requirements, and non-goals. What
+        it requires is the subject of the
+        <a target="_blank" href="Spec_Driven_Design_Behavior_Overview.html">Behavior thread</a>.
+        This page covers how it came to say that.
+      </t-b>
+      <t-b>
+        The document did not start where it ended. The first draft answered a four-sentence prompt
+        and guessed at four things the prompt left open: which switch letters to use, whether
+        recursion defaults on or off, a grep-style <code>path:line:text</code> output form, and
+        whether symbolic links and binary files were in scope. Each guess was flagged in the reply
+        rather than buried, and three of the four were later overridden.
+      </t-b>
+
+      <a id="history"></a>
+      <h3>2. &nbsp;How It Reached Its Current Form</h3>
+      <t-b>
+        Three kinds of turn moved the document, and the records show all three.
+      </t-b>
+
+      <a id="prompted"></a>
+      <h4>2.1 &nbsp;Prompted Additions</h4>
+      <t-b>
+        The skip list arrived this way: the user asked for a list of directories never entered
+        during traversal, named five examples, and asked for a function that adds a custom name.
+        That one prompt produced three edits - the skip-list concept and its 11 default names in
+        &sect;3.2, <code>addSkipDirectory(name)</code> in &sect;3.5, and a
+        command-line route to it. The command-line route was withdrawn a turn later, when the
+        switch set was fixed and the list read as exhaustive; extension of the skip list has been
+        build-time only since.
+      </t-b>
+      <t-b>
+        The switch set arrived the same way and cost two turns. The user's first message named
+        <code>/P</code> for the root path and <code>/p</code> for extensions, which collided with
+        the draft's <code>/p</code> for the regular expression. Rather than guess, the reply
+        stopped and offered three ways out; the user answered with the eight switches and their
+        defaults verbatim, and the table was replaced wholesale.
+      </t-b>
+
+      <a id="review"></a>
+      <h4>2.2 &nbsp;Review Passes</h4>
+      <t-b>
+        Twice the user asked for ambiguities rather than for changes. The first pass returned 18
+        items grouped by severity - nine real ambiguities that could produce diverging
+        implementations, three terminology and structural items, six smaller ones - and made no
+        edits. The user answered all 18 in one message, item by item, and the answers were applied
+        in one pass.
+      </t-b>
+      <t-b>
+        Four of those answers still show in the current text. Answer 2 set the encoding to UTF-8.
+        Answer 3 asked for a line delimiter covering Windows, Linux, and macOS, which became the
+        three terminators of &sect;3.3 with the unterminated final line treated as a line. Answer
+        4 named ECMAScript and asked that the regex machine be built once per run. Answer 9 fixed
+        emission order as "as they occur", which is why &sect;3.4 says a block's path line is
+        written the moment the first match is found and nothing is buffered to the end of a file.
+      </t-b>
+      <t-b>
+        The second pass ran after all five specifications existed and found 15 items, four of them
+        contradictions between documents that each read correctly alone. Those are covered on the
+        <a target="_blank" href="Spec_Driven_Design_Cpp_Process.html">C++ Process page</a>, since
+        the conversation sat at the C++ level.
+      </t-b>
+
+      <a id="promotion"></a>
+      <h4>2.3 &nbsp;Promotion from a Language Spec</h4>
+      <t-b>
+        The third kind of turn moves a rule up. While the C++ Dirnav specification was under
+        review, 13 items came back, and the user's closing line was "It looks like all of these
+        belong in the Project spec." Ten of the thirteen went into
+        <code>Spec_TextFinder.md</code>, because each changes emitted output and so binds all four
+        implementations: symbolic-link and non-file root handling in &sect;3.2; the three admission
+        tests in &sect;3.3; path rendering and the announcement table in &sect;3.4; the dot-file
+        rule and extension case-sensitivity in &sect;5; and the NUL test in &sect;7.
+      </t-b>
+      <t-b>
+        The test is mechanical: if a rule changes what a user sees, it belongs where it binds
+        everyone. The C++ specification kept only the bindings - which standard-library call
+        produces that behavior, and which one looks right and is wrong.
+      </t-b>
+
+      <a id="properties"></a>
+      <h3>3. &nbsp;Four Properties That Make It Testable</h3>
+      <t-b>
+        The specification is written to be checked by test rather than by reading. Four properties
+        do most of that work.
+      </t-b>
+
+      <a id="boundary"></a>
+      <h4>3.1 &nbsp;Requirements Are Observable at the Boundary</h4>
+      <t-b>
+        Every requirement in &sect;3 through &sect;5 is stated over something a test can see from
+        outside the process: a line on stdout, a line on stderr, an exit code, a file opened or not
+        opened. &sect;3.4 fixes the three exit codes rather than leaving them to the implementation,
+        with the reason given in the document: so that two implementations can be compared by exit
+        code as well as by output.
+      </t-b>
+      <t-b>
+        The same discipline shows in what the specification declines to fix. &sect;3.4 governs the
+        stdout terminator and says plainly that the stderr terminator is whatever the runtime and
+        platform produce, because holding stderr to the byte would test the platform rather than
+        the implementation. A rule that cannot be checked is not stated as a rule.
+      </t-b>
+
+      <a id="numbers"></a>
+      <h4>3.2 &nbsp;Quantities Appear as Numbers</h4>
+      <t-b>
+        Each of these is one test case rather than a judgment call.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:18rem;" />
+          <col style="width:10rem;" />
+          <col style="width:28rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Quantity</th>
+          <th class="darkItem">Value</th>
+          <th class="darkItem">Where</th>
+        </tr>
+        <tr>
+          <td class="lightItem">File size limit</td>
+          <td class="lightItem">10,485,760 bytes</td>
+          <td class="lightItem">&sect;3.3, as 10 MB and as the byte count</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Default skip-list names</td>
+          <td class="lightItem">11</td>
+          <td class="lightItem">&sect;3.2, listed in full</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Defined switches</td>
+          <td class="lightItem">9</td>
+          <td class="lightItem">&sect;5 table</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Line terminators recognized</td>
+          <td class="lightItem">3</td>
+          <td class="lightItem">&sect;3.3: LF, CRLF, bare CR</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Exit codes</td>
+          <td class="lightItem">3</td>
+          <td class="lightItem">&sect;3.4, values fixed</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Usage diagnostics</td>
+          <td class="lightItem">7</td>
+          <td class="lightItem">&sect;5.2, reason lines quoted</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Option-listing lines</td>
+          <td class="lightItem">9</td>
+          <td class="lightItem">&sect;5.3, the example reproduced</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Detail-line indent</td>
+          <td class="lightItem">2 spaces</td>
+          <td class="lightItem">&sect;3.4, "exactly two spaces"</td>
+        </tr>
+      </table>
+      <t-b>
+        The size limit shows what the precision buys. &sect;3.3 gives both the round figure and the
+        byte count, so the C++ unit suite can test a file exactly at the limit and a file one byte
+        above it and expect a different outcome from each.
+      </t-b>
+
+      <a id="fixedtext"></a>
+      <h4>3.3 &nbsp;Fixed Text Is Quoted, Not Described</h4>
+      <t-b>
+        &sect;5.1 does not describe the help text; it reproduces it, 22 lines, with
+        <code>&lt;executable&gt;</code> as the one substitution an implementation makes. &sect;5.2
+        does not describe the diagnostics; it tables the seven reason lines with
+        <code>&lt;token&gt;</code> and <code>&lt;switch&gt;</code> as the substitutions. &sect;5.3
+        does not describe the option listing; it shows the nine lines a bare <code>-v true</code>
+        produces.
+      </t-b>
+      <t-b>
+        Two implementations cannot drift apart in wording they were handed. The alternative was
+        tried: the help text lived in the C++ command-line specification for several turns, where
+        it looked like cross-language determinism but bound one language. Moving it to the parent
+        was the point of one turn, and the diagnostics followed in the next when the user asked to
+        make them byte-identical.
+      </t-b>
+      <t-b>
+        The quoted text carries its own fine print, and that is deliberate too. &sect;5.3 notes
+        that an empty <code>/p</code> list emits <code>/p</code> alone, with no separating space and
+        no trailing space, "so that no line of the listing ends in whitespace" - and gives the
+        reason: a fixture holding this text survives an editor that strips trailing space. A rule
+        with no stated reason gets edited away by someone tidying up.
+      </t-b>
+
+      <a id="costs"></a>
+      <h4>3.4 &nbsp;Accepted Costs Are Stated</h4>
+      <t-b>
+        Two places in the document name what the design gives up rather than claiming it gives up
+        nothing.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>&sect;3.3's no-content case.</strong> With the default expression and neither
+            <code>/n</code> nor <code>/L</code>, a block is its path line alone, so TextFinder
+            reports every selected non-empty file without opening it. The section states both
+            consequences it accepts for that speed: a file the content tests would have rejected,
+            a binary file among them, is reported; and so is a file whose lines are all empty,
+            which <code>.</code> would not in fact have matched.</li>
+          <li><strong>&sect;6's ordering limit.</strong> Because &sect;3.2 leaves a directory's
+            entries in filesystem order, the total emission order is reproducible only across runs
+            over the same tree on the same platform and filesystem. Elsewhere the match set still
+            agrees and the order of matches from different directory entries may not.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        The second of those is a retreat the records show being made. An earlier version required
+        sorted sibling order, which delivered a stronger guarantee. The user objected that
+        depth-first traversal should visit entries in the order the standard library presents them,
+        and the reply agreed on the definition, corrected an overstated risk from the earlier
+        review, and named the three places that had to change together so the document would not
+        claim what it no longer delivered: &sect;3.2, &sect;6, and the C++ Dirnav spec's traversal
+        rule. All three changed in the next turn.
+      </t-b>
+      <t-b>
+        &sect;6.1 is the largest instance of the same habit. No regex engine spans the four
+        languages, so the section names one engine per language, fixes the pattern subset all four
+        accept alike, and then states the two costs of a pattern outside it - including that one
+        implementation may refuse a command line the other three run. That is covered on the
+        <a target="_blank" href="Spec_Driven_Design_Behavior_Contracts.html">Contracts page</a>.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>4. &nbsp;Prompt Records</h3>
+      <t-b>
+        The two conversations that produced <code>Spec_TextFinder.md</code>, in full. The first
+        covers the initial draft through the switch set; the second covers the 18-item review, the
+        18 decisions, and the last-wins rule for a repeated switch.
+      </t-b>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Prompts_Spec_TextFinder.md</summary>
+<pre><code class="language-markdown"># Prompts and Replies — Spec_TextFinder Development
+
+This file records the prompts and replies exchanged while drafting [Spec_TextFinder.md](Spec_TextFinder.md).
+
+---
+
+## Turn 1
+
+### User
+
+`/init` — asked Claude Code to analyze the codebase and create a CLAUDE.md file for future instances of Claude Code working in this repository.
+
+### Assistant
+
+The project directory `c:\github\JimFawcett\NewSite\Code\Projects\Spec_driven_TextFinder` was empty — no code, no existing CLAUDE.md. Rather than fabricate architecture details for code that did not exist yet, I offered three options:
+
+1. **Wait until code exists** — CLAUDE.md is most useful when there's actual architecture to document.
+2. **Create a minimal starter** referencing the parent NewSite/CLAUDE.md and noting this is a spec-driven project with details to be filled in as it develops.
+3. **You tell me the intent** — what language(s), what the spec-driven workflow looks like, whether it's a comparison thread like the Rust/C++ textfinders in your recent commits.
+
+Asked which the user preferred, and whether this was meant to be a third variant driven from a written spec.
+
+---
+
+## Turn 2
+
+### User
+
+&gt; create Spec_TextFinder.md. This project will build TextFinders in C++, Rust, C#, and Python. For now, we concentrate on C++ only. TextFinder is a command line tool that recursively visits directories and files looking for a match to a supplied RegEx. All matches are sent to stdout. The command line accepts commands in the form /ch or equivalently -ch, where ch is a case sensitive single character. This Spec_Driven_TextFinder directory has child folders for Cpp_TextFinder and, eventually for Rust_TextFinder, CSharp_TextFinder, and Python_TextFinder. Do not use any code outside Spec_Driven_TextFinder as examples. This is intended to be entirely specification driven. Each language child folder will contain a Spec_*.md and Structure_*.md. This folder will contain a Constitution_TextFinder.md.
+
+### Assistant
+
+Created [Spec_TextFinder.md](Spec_TextFinder.md) with sections for purpose, scope, functional requirements (input, traversal, matching, output), command-line syntax, a defined-switch table, non-functional requirements, non-goals, and development order.
+
+Flagged four judgement calls made in the draft:
+
+- **Switch letters** — proposed `/p /d /e /s /v /n /h`. The user specified the form (`/ch` or `-ch`, case-sensitive single letter) but not which letters. Invited adjustment.
+- **Recursion default** — recursion enabled by default with `/s` suppressing it, on the reading that "recursively visits directories" describes normal operation. Offered to invert if `/r` should opt into recursion.
+- **Output format** — grep-style `path:line:text`. Offered alternatives.
+- **Symlinks / binary files** — both marked as non-goals to keep behavior deterministic across the four language implementations.
+
+Noted the next likely files: Constitution_TextFinder.md at this level, then Cpp_TextFinder/Spec_Cpp_TextFinder.md and Cpp_TextFinder/Structure_Cpp_TextFinder.md.
+
+---
+
+## Turn 3
+
+### User
+
+&gt; add to traversal a skip list, e.g., a list of directories that are not entered while searching. These include archive, .git, .gitignore, build, and any other directories that hold intermediate build files. The public interface needs a function to add a custom skip directory name.
+
+### Assistant
+
+Made three edits to [Spec_TextFinder.md](Spec_TextFinder.md):
+
+- **§3.2 Traversal** — added the skip-list concept, a default list (`archive`, `.git`, `.svn`, `.hg`, `build`, `out`, `target`, `bin`, `obj`, `__pycache__`, `node_modules`), and case-sensitivity rules that follow the host filesystem.
+- **§3.5 Public Interface** — new section introducing `addSkipDirectory(name)`, with per-language naming and typing deferred to each language's Spec_*.md.
+- **§5 switch table** — added `/x &lt;dirname&gt;` (repeatable) as the command-line route to the same skip-list extension.
+
+Flagged two judgement calls:
+
+- `.gitignore` is a file, not a directory, so it was left out of the default skip list. Offered a separate file-name skip mechanism if wanted (`/X` for repeatable file-name exclusion).
+- The default set was expanded to include common metadata dirs (`.svn`, `.hg`) and per-language build dirs (`target`, `bin`, `obj`, `__pycache__`, `node_modules`) to honor the phrase "any other directories that hold intermediate build files." Invited trim.
+
+---
+
+## Turn 4
+
+### User
+
+&gt; Command line commands should be: /P . : start path, /p "" : file extension patterns to search of the form /p "cpp, rs, ...
+
+### Assistant
+
+Recognized a letter collision: my earlier `/p` was the regex pattern, the new `/p` is the extensions list. Read [Spec_TextFinder.md](Spec_TextFinder.md) to see the current text before editing.
+
+---
+
+## Turn 5
+
+### User
+
+&gt; stop
+
+### Assistant
+
+Stopped before making any edits — only a Read had been performed this turn. Confirmed the file still showed `/p` for regex, `/d` for path, `/e` for extensions.
+
+Offered three options for handling the collision:
+
+1. Move regex to `/r` (or another letter) and apply `/P` for path, `/p` for extensions.
+2. Make the regex a positional argument and drop it from the switch table.
+3. Something else.
+
+---
+
+## Turn 6
+
+### User
+
+&gt; Here are the commands I want:
+&gt; /P . : starting path (default .)
+&gt; /p "cpp, rs, ... : file extension patterns to search
+&gt; /r "." : regular expression
+&gt; /s true : recursive search
+&gt; /h true : do not announce files with no match
+&gt; /v false : display these options at top
+&gt; /H false : display help text
+&gt; /n true : display text line number
+&gt; Values given are defaults. Omitting command uses default value
+
+### Assistant
+
+Applied the new switch model to [Spec_TextFinder.md](Spec_TextFinder.md):
+
+- **§3.1 Input** — reframed: every switch has a default; bare command line runs with defaults.
+- **§3.2 Traversal** — `/s false` disables recursion; extension filtering attributed to `/p`; `/x` reference removed (skip-list extension is programmatic only via §3.5).
+- **§4 Command-Line Syntax** — every switch takes one argument; booleans are `true`/`false`; quoted-string examples for `/p` and `/r`.
+- **§5 Switch table** — replaced with the eight specified switches: `/P /p /r /s /h /v /H /n` with defaults `.`, `""`, `"."`, `true`, `true`, `false`, `false`, `true`.
+- **§7 Non-Goals** — binary-file diagnostic tied to `/h false` (was `/v`).
+
+Left two open items for confirmation:
+
+1. **Skip list CLI access** — dropped `/x` since the list read as exhaustive. `addSkipDirectory` (§3.5) still exists. Confirm whether the CLI route should return under a different letter, or programmatic-only is correct.
+2. **`/H` handling** — wrote "when `true`, print help and exit; all other switches are ignored." Confirm.
+
+---
+
+## Turn 7
+
+### User
+
+&gt; create Prompts_Spec_Textfinder.md containing all the prompts and replies in this conversation
+
+### Assistant
+
+Created this file, [Prompts_Spec_Textfinder.md](Prompts_Spec_Textfinder.md), summarizing each prompt and reply in the conversation. User prompts are quoted verbatim where they were user-authored text. Assistant replies are summarized from the actual responses; tool calls (Read/Edit/Write) are noted as effects rather than transcribed.</code></pre>
+        </details>
+      </indent-blocks>
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Prompts_Fix_Spec_TextFinder.md</summary>
+<pre><code class="language-markdown"># Prompts and Replies — Fixes to Spec_TextFinder
+
+This file continues the record begun in [Prompts_Spec_TextFinder.md](Prompts_Spec_TextFinder.md). Turns numbered here start from Turn 8, immediately after that file was created.
+
+---
+
+## Turn 8
+
+### User
+
+&gt; are there ambiguities or changes that would improve the Spec_TextFinder.md. Don't make any changes without my authorization
+
+### Assistant
+
+Re-read [Spec_TextFinder.md](Spec_TextFinder.md) and returned an 18-item review, grouped by severity, with no file changes.
+
+**Real ambiguities (could produce diverging implementations):**
+
+1. Windows path collision in the `&lt;path&gt;:&lt;lineNumber&gt;:&lt;matchedLine&gt;` output form — Windows paths contain `:` and cannot be split reliably.
+2. Text encoding not specified in §3.3 — the largest source of implementation drift across C++, Rust, C#, and Python defaults.
+3. Line delimiter not specified — LF only, CRLF, both? Final unterminated line?
+4. Regex dialect not normative — §6 acknowledged differences but named no baseline.
+5. Extension semantics undefined for `foo.tar.gz`, `Makefile`, or `.gitignore`.
+6. Skip-list match target — basename or full path? Not explicit.
+7. Duplicate, unknown, or malformed switches — behavior undefined.
+8. Boolean literal case — is `True` accepted, or only `true`?
+9. Match ordering across implementations — same set required but same order?
+
+**Terminology / structural:**
+
+10. Three phrases used for the same concept: "root path" (§3.2), "starting path" (§3.1), "current directory" (§5).
+11. §1 "recursively traverses" is stronger than the actual semantics now that /s can disable recursion.
+12. §3.5 title "Public Interface" is broader than its single-function content.
+
+**Smaller items:**
+
+13. Path form for /P — absolute, relative, or either?
+14. Which quote character(s) are recognized?
+15. /v output format not specified.
+16. Exit-code coverage doesn't address per-file read failures or root-is-a-file.
+17. Root-is-a-file case — single-file search or error?
+18. /H help exit code not stated.
+
+---
+
+## Turn 9
+
+### User
+
+&gt; 1. change seperator to " - ". Make the display of the matchedLine optional with option /L false.
+&gt; 2. set encoding to UTF-8.
+&gt; 3. choose a line delimiter that works with Windows, Linux, and MacOS. Final unterminated line is treated like a line.
+&gt; 4. Use ECMAScript. Also, where appropriate required the regex machine to be evaluated only once for each run of any of the TextFinders.
+&gt; 5. last dot-sufix. Search extension-less files only if no patterns are specified.
+&gt; 6. say so explicitly
+&gt; 7. a and b must be relative paths, all others are errors
+&gt; 8. make case-insensitive
+&gt; 9. list matches as they occur, so that will be directory traversal order. "as they occur" is the definitive spec, e.g., sent to output as soon as evaluated.
+&gt; 10. Root path
+&gt; 11. adopt your suggestion
+&gt; 12. leave as is
+&gt; 13. either
+&gt; 14. use double quotes
+&gt; 15. one key/value per line
+&gt; 16. That is left to the textfinder parts, e.g., DirNav, ...
+&gt; 17. treat as single-file search
+&gt; 18 Exit code 0
+
+### Assistant
+
+Applied all 18 answers to [Spec_TextFinder.md](Spec_TextFinder.md):
+
+- **§1** — softened "recursively traverses" to "recursively by default."
+- **§3.2** — adopted "root path" terminology; added single-file handling for /P; multi-/P accumulates root paths in the order given; skip-list explicitly compares against directory basename.
+- **§3.3** — content read as UTF-8; a line is a maximal run bounded by LF (U+000A), CRLF, or bare CR; unterminated final line is a line; regex syntax is ECMAScript; expression compiled exactly once per invocation.
+- **§3.4** — separator changed to ` - ` (space-hyphen-space); full form `&lt;path&gt; - &lt;lineNumber&gt; - &lt;matchedLine&gt;`; `/L` controls emission of the matched-line field; `/n` controls the line-number field; both false → path-only; matches emitted as they occur (streamed, not buffered); `/H true` exits 0 with help on stdout.
+- **§4** — boolean values matched case-insensitively (`TRUE`, `True`, `true` all valid); only double quotes are recognized as quoting characters; unrecognized switch, malformed boolean, and missing following-token all produce a stderr diagnostic and non-zero exit.
+- **§5 table** — updated /P, /p, /r, /s, /v, /H, /n; added new /L row (default `true`).
+- **§6** — ECMAScript dialect fixed; same match set and same order required across implementations.
+- **§7** — binary-skip criterion is UTF-8 decode failure.
+
+Flagged one interpretation choice:
+
+- Answer #7 said `a and b must be relative paths, all others are errors`, while answer #13 said `/P` path form is "either." Read #7's "must be relative paths" as an affirmation that the two example values in the duplicate-`/P` case were fine (and duplicates are allowed and accumulate), not as a rule constraining every `/P` value. `/P` row now reads: "may be an absolute or a relative path" and "may be given more than once." Invited correction if the user meant `/P` values must be relative in all cases.
+
+Also raised one item not covered by the 18 answers: duplicate handling for non-`/P` boolean/value switches (e.g., `/s true /s false`). Asked whether to make it last-wins, first-wins, or error.
+
+---
+
+## Turn 10
+
+### User
+
+&gt; last-wins
+
+### Assistant
+
+Added a sentence to §4 of [Spec_TextFinder.md](Spec_TextFinder.md):
+
+&gt; When a switch other than /P appears more than once on the command line, the last occurrence wins; earlier occurrences are silently discarded. (/P accumulates root paths as described in §5.)
+
+The parenthetical preserves the `/P` exception documented in §5.
+
+---
+
+## Turn 11
+
+### User
+
+&gt; create Prompts_Fix_Spec_TextFinder.md with the prompts and responses that follow those written to Prompts_Spec_TextFinder.md
+
+### Assistant
+
+Created this file, [Prompts_Fix_Spec_TextFinder.md](Prompts_Fix_Spec_TextFinder.md), following the same format as [Prompts_Spec_TextFinder.md](Prompts_Spec_TextFinder.md): user prompts quoted verbatim, assistant replies condensed to record the substance of what was said and the edits made, rather than reproduced word-for-word.</code></pre>
+        </details>
+      </indent-blocks>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#artifact">artifact</a></menu-elem>
+        <menu-elem class="secElem"><a href="#history">history</a></menu-elem>
+        <menu-elem class="secElem"><a href="#prompted">prompted</a></menu-elem>
+        <menu-elem class="secElem"><a href="#review">review</a></menu-elem>
+        <menu-elem class="secElem"><a href="#promotion">promotion</a></menu-elem>
+        <menu-elem class="secElem"><a href="#properties">properties</a></menu-elem>
+        <menu-elem class="secElem"><a href="#boundary">boundary</a></menu-elem>
+        <menu-elem class="secElem"><a href="#numbers">numbers</a></menu-elem>
+        <menu-elem class="secElem"><a href="#fixedtext">fixed text</a></menu-elem>
+        <menu-elem class="secElem"><a href="#costs">costs</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenProcessPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>

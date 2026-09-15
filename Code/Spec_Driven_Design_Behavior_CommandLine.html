@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Behavior_CommandLine.html - Behavior thread, page 1
+-->
+<head>
+  <title>Spec-Driven Behavior: Command Line</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Behavior_CommandLine.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Behavior: Command Line</h2>
+        <h4 class="indent" id="subtitle">nine switches, one help text, seven diagnostics, and why the text is fixed</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Cmdline.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="syntax"></a>
+      <h3>1. &nbsp;Switch Syntax</h3>
+      <t-b>
+        Spec_TextFinder.md &sect;4 fixes the syntax in five rules, and the shape is uniform enough
+        that a parser needs no special cases.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>A switch is one case-sensitive letter behind an introducer.</strong> The two
+            introducers <code>/</code> and <code>-</code> are equivalent, so <code>/P</code> and
+            <code>-P</code> name the same switch. Because letters are case-sensitive,
+            <code>/h</code> and <code>/H</code> denote different commands.</li>
+          <li><strong>Every switch takes exactly one argument</strong>, supplied as the next
+            whitespace-separated token. There are no bare flags, which is why a boolean switch
+            reads <code>/s true</code> rather than <code>/s</code>.</li>
+          <li><strong>Boolean values are <code>true</code> or <code>false</code>, matched
+            case-insensitively.</strong> <code>TRUE</code>, <code>True</code>, and
+            <code>true</code> are equivalent.</li>
+          <li><strong>An argument holding whitespace or commas is double-quoted.</strong> The
+            calling shell removes the quotes before TextFinder sees its argument vector, and
+            TextFinder performs no quote processing of its own.</li>
+          <li><strong>A repeated switch other than <code>/P</code> resolves last-wins</strong>,
+            earlier occurrences silently discarded. <code>/P</code> accumulates instead, each
+            occurrence adding a root path traversed in the order given.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        A command line that violates these rules draws the corresponding usage diagnostic from
+        &sect;5.2 on stderr and exits non-zero, without traversing.
+      </t-b>
+      <t-b>
+        One thing &sect;4 declines to fix: the form in which the program receives its arguments.
+        The type of the argument vector and the character encoding it carries are properties of the
+        language and platform, so each language's own specification states its argument type and
+        any encoding limit that follows. Where two implementations differ there, they differ in
+        which command lines reach a search at all, and &sect;6's consistency guarantee speaks only
+        to the command lines both accept. The C++ implementation takes <code>main</code>'s
+        <code>char* argv[]</code> and states the ASCII limit that follows on Windows.
+      </t-b>
+
+      <a id="switches"></a>
+      <h3>2. &nbsp;The Nine Switches</h3>
+      <t-b>
+        Omitting a switch supplies its default, so any partial command line resolves to a full
+        option set. A language-specific specification may extend this table but must not redefine
+        a row of it.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:5rem;" />
+          <col style="width:12rem;" />
+          <col style="width:39rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Switch</th>
+          <th class="darkItem">Argument (default)</th>
+          <th class="darkItem">Meaning</th>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>/P</code></td>
+          <td class="lightItem">path (<code>.</code>)</td>
+          <td class="lightItem">Root path for traversal, absolute or relative. Repeat to add more; the paths are traversed in the order given</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>/p</code></td>
+          <td class="lightItem"><code>"ext, ext"</code> (<code>""</code>)</td>
+          <td class="lightItem">Extensions to search. An empty list searches every file, including files with no extension; a non-empty list excludes files with no extension</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>/r</code></td>
+          <td class="lightItem">regex (<code>"."</code>)</td>
+          <td class="lightItem">Regular expression evaluated against each line, compiled once per invocation. It must not be empty; the default <code>.</code> is the way to match every line</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>/s</code></td>
+          <td class="lightItem">bool (<code>true</code>)</td>
+          <td class="lightItem">Recursive search. When <code>false</code>, the files directly within the root path are searched but no subdirectory is entered</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>/h</code></td>
+          <td class="lightItem">bool (<code>true</code>)</td>
+          <td class="lightItem">Suppress the file announcements of &sect;3.4. When <code>false</code>, every examined file appears in the output exactly once</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>/v</code></td>
+          <td class="lightItem">bool (<code>false</code>)</td>
+          <td class="lightItem">List the resolved option set at the top of output, in the form &sect;5.3 fixes</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>/H</code></td>
+          <td class="lightItem">bool (<code>false</code>)</td>
+          <td class="lightItem">Print the help text of &sect;5.1 to stdout, exit 0, and do not traverse</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>/n</code></td>
+          <td class="lightItem">bool (<code>false</code>)</td>
+          <td class="lightItem">Give a block one detail line per matching line, carrying the 1-based line number</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>/L</code></td>
+          <td class="lightItem">bool (<code>false</code>)</td>
+          <td class="lightItem">Give a block one detail line per matching line, carrying that line's text</td>
+        </tr>
+      </table>
+      <t-b>
+        Two rows carry rules an implementation cannot decide for itself. The <code>/p</code> row
+        defines an extension as the file's last dot-suffix, a leading dot on the name
+        notwithstanding, so <code>.gitignore</code> has extension <code>gitignore</code> and a
+        dot-file is searched like any other. It also fixes normalization: each item is trimmed,
+        loses one leading dot if present, and empty items are discarded, so <code>"cpp,,rs"</code>
+        and <code>"cpp, rs"</code> name the same two extensions. And it fixes comparison as
+        case-sensitive on POSIX and case-insensitive on Windows.
+      </t-b>
+      <t-b>
+        The <code>/r</code> row rejects an empty argument. That is a rule with a history: an earlier
+        draft claimed an empty expression compiles and matches every line, and the review found the
+        claim did not hold across engines. The answer was to require the default <code>.</code>
+        instead and give the empty case a diagnostic of its own.
+      </t-b>
+
+      <a id="help"></a>
+      <h3>3. &nbsp;The Help Text</h3>
+      <t-b>
+        &sect;5.1 does not describe the help text; it reproduces it. Every implementation prints
+        exactly this, with <code>&lt;executable&gt;</code> replaced by its own executable name, and
+        its first line alone serves as the usage line that terminates every usage diagnostic.
+      </t-b>
+      <h5 class="indent">Spec_TextFinder.md §5.1</h5>
+<pre><code class="language-text">usage: &lt;executable&gt; [/P path] [/p "ext, ext"] [/r regex] [/s bool] [/h bool] [/v bool] [/H bool] [/n bool] [/L bool]
+
+  /P  path (.)             root path for traversal; repeat to add more root paths
+  /p  "ext, ext" ()        comma-separated bare extensions to search; empty searches every file
+  /r  regex (.)            regular expression evaluated against each line
+  /s  true|false (true)    recurse into subdirectories
+  /h  true|false (true)    hide files that matched nothing; errors always appear
+  /v  true|false (false)   list the resolved option set before traversal
+  /H  true|false (false)   print this help and exit
+  /n  true|false (false)   add a detail line per match, carrying the line number
+  /L  true|false (false)   add a detail line per match, carrying the line text
+
+A matching file prints its path on one line; /n and /L add indented detail
+lines beneath it. A path is never printed twice.
+
+Switch introducers / and - are equivalent. Switch letters are case-sensitive,
+so /h and /H differ. Every switch takes exactly one argument; there are no bare
+flags. Arguments containing whitespace or commas must be quoted.
+
+Run with no switches at all to list the resolved options and exit without
+searching.</code></pre>
+      <t-b>
+        The block does two jobs at once. It is user-facing documentation, and it is a test fixture:
+        the C++ integration suite compares <code>/H</code> output against it and checks that each
+        of the nine switches is listed.
+      </t-b>
+      <t-b>
+        The text lived in the C++ command-line specification for several turns before moving here.
+        There it looked like cross-language determinism and bound one language. The move is what
+        makes it binding on four.
+      </t-b>
+
+      <a id="diagnostics"></a>
+      <h3>4. &nbsp;The Seven Usage Diagnostics</h3>
+      <t-b>
+        A usage diagnostic reports a command line TextFinder will not act on. Every implementation
+        writes it to stderr as a reason line from the table below, a newline, then the usage line
+        of &sect;5.1, and exits 1. <code>&lt;token&gt;</code> is the offending token and
+        <code>&lt;switch&gt;</code> the switch, each reproduced exactly as typed, preserving the
+        introducer.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:32rem;" />
+          <col style="width:24rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Condition</th>
+          <th class="darkItem">Reason line</th>
+        </tr>
+        <tr>
+          <td class="lightItem">Token in switch position has no <code>/</code> or <code>-</code> introducer</td>
+          <td class="lightItem"><code>not a switch: &lt;token&gt;</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">Introducer-led token that is not a switch defined in &sect;5</td>
+          <td class="lightItem"><code>unrecognized switch: &lt;token&gt;</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">Switch is the last token, with no argument following</td>
+          <td class="lightItem"><code>missing argument for switch: &lt;switch&gt;</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">Boolean switch given a value other than <code>true</code> or <code>false</code></td>
+          <td class="lightItem"><code>invalid boolean for &lt;switch&gt;: &lt;token&gt;</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>/P</code> given an empty argument</td>
+          <td class="lightItem"><code>empty root path for switch: &lt;switch&gt;</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>/r</code> given an empty argument</td>
+          <td class="lightItem"><code>empty expression for switch: &lt;switch&gt;</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>/r</code> given an expression the engine will not compile</td>
+          <td class="lightItem"><code>invalid regex for switch: /r</code></td>
+        </tr>
+      </table>
+      <t-b>
+        The first two rows partition rather than overlap, and the partition took a decision to
+        settle: a token with no introducer is <em>not a switch</em>, and any other
+        introducer-led token, a bare <code>/</code> or <code>-</code> included, is an
+        <em>unrecognized switch</em>. Before that rule, <code>/ss</code>, <code>-abc</code>, and a
+        bare <code>/</code> each satisfied both conditions.
+      </t-b>
+      <t-b>
+        Six of the seven leave stdout empty. The seventh is the exception, and the reason is
+        stated in the specification: a pattern the engine rejects is a pattern whose effect the
+        user cannot see, so before writing <code>invalid regex for switch: /r</code> TextFinder
+        writes the &sect;5.3 listing to stdout whatever <code>/v</code> says. The listing's
+        <code>/r</code> line carries the offending expression verbatim, which is the point of
+        emitting it. Under <code>/v true</code> the listing has already been written and is not
+        repeated.
+      </t-b>
+      <t-b>
+        Failures that are not about what the user typed are not usage diagnostics. Their text is
+        specified per implementation; their exit code is the 2 that &sect;3.4 fixes.
+      </t-b>
+
+      <a id="listing"></a>
+      <h3>5. &nbsp;The Resolved Option Listing</h3>
+      <t-b>
+        The listing appears before traversal begins, in three cases: under <code>/v true</code>,
+        where it precedes the output it explains and traversal follows; on the bare command line of
+        &sect;3.1, where nothing follows and the process exits 0; and ahead of the invalid-regex
+        diagnostic, where nothing follows and the process exits 1.
+      </t-b>
+      <t-b>
+        One key/value pair per line, in the order the &sect;5 table gives, each line formatted
+        <code>&lt;switch&gt; &lt;value&gt;</code> with a single separating space and terminated by
+        the single LF &sect;3.4 fixes. <code>/P</code> emits one line per root path;
+        <code>/p</code> emits the normalized extension list joined by <code>, </code>;
+        <code>/r</code> emits the expression verbatim as typed; every boolean emits
+        <code>true</code> or <code>false</code> in lower case. A command line of
+        <code>-v true</code> alone produces these nine lines:
+      </t-b>
+      <h5 class="indent">Spec_TextFinder.md §5.3</h5>
+<pre><code class="language-text">/P .
+/p
+/r .
+/s true
+/h true
+/v true
+/H false
+/n false
+/L false</code></pre>
+      <t-b>
+        An empty <code>/p</code> list emits <code>/p</code> alone, with no separating space and no
+        trailing space, so that no line of the listing ends in whitespace. The specification gives
+        the reason: a fixture holding this text survives an editor that strips trailing space. A
+        rule with no stated reason gets tidied away.
+      </t-b>
+      <t-b>
+        The <code>/v</code> line reads <code>true</code> only in the listing <code>/v</code> itself
+        asked for. The other two cases list an option set in which <code>/v</code> was never set,
+        so a bare command line emits the nine lines above with <code>/v false</code> in place of
+        <code>/v true</code>.
+      </t-b>
+
+      <a id="why"></a>
+      <h3>6. &nbsp;Why the Text Is Fixed Byte for Byte</h3>
+      <t-b>
+        Three blocks of text in this page are quoted rather than described: the help text, the seven
+        reason lines, and the nine-line listing. Fixing them is what lets two implementations be
+        compared by test rather than by reading.
+      </t-b>
+      <t-b>
+        The comparison the project wants is a line-for-line diff of two runs over one tree. Anything
+        an implementation is free to word its own way defeats that diff at the first difference, and
+        a reviewer then has to decide whether the difference is a defect or a preference. Quoting
+        the text removes the question.
+      </t-b>
+      <t-b>
+        The specification fixes the form of the listing for the same reason, and says so: an
+        implementation free to choose it would make the listing of two implementations
+        uncomparable. &sect;7.4 of the page structure applies that to the demonstration - invocation
+        5 sets <code>-v true</code>, and its nine lines must agree across implementations but for
+        the <code>/p</code> line, which carries that implementation's own extension list.
+      </t-b>
+      <t-b>
+        One boundary is drawn where the comparison would stop measuring the implementation.
+        &sect;3.4 governs the stdout terminator and leaves the stderr terminator to the runtime and
+        platform, because a run that writes to stderr has written a usage diagnostic and traversed
+        nothing, so it has no search output to compare, and holding its stderr to the byte would
+        test the platform. The C++ integration suite found that boundary the hard way: eight
+        assertions failed on a CRLF-against-LF difference in exactly the two outputs that bypass
+        the output component, and the suite normalizes line endings in those two comparisons.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#syntax">syntax</a></menu-elem>
+        <menu-elem class="secElem"><a href="#switches">nine switches</a></menu-elem>
+        <menu-elem class="secElem"><a href="#help">help text</a></menu-elem>
+        <menu-elem class="secElem"><a href="#diagnostics">diagnostics</a></menu-elem>
+        <menu-elem class="secElem"><a href="#listing">option listing</a></menu-elem>
+        <menu-elem class="secElem"><a href="#why">why fixed</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenBehaviorPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 1, 10);
+  </script>
+</body>
+</html>

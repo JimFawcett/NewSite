@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Behavior_Traversal.html - Behavior thread, page 2
+-->
+<head>
+  <title>Spec-Driven Behavior: Traversal and File Selection</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Behavior_Traversal.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Behavior: Traversal and File Selection</h2>
+        <h4 class="indent" id="subtitle">depth-first in filesystem order, 11 pruned names, and three admission tests</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Dirnav.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="order"></a>
+      <h3>1. &nbsp;Depth-First in Filesystem Order</h3>
+      <t-b>
+        Traversal is depth-first: on reaching a directory that is not pruned, TextFinder descends
+        into it and completes its subtree before returning to the next entry of the parent. Within
+        a directory, entries are visited in the order the platform's directory-reading facility
+        presents them, files and directories interleaved rather than grouped, so a directory is
+        descended at the point it is reached in that order (&sect;3.2).
+      </t-b>
+      <t-b>
+        Two requirements fix that order, and &sect;6's comparison of one implementation against
+        another rests on both.
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li>An implementation enumerates a directory through the facility its platform provides -
+            <code>readdir</code> on POSIX, <code>FindFirstFileW</code> and
+            <code>FindNextFileW</code> on Windows, or whatever its own standard library wraps
+            around them - and does not substitute a facility that imposes an order of its own.</li>
+          <li>It visits entries in the order that facility yields. It does not sort them, and it
+            does not group files ahead of directories or the reverse. Collecting a directory's
+            entries before visiting any of them is permitted, since it changes no order;
+            reordering them is not.</li>
+        </ol>
+      </t-b>
+      <t-b>
+        The visit order is therefore the filesystem's own, and it is the same order in every
+        implementation on one machine against one tree. What that leaves guaranteed is narrower
+        than sorted order would give, and &sect;6 states the limit rather than claiming more: the
+        total emission order is reproducible only across runs over the same tree on the same
+        platform and filesystem. Elsewhere the match set still agrees and the order of matches from
+        different directory entries may not.
+      </t-b>
+      <t-b>
+        An earlier draft required ascending basename order, compared bytewise. The retreat to
+        filesystem order was a deliberate trade, and the record states what each side buys.
+        Filesystem order streams a level instead of buffering it and reads more cleanly, which
+        counts for a teaching codebase. Sorted order buys cross-platform reproducibility, since
+        NTFS returns uppercased-name index order while ext4 with <code>dir_index</code> returns
+        hash order, and buys stability over time, since ext4 hash order shifts as entries are added
+        and removed. Three places had to change together so the document would not claim what it no
+        longer delivered: &sect;3.2, &sect;6, and the C++ traversal rule.
+      </t-b>
+      <t-b>
+        Recursion is controlled by <code>/s</code> and is on by default. With <code>/s false</code>
+        TextFinder searches the files directly within the root path and descends into none of its
+        subdirectories. Multiple <code>/P</code> occurrences accumulate, and their subtrees are
+        traversed in the order given.
+      </t-b>
+
+      <a id="skiplist"></a>
+      <h3>2. &nbsp;The Skip List</h3>
+      <t-b>
+        TextFinder maintains a list of directory names never entered during traversal. When a
+        directory whose name appears in the list is met, its entire subtree is pruned. The default
+        list holds 11 names, directories that typically carry version-control metadata or
+        intermediate build output:
+      </t-b>
+<pre><code class="language-text">archive, .git, .svn, .hg, build, out, target, bin, obj, __pycache__, node_modules</code></pre>
+      <t-b>
+        A skip-list entry is compared against the directory's basename - the final component of
+        its path - and matches when the two strings are equal. Matching is case-sensitive on POSIX
+        and case-insensitive on Windows, following each platform's filesystem conventions. The list
+        governs directory names only; file-name filtering by extension is <code>/p</code>.
+      </t-b>
+      <t-b>
+        A pruned directory is not a failure and draws no announcement. That distinction matters:
+        <code>cannot open</code> reports work TextFinder could not do, and pruning is work it chose
+        not to do.
+      </t-b>
+      <t-b>
+        The list governs directories met during traversal, never a root path the user supplied on
+        <code>/P</code>. A root whose basename appears in the list is traversed like any other
+        root, for the same reason a root that is a symbolic link is announced rather than passed
+        over: the user named it explicitly, and returning nothing without a word would leave that
+        unexplained. Pruning resumes immediately below the root, so a <code>build</code> directory
+        found beneath a root named <code>build</code> is pruned as usual.
+      </t-b>
+      <t-b>
+        That carve-out was removed once and restored. An intermediate version consulted the list
+        for every directory including roots, so <code>/P build</code> was pruned before any entry
+        was read; the current text exempts the root again. The C++ unit suite tests both halves -
+        a root whose name is in the skip list is traversed, and the same directory reached during
+        traversal is still pruned.
+      </t-b>
+      <t-b>
+        Nothing on the command line and no configuration file extends the list. Extension happens
+        at build time, through the one function &sect;3.5 defines; the
+        <a target="_blank" href="Spec_Driven_Design_Behavior_Contracts.html">Contracts page</a>
+        covers it.
+      </t-b>
+
+      <a id="roots"></a>
+      <h3>3. &nbsp;Symbolic Links and Root Paths</h3>
+      <t-b>
+        Symbolic links are never opened. One met during traversal is passed over silently, since
+        TextFinder makes no attempt to open it and so has no failure to report. A root path that is
+        a symbolic link is announced with <code>cannot open</code>, because the user named it
+        explicitly and it will not be searched.
+      </t-b>
+      <t-b>
+        The asymmetry is the point rather than an oversight, and it follows the same rule the skip
+        list follows: an entry TextFinder finds on its own it may pass over in silence, and an
+        entry the user typed it owes an explanation for.
+      </t-b>
+      <t-b>
+        A root path resolves three ways.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:22rem;" />
+          <col style="width:34rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Root resolves to</th>
+          <th class="darkItem">What happens</th>
+        </tr>
+        <tr>
+          <td class="lightItem">a directory</td>
+          <td class="lightItem">Traversed, skip list not consulted for the root itself</td>
+        </tr>
+        <tr>
+          <td class="lightItem">a regular file</td>
+          <td class="lightItem">Searched as that single file, filtered by <code>/p</code> like any other file</td>
+        </tr>
+        <tr>
+          <td class="lightItem">anything else</td>
+          <td class="lightItem">Not searched, and reported with <code>cannot open</code> per &sect;3.4</td>
+        </tr>
+      </table>
+      <t-b>
+        No root-path outcome affects the exit code. A run whose only root could not be opened
+        announces that and exits 0, which is the &sect;3.4 rule that an error announcement does not
+        change the code.
+      </t-b>
+      <t-b>
+        The path a block reports begins with the root path currently being traversed - the
+        <code>/P</code> occurrence whose subtree holds the file, not the first <code>/P</code>
+        given - and continues with the entry names descended through to reach it. The root's own
+        text is part of the path, so a root of <code>src</code> yields
+        <code>src/foo.cpp</code> rather than <code>foo.cpp</code>, and two roots holding files of
+        the same name yield blocks that differ. A root of <code>.</code> is the one exception: it
+        contributes no leading <code>./</code>. Every path is rendered with <code>/</code>
+        separators on every platform.
+      </t-b>
+
+      <a id="extensions"></a>
+      <h3>4. &nbsp;Extension Rules</h3>
+      <t-b>
+        <code>/p</code> takes a quoted, comma-separated list of bare extensions. Four rules govern
+        it, and the first is the one an implementer is likeliest to get wrong by reaching for a
+        standard-library call.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>An extension is the file's last dot-suffix, a leading dot on the name
+            notwithstanding.</strong> <code>.gitignore</code> has extension
+            <code>gitignore</code>, so a dot-file is searched like any other file and is excluded
+            only by <code>/p</code> or by the skip list.</li>
+          <li><strong>Each item is normalized.</strong> Trimmed of surrounding whitespace, then
+            stripped of one leading dot if present, so <code>cpp</code> and <code>.cpp</code> are
+            equivalent. Empty items are discarded, so <code>"cpp,,rs"</code> and
+            <code>"cpp, rs"</code> name the same two extensions.</li>
+          <li><strong>Comparison follows the platform</strong>, case-sensitive on POSIX and
+            case-insensitive on Windows, as skip-list entries do.</li>
+          <li><strong>The empty list and the non-empty list differ on extensionless files.</strong>
+            An empty list searches every file, files with no extension included. A non-empty list
+            excludes them.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        The dot-file rule is why the C++ specification rejects
+        <code>std::filesystem::path::extension()</code> by name: that function returns an empty
+        string for <code>.gitignore</code>, where &sect;5 gives it the extension
+        <code>gitignore</code>. The warning is kept in the specification deliberately, because the
+        wrong call is the plausible one.
+      </t-b>
+
+      <a id="admission"></a>
+      <h3>5. &nbsp;The Three Admission Tests</h3>
+      <t-b>
+        A selected file is tested before it is searched, and the order of the tests is part of the
+        specification rather than an implementation detail.
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li><strong>Size.</strong> Taken from the filesystem, it must not exceed 10 MB
+            (10,485,760 bytes). A file above the limit is never read, and draws the error
+            announcement <code>too large</code>.</li>
+          <li><strong>No NUL byte.</strong> This is the binary-file test of &sect;7. A file within
+            the size limit is read in full - so that one failing a later test is skipped entirely
+            rather than searched in part - and rejected if its content holds a NUL byte.</li>
+          <li><strong>Valid UTF-8.</strong> Truncated sequences, overlong encodings, encoded
+            surrogates, and scalar values above U+10FFFF all fail.</li>
+        </ol>
+      </t-b>
+      <t-b>
+        A file that fails test 2 or test 3 draws <code>skipped</code>, a file announcement, so
+        <code>/h</code> can hide it. A file that fails test 1 draws <code>too large</code>, an
+        error announcement, which <code>/h</code> cannot hide.
+      </t-b>
+      <t-b>
+        The NUL test is there because UTF-8 validity alone does not serve: a UTF-16 file of ASCII
+        text is valid UTF-8, so validation would admit it and the search would run fruitlessly over
+        text the specification says not to search. The reason is stated in &sect;3.3 rather than
+        left implicit, and it survived the trimming passes for that reason.
+      </t-b>
+      <t-b>
+        Test 1 reads metadata and tests 2 and 3 read bytes, and the ordering follows from that. An
+        earlier draft said TextFinder reads the file in full and then admits it if it passes three
+        tests, the first being size, which would have read a 200 MB file in order to refuse it. The
+        current text is test-then-read: the filesystem-reported size is checked first, and the
+        read-in-full justification attaches only to the NUL and UTF-8 tests.
+      </t-b>
+      <t-b>
+        A leading UTF-8 BOM is consumed and does not belong to the first line. One case skips
+        tests 2 and 3 entirely, and the
+        <a target="_blank" href="Spec_Driven_Design_Behavior_Matching.html">Matching page</a>
+        covers it: with the default expression and neither <code>/n</code> nor <code>/L</code>, no
+        file content is needed, so no file is opened and the size test runs alone.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#order">visit order</a></menu-elem>
+        <menu-elem class="secElem"><a href="#skiplist">skip list</a></menu-elem>
+        <menu-elem class="secElem"><a href="#roots">links and roots</a></menu-elem>
+        <menu-elem class="secElem"><a href="#extensions">extensions</a></menu-elem>
+        <menu-elem class="secElem"><a href="#admission">admission</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenBehaviorPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>
