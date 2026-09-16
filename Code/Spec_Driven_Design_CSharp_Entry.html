@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_CSharp_Entry.html - C# thread, page 2
+-->
+<head>
+  <title>Spec-Driven C#: Entry</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_CSharp_Entry.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/16/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/CSharp_Spec_driven_TextFinder/CSharp_Spec_driven_TextFinder_Entry">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven C#: Entry</h2>
+        <h4 class="indent" id="subtitle">nine steps, a using statement, three exit codes, and no call to Environment.Exit</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Contracts.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="owns"></a>
+      <h3>1. &nbsp;What the Binary Owns</h3>
+      <t-b>
+        <code>CSharp_TextFinder_Entry</code> is the command-line entry point. It parses the
+        program's arguments through <code>CSharp_TextFinder_Cmdline</code>, wires the three
+        libraries together, and drives traversal. Matching and file I/O belong to
+        <code>CSharp_TextFinder_Dirnav</code> and <code>CSharp_TextFinder_Output</code>; the binary
+        performs neither.
+      </t-b>
+      <t-b>
+        The binary does write process-level text of its own - help, the resolved option listing, and
+        startup diagnostics - but it composes none of it. Each is a string
+        <code>CSharp_TextFinder_Cmdline</code> hands it, and the binary decides only when to write
+        it and to which stream. Block lines and announcements it neither composes nor writes.
+      </t-b>
+      <t-b>
+        Three things it owns outright:
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>The skip list</strong>, and <code>AddSkipDirectory</code> as the build-time
+            extension point Spec_TextFinder.md &sect;3.5 defines. Section 3 covers it.</li>
+          <li><strong>The lifetime of the sink.</strong> Not of all three objects, which is where
+            this binary differs from both siblings: the garbage collector keeps the skip list and
+            the parsed commands alive as long as the <code>Dirnav</code> holds them. What the binary
+            owns is the sink's <em>disposal</em>, which no collector can time. Section 5 covers
+            it.</li>
+          <li><strong>The exit code.</strong> Section 4 covers the three values and how they map
+            onto this binary's failure modes.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        It is 121 lines, and the specification that fixes it is 112. That ratio is the point of the
+        component: the design goal is to make the wiring itself readable, and everything harder than
+        wiring lives in a library.
+      </t-b>
+
+      <a id="startup"></a>
+      <h3>2. &nbsp;The Startup Sequence</h3>
+      <t-b>
+        <code>static int Main(string[] args)</code> performs nine steps in order. The order is the
+        specification rather than a consequence of it: three of the nine are placed where they are
+        for reasons that would not survive rearranging.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:4rem;" />
+          <col style="width:52rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Step</th>
+          <th class="darkItem">What happens</th>
+        </tr>
+        <tr>
+          <td class="lightItem">1</td>
+          <td class="lightItem">Invoke <code>CommandLine.TryParse</code>. On <code>false</code>, write the returned diagnostic to stderr unaltered and return 1. A malformed <code>/r</code> is not detected here; step 6 reaches it</td>
+        </tr>
+        <tr>
+          <td class="lightItem">2</td>
+          <td class="lightItem">Construct the <code>StdoutSink</code>. On <code>InvalidOperationException</code> or <code>IOException</code>, write <code>cannot initialize output</code> to stderr and return 2</td>
+        </tr>
+        <tr>
+          <td class="lightItem">3</td>
+          <td class="lightItem">If <code>/H true</code>, write <code>HelpText()</code> through the sink with <code>WriteText</code> and return 0</td>
+        </tr>
+        <tr>
+          <td class="lightItem">4</td>
+          <td class="lightItem">If <code>args</code> is empty, write <code>OptionsText(commands)</code> through the sink and return 0. This is the bare command line of &sect;3.1</td>
+        </tr>
+        <tr>
+          <td class="lightItem">5</td>
+          <td class="lightItem">If <code>/v true</code>, write <code>OptionsText(commands)</code> through the sink before traversal begins</td>
+        </tr>
+        <tr>
+          <td class="lightItem">6</td>
+          <td class="lightItem">Finalize the skip list, then construct <code>Dirnav&lt;StdoutSink&gt;</code>. Expression construction happens here, and the constructor throws <code>RegexParseException</code> when <code>/r</code> will not compile</td>
+        </tr>
+        <tr>
+          <td class="lightItem">7</td>
+          <td class="lightItem">For each root path, in the order <code>/P</code> gave them, invoke <code>Search</code> on the same instance</td>
+        </tr>
+        <tr>
+          <td class="lightItem">8</td>
+          <td class="lightItem">Call <code>EmitRunSummary()</code> on that same instance, once, after the last root path returns</td>
+        </tr>
+        <tr>
+          <td class="lightItem">9</td>
+          <td class="lightItem">Return 0</td>
+        </tr>
+      </table>
+      <t-b>
+        <strong>Step 8 is the whole of this binary's part in the run summary.</strong>
+        Spec_TextFinder.md &sect;3.6 puts the two counts in <code>CSharp_TextFinder_Dirnav</code>,
+        so the binary supplies no count and composes no text. What it supplies is the one fact the
+        library cannot have: that step 7 is finished.
+      </t-b>
+      <t-b>
+        Every return above precedes step 7, which is what makes the summary a mark of a run that
+        traversed. <code>/H</code>, the bare command line, a parse failure, and a malformed
+        <code>/r</code> each leave at their own step and none reaches step 8 - so none writes a
+        summary, which is exactly what &sect;3.6 asks. The integration suite asserts the absence for
+        all three of the cases a test can reach.
+      </t-b>
+      <t-b>
+        <strong>There is no argument-decoding step.</strong> The Rust binary opens with one, and
+        reserves an exit code for its failure; C++ takes <code>char* argv[]</code> and states a
+        limit on what it can carry. The runtime decodes the command line before <code>Main</code>
+        runs and hands it a <code>string[]</code>, so this binary has nothing to decode and no
+        failure to report. Spec_TextFinder.md &sect;4 leaves the argument vector to this document,
+        and an absent step is what it says here.
+      </t-b>
+      <t-b>
+        <strong>Step 2 precedes every write to stdout</strong>, because the sink owns the process's
+        only writer over it. The binary's own help text and option listing pass through that object
+        rather than through a writer of their own, so they share one buffer with the search output
+        and reach the stream in the order written. C++ needs this ordering for a second reason as
+        well, its sink also setting the stream mode; here the shared buffer is the whole of it.
+      </t-b>
+      <t-b>
+        <strong>Step 4 tests <code>args.Length == 0</code></strong>, where C++ tests
+        <code>argc == 1</code> and Rust tests a length of 1. Both of those vectors carry the
+        executable name and this one does not, so the same rule of &sect;3.1 - a command line
+        bearing no switch at all - is a different number in each implementation. The binary reads
+        the array's length for this test and inspects no element of it. Steps 4 and 5 are mutually
+        exclusive: a command line bearing <code>/v</code> is not empty.
+      </t-b>
+      <t-b>
+        <strong>Step 6 is where a bad pattern is refused</strong>, and it takes four sub-steps to
+        report:
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li>If step 5 did not already write it, write <code>OptionsText(commands)</code> through
+            the sink now, so the user sees the <code>/r</code> line carrying the expression that
+            failed.</li>
+          <li>Call <code>Flush</code> on the sink, so the listing reaches the stream ahead of the
+            diagnostic that explains it. The sink buffers stdout without per-line flushing, so
+            without this the two arrive out of order.</li>
+          <li>Compose the diagnostic - <code>invalid regex for switch: /r</code>, a newline, then
+            <code>UsageLine()</code> - and write it to stderr. The binary composes it; neither
+            library does, the one supplying only <code>UsageLine()</code> and the other only the
+            failure that triggers it.</li>
+          <li>Return 1, having traversed nothing.</li>
+        </ol>
+      </t-b>
+      <t-b>
+        The exception is caught as <code>RegexParseException</code> and not as
+        <code>ArgumentException</code>, which it derives from. A broader <code>catch</code> would
+        also swallow an argument defect in this binary's own call and report it to the user as a
+        malformed pattern they typed.
+      </t-b>
+      <t-b>
+        The message the framework puts in that exception is not written, and the specification gives
+        a reason that outlives any wording change: that text belongs to the framework, so a runtime
+        upgrade would alter this program's output with no document in this tree recording the
+        change. What the user gets instead is the <code>/r</code> line, carrying the expression as
+        typed.
+      </t-b>
+      <t-b>
+        Step 7 passes a root-path failure to nobody. A root that cannot be searched - unopenable, a
+        symbolic link, or neither a regular file nor a directory - is announced by
+        <code>CSharp_TextFinder_Dirnav</code> itself, and the binary neither formats nor inspects
+        that notice. No root-path outcome affects the exit code.
+      </t-b>
+
+      <a id="skiplist"></a>
+      <h3>3. &nbsp;The Skip List and AddSkipDirectory</h3>
+      <t-b>
+        The binary owns the process-wide skip list, initialized with the 11 defaults of
+        Spec_TextFinder.md &sect;3.2, and implements the extension point as
+      </t-b>
+<pre><code class="language-csharp">private static readonly List&lt;string&gt; SkipList = new() { /* the eleven defaults */ };
+
+private static void AddSkipDirectory(string name);</code></pre>
+      <t-b>
+        &sect;3.5 writes the function as <code>addSkipDirectory(name)</code> and requires each
+        language's specification to fix the exact name, parameter type, and return type in its own
+        idiom. Here that is PascalCase, a <code>string</code>, and <code>void</code>. Neither member
+        is <code>public</code>, and both are declared in the binary's own class, so no library and
+        no test can call them; the calls that extend the list are written into the binary's source
+        and compiled with it.
+      </t-b>
+      <t-b>
+        A <code>List&lt;string&gt;</code> in a static field needs nothing else. That is worth
+        stating because the Rust implementation needs two constructs to reach the same place: a
+        <code>RefCell</code> for interior mutability without <code>unsafe</code>, and a
+        <code>thread_local!</code> to escape the <code>Sync</code> bound a plain <code>static</code>
+        would impose. C# places no such bound on a static field, so &sect;3.5's one-argument
+        signature costs this implementation nothing to honor.
+      </t-b>
+      <t-b>
+        <code>AddSkipDirectory</code> ignores a name the list already holds, and it compares with
+        the same platform rule <code>CSharp_TextFinder_Dirnav</code> applies to a skip-list entry.
+        A build that adds <code>Build</code> on Windows therefore does not lengthen a list that
+        already holds <code>build</code>, which is the duplicate-handling &sect;3.5 asks for read
+        against the case-insensitivity &sect;3.2 fixes.
+      </t-b>
+      <t-b>
+        The list reaches the <code>Dirnav</code> at step 6 as an
+        <code>IReadOnlyList&lt;string&gt;</code>, which that library consults and cannot modify
+        through. That is weaker than what Rust gets from its type system, where a shared borrow
+        makes modification impossible rather than inconvenient: a caller holding the underlying
+        <code>List&lt;string&gt;</code> could still change it mid-traversal. Nothing here does, and
+        the specification fixes that the binary stops extending the list before traversal begins.
+      </t-b>
+      <t-b>
+        The source carries <code>ExtendSkipList</code> with an empty body, which is where such calls
+        go. <code>AddSkipDirectory</code> therefore has no caller until a build adds one, and the
+        comment above it says so rather than leaving a reader to wonder whether the method is dead.
+      </t-b>
+
+      <a id="exit"></a>
+      <h3>4. &nbsp;Exit Codes</h3>
+      <t-b>
+        The three codes Spec_TextFinder.md &sect;3.4 fixes map onto this binary's failure modes as
+        follows. No other value is returned from <code>Main</code>.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:5rem;" />
+          <col style="width:20rem;" />
+          <col style="width:31rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Code</th>
+          <th class="darkItem">Cause in this binary</th>
+          <th class="darkItem">What reaches which stream</th>
+        </tr>
+        <tr>
+          <td class="lightItem">0</td>
+          <td class="lightItem">Startup and traversal completed; or <code>/H</code>; or the bare command line</td>
+          <td class="lightItem">Search output, help, or the option listing on stdout. Match count and unopenable roots do not change it</td>
+        </tr>
+        <tr>
+          <td class="lightItem">1</td>
+          <td class="lightItem">Parse failure, or a malformed <code>/r</code></td>
+          <td class="lightItem">A usage diagnostic on stderr. Parse failure leaves stdout empty; a malformed <code>/r</code> puts the option listing there first</td>
+        </tr>
+        <tr>
+          <td class="lightItem">2</td>
+          <td class="lightItem">Constructing the <code>StdoutSink</code> failed</td>
+          <td class="lightItem"><code>cannot initialize output</code> on stderr, no usage line, stdout empty</td>
+        </tr>
+      </table>
+      <t-b>
+        Only one exit-code-1 path writes to stdout, and the asymmetry is deliberate: &sect;5.2
+        requires the listing ahead of the invalid-regex diagnostic so the <code>/r</code> line shows
+        what failed, and leaves stdout empty for every other violation.
+      </t-b>
+      <t-b>
+        Every one of those strings is fixed in the C# specifications rather than the project
+        specification. &sect;2 leaves the wording of anything reaching stderr to each language, so
+        Spec_CSharp_TextFinder_Cmdline.md &sect;6 carries the six reason lines
+        <code>TryParse</code> produces and Spec_CSharp_TextFinder_Entry.md &sect;6 carries the
+        seventh, <code>invalid regex for switch: /r</code>, plus
+        <code>cannot initialize output</code>. What binds everyone is the shape of a usage
+        diagnostic, the destination, the exit codes, and what each failure leaves on stdout. C#
+        adopts &sect;5.2's supplied wording without changing a character, so its stderr stays
+        comparable with both siblings', which &sect;6 no longer requires but does not forbid.
+      </t-b>
+      <t-b>
+        Code 2 has one cause here where Rust has two. Rust reserves it for an undecodable argument
+        as well, and this binary cannot meet that failure at all. What remains is the sink's
+        constructor, which throws when a sink already exists or when standard output cannot be
+        opened. This binary constructs exactly one sink, so its own code cannot provoke the first;
+        it handles the case because a constructor with a failure mode callers ignore is a
+        constructor whose failure mode will eventually be reached.
+      </t-b>
+      <t-b>
+        A malformed regex taking code 1 is a decision rather than a deduction: the expression is
+        something the user typed, so the failure is a usage failure even though it surfaces inside a
+        library constructor.
+      </t-b>
+
+      <a id="return"></a>
+      <h3>5. &nbsp;Why Every Exit Is a Return</h3>
+      <t-b>
+        Every exit in the sequence returns from <code>Main</code>, never calling
+        <code>Environment.Exit</code>. The sink is held by a <code>using</code> statement, and only
+        a return leaves that statement and disposes the sink, which flushes its stdout buffer. Steps
+        3, 4, and 6 each write to stdout and then leave, and <code>Environment.Exit</code> would
+        terminate the process with the buffer unwritten.
+      </t-b>
+      <t-b>
+        <code>Main</code> returns <code>int</code>, so a numeric status and a normal return are the
+        same act. That much C# shares with C++; what it does not share is a destructor that runs at
+        scope exit. The
+        <a target="_blank" href="Spec_Driven_Design_Cpp_Entry.html">C++ binary</a> gets its flush
+        from the sink's destructor and the
+        <a target="_blank" href="Spec_Driven_Design_Rust_Entry.html">Rust binary</a> from
+        <code>Drop</code>, both of which the language runs for them. Here the flush happens because
+        this binary wrote a <code>using</code> statement, and a finalizer would not do: the runtime
+        is free never to run one before the process ends.
+      </t-b>
+      <t-b>
+        That shifts the guarantee from the sink to its caller, and the specifications say so on both
+        sides. Spec_CSharp_TextFinder_Output.md &sect;7 states the requirement and notes that the
+        type cannot enforce it alone; &sect;4 of this document discharges it.
+      </t-b>
+      <t-b>
+        The construction of the sink sits in its own <code>try</code>, outside the
+        <code>using</code> statement that follows. The obvious code does not work, and the reason is
+        worth one paragraph because a reader may reach for it:
+      </t-b>
+<pre><code class="language-csharp">// this cannot be written, since the catch cannot reach the construction
+using var sink = new StdoutSink();   // throws on the failure that is exit code 2</code></pre>
+      <t-b>
+        A <code>using</code> declaration puts the construction inside the scope it introduces, and
+        what can fail here is exactly the construction. Splitting the two - a
+        <code>try</code> around <code>new StdoutSink()</code>, then
+        <code>using (sink) { ... }</code> - is what lets the failure be handled and the disposal
+        still be guaranteed. The C++ binary uses <code>std::optional</code> and a
+        <code>try</code> around <code>emplace</code> for the same reason, which is the one place
+        these two implementations solve a problem the same way for the same cause.
+      </t-b>
+      <t-b>
+        One rule pairs with all of it: nothing writes to stderr before stdout has been flushed.
+        Step 1 predates the sink and so has no buffer to flush; step 2 fails before one exists; step
+        6 flushes explicitly. <code>CSharp_TextFinder_Output</code> applies the same rule to its own
+        <code>output failed</code> notice.
+      </t-b>
+      <t-b>
+        Every stderr write in this binary uses <code>Console.Error.Write</code> with an explicit
+        <code>\n</code> rather than <code>Console.Error.WriteLine</code>, which appends
+        <code>Environment.NewLine</code> and would put CRLF there on Windows. &sect;3.4 leaves the
+        stderr terminator to the platform and would permit that; writing LF costs one method choice
+        and makes this implementation's stderr identical on both platforms, so the specification
+        fixes it here. C++ leaves the same half of the problem open by design, its
+        <code>std::cerr</code> never being set to binary.
+      </t-b>
+
+      <a id="limits"></a>
+      <h3>6. &nbsp;Stated Limits</h3>
+      <t-b>
+        Three non-goals, and the second is the one worth reading: it is a limit stated in order to
+        record its absence.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>No per-file state in the binary.</strong> A single
+            <code>Dirnav&lt;StdoutSink&gt;</code> is reused across every root path, and it carries
+            no state from one <code>Search</code> call to the next.</li>
+          <li><strong>No encoding limit on arguments.</strong> A <code>string</code> is UTF-16 and
+            the runtime decodes the command line before <code>Main</code> runs, so every command
+            line the shell can express reaches the parser. The undecodable-argument case the Rust
+            implementation defines cannot arise here, and this implementation accepts root paths and
+            expressions the C++ implementation cannot carry through its narrow
+            <code>argv</code>.</li>
+          <li><strong>No configuration file</strong>, and no runtime means of extending the skip
+            list.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        &sect;6's consistency guarantee speaks only to the command lines every implementation's
+        argument vector can carry, so the second limit narrows what a cross-implementation
+        comparison covers rather than what this program accepts. Two of the three implementations
+        now accept more than the third.
+      </t-b>
+
+      <a id="source"></a>
+      <h3>7. &nbsp;Source</h3>
+      <t-b>
+        <code>Program.cs</code> in full. The step numbers in the comments are the nine steps of
+        Section 2, and the citations name the specification section each step satisfies.
+      </t-b>
+      <h5 class="indent">Program.cs</h5>
+<pre><code class="language-csharp">// Program.cs - CSharp_TextFinder entry point, per Spec_CSharp_TextFinder_Entry.md
+
+using System.Text.RegularExpressions;
+using CSharp_TextFinder_Cmdline;
+using CSharp_TextFinder_Dirnav;
+using CSharp_TextFinder_Output;
+
+namespace CSharp_TextFinder_Entry;
+
+internal static class Program
+{
+    // §5: the defaults of Spec_TextFinder.md §3.2, owned by the binary. A List needs no
+    // interior-mutability type and no lock to be extended from a static method, so the
+    // RefCell and thread_local pair the Rust implementation requires has no counterpart.
+    private static readonly List&lt;string&gt; SkipList = new()
+    {
+        "archive", ".git", ".svn", ".hg", "build", "out",
+        "target", "bin", "obj", "__pycache__", "node_modules",
+    };
+
+    private static readonly StringComparison NameComparison =
+        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+    // §5: the build-time extension point of Spec_TextFinder.md §3.5. Private and declared
+    // here, so no library and no test can call it; calls are compiled in alongside it.
+    private static void AddSkipDirectory(string name)
+    {
+        foreach (string held in SkipList)
+        {
+            if (string.Equals(held, name, NameComparison)) return;
+        }
+
+        SkipList.Add(name);
+    }
+
+    // §5: every call compiled in here runs before traversal begins. None is at present,
+    // so AddSkipDirectory above has no caller until a build adds one.
+    private static void ExtendSkipList()
+    {
+    }
+
+    // §4: the startup sequence, in order. Every exit below returns from Main, never
+    // Environment.Exit, so the using statement disposes the sink on every path out.
+    private static int Main(string[] args)
+    {
+        // Step 1. No decoding step precedes this one: the runtime hands Main a string[].
+        if (!CommandLine.TryParse(args, out ProgramCommands? commands, out string? diagnostic))
+        {
+            Console.Error.Write(diagnostic);
+            return 1;
+        }
+
+        // Step 2. Before anything reaches stdout, since the sink owns the only writer
+        // over it. The construction sits outside the using statement so that a catch
+        // can reach it and the disposal is still guaranteed.
+        StdoutSink sink;
+        try
+        {
+            sink = new StdoutSink();
+        }
+        catch (Exception e) when (e is InvalidOperationException or IOException)
+        {
+            Console.Error.Write("cannot initialize output\n");
+            return 2;
+        }
+
+        using (sink)
+        {
+            // Step 3.
+            if (commands.Help)
+            {
+                sink.WriteText(CommandLine.HelpText());
+                return 0;
+            }
+
+            // Step 4. Spec_TextFinder.md §3.1: a command line bearing no switch at all
+            // names no work. args holds the arguments alone, so the test is a length of
+            // 0 where C++ tests argc == 1. No element of args is inspected.
+            if (args.Length == 0)
+            {
+                sink.WriteText(CommandLine.OptionsText(commands));
+                return 0;
+            }
+
+            // Step 5. Mutually exclusive with step 4: a command line bearing /v is not empty.
+            if (commands.Verbose) sink.WriteText(CommandLine.OptionsText(commands));
+
+            // Step 6.
+            ExtendSkipList();
+
+            Dirnav&lt;StdoutSink&gt; navigator;
+            try
+            {
+                navigator = new Dirnav&lt;StdoutSink&gt;(sink, SkipList, commands);
+            }
+            catch (RegexParseException)
+            {
+                // Spec_TextFinder.md §5.2: the listing goes to stdout whatever /v says, so
+                // the /r line shows the expression that failed, and is not repeated when
+                // /v produced it. The framework's own message is not written.
+                if (!commands.Verbose) sink.WriteText(CommandLine.OptionsText(commands));
+                sink.Flush();   // ahead of stderr, since the sink defers its writes
+                Console.Error.Write("invalid regex for switch: /r\n" + CommandLine.UsageLine());
+                return 1;
+            }
+
+            // Step 7. One reused instance, one root path at a time, in the order /P gave
+            // them. Every root-path failure is announced by Dirnav and affects nothing here.
+            foreach (string root in commands.RootPaths)
+            {
+                navigator.Search(root);
+            }
+
+            // Step 8. Only Main knows the last root path has returned.
+            navigator.EmitRunSummary();
+
+            // Step 9.
+            return 0;
+        }
+    }
+}</code></pre>
+      <t-b>
+        Two properties of the project file carry decisions rather than defaults, and the
+        <a target="_blank" href="Spec_Driven_Design_CSharp_Structure.html">Structure page</a> shows
+        both: <code>AssemblyName</code> separates the executable's name from the project's, and
+        <code>InvariantGlobalization</code> makes a culture-sensitive comparison added later fail
+        visibly rather than behave differently on two machines.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>8. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 assigns it
+        <code>Prompts_Spec_CSharp_TextFinder_Entry.md</code> and its <code>Fix</code> companion, and
+        neither was written: this thread produced one record covering every turn, and it sits on the
+        <a target="_blank" href="Spec_Driven_Design_CSharp_Process.html">Process page</a>. Two of
+        that record's four delegated decisions reach this component, the argument vector and the
+        skip-list signature.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#owns">what it owns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#startup">startup</a></menu-elem>
+        <menu-elem class="secElem"><a href="#skiplist">skip list</a></menu-elem>
+        <menu-elem class="secElem"><a href="#exit">exit codes</a></menu-elem>
+        <menu-elem class="secElem"><a href="#return">every exit returns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#limits">stated limits</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenCSharpPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past.
+       A block whose content fits needs no arrows, so they stay hidden until it
+       overflows, and are rechecked whenever its width changes. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      /* the 1px allowance keeps subpixel rounding from showing arrows that cannot move */
+      const showArrows = () => {
+        arrows.style.display = pre.scrollWidth - pre.clientWidth > 1 ? '' : 'none';
+      };
+      showArrows();
+      /* the splitter resizes the panel and prism rewrites the content, so one
+         measurement at load is not enough */
+      new ResizeObserver(showArrows).observe(pre);
+      window.addEventListener('resize', showArrows);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

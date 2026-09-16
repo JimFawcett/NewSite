@@ -107,6 +107,20 @@ std::string sorted(const std::string& joined) {
     return text;
 }
 
+// §8.1: the summary line alone, from a run over the given roots. One navigator serves
+// them all, as Cpp_TextFinder_Entry uses it, so the counts accumulate across them.
+std::string summaryOf(const std::vector<std::filesystem::path>& roots,
+                      const ProgramCommands& commands, const SkipList& skips = defaultSkips) {
+    Recorder recorder;
+    Cpp_TextFinder_Dirnav<Recorder> navigator{recorder, skips, commands};
+    for (const std::filesystem::path& root : roots) navigator.search(root);
+    navigator.emitRunSummary();
+
+    const std::string joined = recorder.joined();
+    const std::size_t bar = joined.rfind('|');
+    return bar == std::string::npos ? joined : joined.substr(bar + 1);
+}
+
 // Strips the temp-directory prefix so expectations stay readable.
 std::string relative(const std::string& emitted, const std::filesystem::path& root) {
     std::string prefix = root.generic_string() + "/";
@@ -308,6 +322,55 @@ void testSizeLimit(Checker& check) {
 
 } // namespace
 
+// §8.1 and Spec_TextFinder.md §3.6. The shared tree holds four files and one subdirectory
+// under the root, plus the pruned build/ and its one file.
+void testRunSummary(Checker& check, const std::filesystem::path& root) {
+    ProgramCommands commands;
+    commands.regexText = "int main";
+
+    check.equal(summaryOf({root}, commands), "accessed 5 files, 2 directories",
+                "every examined file and every entered directory is counted");
+
+    ProgramCommands byExtension = commands;
+    byExtension.extensions = {"cpp"};
+    check.equal(summaryOf({root}, byExtension), "accessed 3 files, 2 directories",
+                "a file the /p list excluded is not counted");
+
+    ProgramCommands unmatched = commands;
+    unmatched.extensions = {"nosuchextension"};
+    check.equal(summaryOf({root}, unmatched), "accessed 0 files, 2 directories",
+                "a directory holding no selected file is still counted");
+
+    ProgramCommands shallow = commands;
+    shallow.recurse = false;
+    check.equal(summaryOf({root}, shallow), "accessed 4 files, 1 directories",
+                "under /s false no subdirectory is counted");
+
+    check.equal(summaryOf({root}, commands, SkipList{}), "accessed 6 files, 3 directories",
+                "a pruned directory and its files are counted once the list no longer prunes it");
+
+    check.equal(summaryOf({root / "a.cpp"}, commands), "accessed 1 files, 0 directories",
+                "a root that is a regular file counts as a file, and neither noun is inflected");
+
+    check.equal(summaryOf({root / "nosuchpath"}, commands), "accessed 0 files, 0 directories",
+                "a root that cannot be opened is counted as neither");
+
+    check.equal(summaryOf({root / "sub", root / "a.cpp"}, commands), "accessed 2 files, 1 directories",
+                "the counts are of the whole run, not of one root");
+
+    check.equal(summaryOf({root / "sub", root / "sub"}, commands), "accessed 2 files, 2 directories",
+                "an entry reached under two roots counts once for each");
+
+    ProgramCommands loud = commands;
+    loud.suppressOnNoMatch = false;
+    check.equal(summaryOf({root}, loud), summaryOf({root}, commands),
+                "the summary is not gated on /h");
+
+    ProgramCommands noContent;   // the default . with neither /n nor /L
+    check.equal(summaryOf({root}, noContent), "accessed 5 files, 2 directories",
+                "the no-content case counts the files it never opens");
+}
+
 int runDirnavUnitTests(std::ostream& log) {
     log << "Cpp_TextFinder_Dirnav unit tests\n";
 
@@ -321,6 +384,7 @@ int runDirnavUnitTests(std::ostream& log) {
     testNoContentCase(check, root);
     testLineHandling(check);
     testSizeLimit(check);
+    testRunSummary(check, root);
 
     std::filesystem::remove_all(root);
 

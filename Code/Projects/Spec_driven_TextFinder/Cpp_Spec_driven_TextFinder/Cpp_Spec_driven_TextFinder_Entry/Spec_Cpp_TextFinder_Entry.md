@@ -23,7 +23,7 @@ The binary:
 - Constructs a `Cpp_TextFinder_Output` instance, which takes no constructor arguments. Constructing it puts the process's stdout into the mode Spec_TextFinder.md §3.4 requires — an LF written verbatim, never translated to CRLF — so every subsequent write to stdout carries that terminator, the binary's own writes included. This is the one configuration `Cpp_TextFinder_Output` performs, and it is a side effect of construction rather than something the binary asks for.
 - Constructs a `Cpp_TextFinder_Dirnav` instance, templated on the `Cpp_TextFinder_Output` type, taking the `Cpp_TextFinder_Output` instance, the finalized skip list, and the parsed commands as constructor arguments.
 - Owns all three of those for the lifetime of the `Cpp_TextFinder_Dirnav` instance, which holds references to them rather than copies.
-- Drives traversal across every supplied root path using the single reused `Cpp_TextFinder_Dirnav` instance.
+- Drives traversal across every supplied root path using the single reused `Cpp_TextFinder_Dirnav` instance, then asks that instance for the run summary of Spec_TextFinder.md §3.6 once the last root path is finished.
 - Handles process-level concerns: the bare command line of Spec_TextFinder.md §3.1, `/H` help, the `/v` option listing, exit codes, and top-level diagnostics.
 
 ## 4. Startup Sequence
@@ -42,7 +42,8 @@ The binary:
    3. Compose the usage diagnostic in the shape Spec_TextFinder.md §5.2 binds — the reason line `invalid regex for switch: /r`, a newline, then `usageLine()` — and write it to stderr. §6 fixes that reason line for this implementation. The binary composes it; neither `Cpp_TextFinder_Cmdline` nor `Cpp_TextFinder_Dirnav` does, the former supplying only `usageLine()` and the latter only the failure that triggers it. The text `std::regex_error::what()` carries is not written: it is the standard library implementation's, so the same malformed pattern would produce different output under MSVC and libstdc++ with no document in this tree recording the difference.
    4. Exit with code `1`, having traversed nothing.
 8. For each root path in the parsed commands, in the order `/P` gave them, invoke the `Cpp_TextFinder_Dirnav` traversal entry on the same `Cpp_TextFinder_Dirnav` instance, then continue with the next root path. A root path that cannot be searched — unopenable, a symbolic link, or neither a regular file nor a directory — is announced by `Cpp_TextFinder_Dirnav` itself, per Spec_TextFinder.md §3.4; the binary neither formats nor inspects that notice, and no root-path outcome affects the exit code.
-9. Return exit code 0.
+9. Call `emitRunSummary()` on that same instance, once, after the last root path returns. This writes the run summary Spec_TextFinder.md §3.6 requires. The binary supplies no count and composes no text — the counts are the library's, per Spec_Cpp_TextFinder_Dirnav.md §8.1 — and its whole part is knowing that step 8 is finished, which nothing inside the library can know. Every exit above reaches its `return` before step 8, so no run that skipped traversal reaches this step: `/H`, the bare command line, a parse failure, and a malformed `/r` each leave at their own step, which is what §3.6 requires of a summary.
+10. Return exit code 0.
 
 Every exit above is a `return` from `main`, never a call to `std::exit`. The `Cpp_TextFinder_Output` instance constructed at step 2 is a local of `main`, and only a return destroys it and flushes its stdout buffer (Spec_Cpp_TextFinder_Output.md §7). Steps 3, 4, and 7 each write to stdout and then leave, and `std::exit` would discard what they wrote.
 

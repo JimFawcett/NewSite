@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_CSharp_Cmdline.html - C# thread, page 3
+-->
+<head>
+  <title>Spec-Driven C#: Cmdline</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_CSharp_Cmdline.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/16/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/CSharp_Spec_driven_TextFinder/CSharp_Spec_driven_Cmdline">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven C#: Cmdline</h2>
+        <h4 class="indent" id="subtitle">an argument array to ProgramCommands, through a static class and a Try method</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_CommandLine.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Cmdline.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Cmdline.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="interface"></a>
+      <h3>1. &nbsp;Public Interface</h3>
+      <t-b>
+        <code>CSharp_TextFinder_Cmdline</code> converts an argument array into an object that
+        controls the other two libraries. It is the single place in the C# implementation where
+        switch letters, argument syntax, and defaults are known, and it performs no traversal, no
+        matching, no file I/O, and no stream writing.
+      </t-b>
+      <t-b>
+        Namespace <code>CSharp_TextFinder_Cmdline</code> exports one class of data and one class of
+        methods.
+      </t-b>
+<pre><code class="language-csharp">public sealed class ProgramCommands
+{
+    public List&lt;string&gt; RootPaths { get; set; } = new() { "." };  // /P
+    public List&lt;string&gt; Extensions { get; set; } = new();         // /p
+    public string RegexText { get; set; } = ".";                  // /r
+    public bool Recurse { get; set; } = true;                     // /s
+    public bool SuppressOnNoMatch { get; set; } = true;           // /h
+    public bool Verbose { get; set; }                             // /v
+    public bool Help { get; set; }                                // /H
+    public bool LineNumbers { get; set; }                         // /n
+    public bool MatchedLine { get; set; }                         // /L
+}
+
+public static class CommandLine
+{
+    public static bool TryParse(string[] args,
+        [NotNullWhen(true)] out ProgramCommands? commands,
+        [NotNullWhen(false)] out string? diagnostic);
+
+    public static string UsageLine();
+    public static string HelpText();
+    public static string OptionsText(ProgramCommands commands);
+}</code></pre>
+      <t-b>
+        <code>CommandLine</code> is a static class because C# has no free functions. The
+        <a target="_blank" href="Spec_Driven_Design_Cpp_Cmdline.html">C++ implementation</a> exports
+        its four at global scope and the
+        <a target="_blank" href="Spec_Driven_Design_Rust_Cmdline.html">Rust one</a> exports four
+        from a module; here they need a containing type, and one type holding all four is the
+        shortest honest arrangement, since all four render or read the same option set.
+      </t-b>
+      <t-b>
+        <code>TryParse</code> follows the <code>Try</code> pattern rather than returning a result
+        object or throwing. A malformed command line is something the user typed, so it is an
+        ordinary outcome of parsing rather than an exceptional one - and the base class library has
+        no <code>std::expected</code> and no <code>Result</code> to return instead. The
+        <code>Try</code> pattern is how C# expresses that.
+      </t-b>
+      <t-b>
+        The two <code>out</code> parameters are nullable and carry <code>NotNullWhen</code>
+        attributes, so a caller compiling with nullable reference types enabled may use
+        <code>commands</code> after a <code>true</code> return and <code>diagnostic</code> after a
+        <code>false</code> return without a null check and without a null-forgiving operator.
+        Exactly one of the two is non-null on return. Those two attributes are the whole of what
+        makes the pattern pleasant to call rather than merely workable.
+      </t-b>
+      <t-b>
+        <code>TryParse</code> takes <code>string[]</code> rather than reading the arguments itself,
+        so the unit suite hands it hand-built arrays and 67 checks run without spawning a process.
+      </t-b>
+      <t-b>
+        <code>ProgramCommands</code> has no invariants: every property combination the parser can
+        produce is valid. It is a reference type, so <code>Dirnav</code> holds a reference to the
+        object <code>CSharp_TextFinder_Entry</code> owns and the garbage collector keeps it alive.
+        No lifetime rule appears in this specification, because there is none to state - where C++
+        states one in prose and Rust has a borrow checker enforce it.
+      </t-b>
+      <t-b>
+        The property names are the switch meanings spelled out rather than the switch letters.
+        <code>SuppressOnNoMatch</code> for <code>/h</code> is the one worth pausing on: it names
+        what the flag does rather than what it is called, so the gating check in
+        <code>CSharp_TextFinder_Dirnav</code> reads as a sentence.
+      </t-b>
+
+      <a id="defaults"></a>
+      <h3>2. &nbsp;Defaults Live in the Property Initializers</h3>
+      <t-b>
+        The property comments are the switch-to-property mapping, and the initializers are the sole
+        authority in code for the defaults of Spec_TextFinder.md &sect;5. A newly constructed
+        <code>ProgramCommands</code> equals the result of parsing an empty array, because
+        <code>TryParse</code> starts from one and overwrites only what the arguments name. That is
+        what makes step 4 of the Entry startup sequence a one-liner.
+      </t-b>
+      <t-b>
+        Four of the nine properties carry no initializer, and the omission is deliberate rather than
+        an oversight: <code>default(bool)</code> is already <code>false</code>, and writing
+        <code>= false</code> on those four would suggest the value was chosen where the other five
+        initializers show that it was. The specification says so, because a reader comparing this
+        block against the &sect;5 table needs to know that a missing initializer is a default and
+        not a gap.
+      </t-b>
+      <t-b>
+        <code>[Serializable]</code>-style attribute tricks and <code>record</code> types were both
+        available and neither is used. A <code>record</code> would give value equality that nothing
+        here needs and an <code>Equals</code> a reader might mistake for a specification claim.
+      </t-b>
+      <t-b>
+        The wording in the specification is load-bearing: this is the sole authority <em>in code</em>.
+        Spec_TextFinder.md &sect;5 remains the authority overall, and a disagreement between the two
+        is a defect in this library. The unit suite asserts each of the nine against &sect;5
+        separately rather than asserting the object equals a fresh <code>ProgramCommands</code>,
+        which would compare the code against itself.
+      </t-b>
+
+      <a id="parsing"></a>
+      <h3>3. &nbsp;Parsing Rules</h3>
+      <t-b>
+        <code>TryParse</code> scans <code>args</code> from index 0 left to right, alternating switch
+        token and argument token. It stops at the first violation and produces that diagnostic; no
+        partial result is returned. It touches no filesystem: root paths are not tested for
+        existence, and extensions are not compared against any file.
+      </t-b>
+      <t-b>
+        <strong>Index 0, not index 1.</strong> <code>Main</code>'s array holds the arguments alone,
+        so there is no program name to skip. Both siblings skip element 0 because their vectors
+        carry the executable. The unit suite asserts the difference in both directions: a
+        <code>-r alpha</code> array parses, and an array whose first element is
+        <code>CSharp_TextFinder</code> draws <code>not a switch: CSharp_TextFinder</code>.
+      </t-b>
+      <t-b>
+        Four rules govern the scan.
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li><strong>Switch tokens.</strong> A token in switch position is valid only when it is
+            exactly two characters, the first <code>/</code> or <code>-</code>, the second one of
+            the nine letters. A token with no introducer is <em>not a switch</em>; any other
+            introducer-led token, including a bare <code>/</code> or <code>-</code>, is an
+            <em>unrecognized switch</em>.</li>
+          <li><strong>Arguments.</strong> Each switch consumes the following token verbatim,
+            including when that token begins with <code>/</code> or <code>-</code>, since there are
+            no bare flags. A switch with no following token is <em>missing its argument</em>.</li>
+          <li><strong>Conversion.</strong> Boolean switches accept only <code>true</code> or
+            <code>false</code>, compared with <code>StringComparison.OrdinalIgnoreCase</code>.
+            <code>/r</code> and <code>/P</code> take the token verbatim and each rejects an empty
+            argument. <code>/p</code> is normalized.</li>
+          <li><strong>Accumulation.</strong> <code>/P</code> clears the default
+            <code>{ "." }</code> on its first occurrence and appends thereafter, preserving argument
+            order. Every other switch overwrites any earlier value, silently discarding it.</li>
+        </ol>
+      </t-b>
+      <t-b>
+        Rule 1 partitions the first two diagnostics of &sect;5.2 rather than leaving them to
+        overlap. Before the partition, <code>/ss</code>, <code>-abc</code>, and a bare
+        <code>/</code> each satisfied both conditions, and two implementations could have reported
+        different reason lines for the same token while both followed the specification.
+      </t-b>
+      <t-b>
+        The length test is <code>token.Length != 2</code>, which counts UTF-16 code units. A
+        two-character token holding an astral character therefore measures 3 or more and is refused
+        as an unrecognized switch. The specification records that as the same outcome the rule
+        reaches by its own terms rather than as a divergence: such a token is not one of the nine
+        switches under any counting, and the reason line is the one &sect;5.2 gives for an
+        introducer-led token that is not a switch.
+      </t-b>
+      <t-b>
+        <code>bool.TryParse</code> is rejected by name, and the rejection is easy to miss because
+        the method looks made for this. It trims surrounding whitespace and accepts values &sect;5
+        does not, so <code>-s " true "</code> would be accepted where this specification refuses it.
+        The conversion is two <code>string.Equals</code> calls against the two literals &sect;5
+        names.
+      </t-b>
+      <t-b>
+        Every comparison in this library is ordinal. A culture-sensitive comparison is rejected by
+        name for a reason specific to one locale: under a Turkish culture a culture-sensitive fold
+        of <code>I</code> and <code>i</code> differs from the invariant one, and <code>/h</code> and
+        <code>/H</code> are distinct switches whose distinction must not depend on the machine's
+        locale. The binary's <code>InvariantGlobalization</code> property makes that impossible to
+        get wrong later.
+      </t-b>
+      <t-b>
+        Rule 4's first-occurrence-clears behavior needs one bit of state,
+        <code>rootsSupplied</code>, and the code carries it as a local rather than inferring it from
+        the list's contents. Inferring would work until a user typed <code>-P .</code>, which is
+        indistinguishable from the default by value. The unit suite names that case.
+      </t-b>
+      <t-b>
+        Every violation produces the complete usage diagnostic Spec_TextFinder.md &sect;5.2 binds -
+        a reason line, a newline, then <code>UsageLine()</code> - built by one
+        <code>Diagnostic</code> helper, so the shape has one definition. Six of the seven rows are
+        this library's. The seventh, a malformed <code>/r</code>, is detected later: the
+        <code>Dirnav</code> constructor builds the expression and lets the framework's parse failure
+        propagate, and the binary composes the diagnostic. Neither library composes it.
+      </t-b>
+      <t-b>
+        The diagnostic's embedded terminators are LF, since they are written into the string rather
+        than produced by a writer, and the binary writes the string with
+        <code>Console.Error.Write</code>, which appends nothing. &sect;3.4 leaves the stderr
+        terminator to the platform and asks for no such thing; this implementation takes it because
+        it costs one method choice, and the unit suite asserts that no diagnostic carries a CR.
+      </t-b>
+
+      <a id="normalization"></a>
+      <h3>4. &nbsp;Extension-List Normalization</h3>
+      <t-b>
+        The <code>/p</code> argument arrives as one token, the shell having already removed the
+        quotes. Normalization implements the <code>/p</code> rules of Spec_TextFinder.md &sect;5:
+        split on commas, trim each item, strip one leading <code>.</code> if present, discard empty
+        items, and preserve the order of the survivors. <code>" .cs , , txt "</code> therefore
+        normalizes to <code>cs, txt</code>.
+      </t-b>
+      <t-b>
+        &sect;5 fixes which characters are trimmed, naming six of them, so this document chooses
+        none of them. They are held as a <code>char[]</code> and passed to
+        <code>string.Trim(params char[])</code>, which trims exactly the characters given.
+      </t-b>
+<pre><code class="language-csharp">private static readonly char[] Trimmed =
+    { (char)0x20, (char)0x09, (char)0x0A, (char)0x0B, (char)0x0C, (char)0x0D };</code></pre>
+      <t-b>
+        The six are written as code points rather than as escapes, and the source says why: &sect;5
+        names them that way, and three of the six - vertical tab, form feed, and horizontal tab in
+        this position - have no readable literal form. An earlier draft of this file had three of
+        them written as literal control characters, which makes a source depend on bytes no reader
+        can see; the
+        <a target="_blank" href="Spec_Driven_Design_CSharp_Process.html">Process page</a> records
+        the correction.
+      </t-b>
+      <t-b>
+        Two framework methods are rejected by name, each because it looks correct and implements a
+        different rule.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong><code>string.Trim()</code> with no argument</strong> trims every character
+            <code>char.IsWhiteSpace</code> reports, a set that includes no-break space and the en
+            and em spaces, so this implementation would accept an extension list another rejects.
+            The unit suite asserts the boundary from the other side: a no-break space is
+            <em>not</em> trimmed, since &sect;5 does not name it.</li>
+          <li><strong><code>string.TrimStart('.')</code></strong> removes every leading dot, where
+            &sect;5 removes one. <code>..cs</code> must normalize to <code>.cs</code> and not to
+            <code>cs</code>. The dot is therefore stripped with an explicit length-one test, and the
+            suite asserts that case by name.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Duplicates are retained. They are harmless to the membership test
+        <code>CSharp_TextFinder_Dirnav</code> performs, and the specification says so rather than
+        leaving a reader to wonder whether the omission was an oversight. Case folding is not
+        applied here: the platform-dependent comparison &sect;5 fixes is performed by
+        <code>CSharp_TextFinder_Dirnav</code> when it matches a file name against the list, because
+        that is where the platform question arises.
+      </t-b>
+
+      <a id="text"></a>
+      <h3>5. &nbsp;Help Text and Option Listing</h3>
+      <t-b>
+        Three methods render text the binary writes, and none of them writes it.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><code>HelpText()</code> returns the text Spec_TextFinder.md &sect;5.1 fixes with
+            <code>&lt;executable&gt;</code> replaced by <code>CSharp_TextFinder</code>.</li>
+          <li><code>UsageLine()</code> returns its first line - the line that terminates every usage
+            diagnostic - and <code>HelpText()</code> is built from it, so the synopsis has one
+            definition.</li>
+          <li><code>OptionsText(commands)</code> returns the resolved option set in the form
+            &sect;5.3 fixes.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        The help body is a <code>string[]</code>, one element per line, joined with
+        <code>"\n"</code>. A raw string literal would read better in the source and is rejected for
+        a reason the specification states: a raw literal carries the line terminators of the file it
+        is written in, so an editor or a <code>.gitattributes</code> rule that rewrote this source
+        to CRLF would change what the program prints. &sect;5.1 fixes the text and &sect;3.4 fixes
+        the terminator, so neither may depend on how the file is stored.
+      </t-b>
+      <t-b>
+        That was a correction rather than a first draft. The specification called for a raw string
+        literal until writing the code showed that a raw literal takes no escapes, which left the
+        terminator guarantee with no mechanism. Joining an array makes the terminator a decision of
+        this library, and it gives the suite something to assert: the help text is 22 lines, the
+        count &sect;5.1 fixes.
+      </t-b>
+      <t-b>
+        The listing's construction shows where the form is fixed and where it is not. The six
+        boolean lines come from one loop over an array of switch-and-value tuples in &sect;5 table
+        order, so no line can be forgotten and none can be reordered without moving an array
+        element. The <code>/P</code>, <code>/p</code>, and <code>/r</code> lines are written out,
+        because each has a rule of its own: one line per root path, the extension list joined by
+        <code>", "</code> with <code>/p</code> alone when empty, and the expression verbatim.
+      </t-b>
+      <t-b>
+        <code>bool.ToString()</code> is rejected by name for one character: it returns
+        <code>"True"</code> and <code>"False"</code>, which &sect;5.3 forbids, and
+        <code>ToString(CultureInfo.InvariantCulture)</code> returns the same. The booleans render
+        through a conditional expression yielding the two literals &sect;5.3 names, and those
+        literals appear once each in this library. The unit suite asserts that no listing contains
+        <code>True</code>.
+      </t-b>
+      <t-b>
+        One method serves all three cases &sect;5.3 calls for, since the text is the same in each
+        and only the caller's next move differs: <code>/v true</code>, after which traversal
+        follows; the bare command line, after which the process exits 0; and the invalid-regex
+        diagnostic, where the listing precedes that diagnostic whatever <code>/v</code> says and the
+        process then exits 1. The listing reflects whatever <code>commands</code> holds, so its
+        <code>/v</code> line reads <code>false</code> in the latter two unless <code>/v</code> was
+        itself typed.
+      </t-b>
+      <t-b>
+        The C# specification adds one sentence about <code>OptionsText</code> that is worth more
+        than it looks: it chooses none of that form and must not be read as the place the form is
+        decided. A reader who wants to change the listing changes Spec_TextFinder.md &sect;5.3.
+      </t-b>
+      <t-b>
+        All three methods end their returned string with LF, and none writes to a stream. The
+        library opens no stream at all, which is what lets its unit suite check the rendered text as
+        a string rather than by capturing output.
+      </t-b>
+
+      <a id="source"></a>
+      <h3>6. &nbsp;Source</h3>
+      <t-b>
+        <code>ProgramCommands.cs</code> and <code>CommandLine.cs</code> in full, 20 lines and 242.
+        The comments cite the C# specification, which cites Spec_TextFinder.md in turn.
+      </t-b>
+      <h5 class="indent">src/ProgramCommands.cs</h5>
+<pre><code class="language-csharp">// ProgramCommands.cs - the resolved option set, per Spec_CSharp_TextFinder_Cmdline.md
+
+namespace CSharp_TextFinder_Cmdline;
+
+// §4: the property initializers are the sole authority in code for the defaults of
+// Spec_TextFinder.md §5, so a newly constructed instance equals the result of parsing
+// an empty argument array. The four false properties carry no initializer: default(bool)
+// is already false, and writing it would suggest a choice where the others show one.
+public sealed class ProgramCommands
+{
+    public List&lt;string&gt; RootPaths { get; set; } = new() { "." };  // /P
+    public List&lt;string&gt; Extensions { get; set; } = new();         // /p
+    public string RegexText { get; set; } = ".";                  // /r
+    public bool Recurse { get; set; } = true;                     // /s
+    public bool SuppressOnNoMatch { get; set; } = true;           // /h
+    public bool Verbose { get; set; }                             // /v
+    public bool Help { get; set; }                                // /H
+    public bool LineNumbers { get; set; }                         // /n
+    public bool MatchedLine { get; set; }                         // /L
+}</code></pre>
+      <h5 class="indent">src/CommandLine.cs</h5>
+<pre><code class="language-csharp">// CommandLine.cs - converts an argument array into ProgramCommands per Spec_CSharp_TextFinder_Cmdline.md
+
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
+
+namespace CSharp_TextFinder_Cmdline;
+
+// §4: a static class, because C# has no free functions and all four members render or
+// read the one option set.
+public static class CommandLine
+{
+    private const string Executable = "CSharp_TextFinder";
+
+    // §5 rule 1: the nine letters of Spec_TextFinder.md §5, in that table's order.
+    private const string SwitchLetters = "PprshvHnL";
+
+    // §7: the six characters Spec_TextFinder.md §5 names, and no others:
+    // space, horizontal tab, line feed, vertical tab, form feed, carriage return.
+    // Written as code points, since §5 names them that way and three of the six
+    // have no readable literal form.
+    private static readonly char[] Trimmed =
+        { (char)0x20, (char)0x09, (char)0x0A, (char)0x0B, (char)0x0C, (char)0x0D };
+
+    // §8: the text of Spec_TextFinder.md §5.1 below its usage line, one element per line.
+    // Held as an array rather than a raw string literal so that the terminator is this
+    // library's decision and not a property of how this file happens to be stored.
+    private static readonly string[] HelpBody =
+    {
+        "",
+        "  /P  path (.)             root path for traversal; repeat to add more root paths",
+        "  /p  \"ext, ext\" ()        comma-separated bare extensions to search; empty searches every file",
+        "  /r  regex (.)            regular expression evaluated against each line",
+        "  /s  true|false (true)    recurse into subdirectories",
+        "  /h  true|false (true)    hide files that matched nothing; errors always appear",
+        "  /v  true|false (false)   list the resolved option set before traversal",
+        "  /H  true|false (false)   print this help and exit",
+        "  /n  true|false (false)   add a detail line per match, carrying the line number",
+        "  /L  true|false (false)   add a detail line per match, carrying the line text",
+        "",
+        "A matching file prints its path on one line; /n and /L add indented detail",
+        "lines beneath it. A path is never printed twice. A search ends with a line",
+        "counting the files and directories it reached.",
+        "",
+        "Switch introducers / and - are equivalent. Switch letters are case-sensitive,",
+        "so /h and /H differ. Every switch takes exactly one argument; there are no bare",
+        "flags. Arguments containing whitespace or commas must be quoted.",
+        "",
+        "Run with no switches at all to list the resolved options and exit without",
+        "searching.",
+    };
+
+    public static string UsageLine() =&gt;
+        $"usage: {Executable} [/P path] [/p \"ext, ext\"] [/r regex] [/s bool] [/h bool] " +
+        "[/v bool] [/H bool] [/n bool] [/L bool]\n";
+
+    // §8: built from UsageLine, so the synopsis has one definition.
+    public static string HelpText() =&gt; UsageLine() + string.Join("\n", HelpBody) + "\n";
+
+    // §8: the form Spec_TextFinder.md §5.3 fixes. This method chooses none of it.
+    public static string OptionsText(ProgramCommands commands)
+    {
+        var text = new StringBuilder();
+
+        foreach (string root in commands.RootPaths)
+        {
+            text.Append("/P ").Append(root).Append('\n');
+        }
+
+        if (commands.Extensions.Count == 0)
+        {
+            text.Append("/p\n");
+        }
+        else
+        {
+            text.Append("/p ").Append(string.Join(", ", commands.Extensions)).Append('\n');
+        }
+
+        text.Append("/r ").Append(commands.RegexText).Append('\n');
+
+        // §8: bool.ToString returns "True" and "False", which §5.3 forbids.
+        foreach ((string letter, bool value) in new[]
+                 {
+                     ("/s", commands.Recurse),
+                     ("/h", commands.SuppressOnNoMatch),
+                     ("/v", commands.Verbose),
+                     ("/H", commands.Help),
+                     ("/n", commands.LineNumbers),
+                     ("/L", commands.MatchedLine),
+                 })
+        {
+            text.Append(letter).Append(' ').Append(value ? "true" : "false").Append('\n');
+        }
+
+        return text.ToString();
+    }
+
+    // §5: scans args from index 0, alternating switch token and argument token, stopping
+    // at the first violation with no partial result. Index 0 and not 1: Main's array holds
+    // the arguments alone, with no program name to skip.
+    public static bool TryParse(
+        string[] args,
+        [NotNullWhen(true)] out ProgramCommands? commands,
+        [NotNullWhen(false)] out string? diagnostic)
+    {
+        var parsed = new ProgramCommands();
+        bool rootsSupplied = false;
+
+        for (int index = 0; index &lt; args.Length; ++index)
+        {
+            string token = args[index];
+
+            if (!SwitchLetter(token, out char letter))
+            {
+                commands = null;
+                diagnostic = Diagnostic(token.Length &gt; 0 &amp;&amp; (token[0] == '/' || token[0] == '-')
+                    ? $"unrecognized switch: {token}"
+                    : $"not a switch: {token}");
+                return false;
+            }
+
+            if (index + 1 &gt;= args.Length)
+            {
+                commands = null;
+                diagnostic = Diagnostic($"missing argument for switch: {token}");
+                return false;
+            }
+
+            string value = args[++index];
+
+            switch (letter)
+            {
+                case 'P':
+                    if (value.Length == 0)
+                    {
+                        commands = null;
+                        diagnostic = Diagnostic($"empty root path for switch: {token}");
+                        return false;
+                    }
+
+                    if (!rootsSupplied)
+                    {
+                        // §5 rule 4: a local flag, since -P . cannot be told from the default by value.
+                        parsed.RootPaths.Clear();
+                        rootsSupplied = true;
+                    }
+
+                    parsed.RootPaths.Add(value);
+                    break;
+
+                case 'p':
+                    parsed.Extensions = NormalizeExtensions(value);
+                    break;
+
+                case 'r':
+                    if (value.Length == 0)
+                    {
+                        commands = null;
+                        diagnostic = Diagnostic($"empty expression for switch: {token}");
+                        return false;
+                    }
+
+                    parsed.RegexText = value;
+                    break;
+
+                default:
+                    if (!Boolean(value, out bool flag))
+                    {
+                        commands = null;
+                        diagnostic = Diagnostic($"invalid boolean for {token}: {value}");
+                        return false;
+                    }
+
+                    switch (letter)
+                    {
+                        case 's': parsed.Recurse = flag; break;
+                        case 'h': parsed.SuppressOnNoMatch = flag; break;
+                        case 'v': parsed.Verbose = flag; break;
+                        case 'H': parsed.Help = flag; break;
+                        case 'n': parsed.LineNumbers = flag; break;
+                        default: parsed.MatchedLine = flag; break;
+                    }
+
+                    break;
+            }
+        }
+
+        commands = parsed;
+        diagnostic = null;
+        return true;
+    }
+
+    // §5 rule 1: exactly two characters, an introducer then one of the nine letters.
+    private static bool SwitchLetter(string token, out char letter)
+    {
+        letter = '\0';
+        if (token.Length != 2) return false;
+        if (token[0] != '/' &amp;&amp; token[0] != '-') return false;
+        if (!SwitchLetters.Contains(token[1], StringComparison.Ordinal)) return false;
+        letter = token[1];
+        return true;
+    }
+
+    // §5 rule 3: true or false only. bool.TryParse trims and accepts more, so it is not used.
+    private static bool Boolean(string value, out bool flag)
+    {
+        if (string.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            flag = true;
+            return true;
+        }
+
+        if (string.Equals(value, "false", StringComparison.OrdinalIgnoreCase))
+        {
+            flag = false;
+            return true;
+        }
+
+        flag = false;
+        return false;
+    }
+
+    // §6: a reason line, a newline, then the usage line.
+    private static string Diagnostic(string reason) =&gt; reason + "\n" + UsageLine();
+
+    // §7: split on commas, trim the six named characters, strip one leading dot,
+    // discard empties, keep order and duplicates.
+    private static List&lt;string&gt; NormalizeExtensions(string argument)
+    {
+        var items = new List&lt;string&gt;();
+
+        foreach (string part in argument.Split(','))
+        {
+            string item = part.Trim(Trimmed);
+
+            // §7: TrimStart('.') would strip every leading dot, where §5 strips one.
+            if (item.Length &gt; 0 &amp;&amp; item[0] == '.') item = item[1..];
+
+            if (item.Length &gt; 0) items.Add(item);
+        }
+
+        return items;
+    }
+}</code></pre>
+      <t-b>
+        The nested <code>switch</code> in <code>TryParse</code> is worth one note. The outer one
+        dispatches on the switch letter and handles <code>/P</code>, <code>/p</code>, and
+        <code>/r</code> directly, since each has a rule of its own; its
+        <code>default</code> arm converts the boolean once and then dispatches again to assign it.
+        That arrangement puts the boolean conversion and its diagnostic in one place for all six
+        boolean switches, where six separate arms would have repeated both.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>7. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 assigns it
+        <code>Prompts_Spec_CSharp_TextFinder_Cmdline.md</code> and its <code>Fix</code> companion,
+        and neither was written: this thread produced one record covering every turn, and it sits on
+        the <a target="_blank" href="Spec_Driven_Design_CSharp_Process.html">Process page</a>. Two
+        of the corrections that record holds reach this component, the help-body literal and the
+        three control characters in the trim set.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#interface">interface</a></menu-elem>
+        <menu-elem class="secElem"><a href="#defaults">defaults</a></menu-elem>
+        <menu-elem class="secElem"><a href="#parsing">parsing rules</a></menu-elem>
+        <menu-elem class="secElem"><a href="#normalization">normalization</a></menu-elem>
+        <menu-elem class="secElem"><a href="#text">help and listing</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenCSharpPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past.
+       A block whose content fits needs no arrows, so they stay hidden until it
+       overflows, and are rechecked whenever its width changes. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      /* the 1px allowance keeps subpixel rounding from showing arrows that cannot move */
+      const showArrows = () => {
+        arrows.style.display = pre.scrollWidth - pre.clientWidth > 1 ? '' : 'none';
+      };
+      showArrows();
+      /* the splitter resizes the panel and prism rewrites the content, so one
+         measurement at load is not enough */
+      new ResizeObserver(showArrows).observe(pre);
+      window.addEventListener('resize', showArrows);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

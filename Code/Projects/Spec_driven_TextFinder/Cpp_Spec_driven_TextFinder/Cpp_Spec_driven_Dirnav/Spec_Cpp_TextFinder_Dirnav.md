@@ -43,6 +43,7 @@ class Cpp_TextFinder_Dirnav {
 public:
     Cpp_TextFinder_Dirnav(Out& out, const SkipList& skips, const ProgramCommands& commands);
     void search(const std::filesystem::path& root);
+    void emitRunSummary();
 };
 ```
 
@@ -50,7 +51,9 @@ Member definitions live in the interface unit, since `Cpp_TextFinder_Dirnav` is 
 
 The constructor compiles `commands.regexText` with `std::regex`, constructed with `std::regex::ECMAScript` — the engine Spec_TextFinder.md §6.1 assigns to C++ — and lets `std::regex_error` propagate when it will not compile; `Cpp_TextFinder_Entry` catches it and reports the malformed-regex usage diagnostic of Spec_TextFinder.md §5.2. `Cpp_TextFinder_Cmdline` guarantees the text is non-empty, so the constructor never sees an empty expression. All three constructor arguments are retained by reference and are owned by `Cpp_TextFinder_Entry`, which keeps them alive for the lifetime of the `Cpp_TextFinder_Dirnav` instance; the skip list and the commands are consulted but never modified.
 
-`search` traverses one root path and returns nothing: every failure it meets is announced through `Output` per §5, so the caller has nothing to report on its behalf. A single instance is reused across every root path, so the compiled expression is built once per run, and `search` carries no state from one call to the next.
+`search` traverses one root path and returns nothing: every failure it meets is announced through `Output` per §5, so the caller has nothing to report on its behalf. A single instance is reused across every root path, so the compiled expression is built once per run. `search` carries no state from one call to the next but for the two run counts of §8.1, which accumulate across calls by design.
+
+`emitRunSummary` writes the run summary Spec_TextFinder.md §3.6 requires and is called once, by `Cpp_TextFinder_Entry`, after the last `search` returns. It takes no argument and returns nothing: the counts are this instance's own, and the sole reason the call sits with the caller is that only the caller knows which root was the last. The library exposes no accessor for either count — the summary line is the whole of what they are for, and a test reads them by reading that line through its own `Output`.
 
 ## 5. Traversal Rules
 
@@ -106,6 +109,20 @@ A file announcement reports only a file that produced no block, so it never repe
 - `false`: a file searched without matching draws `searched <path>` once its last line has been evaluated, which is the first moment the library knows it matched nothing; a file rejected by a content test draws `skipped <path>` at the point of rejection.
 
 The no-content case of §7 produces a block for every selected non-empty file and so draws no file announcement under either setting.
+
+### 8.1 Run Summary
+
+Spec_TextFinder.md §3.6 puts the two run counts in this library, for every implementation alike, and fixes the line they produce. Two `std::size_t` members hold them, both zero on construction, and neither is reset by `search`, so they accumulate over every root the instance is given.
+
+The file count is incremented in the one place a file is examined: immediately after the `/p` test of §6 admits it and before its size is taken. Everything §3.6 excludes is therefore excluded by construction rather than by a second test — an entry refused by `/p`, a symbolic link, an entry beneath a pruned directory, an entry whose name will not render, and an entry that is neither a regular file nor a directory all fail or bypass that test and never reach the increment, though the last two draw `cannot open` on the way past. A file admitted and then announced `too large` or `cannot open` is counted, the increment standing ahead of both.
+
+The directory count is incremented at the head of the function §5 rule 2 recurses with, before `directory_iterator` is constructed, so a directory that cannot be enumerated is counted and announced alike. A root path that resolved to a directory reaches that function and is counted; a pruned directory and, under `/s false`, every subdirectory never reach it and are not.
+
+`emitRunSummary` writes one line through `Output`, in the fixed form of Spec_TextFinder.md §3.6, with `std::to_string` on each count and neither noun inflected:
+
+    accessed <files> files, <directories> directories
+
+It is not gated on `/h`, `/h` governing file announcements alone, and it names no path, so §8's rendering rules do not reach it. `Cpp_TextFinder_Entry` calls it only on a run that traversed, per §3.6 and Spec_Cpp_TextFinder_Entry.md §4.
 
 ## 9. Build
 

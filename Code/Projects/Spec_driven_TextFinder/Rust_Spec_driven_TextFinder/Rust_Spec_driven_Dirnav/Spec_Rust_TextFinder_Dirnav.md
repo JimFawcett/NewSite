@@ -41,6 +41,8 @@ impl<'a, O: Output> Dirnav<'a, O> {
         -> Result<Self, regex::Error>;
 
     pub fn search(&mut self, root: &Path);
+
+    pub fn emit_run_summary(&mut self);
 }
 ```
 
@@ -48,7 +50,9 @@ impl<'a, O: Output> Dirnav<'a, O> {
 
 All three arguments are borrowed for the lifetime `'a` and are owned by `rust_textfinder_entry`, which the borrow checker obliges to keep them alive for the lifetime of the `Dirnav` value. The skip list and the commands are shared borrows and cannot be modified through them; `out` is a unique borrow, since emitting a line mutates the sink.
 
-`search` returns nothing: every failure it meets is announced through `Output` per §5, so the caller has nothing to report on its behalf. A single value is reused across every root path, so the compiled expression is built once per run, and `search` carries no state from one call to the next.
+`search` returns nothing: every failure it meets is announced through `Output` per §5, so the caller has nothing to report on its behalf. A single value is reused across every root path, so the compiled expression is built once per run. `search` carries no state from one call to the next but for the two run counts of §8.1, which accumulate across calls by design.
+
+`emit_run_summary` writes the run summary Spec_TextFinder.md §3.6 requires and is called once, by `rust_textfinder_entry`, after the last `search` returns. It takes `&mut self` because emitting mutates the sink, takes no other argument, and returns nothing: the counts are this value's own, and the sole reason the call sits with the caller is that only the caller knows which root was the last. No accessor is exposed for either count — the summary line is the whole of what they are for, and a test reads them by reading that line through its own `Output`.
 
 ## 5. Traversal Rules
 
@@ -112,6 +116,22 @@ A file announcement reports only a file that produced no block, so it never repe
 - `false`: a file searched without matching draws `searched <path>` once its last line has been evaluated, which is the first moment the library knows it matched nothing; a file rejected by a content test draws `skipped <path>` at the point of rejection.
 
 The no-content case of §7 produces a block for every selected non-empty file and so draws no file announcement under either setting.
+
+### 8.1 Run Summary
+
+Spec_TextFinder.md §3.6 puts the two run counts in this library, for every implementation alike, and fixes the line they produce. Two `usize` fields hold them, both zero from `new`, and neither is reset by `search`, so they accumulate over every root the value is given.
+
+The file count is incremented where the `/p` test of §6 admits a file, at both of the two places that test is applied — the root-path arm of `search` and the file arm of `walk` — and ahead of the metadata call in each. Everything §3.6 excludes is therefore excluded by construction rather than by a second test: an entry refused by `/p`, a symbolic link, an entry beneath a pruned directory, an entry whose name is not valid UTF-8, and an entry that is neither a file nor a directory all fail or bypass that test, though the last two draw `cannot open` on the way past. A file admitted and then announced `too large` or `cannot open` is counted, the increment standing ahead of both.
+
+Putting the increment at the two call sites rather than inside `examine` is deliberate. `walk` announces `cannot open` and never calls `examine` when `entry.metadata()` fails, and that file passed `/p`, so an increment inside `examine` would miss it and this implementation would report one file fewer than the others over the same tree.
+
+The directory count is incremented at the head of `walk`, before `read_dir`, so a directory that cannot be enumerated is counted and announced alike. A root path that resolved to a directory reaches `walk` and is counted; a pruned directory and, under `/s false`, every subdirectory never reach it and are not.
+
+`emit_run_summary` writes one line through `Output`, in the fixed form of Spec_TextFinder.md §3.6, with neither noun inflected:
+
+    accessed <files> files, <directories> directories
+
+It is not gated on `/h`, `/h` governing file announcements alone, and it names no path, so the rendering rules of §8 do not reach it. `rust_textfinder_entry` calls it only on a run that traversed, per §3.6 and Spec_Rust_TextFinder_Entry.md §4.
 
 ## 9. Build
 

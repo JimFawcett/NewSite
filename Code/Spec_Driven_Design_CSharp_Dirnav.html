@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_CSharp_Dirnav.html - C# thread, page 4
+-->
+<head>
+  <title>Spec-Driven C#: Dirnav</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_CSharp_Dirnav.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/16/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/CSharp_Spec_driven_TextFinder/CSharp_Spec_driven_Dirnav">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven C#: Dirnav</h2>
+        <h4 class="indent" id="subtitle">traversal, admission, matching, and emission in one generic class</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Traversal.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Dirnav.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Dirnav.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="interface"></a>
+      <h3>1. &nbsp;Public Interface</h3>
+      <t-b>
+        <code>CSharp_TextFinder_Dirnav</code> walks a directory tree, reads each selected file,
+        evaluates the expression against each line, and formats every matching file into the block
+        Spec_TextFinder.md &sect;3.4 fixes, emitting each of its lines as it is produced. It is the
+        only component that touches file contents, and it writes to no stream.
+      </t-b>
+      <t-b>
+        The namespace exports two things.
+      </t-b>
+<pre><code class="language-csharp">public interface IOutput
+{
+    void Output(string text);
+}
+
+public sealed class Dirnav&lt;TOutput&gt; where TOutput : IOutput
+{
+    public Dirnav(TOutput output, IReadOnlyList&lt;string&gt; skips, ProgramCommands commands);
+
+    public void Search(string root);
+
+    public void EmitRunSummary();
+}</code></pre>
+      <t-b>
+        The class declares the <code>IOutput</code> interface it does not implement, which is what
+        puts <code>CSharp_TextFinder_Output</code> downstream of it in the reference chain.
+      </t-b>
+      <t-b>
+        The constructor builds a <code>System.Text.RegularExpressions.Regex</code> - the engine
+        Spec_TextFinder.md &sect;6.1 assigns to C# - and lets <code>RegexParseException</code>
+        propagate when the pattern will not compile. A constructor that throws on an argument it
+        cannot accept is the C# expression of a failed construction: there is no result type in the
+        base class library to return instead, and a <code>TryCreate</code> factory would put the
+        type's only failure mode behind a second entry point for no gain. The
+        <a target="_blank" href="Spec_Driven_Design_Rust_Dirnav.html">Rust implementation</a>
+        returns a <code>Result</code> here and the
+        <a target="_blank" href="Spec_Driven_Design_Cpp_Dirnav.html">C++ one</a> lets
+        <code>std::regex_error</code> propagate, so C# sits with C++ on this one.
+      </t-b>
+      <t-b>
+        Two <code>RegexOptions</code> values are rejected by name, and each rejection is a judgment
+        rather than a rule.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong><code>RegexOptions.Compiled</code></strong> trades startup time for match
+            speed by emitting IL for the pattern. The run is short-lived, and a JIT pass over the
+            pattern costs more than it returns on a tree of this size.</li>
+          <li><strong><code>RegexOptions.NonBacktracking</code></strong> guarantees linear-time
+            matching and rejects constructs &sect;6.1 admits into its portable subset, so it would
+            make this implementation refuse patterns the other engines accept - which is the larger
+            of the two costs &sect;6.1 names.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        <code>skips</code> is an <code>IReadOnlyList&lt;string&gt;</code> rather than a
+        <code>List&lt;string&gt;</code>, so this library cannot modify the list it is given. The
+        specification states plainly that this is weaker than the shared borrow Rust gets from its
+        type system: a caller holding the underlying <code>List&lt;string&gt;</code> may still
+        change it. Nothing here does, and Spec_CSharp_TextFinder_Entry.md &sect;5 fixes that the
+        binary stops extending the list before traversal begins.
+      </t-b>
+      <t-b>
+        <code>Search</code> takes a <code>string</code> rather than a path type, because .NET has
+        none: <code>System.IO.Path</code> is a static class of string operations. The root is the
+        text the user typed, and Section 5's rendering works from that text directly.
+      </t-b>
+      <t-b>
+        <code>Search</code> returns nothing. Every failure it meets is announced through
+        <code>IOutput</code>, so the caller has nothing to report on its behalf. A single instance
+        is reused across every root path, so the expression is built once per run, and
+        <code>Search</code> carries no state from one call to the next but for the two run counts of
+        Section 5.1, which accumulate across calls by design.
+      </t-b>
+      <t-b>
+        <code>EmitRunSummary</code> writes the run summary Spec_TextFinder.md &sect;3.6 requires. It
+        takes no argument and returns nothing, the counts being this instance's own, and
+        <code>CSharp_TextFinder_Entry</code> calls it once after the last <code>Search</code>
+        returns. The split is deliberate: the counts belong here because nothing else sees the
+        entries, and the call belongs to the caller because nothing here knows which root was the
+        last. No property exposes either count - the line is the whole of what they are for, and the
+        unit suite reads them by reading that line through its own <code>IOutput</code>.
+      </t-b>
+
+      <a id="traversal"></a>
+      <h3>2. &nbsp;Traversal</h3>
+      <t-b>
+        <code>Search</code> resolves a root before walking it. A symbolic link, a kind that is
+        neither regular file nor directory, and a failed attributes query each draw
+        <code>cannot open</code>; a regular file is examined as a single file; a directory is
+        walked. The skip list is never consulted for the root, which &sect;3.2 exempts because the
+        user named it explicitly.
+      </t-b>
+      <t-b>
+        The root's kind comes from <code>File.GetAttributes</code>, which reports the attributes of
+        the entry itself and does not follow a symbolic link. Two obvious alternatives are rejected
+        by name, and both would fail in two ways rather than one: <code>Directory.Exists</code> and
+        <code>File.Exists</code> each follow a link, so they would report the target's kind and hide
+        the case &sect;3.2 requires be announced, and each answers <code>false</code> for an entry
+        that exists and cannot be opened, which would turn an error announcement into silence.
+      </t-b>
+      <t-b>
+        The recursion is written explicitly. <code>Walk</code> iterates one directory and calls
+        itself on each subdirectory it decides to enter, so entries are handled as
+        <code>Directory.EnumerateFileSystemEntries</code> yields them, without being collected or
+        reordered.
+      </t-b>
+      <t-b>
+        Three framework alternatives are rejected by name, which is more than either sibling needed
+        for this rule, because .NET offers more ways to get it wrong.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong><code>Directory.GetFileSystemEntries</code></strong> materializes the level
+            into an array. That changes no order, so it would satisfy &sect;3.2, and it reads the
+            whole directory before the first entry is handled - which &sect;3.4's "as they occur"
+            emission makes visible on a large directory.</li>
+          <li><strong><code>Directory.GetFiles</code> followed by
+            <code>Directory.GetDirectories</code></strong> groups files ahead of directories, which
+            &sect;3.2 forbids in as many words.</li>
+          <li><strong><code>EnumerationOptions { RecurseSubdirectories = true }</code></strong> owns
+            the descent this library must own, since <code>/s</code> and the skip list both decide
+            whether to enter a directory.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Every fallible call in the walk is guarded, including the enumeration's own advance.
+        <code>EnumerateFileSystemEntries</code> returns lazily, so a directory that becomes
+        unreadable part way through throws from <code>MoveNext</code> rather than from the call that
+        started it. The loop therefore steps the enumerator by hand inside a <code>try</code>, which
+        is what lets &sect;5 rule 7's "announced rather than silently truncated" hold. A
+        <code>foreach</code> would have put that throw outside any handler this library could place.
+      </t-b>
+      <t-b>
+        The order of the entry tests matters, and &sect;5 fixes it.
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li><strong>Symbolic link, tested first.</strong> An entry whose attributes carry
+            <code>FileAttributes.ReparsePoint</code> is passed over silently, whatever its target,
+            since no attempt is made to open it. .NET sets that attribute for a symbolic link on
+            both Windows and POSIX, so one runtime test serves both platforms where C++ and Rust
+            each call a platform-specific query.</li>
+          <li><strong>Directory or file, from the same attributes.</strong> One query answers both
+            questions, so an entry costs one filesystem call before selection.</li>
+          <li><strong>Skip list, extension filter, and the open, after both.</strong></li>
+        </ol>
+      </t-b>
+      <t-b>
+        A pruned directory draws no announcement. Pruning is work the library chose not to do, and
+        <code>cannot open</code> reports work it could not do.
+      </t-b>
+      <t-b>
+        &sect;3.4 settles what happens to an entry whose name the implementation's string type
+        cannot render, and the case resolves differently here than in either sibling - so
+        differently that this library runs no name test at all. A <code>string</code> is a sequence
+        of UTF-16 code units and may hold unpaired surrogates, so on Windows every name the
+        filesystem admits renders and the case does not arise. On POSIX the runtime decodes a name
+        that is not valid UTF-8 before this library sees it, substituting U+FFFD, and the
+        substituted text no longer names the file on disk; the attributes query then fails and the
+        entry draws <code>cannot open</code> carrying the already-substituted name.
+      </t-b>
+      <t-b>
+        Two consequences are recorded rather than left to be discovered. &sect;3.4's U+FFFD
+        requirement is met by the runtime rather than by this implementation, and the announcement's
+        path is the substituted text, which &sect;3.4 accepts as one of its two costs. And
+        &sect;3.4's rule that rendering a name may not end the run is satisfied without a
+        <code>catch</code> around a conversion, because this library performs no conversion. The
+        C++ implementation had to write a <code>renderPath</code> helper for the same requirement,
+        and Rust calls <code>OsStr::to_string_lossy</code>; here the requirement costs no code,
+        which is worth naming because a reader looking for the gate will not find one.
+      </t-b>
+
+      <a id="selection"></a>
+      <h3>3. &nbsp;File Selection</h3>
+      <t-b>
+        Selection follows the <code>/p</code> rules of Spec_TextFinder.md &sect;5, and the list
+        arrives from <code>CSharp_TextFinder_Cmdline</code> already normalized to bare extensions.
+        An empty list selects every file; a non-empty list selects a file whose extension matches an
+        entry.
+      </t-b>
+      <t-b>
+        The extension is taken as the text after the last <code>.</code> in the file name, with one
+        <code>LastIndexOf('.')</code> and a slice, no special case for a leading dot, and a name
+        holding no <code>.</code> at all has no extension.
+      </t-b>
+      <t-b>
+        <code>Path.GetExtension</code> is not used, and the reason is unlike the rejections on this
+        page's siblings. It does not get the rule wrong: it returns <code>.gitignore</code> for
+        <code>.gitignore</code>, which agrees with &sect;5, where the C++ implementation's
+        <code>path::extension()</code> returns nothing for that name and the Rust implementation's
+        <code>Path::extension</code> returns <code>None</code>. The specification declines it
+        anyway, because &sect;5 states the rule over the file name and implementing it directly puts
+        the dot-file case in this library's own code rather than resting it on a framework detail no
+        document in this tree fixes. A framework whose behavior happens to agree is still a
+        dependency on behavior nobody promised.
+      </t-b>
+      <t-b>
+        Comparison is case-sensitive on POSIX and case-insensitive on Windows, per &sect;3.2 and
+        &sect;5. The platform test is <code>OperatingSystem.IsWindows()</code>, evaluated at run
+        time and held in one field. That is a constraint of the platform rather than a preference: a
+        .NET assembly is compiled once and runs on both, so C++'s <code>#ifdef _WIN32</code> and
+        Rust's <code>#[cfg(windows)]</code> have no counterpart here - a conditional-compilation
+        test would fix the behavior of the machine that built the assembly rather than the machine
+        that runs it.
+      </t-b>
+      <t-b>
+        The comparison itself is <code>StringComparison.OrdinalIgnoreCase</code> or
+        <code>StringComparison.Ordinal</code>. The culture-sensitive forms are rejected by name:
+        <code>CurrentCultureIgnoreCase</code> folds <code>I</code> and <code>i</code> differently
+        under a Turkish culture, which would make the same tree and the same <code>/p</code> list
+        select different files on two machines of the same platform.
+      </t-b>
+      <t-b>
+        One field serves both comparisons, and &sect;5 rule 4 says so: a skip-list entry is compared
+        against a directory's basename by the rule &sect;6 states for an extension, the same rule
+        applied by the same method, since &sect;3.2 and &sect;5 fix one comparison for both. Naming
+        the method rather than restating the rule is what keeps the two from drifting.
+      </t-b>
+      <t-b>
+        Selection applies uniformly: a root path that is a regular file is filtered by
+        <code>/p</code> like any other file. A root named on <code>/P</code> escapes the skip list
+        and does not escape the extension filter, and the unit suite asserts both halves.
+      </t-b>
+
+      <a id="admission"></a>
+      <h3>4. &nbsp;Admission and the No-Content Case</h3>
+      <t-b>
+        <code>Examine</code> applies the three admission tests of Spec_TextFinder.md &sect;3.3 in
+        the order the specification fixes. The size test reads the length
+        <code>FileInfo.Length</code> reports, so a file above the limit is never read into memory;
+        the NUL and UTF-8 tests read bytes. The limit is 10,485,760 bytes, written
+        <code>10_485_760</code> so that a reader can count the digits.
+      </t-b>
+      <t-b>
+        The constructor records once, for the whole run, whether the no-content case applies -
+        <code>RegexText</code> equal to <code>.</code> with <code>LineNumbers</code> and
+        <code>MatchedLine</code> both <code>false</code>. When it does, a selected file that passes
+        the size test and is not empty produces a block of its path line alone, and the file is
+        never opened.
+      </t-b>
+      <t-b>
+        No file announcement accompanies that block. <code>searched</code> reports a file that was
+        read and matched nothing and <code>skipped</code> reports one a content test rejected, and
+        in this case neither happened, so the library emits neither whatever <code>/h</code> says. A
+        selected file of zero size produces no block and draws no announcement either. Both error
+        announcements still work, because both rest on metadata.
+      </t-b>
+      <t-b>
+        A file that needs reading is read in full with <code>File.ReadAllBytes</code>, so one
+        failing a later test is skipped entirely rather than searched in part. The NUL test is
+        <code>Array.IndexOf(bytes, (byte)0) &gt;= 0</code>.
+      </t-b>
+      <t-b>
+        The UTF-8 test is where this library rejects a framework default in the sharpest terms, and
+        the specification says so. The bytes are decoded with a <code>UTF8Encoding</code> constructed
+        <code>throwOnInvalidBytes: true</code>, and a <code>DecoderFallbackException</code> means
+        the file is rejected.
+      </t-b>
+<pre><code class="language-csharp">private static readonly UTF8Encoding StrictUtf8 =
+    new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);</code></pre>
+      <t-b>
+        <code>Encoding.UTF8.GetString</code> would have been the obvious call and it implements a
+        different rule: that property returns an encoding whose fallback substitutes U+FFFD for an
+        invalid sequence and reports nothing. Every file would pass &sect;3.3's UTF-8 test, and the
+        case &sect;3.3 names by example - a UTF-16 file of ASCII text - would be searched with its
+        NUL bytes already caught and its mojibake silently accepted. The framework's own default is
+        the wrong tool here, and one constructor argument is the whole of the fix.
+      </t-b>
+      <t-b>
+        The C++ implementation writes those four UTF-8 rejections out by hand, one line each with
+        the reason named in a comment, because it has no such call to lean on; Rust leans on
+        <code>std::str::from_utf8</code>. All three end at the same place and only one of the three
+        had a default that would have quietly agreed to everything.
+      </t-b>
+      <t-b>
+        A leading UTF-8 BOM survives decoding as U+FEFF and is stripped from the head of the decoded
+        text, after the admission tests rather than before, so its three bytes count toward the size
+        limit and toward the NUL scan like any others. The
+        <code>encoderShouldEmitUTF8Identifier: false</code> argument governs writing rather than
+        reading and does nothing here; it is set because the same encoding type is constructed for
+        the sink, where it does.
+      </t-b>
+
+      <a id="matching"></a>
+      <h3>5. &nbsp;Matching and Emission</h3>
+      <t-b>
+        Each line is evaluated with the instance method <code>Regex.IsMatch</code>, which gives the
+        anywhere-in-the-line match &sect;3.3 requires and asks the engine for nothing more - no
+        match position, no matched substring, no capture group. The static
+        <code>Regex.IsMatch(input, pattern)</code> overload is rejected by name: it consults a
+        pattern cache and would defeat &sect;3.3's requirement that the expression be compiled once
+        per invocation.
+      </t-b>
+      <t-b>
+        The line is passed as a <code>string</code>, so <code>.</code>, a character class, and a
+        class escape each match one UTF-16 code unit. &sect;6.1 records <code>std::regex</code> over
+        <code>char</code> as the one engine of the four that matches a byte instead, so on a line
+        holding a non-ASCII character below U+10000 this implementation agrees with Rust and Python
+        and C++ is the outlier. Above U+10000 a <code>.</code> here matches one code unit of a
+        surrogate pair where the Rust engine matches the whole scalar value. &sect;6.1's portable
+        subset is scoped to ASCII lines, so the specification records that difference rather than
+        resolving it.
+      </t-b>
+      <t-b>
+        Line splitting is the one rule this library gets from the framework outright.
+        <code>TextReader.ReadLine</code>, over a <code>StringReader</code> on the decoded text,
+        treats CR, LF, and CRLF as terminators and yields a final unterminated run as a line - which
+        is exactly &sect;3.3's rule, all three terminators and the unterminated tail. C++ wrote a
+        <code>splitLines</code> returning views into the buffer, and Rust wrote a 30-line
+        <code>Lines</code> iterator, both because <code>str::lines</code> and its C++ equivalents
+        implement two of the three. Here no splitter is written.
+      </t-b>
+      <t-b>
+        <code>string.Split('\n')</code> is rejected by name and gets three things wrong at once: it
+        does not treat a bare CR as a terminator, it leaves a CR at the end of every line of a CRLF
+        file, and it yields a trailing empty element for a file that ends in a terminator. Line
+        numbers count every line, including those that do not match, which follows from counting the
+        reader's yields rather than the matches.
+      </t-b>
+      <t-b>
+        Three rules govern the emission, and all three are visible in a dozen lines of
+        <code>Examine</code>:
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li><strong>The path line goes out at the first match</strong>, ahead of the detail line
+            for that same match, and a <code>pathWritten</code> flag makes sure it goes out once. A
+            file that never matches produces no line at all; a file that matches many produces its
+            path line once.</li>
+          <li><strong>With neither <code>/n</code> nor <code>/L</code>, the loop returns as soon as
+            the path line is written.</strong> The block has no detail lines, so the first match
+            settles the file and the remaining lines are never read from the reader.</li>
+          <li><strong>Otherwise the loop runs to the end of the file</strong>, writing one detail
+            line - two spaces of indent, then the fields <code>/n</code> and <code>/L</code> select
+            - as each matching line is evaluated.</li>
+        </ol>
+      </t-b>
+      <t-b>
+        Nothing is accumulated for the file. <code>IOutput</code> receives each line as it is
+        produced, which is the pipeline behavior &sect;3.4's "as they occur" requires. The
+        <code>/h</code> gate is one method, <code>FileAnnouncement</code>, and it reads as the rule
+        it implements: emit unless <code>SuppressOnNoMatch</code>.
+      </t-b>
+      <t-b>
+        Path rendering is where this library does its own string work rather than the framework's.
+        &sect;3.4 requires <code>/</code> on every platform for the whole of
+        <code>&lt;path&gt;</code>, so a path is built by joining the root's own text with the entry
+        names descended through. <code>Path.Combine</code> is rejected by name: it joins with
+        <code>Path.DirectorySeparatorChar</code>, which on Windows is <code>\</code>, and would make
+        the same tree produce different output on two platforms.
+        <code>Path.GetFullPath</code> is rejected too, since &sect;3.4 asks for the path by which
+        the file was reached rather than its absolute form.
+      </t-b>
+      <t-b>
+        The root's own text is normalized as well, since &sect;3.4's rule covers all of
+        <code>&lt;path&gt;</code>: every <code>\</code> becomes <code>/</code> before the first
+        entry name is appended, so <code>-P src\sub</code> on Windows yields
+        <code>src/sub/file.cs</code> and not <code>src\sub/file.cs</code>. A root path of
+        <code>.</code> contributes no leading <code>./</code>, which <code>Walk</code> arranges by
+        taking an empty prefix for that root.
+      </t-b>
+      <t-b>
+        One consequence of that rule is worth naming, because it costs an allocation per entry: the
+        path this library hands to the filesystem is not the path it emits. Filesystem calls take
+        the platform form that <code>EnumerateFileSystemEntries</code> yielded, and the emitted form
+        is built alongside it with <code>/</code>. Two strings therefore travel through the walk for
+        each entry. The alternative is a translation inside every filesystem call, which trades one
+        join per entry for one per call.
+      </t-b>
+
+      <a id="summary"></a>
+      <h4>5.1 &nbsp;The Run Summary</h4>
+      <t-b>
+        Spec_TextFinder.md &sect;3.6 puts the two run counts in this library, for every
+        implementation alike, and fixes the line they produce. Two <code>long</code> fields hold
+        them, both zero on construction, and neither is reset by <code>Search</code>, so they
+        accumulate over every root the instance is given.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>Files</strong> are counted at the head of <code>Examine</code>, which both
+            call sites reach only after the <code>/p</code> test of Section 3 admits the file, and
+            which is entered before <code>FileInfo.Length</code> is read. A file admitted and then
+            announced <code>too large</code> or <code>cannot open</code> is therefore counted.</li>
+          <li><strong>Directories</strong> are counted at the head of <code>Walk</code>, before
+            <code>Directory.EnumerateFileSystemEntries</code>, so a directory that cannot be
+            enumerated is counted and announced alike.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Everything &sect;3.6 excludes is excluded by where those two lines sit rather than by a test
+        of its own. An entry refused by <code>/p</code>, a reparse point, and anything beneath a
+        pruned directory never reach <code>Examine</code>, and an entry whose attributes cannot be
+        read draws <code>cannot open</code> before selection is even attempted - which is why the
+        file count can be smaller than the number of announcements a run writes.
+      </t-b>
+      <t-b>
+        <code>EmitRunSummary</code> formats the line with <code>CultureInfo.InvariantCulture</code>,
+        as Section 5's detail lines do, and sends it through the same <code>IOutput</code> as every
+        other line, in &sect;3.6's fixed form and with neither noun inflected:
+      </t-b>
+<pre><code class="language-text">accessed &lt;files&gt; files, &lt;directories&gt; directories</code></pre>
+      <t-b>
+        The invariant culture is not decoration here. A count formatted under a culture that groups
+        thousands would write <code>1,024 files</code> on one machine and <code>1024 files</code> on
+        another, and &sect;3.6 fixes the line byte for byte across four implementations, so the
+        locale is exactly the kind of ambient state a fixed-text rule cannot tolerate. This is the
+        one respect in which the C# count needed a decision the other two did not.
+      </t-b>
+      <t-b>
+        The line is not gated on <code>/h</code>, which governs file announcements alone, and it
+        names no path, so this section's rendering rules do not reach it. Twelve unit-suite
+        assertions cover it, and the one worth naming reads
+        <code>accessed 1 files, 0 directories</code> from a root that is a regular file - the
+        uninflected singular, asserted rather than left to be noticed.
+      </t-b>
+
+      <a id="rejected"></a>
+      <h3>6. &nbsp;Eight Calls Rejected by Name</h3>
+      <t-b>
+        This specification names more framework calls it does not use than either sibling's does,
+        and the count is not a stylistic difference. The base class library offers a method for
+        nearly every rule &sect;3.2 through &sect;3.4 states, and most of those methods implement
+        something close to the rule rather than the rule. A specification that named only what the
+        code calls would leave the next implementer to rediscover each near-miss.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:22rem;" />
+          <col style="width:34rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Rejected</th>
+          <th class="darkItem">What it does instead</th>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>Encoding.UTF8.GetString</code></td>
+          <td class="lightItem">Substitutes U+FFFD and reports nothing, so every file passes the UTF-8 test</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>string.Split('\n')</code></td>
+          <td class="lightItem">Misses a bare CR, keeps the CR of a CRLF pair, and adds a trailing empty line</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>Directory.Exists</code>, <code>File.Exists</code></td>
+          <td class="lightItem">Follow a link, and answer <code>false</code> for an entry that exists and cannot be opened</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>Directory.GetFiles</code> then <code>GetDirectories</code></td>
+          <td class="lightItem">Groups files ahead of directories, which &sect;3.2 forbids</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>EnumerationOptions.RecurseSubdirectories</code></td>
+          <td class="lightItem">Owns the descent <code>/s</code> and the skip list must decide</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>Path.Combine</code>, <code>Path.GetFullPath</code></td>
+          <td class="lightItem">Joins with the platform separator; returns an absolute path</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Static <code>Regex.IsMatch</code></td>
+          <td class="lightItem">Consults a pattern cache rather than reusing one compiled expression</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>Path.GetExtension</code></td>
+          <td class="lightItem">Agrees with &sect;5 today, and rests the dot-file rule on a framework detail</td>
+        </tr>
+      </table>
+      <t-b>
+        The last row is the only one where the rejected call would produce correct output. It is
+        listed because the correctness is a coincidence rather than a promise, and a reader
+        comparing this library against the C++ one - where the same call is wrong - needs to know
+        which of the two reasons applies here.
+      </t-b>
+
+      <a id="source"></a>
+      <h3>7. &nbsp;Source</h3>
+      <t-b>
+        <code>IOutput.cs</code> and <code>Dirnav.cs</code> in full, 10 lines and 314. The comments
+        cite the C# specification's sections, which cite Spec_TextFinder.md in turn.
+      </t-b>
+      <h5 class="indent">src/IOutput.cs</h5>
+<pre><code class="language-csharp">// IOutput.cs - the seam between traversal and the sink, per CSharp_TextFinder_Structure.md
+
+namespace CSharp_TextFinder_Dirnav;
+
+// Declared here and not in the Output library, which is what puts CSharp_TextFinder_Output
+// downstream of this project in the reference chain.
+public interface IOutput
+{
+    void Output(string text);
+}</code></pre>
+      <h5 class="indent">src/Dirnav.cs</h5>
+<pre><code class="language-csharp">// Dirnav.cs - traversal, admission, matching, and emission per Spec_CSharp_TextFinder_Dirnav.md
+
+using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
+using CSharp_TextFinder_Cmdline;
+
+namespace CSharp_TextFinder_Dirnav;
+
+public sealed class Dirnav&lt;TOutput&gt; where TOutput : IOutput
+{
+    // §7: the number Spec_TextFinder.md §3.3 fixes.
+    private const long SizeLimit = 10_485_760;
+
+    private static readonly char[] Separators = { '/', '\\' };
+
+    // §7: Encoding.UTF8 substitutes U+FFFD and reports nothing, so every file would pass
+    // the UTF-8 test. This encoding throws instead.
+    private static readonly UTF8Encoding StrictUtf8 =
+        new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    private readonly TOutput _sink;
+    private readonly IReadOnlyList&lt;string&gt; _skips;
+    private readonly ProgramCommands _commands;
+    private readonly Regex _expression;
+    private readonly bool _pathLineOnly;
+
+    // §8.1: never reset between roots.
+    private long _files;
+    private long _directories;
+
+    // §6: a .NET assembly is built once and runs on both platforms, so the platform test
+    // is made at run time where C++ and Rust make it at compile time.
+    private readonly StringComparison _nameComparison =
+        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+    // §4: RegexParseException propagates; CSharp_TextFinder_Entry catches that type and
+    // writes the §5.2 diagnostic. RegexOptions.None, per §4.
+    public Dirnav(TOutput output, IReadOnlyList&lt;string&gt; skips, ProgramCommands commands)
+    {
+        _sink = output;
+        _skips = skips;
+        _commands = commands;
+        _expression = new Regex(commands.RegexText, RegexOptions.None);
+        _pathLineOnly = commands.RegexText == "."
+                        &amp;&amp; !commands.LineNumbers
+                        &amp;&amp; !commands.MatchedLine;
+    }
+
+    // §5 rule 1: the root's kind comes from File.GetAttributes, which does not follow a link.
+    public void Search(string root)
+    {
+        string display = Normalize(root);
+
+        if (!TryAttributes(root, out FileAttributes attributes))
+        {
+            Announce("cannot open", display);
+            return;
+        }
+
+        if ((attributes &amp; FileAttributes.ReparsePoint) != 0)
+        {
+            Announce("cannot open", display);
+        }
+        else if ((attributes &amp; FileAttributes.Directory) != 0)
+        {
+            Walk(root, display);
+        }
+        else if (Selected(LastComponent(display)))
+        {
+            Examine(root, display);
+        }
+    }
+
+    // §8.1: the run summary of Spec_TextFinder.md §3.6, written once after the last root.
+    public void EmitRunSummary()
+    {
+        _sink.Output(string.Format(
+            CultureInfo.InvariantCulture,
+            "accessed {0} files, {1} directories",
+            _files,
+            _directories));
+    }
+
+    // §5 rule 2: one level, lazily, in the order the platform yields.
+    private void Walk(string directory, string display)
+    {
+        ++_directories;   // §8.1: counted before enumeration, so one that fails is counted too
+        string prefix = display == "." ? string.Empty : display;
+
+        IEnumerator&lt;string&gt; entries;
+        try
+        {
+            entries = Directory.EnumerateFileSystemEntries(directory).GetEnumerator();
+        }
+        catch (Exception e) when (IsAccessFailure(e))
+        {
+            Announce("cannot open", display);
+            return;
+        }
+
+        using (entries)
+        {
+            while (true)
+            {
+                // §5 rule 7: a directory that becomes unreadable part way through is
+                // announced rather than silently truncated, so MoveNext is guarded too.
+                try
+                {
+                    if (!entries.MoveNext()) break;
+                }
+                catch (Exception e) when (IsAccessFailure(e))
+                {
+                    Announce("cannot open", display);
+                    return;
+                }
+
+                string entry = entries.Current;
+                string name = LastComponent(entry);
+                string child = Join(prefix, name);
+
+                if (!TryAttributes(entry, out FileAttributes attributes))
+                {
+                    Announce("cannot open", child);
+                    continue;
+                }
+
+                // §5 rule 5: tested first, and passed over without a word.
+                if ((attributes &amp; FileAttributes.ReparsePoint) != 0) continue;
+
+                if ((attributes &amp; FileAttributes.Directory) != 0)
+                {
+                    if (_commands.Recurse &amp;&amp; !Skipped(name)) Walk(entry, child);
+                }
+                else if (Selected(name))
+                {
+                    Examine(entry, child);
+                }
+            }
+        }
+    }
+
+    // §7: size from metadata, then the NUL and UTF-8 tests over the bytes.
+    private void Examine(string path, string display)
+    {
+        ++_files;   // §8.1: reached only after the /p test, ahead of every later outcome
+
+        long length;
+        try
+        {
+            length = new FileInfo(path).Length;
+        }
+        catch (Exception e) when (IsAccessFailure(e))
+        {
+            Announce("cannot open", display);
+            return;
+        }
+
+        if (length &gt; SizeLimit)
+        {
+            Announce("too large", display);
+            return;
+        }
+
+        // §7: the no-content case of Spec_TextFinder.md §3.3. The file is never opened.
+        if (_pathLineOnly)
+        {
+            if (length &gt; 0) _sink.Output(display);
+            return;
+        }
+
+        byte[] bytes;
+        try
+        {
+            bytes = File.ReadAllBytes(path);
+        }
+        catch (Exception e) when (IsAccessFailure(e))
+        {
+            Announce("cannot open", display);
+            return;
+        }
+
+        if (Array.IndexOf(bytes, (byte)0) &gt;= 0)
+        {
+            FileAnnouncement("skipped", display);
+            return;
+        }
+
+        string text;
+        try
+        {
+            text = StrictUtf8.GetString(bytes);
+        }
+        catch (DecoderFallbackException)
+        {
+            FileAnnouncement("skipped", display);
+            return;
+        }
+
+        // §7: stripped after the admission tests, so its three bytes counted toward both.
+        if (text.Length &gt; 0 &amp;&amp; text[0] == (char)0xFEFF) text = text[1..];
+
+        bool details = _commands.LineNumbers || _commands.MatchedLine;
+        bool pathWritten = false;
+        int number = 0;
+
+        // §7: TextReader.ReadLine already implements §3.3's three terminators and its
+        // unterminated final run, so this library writes no splitter of its own.
+        using var reader = new StringReader(text);
+        while (reader.ReadLine() is { } line)
+        {
+            ++number;
+            if (!_expression.IsMatch(line)) continue;
+
+            if (!pathWritten)
+            {
+                _sink.Output(display);
+                pathWritten = true;
+            }
+
+            // §8 rule 2: with neither /n nor /L the first match settles the file.
+            if (!details) return;
+
+            _sink.Output(Detail(number, line));
+        }
+
+        if (!pathWritten) FileAnnouncement("searched", display);
+    }
+
+    // §8: two spaces of indent, then the fields /n and /L select.
+    private string Detail(int number, string line)
+    {
+        var text = new StringBuilder("  ");
+
+        if (_commands.LineNumbers)
+        {
+            text.Append(number.ToString(CultureInfo.InvariantCulture));
+            if (_commands.MatchedLine) text.Append(" - ");
+        }
+
+        if (_commands.MatchedLine) text.Append(line);
+
+        return text.ToString();
+    }
+
+    // §6: the extension is the text after the last dot in the name, dot-files included.
+    private bool Selected(string name)
+    {
+        if (_commands.Extensions.Count == 0) return true;
+
+        int dot = name.LastIndexOf('.');
+        if (dot &lt; 0) return false;
+
+        string extension = name[(dot + 1)..];
+        foreach (string candidate in _commands.Extensions)
+        {
+            if (string.Equals(candidate, extension, _nameComparison)) return true;
+        }
+
+        return false;
+    }
+
+    // §5 rule 4: the same comparison the extension test uses, since §3.2 and §5 fix one.
+    private bool Skipped(string name)
+    {
+        foreach (string skip in _skips)
+        {
+            if (string.Equals(skip, name, _nameComparison)) return true;
+        }
+
+        return false;
+    }
+
+    private void Announce(string kind, string path) =&gt; _sink.Output(kind + " " + path);
+
+    private void FileAnnouncement(string kind, string path)
+    {
+        if (!_commands.SuppressOnNoMatch) Announce(kind, path);
+    }
+
+    private static bool TryAttributes(string path, out FileAttributes attributes)
+    {
+        try
+        {
+            attributes = File.GetAttributes(path);
+            return true;
+        }
+        catch (Exception e) when (IsAccessFailure(e))
+        {
+            attributes = default;
+            return false;
+        }
+    }
+
+    // §5 rule 7: the three the filesystem calls of this library document.
+    private static bool IsAccessFailure(Exception e) =&gt;
+        e is IOException or UnauthorizedAccessException or ArgumentException;
+
+    // §8: Spec_TextFinder.md §3.4 renders every path with / on every platform, the
+    // root's own text included. Path.Combine would join with the platform separator.
+    private static string Normalize(string text) =&gt; text.Replace('\\', '/');
+
+    private static string Join(string prefix, string name)
+    {
+        if (prefix.Length == 0) return name;
+        return prefix.EndsWith('/') ? prefix + name : prefix + "/" + name;
+    }
+
+    private static string LastComponent(string path)
+    {
+        int cut = path.LastIndexOfAny(Separators);
+        return cut &lt; 0 ? path : path[(cut + 1)..];
+    }
+}</code></pre>
+      <t-b>
+        <code>IsAccessFailure</code> is one line and it is the whole of this library's error
+        handling: <code>IOException</code>, <code>UnauthorizedAccessException</code>, and
+        <code>ArgumentException</code>, caught through an exception filter at each call rather than
+        by a <code>try</code> around the walk. The third joined the list while the code was being
+        written, and the
+        <a target="_blank" href="Spec_Driven_Design_CSharp_Process.html">Process page</a> records
+        why: the framework reports a path string the platform will not accept by argument validation
+        rather than by a failed call, and an uncaught one would end the traversal.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>8. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 assigns it
+        <code>Prompts_Spec_CSharp_TextFinder_Dirnav.md</code> and its <code>Fix</code> companion,
+        and neither was written: this thread produced one record covering every turn, and it sits on
+        the <a target="_blank" href="Spec_Driven_Design_CSharp_Process.html">Process page</a>. Two
+        of the three corrections that record holds reach this component, the third exception type
+        and the limit on the root-kind test.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#interface">interface</a></menu-elem>
+        <menu-elem class="secElem"><a href="#traversal">traversal</a></menu-elem>
+        <menu-elem class="secElem"><a href="#selection">selection</a></menu-elem>
+        <menu-elem class="secElem"><a href="#admission">admission</a></menu-elem>
+        <menu-elem class="secElem"><a href="#matching">matching</a></menu-elem>
+        <menu-elem class="secElem"><a href="#summary">run summary</a></menu-elem>
+        <menu-elem class="secElem"><a href="#rejected">rejected calls</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenCSharpPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past.
+       A block whose content fits needs no arrows, so they stay hidden until it
+       overflows, and are rechecked whenever its width changes. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      /* the 1px allowance keeps subpixel rounding from showing arrows that cannot move */
+      const showArrows = () => {
+        arrows.style.display = pre.scrollWidth - pre.clientWidth > 1 ? '' : 'none';
+      };
+      showArrows();
+      /* the splitter resizes the panel and prism rewrites the content, so one
+         measurement at load is not enough */
+      new ResizeObserver(showArrows).observe(pre);
+      window.addEventListener('resize', showArrows);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

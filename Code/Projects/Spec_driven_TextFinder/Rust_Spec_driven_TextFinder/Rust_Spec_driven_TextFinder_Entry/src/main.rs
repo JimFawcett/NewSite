@@ -95,6 +95,7 @@ fn main() -> ExitCode {
             for root in &commands.root_paths {
                 navigator.search(Path::new(root));
             }
+            navigator.emit_run_summary();   // only main knows the last root has returned
             true
         }
         Err(_) => false,

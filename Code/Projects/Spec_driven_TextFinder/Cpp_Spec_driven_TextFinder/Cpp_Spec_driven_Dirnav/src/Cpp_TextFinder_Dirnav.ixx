@@ -209,10 +209,18 @@ public:
         walk(root);
     }
 
+    // §8.1: the run summary of Spec_TextFinder.md §3.6, written once after the last root.
+    void emitRunSummary() {
+        emit("accessed " + std::to_string(files_) + " files, " +
+             std::to_string(directories_) + " directories");
+    }
+
 private:
     // §5 rule 2: one level per call, entries taken as directory_iterator yields them -
     // neither collected nor reordered - with explicit recursion into each subdirectory entered.
     void walk(const std::filesystem::path& directory) {
+        ++directories_;   // §8.1: counted before enumeration, so one that fails is counted too
+
         std::error_code error;
         std::filesystem::directory_iterator entry{directory, error};
         if (error) { announceCannotOpen(directory); return; }
@@ -248,6 +256,7 @@ private:
     // §7: the three admission tests of Spec_TextFinder.md §3.3.
     void examine(const std::filesystem::path& file) {
         if (!selected(file)) return;
+        ++files_;   // §8.1: after the /p test admits it, ahead of every later outcome
 
         std::error_code error;
         const std::uintmax_t size = std::filesystem::file_size(file, error);
@@ -339,4 +348,6 @@ private:
     std::regex              expression_;
     bool                    pathOnly_;
     bool                    contentNotNeeded_;
+    std::size_t             files_{0};          // §8.1: never reset between roots
+    std::size_t             directories_{0};
 };

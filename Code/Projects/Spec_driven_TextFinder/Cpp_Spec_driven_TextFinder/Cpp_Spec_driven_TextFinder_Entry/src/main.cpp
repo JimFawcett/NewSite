@@ -78,6 +78,9 @@ int main(int argc, char* argv[]) {
     // Every root-path failure is announced by Cpp_TextFinder_Dirnav and affects nothing here.
     for (const std::string& root : commands.rootPaths) dirnav->search(std::filesystem::path{root});
 
-    // Step 9.
+    // Step 9. Only main knows the last root path has returned.
+    dirnav->emitRunSummary();
+
+    // Step 10.
     return 0;
 }

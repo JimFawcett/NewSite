@@ -58,7 +58,7 @@
   <div id="about" class="hidden" onclick="toggleAbout()">
     Spec_Driven_Design_Cpp_Entry.html<br />
     copyright &copy; James Fawcett<br />
-    Revised: 09/15/2026
+    Revised: 09/16/2026
   </div>
 
   <content-block>
@@ -67,14 +67,14 @@
         href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder_Entry">Spec-Driven</a>
       <div id="pagetitle" class="header">
         <h2 id="title">Spec-Driven C++: Entry</h2>
-        <h4 class="indent" id="subtitle">nine steps, one skip list, three exit codes, and no call to std::exit</h4>
+        <h4 class="indent" id="subtitle">ten steps, one skip list, three exit codes, and no call to std::exit</h4>
       </div>
       <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
         <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
         <a class="repoLinks" href="Spec_Driven_Design_Behavior_Contracts.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
         <a class="repoLinks" href="Spec_Driven_Design_Cpp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
         <a class="repoLinks" href="Spec_Driven_Design_Rust_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
-        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
         <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
       </div>
     </header>
@@ -111,7 +111,7 @@
         </ul>
       </t-b>
       <t-b>
-        It is 83 lines, and the specification that fixes it is 86. That ratio is the point of the
+        It is 86 lines, and the specification that fixes it is 87. That ratio is the point of the
         component: the design goal is to make the wiring itself readable, and everything harder
         than wiring lives in a library.
       </t-b>
@@ -119,8 +119,8 @@
       <a id="startup"></a>
       <h3>2. &nbsp;The Startup Sequence</h3>
       <t-b>
-        <code>main(int argc, char* argv[])</code> performs nine steps in order. The order is the
-        specification rather than a consequence of it: three of the nine are placed where they are
+        <code>main(int argc, char* argv[])</code> performs ten steps in order. The order is the
+        specification rather than a consequence of it: three of the ten are placed where they are
         for reasons that would not survive rearranging.
       </t-b>
       <table>
@@ -166,9 +166,27 @@
         </tr>
         <tr>
           <td class="lightItem">9</td>
+          <td class="lightItem">Call <code>emitRunSummary()</code> on that same instance, once, after the last root path returns</td>
+        </tr>
+        <tr>
+          <td class="lightItem">10</td>
           <td class="lightItem">Return 0</td>
         </tr>
       </table>
+      <t-b>
+        <strong>Step 9 is the whole of this binary's part in the run summary.</strong>
+        Spec_TextFinder.md &sect;3.6 puts the two counts in <code>Cpp_TextFinder_Dirnav</code>, so
+        the binary supplies no count and composes no text. What it supplies is the one fact the
+        library cannot have: that step 8 is finished.
+      </t-b>
+      <t-b>
+        Every exit above reaches its <code>return</code> before step 8, which is what makes the
+        summary a mark of a run that traversed. <code>/H</code>, the bare command line, a parse
+        failure, and a malformed <code>/r</code> each leave at their own step and none reaches step
+        9 - so none writes a summary, which is exactly what &sect;3.6 asks. The integration suite
+        asserts the absence for <code>/H</code> and for the bare command line, and asserts that a
+        traversing run's last line is the summary.
+      </t-b>
       <t-b>
         <strong>Step 2 precedes every write to stdout.</strong> Constructing
         <code>Cpp_TextFinder_Output</code> puts the stream into the mode Spec_TextFinder.md
@@ -352,7 +370,7 @@
       <h3>7. &nbsp;Source</h3>
       <t-b>
         <code>main.cpp</code> in full, then the build definition. The step numbers in the comments
-        are the nine steps of Section 2, and the citations name the specification section each step
+        are the ten steps of Section 2, and the citations name the specification section each step
         satisfies.
       </t-b>
       <h5 class="indent">main.cpp</h5>
@@ -436,7 +454,10 @@ int main(int argc, char* argv[]) {
     // Every root-path failure is announced by Cpp_TextFinder_Dirnav and affects nothing here.
     for (const std::string&amp; root : commands.rootPaths) dirnav-&gt;search(std::filesystem::path{root});
 
-    // Step 9.
+    // Step 9. Only main knows the last root path has returned.
+    dirnav-&gt;emitRunSummary();
+
+    // Step 10.
     return 0;
 }</code></pre>
       <h5 class="indent">Cpp_Spec_driven_TextFinder_Entry/CMakeLists.txt</h5>

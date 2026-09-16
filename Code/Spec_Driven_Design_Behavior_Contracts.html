@@ -58,7 +58,7 @@
   <div id="about" class="hidden" onclick="toggleAbout()">
     Spec_Driven_Design_Behavior_Contracts.html<br />
     copyright &copy; James Fawcett<br />
-    Revised: 09/15/2026
+    Revised: 09/16/2026
   </div>
 
   <content-block>
@@ -74,7 +74,7 @@
         <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
         <a class="repoLinks" href="Spec_Driven_Design_Cpp_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
         <a class="repoLinks" href="Spec_Driven_Design_Rust_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
-        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
         <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
       </div>
     </header>
@@ -119,6 +119,28 @@
         This is the whole of the public interface. TextFinder is a command-line program, so its
         real interface is the command line, and &sect;3.5 exists because the skip list is the one
         thing the command line deliberately cannot reach.
+      </t-b>
+      <t-b>
+        One other interface is fixed across implementations, and it is worth setting beside
+        <code>addSkipDirectory</code> because the two are fixed for opposite reasons. &sect;3.6
+        requires a run to close its output with a line counting the files and directories it
+        reached, and rather than leave each language to decide which component keeps those counts,
+        it fixes that too: the traversal component holds them, increments them where it already
+        makes its selection decisions, never resets them between root paths, and owns the summary's
+        text, while the entry binary calls for the line once - after the last root path, the one
+        fact no component inside the library can know.
+      </t-b>
+      <t-b>
+        &sect;2 otherwise leaves internal structure to each language, so this is a deliberate
+        exception and &sect;2 records it as one. The reason is comparability, the same reason
+        &sect;3.4 fixes the block form: a count kept in a different place in each implementation is
+        a count the four cannot be held to agree on, and agreement is exactly what makes a
+        mismatched pair of numbers evidence of a defect. What each language still fixes for itself
+        is the call's name, parameter list, and return type - <code>emitRunSummary()</code> in C++
+        and C#, <code>emit_run_summary(&amp;mut self)</code> in Rust - in the idiom &sect;3.5
+        already leaves open for <code>addSkipDirectory</code>. No implementation exposes an
+        accessor for either count: the line is the whole of what they are for, and a unit suite
+        reads them by reading that line through its own output double.
       </t-b>
 
       <a id="nonfunctional"></a>
@@ -185,6 +207,17 @@
         "the four implementations agree" and true. The alternative was on the table: an earlier
         draft required sorted sibling order and could claim reproducibility across platforms. The
         project traded the stronger claim for simpler traversal and rewrote the claim to match.
+      </t-b>
+      <t-b>
+        Against those limits &sect;6 sets four things it fixes outright, so that a comparison has
+        something to rest on: the two-level block form and its indent, the exit code, the form of
+        the run summary, and the form of the option listing. The run summary is the newest of the
+        four and the one that carries a number rather than a shape, which makes it the sharpest
+        test of the rest - its two counts follow from selection rules the specification already
+        fixes, so two implementations run over the same tree with the same command line report the
+        same pair, and a disagreement is a defect in one of them rather than a difference of
+        convention. Run over the shared documents of this project, all three implementations built
+        so far report <code>accessed 47 files, 36 directories</code>.
       </t-b>
 
       <a id="engines"></a>
@@ -294,7 +327,11 @@
         implementations states the pattern it uses and stays inside the subset, or it is testing the
         engines. The demonstration set applies it. Every pattern in that set stays inside the
         subset, and none of the patterns that match uses <code>.</code>, a character class, or a
-        class escape, so none turns on which engine an implementation names.
+        class escape, so none turns on which engine an implementation names. Where the set does
+        reach for a pattern in one language's own vocabulary - <code>^export&nbsp;</code> for C++,
+        <code>^pub&nbsp;</code> for Rust, <code>^public&nbsp;</code> for C# - it confines that
+        pattern to an invocation rooted in that implementation's own component directories, so the
+        pattern is language-specific but the invocation it runs in searches nothing shared.
       </t-b>
 
       <a id="verification"></a>

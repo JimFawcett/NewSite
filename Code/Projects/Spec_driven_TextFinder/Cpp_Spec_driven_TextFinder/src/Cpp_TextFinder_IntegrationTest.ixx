@@ -126,59 +126,70 @@ const std::string usage =
 void testSearch(Checker& check, const std::filesystem::path& exe, const std::filesystem::path& tree) {
     const Run plain = invoke(exe, R"(-P src -r "int main" -n false -L false)", tree);
     check.expect(plain.exitCode == 0, "a normal search exits 0");
-    check.equal(sortedLines(plain.out), "src/a.cpp\nsrc/notes.txt\nsrc/sub/b.cpp\n",
+    check.equal(sortedLines(plain.out),
+                "accessed 4 files, 2 directories\nsrc/a.cpp\nsrc/notes.txt\nsrc/sub/b.cpp\n",
                 "one path line per matching file, the NUL file excluded");
     check.expect(plain.err.empty(), "a normal search writes nothing to stderr");
 
+    // Rooted at the tree itself, the run also examines the two capture files this harness
+    // redirects into it, so its file count is the four under src/ plus those two.
     const Run whole = invoke(exe, R"(-P . -r "int main" -n false -L false)", tree);
-    check.equal(sortedLines(whole.out), "src/a.cpp\nsrc/notes.txt\nsrc/sub/b.cpp\n",
+    check.equal(sortedLines(whole.out),
+                "accessed 6 files, 3 directories\nsrc/a.cpp\nsrc/notes.txt\nsrc/sub/b.cpp\n",
                 "build/ is pruned by the default skip list");
 
     const Run named = invoke(exe, R"(-P build -r "int main" -n false -L false)", tree);
-    check.equal(named.out, "build/skipme.cpp\n",
+    check.equal(named.out, "build/skipme.cpp\naccessed 1 files, 1 directories\n",
                 "a root named in the skip list is traversed, not pruned");
 
     const Run full = invoke(exe, R"(-P src/a.cpp -r "return" -n true -L true)", tree);
-    check.equal(full.out, "src/a.cpp\n  2 - return 0;\n",
+    check.equal(full.out, "src/a.cpp\n  2 - return 0;\naccessed 1 files, 0 directories\n",
                 "/n and /L true give a path line and an indented detail line");
 
     const Run numberOnly = invoke(exe, R"(-P src/a.cpp -r "return" -n true -L false)", tree);
-    check.equal(numberOnly.out, "src/a.cpp\n  2\n", "/L false leaves the number alone on the detail line");
+    check.equal(numberOnly.out, "src/a.cpp\n  2\naccessed 1 files, 0 directories\n",
+                "/L false leaves the number alone on the detail line");
 
     const Run once = invoke(exe, R"(-P src/a.cpp -r "\{|\}")", tree);
-    check.equal(once.out, "src/a.cpp\n",
+    check.equal(once.out, "src/a.cpp\naccessed 1 files, 0 directories\n",
                 "with neither /n nor /L a block is its path line, emitted once per file");
 
     const Run defaults = invoke(exe, "-P src", tree);
     check.equal(sortedLines(defaults.out),
-                "src/a.cpp\nsrc/binary.cpp\nsrc/notes.txt\nsrc/sub/b.cpp\n",
+                "accessed 4 files, 2 directories\nsrc/a.cpp\nsrc/binary.cpp\nsrc/notes.txt\nsrc/sub/b.cpp\n",
                 "the default expression lists every selected file without reading it");
 
     const Run filtered = invoke(exe, R"(-P src -r "int main" -p cpp -n false -L false)", tree);
-    check.equal(sortedLines(filtered.out), "src/a.cpp\nsrc/sub/b.cpp\n", "/p filters by extension");
+    check.equal(sortedLines(filtered.out),
+                "accessed 3 files, 2 directories\nsrc/a.cpp\nsrc/sub/b.cpp\n",
+                "/p filters by extension");
 
     const Run shallow = invoke(exe, R"(-P src -r "int main" -s false -n false -L false)", tree);
-    check.equal(sortedLines(shallow.out), "src/a.cpp\nsrc/notes.txt\n",
+    check.equal(sortedLines(shallow.out),
+                "accessed 3 files, 1 directories\nsrc/a.cpp\nsrc/notes.txt\n",
                 "/s false enters no subdirectory");
 
     const Run twoRoots = invoke(exe, R"(-P src/sub -P src/a.cpp -r "int main" -n false -L false)", tree);
-    check.equal(twoRoots.out, "src/sub/b.cpp\nsrc/a.cpp\n", "roots are traversed in the order given");
+    check.equal(twoRoots.out, "src/sub/b.cpp\nsrc/a.cpp\naccessed 2 files, 1 directories\n",
+                "roots are traversed in the order given");
 }
 
 void testAnnouncements(Checker& check, const std::filesystem::path& exe, const std::filesystem::path& tree) {
     // Only src/a.cpp holds "return", so the other two text files are searched without matching.
     const Run loud = invoke(exe, R"(-P src -r "return" -h false -n false -L false)", tree);
     check.equal(sortedLines(loud.out),
-                "searched src/notes.txt\nsearched src/sub/b.cpp\nskipped src/binary.cpp\nsrc/a.cpp\n",
+                "accessed 4 files, 2 directories\nsearched src/notes.txt\nsearched src/sub/b.cpp\n"
+                "skipped src/binary.cpp\nsrc/a.cpp\n",
                 "/h false announces every file that produced no block, and only those");
     check.expect(loud.out.find("searched src/a.cpp") == std::string::npos,
                  "a file that matched is never announced - its block already names it");
 
     const Run quiet = invoke(exe, R"(-P src -r "return" -n false -L false)", tree);
-    check.equal(quiet.out, "src/a.cpp\n", "/h true leaves the matching file's block and nothing else");
+    check.equal(quiet.out, "src/a.cpp\naccessed 4 files, 2 directories\n",
+                "/h true leaves the matching file's block and nothing else");
 
     const Run missing = invoke(exe, R"(-P nosuchpath -r ".")", tree);
-    check.equal(missing.out, "cannot open nosuchpath\n",
+    check.equal(missing.out, "cannot open nosuchpath\naccessed 0 files, 0 directories\n",
                 "an unopenable root announces through the output component");
     check.expect(missing.exitCode == 0, "an unopenable root does not affect the exit code");
 }
@@ -191,6 +202,8 @@ void testProcessConcerns(Checker& check, const std::filesystem::path& exe, const
                  "help describes /h in its current terms");
     check.expect(help.out.find("A path is never printed twice.") != std::string::npos,
                  "help describes the block layout");
+    check.expect(help.out.find("counting the files and directories it reached.") != std::string::npos,
+                 "help describes the closing run summary");
     check.expect(help.out.find('\r') == std::string::npos,
                  "help text carries LF only, being written after the sink configures stdout");
 
@@ -204,11 +217,20 @@ void testProcessConcerns(Checker& check, const std::filesystem::path& exe, const
     const Run verbose = invoke(exe, R"(-v true -P src/a.cpp -r "return" -n false -L false)", tree);
     check.expect(verbose.out.starts_with("/P src/a.cpp\n/p\n/r return\n"),
                  "/v lists the resolved options before the search output");
-    check.expect(verbose.out.ends_with("src/a.cpp\n"), "the search output follows the /v listing");
+    check.expect(verbose.out.ends_with("src/a.cpp\naccessed 1 files, 0 directories\n"),
+                 "the search output follows the /v listing");
 
     const Run terminators = invoke(exe, R"(-P src -r "int main" -n false -L false)", tree);
     check.expect(terminators.out.find('\r') == std::string::npos,
                  "output carries LF only, on every platform");
+
+    // Spec_TextFinder.md §3.6: the summary closes a run that traversed, and only such a run.
+    check.expect(normalized(terminators.out).ends_with("accessed 4 files, 2 directories\n"),
+                 "the run summary is the last line a traversing run writes");
+    check.expect(help.out.find("accessed ") == std::string::npos,
+                 "/H traverses nothing and writes no run summary");
+    check.expect(empty.out.find("accessed ") == std::string::npos,
+                 "a bare command line traverses nothing and writes no run summary");
 }
 
 // Reason lines are fixed by Spec_TextFinder.md §5.2.

@@ -49,7 +49,8 @@ const HELP_BODY: &str = r#"
   /L  true|false (false)   add a detail line per match, carrying the line text
 
 A matching file prints its path on one line; /n and /L add indented detail
-lines beneath it. A path is never printed twice.
+lines beneath it. A path is never printed twice. A search ends with a line
+counting the files and directories it reached.
 
 Switch introducers / and - are equivalent. Switch letters are case-sensitive,
 so /h and /H differ. Every switch takes exactly one argument; there are no bare

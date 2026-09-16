@@ -6,14 +6,24 @@ The page structure for this project, organized around its two goals. It replaces
 
 ## 0. Placeholders
 
-This document names no page and no file that belongs to one language. Where a generated page carries a language-specific name, this document writes a placeholder, and a page is built by substituting one value throughout. The four placeholders and their values are fixed here and nowhere else.
+This document names no page and no file that belongs to one language. Where a generated page carries a language-specific name, this document writes a placeholder, and a page is built by substituting one value throughout. The eight placeholders and their values are fixed here and nowhere else.
 
 | Placeholder | Stands for | Values |
 |-------------|------------|--------|
 | `[lang]` | the language token inside a file or identifier name | `Cpp`, `Rust`, `CSharp`, `Python` |
 | `[part]` | a page position within a language thread | the eight names of §5 |
 | `[index]` | a page's 0-based position in its own thread's list | given per page in §6 |
-| `[ext]` | the source extensions one language's demonstration searches | `ixx, cpp`, `rs`, `cs`, `py`, matching `[lang]` in order |
+| `[ext]` | the source extensions one language's demonstration searches | `ixx, cpp`, `ixx, cpp, rs`, `ixx, cpp, rs, cs`, `ixx, cpp, rs, cs, py` |
+| `[ownext]` | the source extensions of one language alone | `ixx, cpp`, `rs`, `cs`, `py` |
+| `[decl]` | a pattern matching that language's publicly visible declarations at line start | `^export `, `^pub `, `^public `, `^def ` |
+| `[docword]` | a literal that language's own `[lang]_TextFinder_Structure.md` contains | `import`, `Cargo`, `interface`, `import` |
+| `[badregex]` | a pattern all four engines refuse to compile, in that language's own vocabulary | `export(`, `pub fn (`, `public (`, `def (` |
+
+The last four appear only in §7.1, and only in the invocations that search one implementation's own files or search nothing at all. Each takes its values in the order §0 lists `[lang]`, as `[ext]` does.
+
+`[ext]` is cumulative: each language's list is its own source extensions appended to the lists of the languages before it in the order above. A demonstration therefore searches every implementation's sources that exist by the time that language is written, not its own alone — the C# run reports C++ and Rust sources beside its own, and only the C++ run, being first, reports one language's. The reason is that a demonstration is a record of this project's tree, and a run that searched one language's files would report a fraction of the tree while claiming to be rooted at the whole of it. The alternative, one extension per language, is named here as rejected rather than left unmentioned; §7.4 states what the choice costs and, as much to the point, what it does not.
+
+`[ownext]` is that rejected alternative kept for the one invocation that needs it. §7.1's invocation 8 is rooted in a single implementation's own component directories, where no other language's sources sit, so the cumulative list would select exactly the same files while echoing a command line that named extensions the roots cannot hold. The two placeholders differ only for Rust, C#, and Python; for C++, first in the order, they are the same value.
 
 `[lang]` is the file-name token, not the display name. A reader-facing label spells the language as a reader names it, so the thread whose `[lang]` is `CSharp` titles its pages and heads its menu `C#`.
 
@@ -202,70 +212,90 @@ Eight positions, identical in every language thread, per §5. Positions run 10 t
 | 6 | `Spec_Driven_Design_[lang]_Testing.html` | 2b |
 | 7 | `Spec_Driven_Design_[lang]_Demonstration.html` | 2b |
 
-A page exists once it is written, not once its implementation builds. A language thread is created whole: all eight pages at once, at the indices above, each carrying its subject as far as the specifications fix it. Where a page needs a result only a running implementation can supply, it states that the result is pending and says so in place — a Demonstration page reserves its six blocks per §7.3, and a Testing page names the suites without their output. Pending content is therefore a condition of a page, never a missing page.
+A page exists once it is written, not once its implementation builds. A language thread is created whole: all eight pages at once, at the indices above, each carrying its subject as far as the specifications fix it. Where a page needs a result only a running implementation can supply, it states that the result is pending and says so in place — a Demonstration page reserves its eleven blocks per §7.3, and a Testing page names the suites without their output. Pending content is therefore a condition of a page, never a missing page.
 
 Two things follow. A thread's entry in the `repoLinks` row is disabled only while that thread has no pages at all, per §2.4, and never merely because its code does not yet run. And the eight indices hold from the moment the thread is created, so an index never changes meaning as the implementation fills in.
 
 ## 7. Demonstration
 
-Each language thread ends with a Demonstration page. All four run one fixed set of invocations against the same tree, varying a single thing: `[ext]`, the source extensions that implementation's own files carry. Fixing everything else is what makes the four pages comparable — Spec_TextFinder.md §6 permits a line-for-line comparison across implementations over one tree on one platform, and a demonstration that chose its own command lines per language would forfeit it. §7.4 states what the one permitted variation leaves comparable and what it does not.
+Each language thread ends with a Demonstration page. All four run one fixed set of eleven invocations against the same tree. Fixing the set is what makes the four pages comparable — Spec_TextFinder.md §6 permits a line-for-line comparison across implementations over one tree on one platform, and a demonstration that chose its own command lines per language would forfeit it. §7.4 states what the permitted variations leave comparable and what they do not.
 
-Every invocation supplies `-P . -p "md, [ext]"`, rooted at `Spec_driven_TextFinder/`, so each search covers the project's documents, which every implementation shares, together with that implementation's own sources.
+The set divides in two. **Invocations 1 through 7 are shared work.** Each supplies `-P . -p "md, [ext]"`, rooted at `Spec_driven_TextFinder/`, so each search covers the project's documents, which every implementation shares, together with the sources of that implementation and of every implementation written before it. `[ext]` is the only thing that varies among them, and §0 makes it cumulative rather than per-language. **Invocations 8 through 11 are each implementation's own.** Two of them search only that implementation's own component directories, one searches only its own structure document, and two traverse nothing at all, so a pattern in that language's vocabulary costs nothing there.
 
 Two rules govern which patterns the set may use, and §7.1 satisfies both.
 
-**A pattern is portable across engines.** Every pattern stays inside the subset of Spec_TextFinder.md §6.1, and none of the patterns that match uses `.`, a character class, or a class escape, so none turns on which engine an implementation names. Invocation 1 matches nothing at all — §3.3's no-content case settles each file from its path alone — invocations 2 through 5 use only literals and an escaped `.`, and invocation 6 fails to compile in all four engines.
+**A pattern is portable across engines.** Every pattern stays inside the subset of Spec_TextFinder.md §6.1, and none of the patterns that match uses `.`, a character class, or a class escape, so none turns on which engine an implementation names. Invocation 2 needs no file content at all — §3.3's no-content case settles each file from its path alone — invocations 3 through 9 use only literals, an escaped `.`, and the anchor `^`, and invocation 10 fails to compile in all four engines.
 
-**A pattern has something to find in every implementation.** A pattern naming a construct of one language would make its invocation demonstrate that language and nothing else: `^export module` finds C++ module declarations, and a Rust or Python run would match it only inside the C++ specifications, which is a search of the documents dressed up as a search of the code. The set therefore draws its patterns from text Spec_TextFinder.md fixes for every implementation. `too large` is an announcement §3.4 fixes and `invalid regex` opens a reason line §5.2 fixes, so both appear as literals in all four implementations' sources as well as in the shared documents. `Spec_TextFinder.md` names a document every implementation searches.
+**A pattern naming a language construct appears only where it searches that language.** Such a pattern would otherwise make its invocation demonstrate one language and nothing else: `^pub ` finds Rust declarations, and a C++ or Python run would match it only inside the Rust specifications, which is a search of the documents dressed up as a search of the code. Invocations 1 through 7 therefore draw their patterns from text Spec_TextFinder.md fixes for every implementation — `too large` is an announcement §3.4 fixes, and `Spec_TextFinder.md` names a document every implementation searches. `[decl]`, `[docword]`, and `[badregex]` are confined to invocations 8 through 11, where the only files under the root belong to the implementation running them, or where no file is opened.
 
 A pattern added to this set is checked against both rules.
 
 ### 7.1 The Fixed Invocation Set
 
-| # | What it demonstrates | Command line after `-P . -p "md, [ext]"` |
-|---|----------------------|-------------------------------------------|
-| 1 | The no-content case of §3.3: default `/r` of `.` with no `/n` or `/L`, so every selected file is listed from its path alone | (none) |
-| 2 | Both optional fields on, one record per matching line | `-r "too large" -n true -L true` |
-| 3 | Path-only records, one per matching file | `-r "Spec_TextFinder\.md"` |
-| 4 | The same search with recursion off | `-r "Spec_TextFinder\.md" -s false` |
-| 5 | File announcements and the resolved option set | `-r "invalid regex" -h false -v true -n true` |
-| 6 | A malformed expression refused before traversal, per §5.2 | `-r "export("` |
+Invocations 1 through 7 take the root and extension list `-P . -p "md, [ext]"`; the column below gives what follows it. Invocations 8 through 11 give their whole command line, root included.
+
+| # | What it demonstrates | Command line |
+|---|----------------------|--------------|
+| 1 | No switch at all: §3.1's bare command line lists the resolved options and exits 0 without traversing | (nothing at all, not even the root) |
+| 2 | The no-content case of §3.3: default `/r` of `.` with no `/n` or `/L`, so every selected file is listed from its path alone | (the root and extension list alone) |
+| 3 | The two-level block of §3.4, both optional fields on, one detail line per matching line | `-r "too large" -n true -L true` |
+| 4 | The same search with `/L false`, leaving the line number alone on each detail line | `-r "too large" -n true` |
+| 5 | Path-only blocks, one per matching file | `-r "Spec_TextFinder\.md"` |
+| 6 | The same search with recursion off | `-r "Spec_TextFinder\.md" -s false` |
+| 7 | File announcements and the resolved option set | `-r "Spec_TextFinder\.md" -h false -v true` |
+| 8 | Two roots traversed in the order `/P` gave them, each path beginning with the root whose subtree holds it, and the skip list pruning beneath both | `-P [lang]_Spec_driven_TextFinder/[lang]_Spec_driven_Cmdline -P [lang]_Spec_driven_TextFinder/[lang]_Spec_driven_Output -p "[ownext]" -r "[decl]" -n true -L true` |
+| 9 | A root that cannot be opened, announced beside a root that is a regular file, the run still exiting 0 and the error announcement ignoring `/h true` | `-P no_such_directory -P [lang]_Spec_driven_TextFinder/[lang]_TextFinder_Structure.md -r "[docword]"` |
+| 10 | A malformed expression refused before traversal, per §5.2, with the option listing on stdout ahead of the diagnostic | `-P . -p "md, [ext]" -r "[badregex]"` |
+| 11 | The help text of §5.1, written to stdout under `/H`, traversing nothing | `/H true` |
+
+Invocation 11 is the one place the set uses the `/` introducer, which §4 makes equivalent to the `-` every other invocation uses. Showing both is the point.
 
 ### 7.2 Block Format
 
-Each invocation occupies one block on the page, and every block takes the same five parts.
+Each invocation occupies one block on the page, and every block takes the same six parts.
 
 1. The purpose, stated in one or two lines.
 2. The command line, echoed as `$ <executable> <arguments>`.
 3. At most 14 output lines, then a `... N more` line where `N` is the number of lines withheld — the total emitted less the 14 shown. A run emitting 14 lines or fewer carries no such line, and an empty result prints `(no output)`.
-4. Each stderr line, prefixed `[stderr]`, which separates a diagnostic from a record without reordering either.
-5. The total number of lines the run emitted to stdout, shown and withheld together, and the exit code. The count is of the whole run, not of the excerpt above it, so `N` plus 14 equals it whenever a `... N more` line appears.
+4. The run summary Spec_TextFinder.md §3.6 requires, when the run emitted one and part 3 withheld it. It is the last line a traversing run writes, so on every invocation that emits more than 14 lines the excerpt above ends before reaching it, and a block that stopped there would hide the one line reporting what the run reached. It is shown after the `... N more` line and counted among the lines that line withholds.
+5. Each stderr line, prefixed `[stderr]`, which separates a diagnostic from a record without reordering either.
+6. The total number of lines the run emitted to stdout, shown and withheld together, and the exit code. The count is of the whole run, not of the excerpt above it, so `N` plus 14 equals it whenever a `... N more` line appears.
 
 The captured text goes in a `<pre>` block, verbatim. Prose above each block explains what to look for; the reader then looks. A closing paragraph names what the block shows that the count alone does not.
 
-The page opens with the header its driver writes, naming five things: the date of the capture, the platform it ran on, the executable, the search root, and the extension list. It closes with the output of the runner that starts it. This is the whole of the header; §7.3 adds nothing to it.
+The page opens with the header its driver writes, naming four things: the date of the capture, the executable, the search root, and the extension list. It closes with the output of the runner that starts it. This is the whole of the header; §7.3 adds nothing to it. The platform is not among the fields, though §7.4 rests on two captures having been taken on one platform; a capture states its date and leaves its platform to the prose around it.
 
 ### 7.3 What Each Page Provides
 
-A Demonstration page's blocks are filled when its implementation runs. For each of the six invocations the page provides, from an actual run and not by hand:
+A Demonstration page's blocks are filled when its implementation runs. For each of the eleven invocations the page provides, from an actual run and not by hand:
 
 1. The command line as invoked, naming that implementation's own executable.
 2. The captured stdout and stderr, verbatim, in the block format of §7.2.
-3. The total line count and the exit code the run reported, per part 5 of §7.2.
+3. The total line count and the exit code the run reported, per part 6 of §7.2.
 
-The page also provides the header of §7.2, with all five of its fields, and the output of the runner that starts the demonstration.
+The page also provides the header of §7.2, with all four of its fields, and the output of the runner that starts the demonstration.
 
-No page paraphrases its output, abridges it beyond the 14-line rule of §7.2, or reconstructs a result from the specification. A page whose implementation does not build yet exists all the same, per §6: it reserves the six blocks in order and states that they are pending.
+No page paraphrases its output, abridges it beyond the 14-line rule of §7.2, or reconstructs a result from the specification. A page whose implementation does not build yet exists all the same, per §6: it reserves the eleven blocks in order and states that they are pending.
 
 ### 7.4 Comparability
 
-Because `[ext]` resolves differently for each implementation, two runs share the project's documents and differ in their sources. Comparability is stated against the shared part.
+Because `[ext]` is cumulative, two runs of invocations 1 through 7 select different sets of files: every run reports the project's documents, and each reports the sources of its own language and of every language before it. Comparability is stated against the part two runs share, and the cumulative list narrows that part further than a per-language list would have.
 
-Over the same tree state on the same platform, the document paths an invocation reports must agree across implementations, in the same relative order, and both runs must report the same exit code — Spec_TextFinder.md §3.4 fixes the three code values, so a disagreement there is a defect rather than a difference of convention. Invocation 6 traverses nothing, so its two stderr lines must agree in full except for the executable name in the usage line, which Spec_TextFinder.md §5.1 parameterizes as `<executable>`.
+**The paths-agree claim holds only where two runs select the same files.** Where they do, and over the same tree state on the same platform, the paths an invocation reports must agree across implementations in full and in order. Where they do not, the claim does not apply, and this document no longer makes a weaker one in its place.
 
-Invocation 5 sets `-v true`, and Spec_TextFinder.md §5.3 fixes the form of the listing that produces, so its nine lines must agree across implementations but for the `/p` line, which carries that implementation's own `[ext]`.
+An earlier §7.4 did make that weaker claim — that the *document* paths agree in the same relative order, whatever sources interleave with them — and it was true: the documents every run selects are the same, so their order among themselves is one depth-first walk in every run. It is dropped because it is not a claim a reader can check. The C# run reports `Rust_Spec_driven_Cmdline/src/lib.rs` between two documents the C++ run reports consecutively, so verifying the weaker claim means striking the source paths out of both captures first and then comparing what is left. A comparability rule worth stating is one a reader can apply to the captures as they stand.
 
-The source paths a run reports are its own, and the line counts differ with them.
+What survives without that condition is narrower and still worth having. Both runs must report the same exit code — Spec_TextFinder.md §3.4 fixes the three values, so a disagreement there is a defect rather than a difference of convention. Invocations 1 and 7 list the resolved option set, whose form Spec_TextFinder.md §5.3 fixes, so their nine listing lines must agree but for the `/p` line, which carries that implementation's own `[ext]`, and for the `/v` line, which reads `true` only in the listing `/v` itself asked for.
+
+Invocation 6 is where the paths-agree claim does apply, and it is the only one of the seven. Rooted at the project with `/s false`, it reads the project root alone, where no implementation's sources sit, so every run selects the same documents and reports them in the same order — and every run's summary reports the same two counts. A reader wanting to check Spec_TextFinder.md §6's consistency guarantee against captured output has that invocation and no other.
+
+The source paths a run reports are its own, and the line counts differ with them. The run summary of §3.6 differs with them too: its two counts include every source the cumulative list admits, so only its form is comparable across implementations, not its numbers — invocation 6 excepted. Invocation 8 is rooted in one implementation's own component directories, so both its counts and its blocks are that implementation's alone.
+
+Two things are worth separating here, because it would be easy to blame the cumulative list for both. Leaving invocation 6 as the only one whose whole path list agrees is not the cumulative list's doing: a per-language list would leave it the only one too, since two runs would still select different sources and still interleave them among the documents. What the cumulative list costs is narrower — it makes each run's file set a superset of the ones before it rather than a sibling of them, so the counts grow down the language order and no two of the four report the same number of files.
+
+What it buys is the record. A per-language list would make each demonstration a search of one language's files, which is a fraction of the tree the run is rooted at, and a shrinking fraction as languages are added. §0 takes the wider record; §7.4 states the narrower claim that record supports, rather than keeping a wider claim by narrowing what each page searches.
+
+Invocations 8 through 11 are not comparable by content, being each implementation's own by construction, and three of them are comparable in form. Invocation 9 must announce its unopenable root, report its structure document, and exit 0 in every implementation. Invocation 10 traverses nothing, so its option listing agrees but for the `/p` and `/r` lines, and its two stderr lines agree in full except for the executable name in the usage line, which Spec_TextFinder.md §5.1 parameterizes as `<executable>`. Invocation 11 prints the help text of §5.1, which is fixed text, so its lines must agree in full but for that same executable name.
 
 Two further things differ by implementation. The header names its own executable and search root, and the echoed command line names its own executable and its own `[ext]` list.
 
@@ -273,7 +303,7 @@ A mismatch in the shared part is a defect in one of the two implementations or a
 
 ### 7.5 Captures Are Dated
 
-Three of the six invocations count files in this project, so their output moves when a document is added to the tree or removed from it. Each page therefore states the date of its capture, and a page whose counts disagree with a fresh run is stale rather than wrong.
+Seven of the eleven invocations count files in this project, so their output moves when a document is added to the tree or removed from it, and the run summary of Spec_TextFinder.md §3.6 moves with it in each of the eight that traverse. Invocations 1, 10, and 11 traverse nothing, so none of the three emits a summary and none moves with the tree. Each page therefore states the date of its capture, and a page whose counts disagree with a fresh run is stale rather than wrong.
 
 Comparing two implementations means comparing captures taken over the same tree state. A page rebuilt after the tree changes is recaptured in full rather than edited in place, since the counts appear both in the blocks and in the prose around them.
 

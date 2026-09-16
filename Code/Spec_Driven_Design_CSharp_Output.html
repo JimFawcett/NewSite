@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_CSharp_Output.html - C# thread, page 5
+-->
+<head>
+  <title>Spec-Driven C#: Output</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_CSharp_Output.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/16/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/CSharp_Spec_driven_TextFinder/CSharp_Spec_driven_Output">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven C#: Output</h2>
+        <h4 class="indent" id="subtitle">137 lines that replace Console.WriteLine and flush on disposal</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Matching.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Output.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Output.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="sink"></a>
+      <h3>1. &nbsp;The Sink</h3>
+      <t-b>
+        <code>CSharp_TextFinder_Output</code> receives fully formed strings from
+        <code>CSharp_TextFinder_Dirnav</code>, writes each as one line to stdout, and absorbs any
+        write failure so that neither the traversal nor the binary has to reason about it.
+      </t-b>
+<pre><code class="language-csharp">public sealed class StdoutSink : IOutput, IDisposable
+{
+    public StdoutSink();
+
+    public void Output(string text);
+    public void WriteText(string text);
+    public void Flush();
+    public void Dispose();
+}</code></pre>
+      <t-b>
+        The class is <code>sealed</code>. Nothing in this project derives from it, and a sink whose
+        <code>Output</code> a subclass could override would put the emission order &sect;3.4 fixes
+        in the hands of a type this specification does not describe. C++ reaches the same place from
+        the other direction, its sink deriving from a base class it may not itself be derived from
+        in practice; Rust has no inheritance to close off.
+      </t-b>
+      <t-b>
+        Two methods write, and they differ only in what they add.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><code>Output</code>, the interface method, writes the string it is given followed by
+            the single LF Spec_TextFinder.md &sect;3.4 fixes. It is the method
+            <code>CSharp_TextFinder_Dirnav</code> reaches, and the interface is the only thing that
+            library knows about this one.</li>
+          <li><code>WriteText</code> writes the string verbatim, adding nothing. It exists for the
+            help text of &sect;5.1 and the option listing of &sect;5.3, which
+            <code>CSharp_TextFinder_Cmdline</code> returns already terminated.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        <code>WriteText</code> is declared on the class and not on <code>IOutput</code>, and that
+        placement is the access control: <code>CSharp_TextFinder_Dirnav</code> holds a
+        <code>TOutput</code> constrained to the interface and can reach only what the interface
+        declares, so it cannot emit unterminated text. Both route through one private
+        <code>Emit(text, terminate)</code>, so the failed-state check and the write have one
+        definition.
+      </t-b>
+      <t-b>
+        The type takes no configuration. <code>CSharp_TextFinder_Dirnav</code> formats every line in
+        full before emitting it - a block's path line, a block's indented detail lines, and every
+        announcement alike - so there is nothing left here to parameterize. The library does not
+        know a block line from an announcement, does not indent a detail line, and does not apply
+        <code>/h</code>, <code>/n</code>, or <code>/L</code>.
+      </t-b>
+      <t-b>
+        Once constructed, neither method throws and neither reports failure to a caller.
+      </t-b>
+
+      <a id="terminator"></a>
+      <h3>2. &nbsp;The Rule Written for This Language</h3>
+      <t-b>
+        Spec_TextFinder.md &sect;3.4 obliges an implementation to prevent its runtime translating
+        the LF terminator to CRLF. C# is the language that obligation was written for.
+        <code>Console.WriteLine</code> terminates with <code>Environment.NewLine</code>, which is
+        CRLF on Windows, so the framework's most obvious way to write a line is the one the
+        specification forbids.
+      </t-b>
+      <t-b>
+        The rule did not start in the parent. It lived in the
+        <a target="_blank" href="Spec_Driven_Design_Cpp_Output.html">C++ Output specification</a>
+        for several turns, binding C++ alone, and the cross-document review promoted it to
+        Spec_TextFinder.md &sect;3.4 with the C# case as its argument - before any C# code existed.
+        This component is where that prediction gets tested, and it held.
+      </t-b>
+      <t-b>
+        The sink owns a <code>StreamWriter</code> over <code>Console.OpenStandardOutput()</code>
+        with three properties fixed by the specification rather than left to the code:
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong><code>NewLine</code> is <code>"\n"</code></strong>, so
+            <code>WriteLine</code> emits one LF on every platform.</li>
+          <li><strong><code>AutoFlush</code> is <code>false</code></strong>, per Section 5.</li>
+          <li><strong>The encoding is a <code>UTF8Encoding</code> constructed
+            <code>encoderShouldEmitUTF8Identifier: false</code></strong>, so no byte-order mark
+            precedes the first line. <code>Encoding.UTF8</code> is rejected by name: that
+            property's encoding emits a BOM when a <code>StreamWriter</code> opens a stream with it,
+            which would put three bytes on stdout that &sect;3.4 does not fix and that a fixture
+            comparing bytes would see.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        <code>Console.Out</code> is not used at all, and neither is <code>Console.Write</code>. The
+        writer this library constructs wraps the standard output stream directly, so nothing the
+        framework configures on <code>Console.Out</code> - its encoding, its newline, its autoflush
+        - reaches this program's output. That is a stronger position than configuring
+        <code>Console.Out</code> would give, since a library loaded later could reconfigure it.
+      </t-b>
+      <t-b>
+        One requirement, three implementations, three mechanisms: C++ calls
+        <code>_setmode(1, _O_BINARY)</code> and throws if it fails; Rust does nothing at all, its
+        standard output performing no translation on any platform; C# replaces the writer. The
+        <a target="_blank" href="Spec_Driven_Design_CSharp_Testing.html">integration suite</a>
+        checks the bytes rather than the characters, and finds no CR and no BOM.
+      </t-b>
+      <t-b>
+        <code>Output</code> adds the terminator and nothing else - no prefix, no separator, no
+        trailing content - because the string arrives fully formatted.
+      </t-b>
+
+      <a id="onesink"></a>
+      <h3>3. &nbsp;One Sink, One Buffer</h3>
+      <t-b>
+        The constructor throws <code>InvalidOperationException</code> when a
+        <code>StdoutSink</code> already exists, so the process holds one sink and one only. It also
+        lets an <code>IOException</code> from <code>Console.OpenStandardOutput</code> propagate,
+        which is the failure of a process started with no usable standard output handle.
+        <code>CSharp_TextFinder_Entry</code> catches both and exits 2, the code &sect;3.4 fixes for
+        a failure that is not about the command line.
+      </t-b>
+      <t-b>
+        The reason for the rule is the buffer of Section 5. Two sinks would wrap the same standard
+        output stream with two independent buffers, and their contents would reach the stream in the
+        order the buffers happened to fill rather than the order the lines were written - which
+        would break the emission order &sect;3.4 fixes, silently and only under load. A rule against
+        a second sink is cheaper to enforce than a defect that appears only on long searches.
+      </t-b>
+      <t-b>
+        The rule is held by a private static <code>bool</code>, cleared by <code>Dispose</code>, so
+        a sink disposed before another is created releases the right to make one. A static mutable
+        field is a smell in general and the specification argues that it is right here: the thing
+        being guarded is a process-wide resource, one process holds one standard output handle, and
+        the field is read and written on one thread before any other could exist. No lock is taken.
+      </t-b>
+      <t-b>
+        Rust reaches the same conclusion through a <code>thread_local!</code> <code>Cell</code>,
+        which it needs because a plain <code>static</code> there must be <code>Sync</code>. C#
+        places no such bound on a static field, so the same rule costs one field here and two
+        constructs there. C++ has no equivalent rule at all, its sink being a local of
+        <code>main</code> that nothing else constructs.
+      </t-b>
+      <t-b>
+        <code>CSharp_TextFinder_Entry</code> builds exactly one sink, so its own code cannot provoke
+        the exception. It handles the case because a constructor with a failure mode that callers
+        ignore is a constructor whose failure mode will eventually be reached, and because that
+        exception is what gives exit code 2 a path in this implementation at all.
+      </t-b>
+
+      <a id="errors"></a>
+      <h3>4. &nbsp;Error Handling</h3>
+      <t-b>
+        A write that fails - a closed pipe, a full disk - sets an internal failed state. On the
+        first such failure the library flushes stdout and then writes the single line
+        <code>output failed</code> to stderr. Thereafter it discards every string it is given and
+        writes nothing more, to stdout or stderr.
+      </t-b>
+      <t-b>
+        Three properties of that sequence are stated in the specification rather than left to the
+        code.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>The flush comes first</strong>, so every line already buffered reaches the
+            stream ahead of the notice explaining why the lines stop. It is best-effort: whatever
+            broke the write may break it too, and that inner flush is itself wrapped.</li>
+          <li><strong>The failed state is permanent.</strong> One notice, not one per discarded
+            line, which is what keeps a broken pipe from turning a long search into a long stderr
+            transcript.</li>
+          <li><strong>The failure reaches no caller.</strong> The library never throws after
+            construction, never returns a status, and never lets the failure reach
+            <code>CSharp_TextFinder_Dirnav</code>, which goes on traversing.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Every write is wrapped against <code>IOException</code> and
+        <code>ObjectDisposedException</code>, the two the framework's stream writes document, and
+        the specification refuses a broader <code>catch</code> in as many words: an
+        <code>OutOfMemoryException</code> or a <code>NullReferenceException</code> from this library
+        is a defect in it rather than a stream failure, and swallowing one would hide that defect
+        behind a notice about output. The two types are named in one predicate,
+        <code>IsWriteFailure</code>, used from every catch filter in the file.
+      </t-b>
+      <t-b>
+        A method returning <code>void</code> where the operation returns a status is usually worth
+        questioning, and here it is the interface the structure document asked for. The
+        <code>IOutput</code> method returns nothing, so absorbing the failure is the contract; the
+        alternative is an interface method returning a status and a traversal that must decide what
+        to do about a sink it was given rather than chose.
+      </t-b>
+      <t-b>
+        The flush performed on <code>Dispose</code> obeys the same rule, and the specification names
+        that case separately for a reason: the final flush is the write most likely to be the first
+        one that fails, being the only one that must reach the stream and, on a short search, the
+        only one that reaches it at all. Nothing follows it, so nothing is left to discard.
+      </t-b>
+      <t-b>
+        A failed write does not affect the exit code, which the Entry specification reserves for
+        command-line and startup failures. A run whose output went nowhere still exits 0: the exit
+        code answers whether TextFinder could do what it was asked, not whether the reader received
+        it.
+      </t-b>
+      <t-b>
+        The notice is written with <code>Console.Error.Write</code> and an explicit
+        <code>\n</code>, so stderr carries LF here as it does everywhere else in this
+        implementation.
+      </t-b>
+
+      <a id="disposal"></a>
+      <h3>5. &nbsp;Buffering and Disposal</h3>
+      <t-b>
+        <code>AutoFlush</code> is <code>false</code>, so the <code>StreamWriter</code> defers a
+        write until its buffer fills. With <code>AutoFlush</code> set the writer would flush on
+        every call, and a search emitting 79 lines - the count invocation 2 of the
+        <a target="_blank" href="Spec_Driven_Design_CSharp_Demonstration.html">demonstration</a>
+        reports - would pay 79 system calls for nothing.
+      </t-b>
+      <t-b>
+        No flush is performed per line. The stream is flushed when the sink is disposed, and
+        <code>Flush</code> performs the same write on demand, for the one case that needs the buffer
+        drained before the process ends.
+      </t-b>
+      <t-b>
+        Disposal is the whole of the mechanism, and C# leaves no alternative. The language has no
+        destructor that runs at scope exit, so the C++ implementation's reliance on one and the Rust
+        implementation's on <code>Drop</code> have no counterpart here. A sink that flushed from a
+        finalizer would flush at a time the runtime chooses, and the runtime is free to run no
+        finalizer at all before the process exits - which on a short search would mean losing the
+        whole output.
+      </t-b>
+      <t-b>
+        That moves the guarantee out of this type and into its caller, and both specifications say
+        so on their own side. This one states the requirement and records that the type cannot
+        enforce it alone; Spec_CSharp_TextFinder_Entry.md &sect;4 discharges it with a
+        <code>using</code> statement covering the rest of <code>Main</code>. The
+        <a target="_blank" href="Spec_Driven_Design_CSharp_Entry.html">Entry page</a> covers why the
+        construction sits outside that statement.
+      </t-b>
+      <t-b>
+        <code>Dispose</code> is written to be safe to call twice, since a <code>using</code>
+        statement on a sink already disposed by other means would otherwise fault. A second call
+        flushes nothing and clears nothing. The unit suite asserts it, because the property is one a
+        later edit could remove without any other test noticing.
+      </t-b>
+      <t-b>
+        One rule keeps the deferral from reordering the output:
+      </t-b>
+      <t-b>
+        <strong>stdout is flushed before any write to stderr.</strong>
+      </t-b>
+      <t-b>
+        This library applies the rule to its own <code>output failed</code> notice, and
+        <code>CSharp_TextFinder_Entry</code> applies it to the diagnostic that follows the option
+        listing on an invalid <code>/r</code>. Invocation 10 of the demonstration is that case: nine
+        listing lines on stdout, then two diagnostic lines on stderr, in that order.
+      </t-b>
+      <t-b>
+        Because this object owns the only writer over standard output in the process, the binary's
+        help text and option listing pass through <code>WriteText</code> rather than through a
+        writer of their own. They therefore share this buffer and reach the stream in the order
+        written, and the ordering rule above is the only coordination needed.
+      </t-b>
+
+      <a id="source"></a>
+      <h3>6. &nbsp;Source</h3>
+      <t-b>
+        <code>StdoutSink.cs</code> in full. At 137 lines it is the second-smallest source in the
+        project, and the ratio to its 115-line specification is the point of the component: a sink
+        that does one thing can be specified exhaustively.
+      </t-b>
+      <h5 class="indent">src/StdoutSink.cs</h5>
+<pre><code class="language-csharp">// StdoutSink.cs - the process's one stdout writer, per Spec_CSharp_TextFinder_Output.md
+
+using System.Text;
+using CSharp_TextFinder_Dirnav;
+
+namespace CSharp_TextFinder_Output;
+
+// §4: sealed, so no subclass can override the emission order Spec_TextFinder.md §3.4 fixes.
+public sealed class StdoutSink : IOutput, IDisposable
+{
+    // §4: the one-sink rule. A static field needs no lock here: one process holds one
+    // standard output handle, and this is read and written on one thread before any
+    // other could exist. Rust needs a thread_local Cell for the same rule because a
+    // plain static there must be Sync; C# places no such bound on a static field.
+    private static bool _taken;
+
+    private readonly StreamWriter _writer;
+    private bool _failed;
+    private bool _disposed;
+
+    public StdoutSink()
+    {
+        if (_taken)
+        {
+            throw new InvalidOperationException("a StdoutSink already exists");
+        }
+
+        // §5: Console.WriteLine terminates with Environment.NewLine, CRLF on Windows, so
+        // this writer is built over the standard output stream with NewLine fixed to LF.
+        // Encoding.UTF8 would emit a byte-order mark; this encoding does not.
+        Stream standardOutput = Console.OpenStandardOutput();
+        _writer = new StreamWriter(standardOutput, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false))
+        {
+            AutoFlush = false,
+            NewLine = "\n",
+        };
+
+        _taken = true;
+    }
+
+    // §4: the interface method. The string, then the single LF §3.4 fixes.
+    public void Output(string text) =&gt; Emit(text, terminate: true);
+
+    // §4: declared on the class and not on IOutput, so Dirnav cannot emit unterminated text.
+    public void WriteText(string text) =&gt; Emit(text, terminate: false);
+
+    // §7: for the one case that needs the buffer drained before the process ends.
+    public void Flush()
+    {
+        if (_failed || _disposed) return;
+
+        try
+        {
+            _writer.Flush();
+        }
+        catch (Exception e) when (IsWriteFailure(e))
+        {
+            Fail();
+        }
+    }
+
+    // §7: disposal is the whole of the flush mechanism. C# has no scope-exit destructor,
+    // and a finalizer may never run, so the caller's using statement carries the guarantee.
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        if (!_failed)
+        {
+            try
+            {
+                _writer.Flush();
+            }
+            catch (Exception e) when (IsWriteFailure(e))
+            {
+                // §6: the final flush is the write most likely to be the first that fails.
+                _failed = true;
+                Console.Error.Write("output failed\n");
+            }
+        }
+
+        try
+        {
+            _writer.Dispose();
+        }
+        catch (Exception e) when (IsWriteFailure(e))
+        {
+            // Dispose flushes again; the notice above already reported the failure.
+        }
+
+        _taken = false;
+    }
+
+    private void Emit(string text, bool terminate)
+    {
+        if (_failed || _disposed) return;
+
+        try
+        {
+            if (terminate)
+            {
+                _writer.WriteLine(text);
+            }
+            else
+            {
+                _writer.Write(text);
+            }
+        }
+        catch (Exception e) when (IsWriteFailure(e))
+        {
+            Fail();
+        }
+    }
+
+    // §6: flush first, then one notice, then discard everything after. The flush is
+    // best-effort, since whatever broke the write may break it too.
+    private void Fail()
+    {
+        _failed = true;
+
+        try
+        {
+            _writer.Flush();
+        }
+        catch (Exception e) when (IsWriteFailure(e))
+        {
+        }
+
+        Console.Error.Write("output failed\n");
+    }
+
+    // §6: the two the framework's stream writes document. A broader catch would hide a
+    // defect in this library behind a notice about output.
+    private static bool IsWriteFailure(Exception e) =&gt;
+        e is IOException or ObjectDisposedException;
+}</code></pre>
+      <t-b>
+        <code>Dispose</code> repeats the failure handling rather than calling <code>Fail</code>,
+        because <code>Fail</code> flushes first and the flush is what has just been attempted. The
+        duplication is four lines and the alternative is a flush of a buffer that was reported
+        unwritable one statement earlier. The <code>_writer.Dispose()</code> that follows is wrapped
+        for the same reason: it flushes again, and by then the notice has already been written.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>7. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 assigns it
+        <code>Prompts_Spec_CSharp_TextFinder_Output.md</code> and its <code>Fix</code> companion,
+        and neither was written: this thread produced one record covering every turn, and it sits on
+        the <a target="_blank" href="Spec_Driven_Design_CSharp_Process.html">Process page</a>, whose
+        Section 3.2 traces the terminator rule from the C++ specification through the parent to this
+        component.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#sink">the sink</a></menu-elem>
+        <menu-elem class="secElem"><a href="#terminator">the terminator rule</a></menu-elem>
+        <menu-elem class="secElem"><a href="#onesink">one sink</a></menu-elem>
+        <menu-elem class="secElem"><a href="#errors">error handling</a></menu-elem>
+        <menu-elem class="secElem"><a href="#disposal">buffering and disposal</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenCSharpPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past.
+       A block whose content fits needs no arrows, so they stay hidden until it
+       overflows, and are rechecked whenever its width changes. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      /* the 1px allowance keeps subpixel rounding from showing arrows that cannot move */
+      const showArrows = () => {
+        arrows.style.display = pre.scrollWidth - pre.clientWidth > 1 ? '' : 'none';
+      };
+      showArrows();
+      /* the splitter resizes the panel and prism rewrites the content, so one
+         measurement at load is not enough */
+      new ResizeObserver(showArrows).observe(pre);
+      window.addEventListener('resize', showArrows);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

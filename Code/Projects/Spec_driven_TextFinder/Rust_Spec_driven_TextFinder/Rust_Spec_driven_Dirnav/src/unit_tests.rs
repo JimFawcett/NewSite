@@ -69,6 +69,21 @@ fn run(root: &Path, commands: &ProgramCommands, skips: &SkipList) -> Vec<String>
     recorder.lines
 }
 
+/// Section 8.1: the summary line alone, from a run over the given roots. One navigator
+/// serves them all, as rust_textfinder_entry uses it, so the counts accumulate.
+fn summary_of(roots: &[PathBuf], commands: &ProgramCommands, skips: &SkipList) -> String {
+    let mut recorder = Recorder { lines: Vec::new() };
+    {
+        let mut navigator =
+            Dirnav::new(&mut recorder, skips, commands).expect("expression must compile");
+        for root in roots {
+            navigator.search(root);
+        }
+        navigator.emit_run_summary();
+    }
+    recorder.lines.pop().expect("the summary is always written")
+}
+
 fn sorted(mut lines: Vec<String>) -> Vec<String> {
     lines.sort();
     lines
@@ -368,6 +383,108 @@ fn an_error_announcement_is_not_gated_on_h() {
     let commands = ProgramCommands::default();
     assert!(commands.suppress_on_no_match);
     assert_eq!(run(&absent, &commands, &no_skips()).len(), 1);
+}
+
+// --- the run summary, section 8.1 ---
+
+fn summary_tree() -> TempTree {
+    let tree = TempTree::new("summary");
+    tree.file("a.rs", b"alpha\n");
+    tree.file("notes.txt", b"alpha\n");
+    tree.file("sub/b.rs", b"alpha\n");
+    tree.file("target/pruned.rs", b"alpha\n");
+    tree
+}
+
+#[test]
+fn every_examined_file_and_every_entered_directory_is_counted() {
+    let tree = summary_tree();
+    let commands = ProgramCommands::default();
+    let skips: SkipList = vec![String::from("target")];
+    assert_eq!(
+        summary_of(&[tree.root.clone()], &commands, &skips),
+        "accessed 3 files, 2 directories"
+    );
+}
+
+#[test]
+fn a_file_the_extension_list_excluded_is_not_counted() {
+    let tree = summary_tree();
+    let mut commands = ProgramCommands::default();
+    commands.extensions = vec![String::from("rs")];
+    let skips: SkipList = vec![String::from("target")];
+    assert_eq!(
+        summary_of(&[tree.root.clone()], &commands, &skips),
+        "accessed 2 files, 2 directories"
+    );
+}
+
+#[test]
+fn a_pruned_directory_is_counted_as_neither() {
+    let tree = summary_tree();
+    let commands = ProgramCommands::default();
+    assert_eq!(
+        summary_of(&[tree.root.clone()], &commands, &no_skips()),
+        "accessed 4 files, 3 directories"
+    );
+}
+
+#[test]
+fn under_recursion_off_no_subdirectory_is_counted() {
+    let tree = summary_tree();
+    let mut commands = ProgramCommands::default();
+    commands.recurse = false;
+    assert_eq!(
+        summary_of(&[tree.root.clone()], &commands, &no_skips()),
+        "accessed 2 files, 1 directories"
+    );
+}
+
+#[test]
+fn a_root_that_is_a_regular_file_counts_as_a_file_and_neither_noun_inflects() {
+    let tree = summary_tree();
+    let commands = ProgramCommands::default();
+    assert_eq!(
+        summary_of(&[tree.root.join("a.rs")], &commands, &no_skips()),
+        "accessed 1 files, 0 directories"
+    );
+}
+
+#[test]
+fn a_root_that_cannot_be_opened_is_counted_as_neither() {
+    let tree = summary_tree();
+    let commands = ProgramCommands::default();
+    assert_eq!(
+        summary_of(&[tree.root.join("no_such_directory")], &commands, &no_skips()),
+        "accessed 0 files, 0 directories"
+    );
+}
+
+#[test]
+fn the_counts_are_of_the_whole_run_and_an_entry_under_two_roots_counts_twice() {
+    let tree = summary_tree();
+    let commands = ProgramCommands::default();
+    let sub = tree.root.join("sub");
+    assert_eq!(
+        summary_of(&[sub.clone(), tree.root.join("a.rs")], &commands, &no_skips()),
+        "accessed 2 files, 1 directories"
+    );
+    assert_eq!(
+        summary_of(&[sub.clone(), sub.clone()], &commands, &no_skips()),
+        "accessed 2 files, 2 directories"
+    );
+}
+
+#[test]
+fn the_summary_is_not_gated_on_h() {
+    let tree = summary_tree();
+    let mut loud = ProgramCommands::default();
+    loud.suppress_on_no_match = false;
+    let quiet = ProgramCommands::default();
+    assert_eq!(
+        summary_of(&[tree.root.clone()], &loud, &no_skips()),
+        summary_of(&[tree.root.clone()], &quiet, &no_skips())
+    );
 }
 
 // --- helpers ---

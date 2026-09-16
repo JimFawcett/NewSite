@@ -81,7 +81,13 @@ void show(std::ostream& log, const std::filesystem::path& executable,
     const std::vector<std::string> out = lines(run.out);
 
     for (std::size_t i = 0; i < out.size() && i < shownLines; ++i) log << "      " << out[i] << "\n";
-    if (out.size() > shownLines) log << "      ... " << (out.size() - shownLines) << " more\n";
+    if (out.size() > shownLines) {
+        log << "      ... " << (out.size() - shownLines) << " more\n";
+
+        // Page_Structure.md §7.2 part 4: the run summary is the last line a traversing run
+        // writes, so the excerpt above never reaches it. Show it rather than withhold it.
+        if (out.back().starts_with("accessed ")) log << "      " << out.back() << "\n";
+    }
     if (out.empty()) log << "      (no output)\n";
 
     for (const std::string& line : lines(run.err)) log << "      [stderr] " << line << "\n";
@@ -144,9 +150,26 @@ int runDemo(std::ostream& log, const std::filesystem::path& executable,
          root + R"( -r "Spec_TextFinder\.md" -h false -v true)");
 
     show(log, executable, projectRoot,
-         "8. A malformed expression. §5.2 puts the option listing on stdout first, so the /r\n"
-         "   line shows what failed, then the diagnostic on stderr, and the exit code is 1.",
+         "8. Two roots, traversed in the order /P gave them. Each path begins with the root\n"
+         "   whose subtree holds it, and the skip list prunes build/ beneath both.",
+         R"(-P Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline )"
+         R"(-P Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output )"
+         R"(-p "ixx, cpp" -r "^export " -n true -L true)");
+
+    show(log, executable, projectRoot,
+         "9. A root path that cannot be opened is announced and the run still exits 0, while\n"
+         "   an error announcement ignores /h true.",
+         R"(-P no_such_directory )"
+         R"(-P Cpp_Spec_driven_TextFinder/Cpp_TextFinder_Structure.md -r import)");
+
+    show(log, executable, projectRoot,
+         "10. A malformed expression. §5.2 puts the option listing on stdout first, so the /r\n"
+         "    line shows what failed, then the diagnostic on stderr, and the exit code is 1.",
          root + R"( -r "export(")");
+
+    show(log, executable, projectRoot,
+         "11. The help text of §5.1, written to stdout under /H, traversing nothing.",
+         "/H true");
 
     log << "\ndemonstration complete\n";
     return 0;

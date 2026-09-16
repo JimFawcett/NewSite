@@ -58,7 +58,7 @@
   <div id="about" class="hidden" onclick="toggleAbout()">
     Spec_Driven_Design_Rust_Entry.html<br />
     copyright &copy; James Fawcett<br />
-    Revised: 09/15/2026
+    Revised: 09/16/2026
   </div>
 
   <content-block>
@@ -67,14 +67,14 @@
         href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_Spec_driven_TextFinder_Entry">Spec-Driven</a>
       <div id="pagetitle" class="header">
         <h2 id="title">Spec-Driven Rust: Entry</h2>
-        <h4 class="indent" id="subtitle">ten steps, a thread_local skip list, three exit codes, and no call to process::exit</h4>
+        <h4 class="indent" id="subtitle">eleven steps, a thread_local skip list, three exit codes, and no call to process::exit</h4>
       </div>
       <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
         <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
         <a class="repoLinks" href="Spec_Driven_Design_Behavior_Contracts.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
         <a class="repoLinks" href="Spec_Driven_Design_Cpp_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
         <a class="repoLinks" href="Spec_Driven_Design_Rust_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
-        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
         <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
       </div>
     </header>
@@ -112,7 +112,7 @@
         </ul>
       </t-b>
       <t-b>
-        It is 113 lines, and the specification that fixes it is 105. That ratio is the point of the
+        It is 114 lines, and the specification that fixes it is 106. That ratio is the point of the
         component: the design goal is to make the wiring itself readable, and everything harder than
         wiring lives in a library.
       </t-b>
@@ -120,8 +120,8 @@
       <a id="startup"></a>
       <h3>2. &nbsp;The Startup Sequence</h3>
       <t-b>
-        <code>fn main() -&gt; ExitCode</code> performs ten steps in order. The order is the
-        specification rather than a consequence of it: three of the ten are placed where they are
+        <code>fn main() -&gt; ExitCode</code> performs eleven steps in order. The order is the
+        specification rather than a consequence of it: three of the eleven are placed where they are
         for reasons that would not survive rearranging.
       </t-b>
       <table>
@@ -171,9 +171,28 @@
         </tr>
         <tr>
           <td class="lightItem">10</td>
+          <td class="lightItem">Call <code>emit_run_summary</code> on that same value, once, after the last root path returns</td>
+        </tr>
+        <tr>
+          <td class="lightItem">11</td>
           <td class="lightItem">Return exit code 0</td>
         </tr>
       </table>
+      <t-b>
+        <strong>Step 10 is the whole of this binary's part in the run summary.</strong>
+        Spec_TextFinder.md &sect;3.6 puts the two counts in
+        <code>rust_textfinder_dirnav</code>, so this binary supplies no count and composes no text.
+        What it supplies is the one fact the library cannot have: that step 9 is finished. The call
+        sits inside the <code>Ok</code> arm of step 8, where the <code>Dirnav</code> value is in
+        scope, and it is the reason that arm ends in a statement rather than in the loop.
+      </t-b>
+      <t-b>
+        Every exit above returns before step 9, which is what makes the summary a mark of a run that
+        traversed. <code>/H</code>, the bare command line, a parse failure, an undecodable argument,
+        and a malformed <code>/r</code> each leave at their own step, and none of them reaches step
+        10 - so none writes a summary, which is exactly what &sect;3.6 asks. The integration suite
+        asserts the absence for three of those five cases.
+      </t-b>
       <t-b>
         <strong>Step 1 uses <code>args_os</code> and not <code>args</code>.</strong>
         <code>std::env::args</code> panics on an argument that is not valid Unicode, and a command
@@ -417,7 +436,7 @@ fn add_skip_directory(name: &amp;str);</code></pre>
       <h3>7. &nbsp;Source</h3>
       <t-b>
         <code>main.rs</code> in full, then the package manifest. The step numbers in the comments
-        are the ten steps of Section 2, and the citations name the specification section each step
+        are the eleven steps of Section 2, and the citations name the specification section each step
         satisfies.
       </t-b>
       <h5 class="indent">main.rs</h5>
@@ -518,6 +537,7 @@ fn main() -&gt; ExitCode {
             for root in &amp;commands.root_paths {
                 navigator.search(Path::new(root));
             }
+            navigator.emit_run_summary();   // only main knows the last root has returned
             true
         }
         Err(_) =&gt; false,

@@ -121,8 +121,20 @@ fn verbose_lists_the_options_ahead_of_the_search_output() {
     assert!(result.stdout.starts_with(
         "/P .\n/p\n/r .\n/s true\n/h true\n/v true\n/H false\n/n false\n/L false\n"
     ));
-    assert_eq!(result.lines().last(), Some(&"a.txt"));
+    let lines = result.lines();
+    assert_eq!(lines[lines.len() - 2], "a.txt");
+    assert_eq!(lines.last(), Some(&"accessed 1 files, 1 directories"));
     assert_eq!(result.code, 0);
+}
+
+// Spec_TextFinder.md section 3.6: only a run that traversed writes the summary.
+#[test]
+fn a_run_that_traverses_nothing_writes_no_summary() {
+    let tree = TempTree::new("nosummary");
+    tree.file("a.txt", b"alpha\n");
+    assert!(!run_in(&tree.root, &[]).stdout.contains("accessed "));
+    assert!(!run_in(&tree.root, &["/H", "true"]).stdout.contains("accessed "));
+    assert!(!run_in(&tree.root, &["/r", "a(b"]).stdout.contains("accessed "));
 }
 
 // --- usage diagnostics, sections 5.2 and 6 ---
@@ -167,7 +179,7 @@ fn a_block_carries_its_path_once_and_its_detail_lines_beneath_it() {
     let tree = TempTree::new("block");
     tree.file("solo.txt", b"alpha\nbeta\nalpha again\n");
     let result = run_in(&tree.root, &["/P", ".", "/r", "alpha", "/n", "true", "/L", "true"]);
-    assert_eq!(result.stdout, "solo.txt\n  1 - alpha\n  3 - alpha again\n");
+    assert_eq!(result.stdout, "solo.txt\n  1 - alpha\n  3 - alpha again\naccessed 1 files, 1 directories\n");
     assert_eq!(result.code, 0);
 }
 
@@ -176,7 +188,7 @@ fn a_root_of_dot_contributes_no_leading_dot_slash() {
     let tree = TempTree::new("dotroot");
     tree.file("sub/leaf.txt", b"alpha\n");
     let result = run_in(&tree.root, &["/P", "."]);
-    assert_eq!(result.stdout, "sub/leaf.txt\n");
+    assert_eq!(result.stdout, "sub/leaf.txt\naccessed 1 files, 2 directories\n");
 }
 
 #[test]
@@ -184,7 +196,7 @@ fn a_named_root_is_part_of_every_path_and_separators_are_normalized() {
     let tree = TempTree::new("namedroot");
     tree.file("sub/deeper/leaf.txt", b"alpha\n");
     let result = run_in(&tree.root, &["/P", "sub\\deeper"]);
-    assert_eq!(result.stdout, "sub/deeper/leaf.txt\n");
+    assert_eq!(result.stdout, "sub/deeper/leaf.txt\naccessed 1 files, 1 directories\n");
 }
 
 #[test]
@@ -193,9 +205,9 @@ fn each_root_is_traversed_in_the_order_given() {
     tree.file("one/a.txt", b"alpha\n");
     tree.file("two/b.txt", b"alpha\n");
     let forward = run_in(&tree.root, &["/P", "one", "/P", "two"]);
-    assert_eq!(forward.stdout, "one/a.txt\ntwo/b.txt\n");
+    assert_eq!(forward.stdout, "one/a.txt\ntwo/b.txt\naccessed 2 files, 2 directories\n");
     let reversed = run_in(&tree.root, &["/P", "two", "/P", "one"]);
-    assert_eq!(reversed.stdout, "two/b.txt\none/a.txt\n");
+    assert_eq!(reversed.stdout, "two/b.txt\none/a.txt\naccessed 2 files, 2 directories\n");
 }
 
 #[test]
@@ -206,7 +218,7 @@ fn the_compiled_skip_list_prunes_a_matching_directory() {
     tree.file("node_modules/pruned.txt", b"alpha\n");
     tree.file(".git/pruned.txt", b"alpha\n");
     let result = run_in(&tree.root, &["/P", "."]);
-    assert_eq!(result.stdout, "kept.txt\n");
+    assert_eq!(result.stdout, "kept.txt\naccessed 1 files, 1 directories\n");
 }
 
 #[test]
@@ -215,7 +227,7 @@ fn recursion_off_searches_the_root_directory_alone() {
     tree.file("top.txt", b"alpha\n");
     tree.file("sub/under.txt", b"alpha\n");
     let result = run_in(&tree.root, &["/P", ".", "/s", "false"]);
-    assert_eq!(result.stdout, "top.txt\n");
+    assert_eq!(result.stdout, "top.txt\naccessed 1 files, 1 directories\n");
 }
 
 #[test]
@@ -225,7 +237,7 @@ fn the_extension_filter_selects_by_last_dot_suffix() {
     tree.file("b.txt", b"alpha\n");
     tree.file("noext", b"alpha\n");
     let result = run_in(&tree.root, &["/P", ".", "/p", " .rs , "]);
-    assert_eq!(result.stdout, "a.rs\n");
+    assert_eq!(result.stdout, "a.rs\naccessed 1 files, 1 directories\n");
 }
 
 #[test]
@@ -234,7 +246,11 @@ fn no_path_is_ever_printed_twice() {
     tree.file("a.txt", b"alpha\nalpha\nalpha\n");
     tree.file("sub/b.txt", b"alpha\n");
     let result = run_in(&tree.root, &["/P", ".", "/r", "alpha", "/L", "true"]);
-    let paths: Vec<&str> = result.lines().into_iter().filter(|l| !l.starts_with("  ")).collect();
+    let paths: Vec<&str> = result
+        .lines()
+        .into_iter()
+        .filter(|l| !l.starts_with("  ") && !l.starts_with("accessed "))
+        .collect();
     assert_eq!(paths.len(), 2);
     assert_ne!(paths[0], paths[1]);
 }
@@ -248,7 +264,10 @@ fn every_examined_file_appears_exactly_once_under_h_false() {
     tree.file("miss.txt", b"gamma\n");
     tree.file("binary.dat", b"alpha\x00\n");
     let result = run_in(&tree.root, &["/P", ".", "/r", "alpha", "/h", "false"]);
-    assert_eq!(result.sorted(), vec!["hit.txt", "searched miss.txt", "skipped binary.dat"]);
+    assert_eq!(
+        result.sorted(),
+        vec!["accessed 3 files, 1 directories", "hit.txt", "searched miss.txt", "skipped binary.dat"]
+    );
     assert_eq!(result.code, 0);
 }
 
@@ -258,7 +277,7 @@ fn the_default_h_hides_only_the_files_that_matched_nothing() {
     tree.file("hit.txt", b"alpha\n");
     tree.file("miss.txt", b"gamma\n");
     let result = run_in(&tree.root, &["/P", ".", "/r", "alpha"]);
-    assert_eq!(result.stdout, "hit.txt\n");
+    assert_eq!(result.stdout, "hit.txt\naccessed 2 files, 1 directories\n");
 }
 
 #[test]
@@ -266,7 +285,7 @@ fn an_unopenable_root_is_announced_and_leaves_the_exit_code_zero() {
     let tree = TempTree::new("missingroot");
     tree.file("a.txt", b"alpha\n");
     let result = run_in(&tree.root, &["/P", "no_such_directory", "/P", "."]);
-    assert_eq!(result.stdout, "cannot open no_such_directory\na.txt\n");
+    assert_eq!(result.stdout, "cannot open no_such_directory\na.txt\naccessed 1 files, 1 directories\n");
     assert!(result.stderr.is_empty());
     assert_eq!(result.code, 0);
 }
@@ -278,7 +297,7 @@ fn the_no_content_case_reports_a_binary_file_and_omits_an_empty_one() {
     tree.file("empty.txt", b"");
     tree.file("text.txt", b"alpha\n");
     let result = run_in(&tree.root, &["/P", ".", "/h", "false"]);
-    assert_eq!(result.sorted(), vec!["binary.dat", "text.txt"]);
+    assert_eq!(result.sorted(), vec!["accessed 3 files, 1 directories", "binary.dat", "text.txt"]);
 }
 
 // --- stream discipline, sections 3.4 and 5 ---
@@ -298,5 +317,5 @@ fn a_crlf_file_yields_lines_free_of_the_carriage_return() {
     let tree = TempTree::new("crlffile");
     tree.file("dos.txt", b"alpha\r\nbeta\r\n");
     let result = run_in(&tree.root, &["/P", ".", "/r", "alpha", "/L", "true"]);
-    assert_eq!(result.stdout, "dos.txt\n  alpha\n");
+    assert_eq!(result.stdout, "dos.txt\n  alpha\naccessed 1 files, 1 directories\n");
 }

@@ -91,6 +91,12 @@ fn case(number: usize, note: &[&str], args: &[&str]) {
     }
     if lines.len() > SHOWN {
         println!("      ... {} more", lines.len() - SHOWN);
+
+        // Page_Structure.md section 7.2 part 4: the run summary is the last line a traversing
+        // run writes, so the excerpt above never reaches it. Show it rather than withhold it.
+        if emitted > SHOWN && lines[emitted - 1].starts_with("accessed ") {
+            println!("      {}", lines[emitted - 1]);
+        }
     }
     println!();
     println!("  {emitted} line(s), exit {}", outcome.status.code().unwrap_or(-1));

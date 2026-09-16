@@ -24,7 +24,7 @@ The binary:
 - Constructs the process's one `StdoutSink`, and writes its own stdout text through that value rather than through a handle of its own.
 - Constructs a `Dirnav`, generic over `StdoutSink`, borrowing the sink, the finalized skip list, and the parsed commands.
 - Owns all three of those for the lifetime of the `Dirnav` value, which borrows them rather than cloning them.
-- Drives traversal across every supplied root path using the single reused `Dirnav` value.
+- Drives traversal across every supplied root path using the single reused `Dirnav` value, then asks that value for the run summary of Spec_TextFinder.md §3.6 once the last root path is finished.
 - Handles process-level concerns: the bare command line of Spec_TextFinder.md §3.1, `/H` help, the `/v` option listing, exit codes, and top-level diagnostics.
 
 ## 4. Startup Sequence
@@ -44,7 +44,8 @@ The binary:
    3. Compose the usage diagnostic in the shape Spec_TextFinder.md §5.2 binds — the reason line `invalid regex for switch: /r`, a newline, then `usage_line()` — and write it to stderr. §6 fixes that reason line for this implementation. The binary composes it; neither `rust_textfinder_cmdline` nor `rust_textfinder_dirnav` does, the former supplying only `usage_line()` and the latter only the failure that triggers it. The text the `regex` crate puts in its own error is not written, for a reason that outlives §5.2's wording: that text is the crate's, so a crate upgrade would change this program's output without any document in this tree recording the change.
    4. Exit with code `1`, having traversed nothing.
 9. For each root path in the parsed commands, in the order `/P` gave them, invoke `search` on the same `Dirnav` value, then continue with the next root path. A root path that cannot be searched — unopenable, a symbolic link, or neither a regular file nor a directory — is announced by `rust_textfinder_dirnav` itself, per Spec_TextFinder.md §3.4; the binary neither formats nor inspects that notice, and no root-path outcome affects the exit code.
-10. Return exit code 0.
+10. Call `emit_run_summary` on that same `Dirnav` value, once, after the last root path returns. This writes the run summary Spec_TextFinder.md §3.6 requires. The binary supplies no count and composes no text — the counts are the library's, per Spec_Rust_TextFinder_Dirnav.md §8.1 — and its whole part is knowing that step 9 is finished, which nothing inside the library can know. Every exit above returns before step 9, so no run that skipped traversal reaches this step: `/H`, the bare command line, a parse failure, an undecodable argument, and a malformed `/r` each leave at their own step, which is what §3.6 requires of a summary. The call sits inside the `Ok` arm of step 8, where the `Dirnav` value is in scope.
+11. Return exit code 0.
 
 Every exit above returns from `main`, never calling `std::process::exit`. The `StdoutSink` is a local of `main`, and only a return drops it and flushes its stdout buffer (Spec_Rust_TextFinder_Output.md §7). Steps 4, 5, and 8 each write to stdout and then leave, and `std::process::exit` would discard what they wrote.
 

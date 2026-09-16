@@ -58,7 +58,7 @@
   <div id="about" class="hidden" onclick="toggleAbout()">
     Spec_Driven_Design_Rust_Testing.html<br />
     copyright &copy; James Fawcett<br />
-    Revised: 09/15/2026
+    Revised: 09/16/2026
   </div>
 
   <content-block>
@@ -67,14 +67,14 @@
         href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder">Spec-Driven</a>
       <div id="pagetitle" class="header">
         <h2 id="title">Spec-Driven Rust: Testing</h2>
-        <h4 class="indent" id="subtitle">four suites, 79 tests, the harness the language ships with</h4>
+        <h4 class="indent" id="subtitle">four suites, 88 tests, the harness the language ships with</h4>
       </div>
       <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
         <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
         <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
         <a class="repoLinks" href="Spec_Driven_Design_Cpp_Testing.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
         <a class="repoLinks" href="Spec_Driven_Design_Rust_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
-        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Testing.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
         <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
       </div>
     </header>
@@ -116,7 +116,7 @@
         </tr>
         <tr>
           <td class="lightItem">Dirnav</td>
-          <td class="lightItem">25</td>
+          <td class="lightItem">33</td>
           <td class="lightItem">Skip-list pruning including the root carve-out, <code>/p</code> selection with the dot-file rule, <code>/s false</code>, all four block forms, the <code>/h</code> gating, <code>cannot open</code>, LF, CRLF and bare CR splitting, BOM consumption, and the 10 MB limit</td>
         </tr>
         <tr>
@@ -126,16 +126,16 @@
         </tr>
         <tr>
           <td class="lightItem">Integration</td>
-          <td class="lightItem">21</td>
+          <td class="lightItem">22</td>
           <td class="lightItem">The executable end to end: exit codes, stream routing, <code>/H</code>, the bare command line, the <code>/v</code> ordering, LF-only output, separator normalization, and all seven usage diagnostics</td>
         </tr>
       </table>
       <t-b>
-        79 tests in total. A Rust test is one <code>#[test]</code> function holding as many
+        88 tests in total. A Rust test is one <code>#[test]</code> function holding as many
         assertions as the claim needs, so these counts are not comparable with the C++ suites'
         assertion counts. The
         <a target="_blank" href="Spec_Driven_Design_Cpp_Testing.html">C++ Testing page</a> reports
-        136 assertions over the same ground, and the difference is one of unit rather than of
+        151 assertions over the same ground, and the difference is one of unit rather than of
         coverage: <code>every_parse_failure_reaches_stderr_with_exit_code_one</code> is one test and
         18 assertions, three for each of the six reason lines.
       </t-b>
@@ -239,9 +239,28 @@ mod unit_tests;</code></pre>
       </table>
       <t-b>
         Each takes its working directory from its own location with <code>cd /d "%~dp0"</code>, so
-        any of the three runs from any working directory. A failed build exits before running a
+        any of the three runs from any working directory. A failed build stops before running a
         suite and says that every suite counts as failed, which satisfies &sect;6.2's rule that a
         suite never built counts as a failure rather than being skipped silently.
+      </t-b>
+      <t-b>
+        Each builds the workspace before its first suite, which is what &sect;6.2 asks of a runner
+        so that a fresh checkout needs no separate step and a reader cannot run yesterday's binary
+        against today's source. Rust needs no work to satisfy that: <code>cargo build</code> is
+        already incremental, so a run after a build costs a fraction of a second and one after an
+        edit rebuilds only what changed. The
+        <a target="_blank" href="Spec_Driven_Design_Cpp_Testing.html">C++ runners</a> pay more for
+        the same rule, having to configure CMake when there is no cache and to establish the MSVC
+        environment when the shell lacks it.
+      </t-b>
+      <t-b>
+        Each also holds the console after its summary, so a reader who starts one from a file
+        manager sees its output rather than a window that closes. The hold is one
+        <code>:hold</code> subroutine, it comes last, and it does not change the exit code - a
+        <code>pause</code> leaves <code>ERRORLEVEL</code> untouched, and the runner returns its
+        failure count explicitly in any case. Setting <code>TEXTFINDER_NO_PAUSE</code> to a
+        non-empty value suppresses it, which is how the captures in Sections 4 and 5 were taken and
+        how the demonstration of &sect;7.5 is recaptured.
       </t-b>
       <t-b>
         The <code>--lib</code> flag on the unit runs is what keeps the three suites separate.
@@ -257,6 +276,12 @@ mod unit_tests;</code></pre>
       </t-b>
       <h5 class="indent">run_unit_tests.bat</h5>
 <pre><code class="language-text">@echo off
+rem run_unit_tests.bat - runs every rust_textfinder unit suite and reports each status
+rem
+rem Spec_TextFinder.md §6.2: the runner builds what it is about to run, announces each
+rem suite and the status it returned, exits with the number of suites that failed, and
+rem holds the console after its summary.
+
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
@@ -265,17 +290,20 @@ set FAILURES=0
 echo building the workspace
 cargo build --workspace --quiet
 if errorlevel 1 (
-  echo   build failed; every unit suite counts as failed
-  exit /b 3
+  echo   build failed; all 3 unit suites count as failed
+  set FAILURES=3
+  goto :summary
 )
 
 call :suite rust_textfinder_cmdline
 call :suite rust_textfinder_dirnav
 call :suite rust_textfinder_output
 
+:summary
 echo.
-echo %FAILURES% unit suite^(s^) failed
-exit /b %FAILURES%
+echo !FAILURES! unit suite^(s^) failed
+call :hold
+exit /b !FAILURES!
 
 :suite
 echo.
@@ -284,9 +312,22 @@ cargo test -p %1 --lib
 set STATUS=!errorlevel!
 echo === unit suite %1 returned !STATUS!
 if not "!STATUS!"=="0" set /a FAILURES+=1
+exit /b 0
+
+rem --- §6.2: hold the console unless a capture suppressed it. ---
+:hold
+if not "%TEXTFINDER_NO_PAUSE%"=="" exit /b 0
+echo.
+pause
 exit /b 0</code></pre>
       <h5 class="indent">run_integration_tests.bat</h5>
 <pre><code class="language-text">@echo off
+rem run_integration_tests.bat - runs the rust_textfinder integration suite and reports its status
+rem
+rem Spec_TextFinder.md §6.2: the runner builds what it is about to run, announces the
+rem suite and the status it returned, exits with the number of suites that failed, and
+rem holds the console after its summary.
+
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
@@ -296,7 +337,8 @@ echo building the workspace
 cargo build --workspace --quiet
 if errorlevel 1 (
   echo   build failed; the integration suite counts as failed
-  exit /b 1
+  set FAILURES=1
+  goto :summary
 )
 
 echo.
@@ -306,14 +348,23 @@ set STATUS=!errorlevel!
 echo === integration suite integration returned !STATUS!
 if not "!STATUS!"=="0" set /a FAILURES+=1
 
+:summary
 echo.
-echo %FAILURES% integration suite^(s^) failed
-exit /b %FAILURES%</code></pre>
+echo !FAILURES! integration suite^(s^) failed
+call :hold
+exit /b !FAILURES!
+
+rem --- §6.2: hold the console unless a capture suppressed it. ---
+:hold
+if not "%TEXTFINDER_NO_PAUSE%"=="" exit /b 0
+echo.
+pause
+exit /b 0</code></pre>
 
       <a id="unitoutput"></a>
       <h3>4. &nbsp;Unit Suite Output</h3>
       <t-b>
-        Captured 2026-09-15 from <code>run_unit_tests.bat</code>. Each suite names every test,
+        Captured 2026-09-16 from <code>run_unit_tests.bat</code>. Each suite names every test,
         prints its count, and ends with the line the harness writes. The test names are the
         specification restated as claims, which is what makes a passing run readable as coverage
         rather than only as a number.
@@ -328,26 +379,26 @@ exit /b %FAILURES%</code></pre>
      Running unittests src\lib.rs (target\debug\deps\rust_textfinder_cmdline-96a227066ace06c9.exe)
 
 running 29 tests
-test unit_tests::a_token_without_an_introducer_is_not_a_switch ... ok
 test unit_tests::a_boolean_switch_rejects_any_other_value ... ok
-test unit_tests::a_trailing_switch_is_missing_its_argument ... ok
-test unit_tests::an_undefined_introducer_led_token_is_unrecognized ... ok
-test unit_tests::duplicate_extensions_are_retained_and_order_preserved ... ok
-test unit_tests::booleans_are_matched_case_insensitively ... ok
+test unit_tests::a_token_without_an_introducer_is_not_a_switch ... ok
 test unit_tests::an_argument_is_consumed_verbatim_even_when_it_looks_like_a_switch ... ok
+test unit_tests::an_undefined_introducer_led_token_is_unrecognized ... ok
+test unit_tests::a_trailing_switch_is_missing_its_argument ... ok
+test unit_tests::booleans_are_matched_case_insensitively ... ok
 test unit_tests::both_introducers_are_equivalent ... ok
+test unit_tests::duplicate_extensions_are_retained_and_order_preserved ... ok
 test unit_tests::empty_arguments_are_rejected_for_root_path_and_expression ... ok
 test unit_tests::empty_command_line_yields_the_defaults ... ok
-test unit_tests::every_returned_string_ends_with_a_newline ... ok
-test unit_tests::extension_case_is_not_folded_by_the_parser ... ok
-test unit_tests::empty_extension_items_are_discarded ... ok
 test unit_tests::every_diagnostic_ends_with_the_usage_line ... ok
+test unit_tests::every_returned_string_ends_with_a_newline ... ok
 test unit_tests::extensions_are_split_trimmed_and_stripped_of_one_dot ... ok
-test unit_tests::help_text_carries_every_switch_and_ends_with_a_newline ... ok
-test unit_tests::last_occurrence_wins_for_every_other_switch ... ok
+test unit_tests::extension_case_is_not_folded_by_the_parser ... ok
 test unit_tests::first_root_path_replaces_the_default_even_when_equal_to_it ... ok
+test unit_tests::last_occurrence_wins_for_every_other_switch ... ok
 test unit_tests::no_line_of_the_option_listing_ends_in_whitespace ... ok
+test unit_tests::empty_extension_items_are_discarded ... ok
 test unit_tests::only_one_leading_dot_is_stripped ... ok
+test unit_tests::help_text_carries_every_switch_and_ends_with_a_newline ... ok
 test unit_tests::option_listing_emits_one_line_per_root_and_a_joined_extension_list ... ok
 test unit_tests::option_listing_of_a_bare_v_true_command_line ... ok
 test unit_tests::option_listing_of_the_defaults_reads_v_false ... ok
@@ -375,34 +426,42 @@ test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
      Running unittests src\lib.rs (target\debug\deps\rust_textfinder_dirnav-aee1a9ce695c7482.exe)
 
-running 25 tests
+running 33 tests
 test unit_tests::a_malformed_expression_is_returned_rather_than_panicking ... ok
-test unit_tests::line_iteration_treats_a_final_unterminated_run_as_a_line ... ok
 test unit_tests::a_root_path_that_cannot_be_opened_is_announced ... ok
 test unit_tests::an_error_announcement_is_not_gated_on_h ... ok
-test unit_tests::path_joining_never_doubles_a_separator ... ok
-test unit_tests::a_root_named_in_the_skip_list_is_traversed_and_pruning_resumes_below_it ... ok
 test unit_tests::a_block_writes_its_path_once_however_many_lines_match ... ok
-test unit_tests::every_path_begins_with_the_root_and_uses_forward_separators ... ok
-test unit_tests::a_detail_line_carries_only_the_fields_n_and_l_select ... ok
-test unit_tests::evaluation_stops_at_the_first_match_when_neither_n_nor_l_is_set ... ok
-test unit_tests::line_numbers_count_lines_that_did_not_match ... ok
-test unit_tests::lf_crlf_and_bare_cr_each_terminate_a_line ... ok
-test unit_tests::a_searched_file_that_matched_nothing_is_announced_only_under_h_false ... ok
+test unit_tests::a_root_named_in_the_skip_list_is_traversed_and_pruning_resumes_below_it ... ok
 test unit_tests::a_matching_line_yields_one_detail_line_however_many_occurrences_it_holds ... ok
+test unit_tests::line_iteration_treats_a_final_unterminated_run_as_a_line ... ok
 test unit_tests::a_root_path_that_is_a_regular_file_is_searched_and_filtered_like_any_other ... ok
 test unit_tests::a_leading_bom_does_not_belong_to_the_first_line ... ok
+test unit_tests::a_detail_line_carries_only_the_fields_n_and_l_select ... ok
+test unit_tests::a_searched_file_that_matched_nothing_is_announced_only_under_h_false ... ok
+test unit_tests::path_joining_never_doubles_a_separator ... ok
 test unit_tests::a_skip_list_directory_is_pruned_silently ... ok
+test unit_tests::evaluation_stops_at_the_first_match_when_neither_n_nor_l_is_set ... ok
 test unit_tests::an_empty_extension_list_selects_every_file ... ok
 test unit_tests::a_skipped_file_is_silent_under_the_default_h ... ok
-test unit_tests::one_navigator_serves_every_root_path ... ok
-test unit_tests::default_command_line_reports_every_nonempty_file_without_opening_it ... ok
-test unit_tests::a_file_above_the_size_limit_is_never_read ... ok
 test unit_tests::a_file_holding_a_nul_byte_or_invalid_utf8_is_skipped ... ok
+test unit_tests::a_file_above_the_size_limit_is_never_read ... ok
+test unit_tests::a_pruned_directory_is_counted_as_neither ... ok
+test unit_tests::a_root_that_is_a_regular_file_counts_as_a_file_and_neither_noun_inflects ... ok
+test unit_tests::default_command_line_reports_every_nonempty_file_without_opening_it ... ok
+test unit_tests::a_root_that_cannot_be_opened_is_counted_as_neither ... ok
+test unit_tests::every_path_begins_with_the_root_and_uses_forward_separators ... ok
+test unit_tests::lf_crlf_and_bare_cr_each_terminate_a_line ... ok
+test unit_tests::line_numbers_count_lines_that_did_not_match ... ok
+test unit_tests::one_navigator_serves_every_root_path ... ok
+test unit_tests::a_file_the_extension_list_excluded_is_not_counted ... ok
 test unit_tests::recursion_off_searches_the_root_directory_alone ... ok
+test unit_tests::every_examined_file_and_every_entered_directory_is_counted ... ok
 test unit_tests::a_non_empty_extension_list_selects_by_last_dot_suffix ... ok
+test unit_tests::under_recursion_off_no_subdirectory_is_counted ... ok
+test unit_tests::the_counts_are_of_the_whole_run_and_an_entry_under_two_roots_counts_twice ... ok
+test unit_tests::the_summary_is_not_gated_on_h ... ok
 
-test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
 === unit suite rust_textfinder_dirnav returned 0</code></pre>
       <t-b>
@@ -415,19 +474,33 @@ test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
         <code>every_path_begins_with_the_root_and_uses_forward_separators</code> is the
         normalization gap the audit found.
       </t-b>
+      <t-b>
+        Eight of its 33 tests cover the run summary of &sect;3.6, and they read as that section's
+        exclusion list turned into claims:
+        <code>a_file_the_extension_list_excluded_is_not_counted</code>,
+        <code>a_pruned_directory_is_counted_as_neither</code>,
+        <code>under_recursion_off_no_subdirectory_is_counted</code>,
+        <code>a_root_that_cannot_be_opened_is_counted_as_neither</code>.
+        <code>the_counts_are_of_the_whole_run_and_an_entry_under_two_roots_counts_twice</code>
+        drives one navigator over two roots the way the binary does, which is the only way to test
+        that the counts are never reset between them. And
+        <code>a_root_that_is_a_regular_file_counts_as_a_file_and_neither_noun_inflects</code>
+        asserts <code>accessed 1 files, 0 directories</code> verbatim, pinning the uninflected
+        singular &sect;3.6 accepts rather than leaving a later reader to correct it.
+      </t-b>
 <pre><code class="language-text">=== starting unit suite: rust_textfinder_output
     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
      Running unittests src\lib.rs (target\debug\deps\rust_textfinder_output-828f4f4650b5899b.exe)
 
 running 4 tests
-test unit_tests::a_second_sink_is_refused_while_the_first_lives ... ok
-verbatim text, already terminated
+test unit_tests::a_second_sink_is_refused_while_the_first_lives ... verbatim text, already terminated
 one line, terminator added by the sink
 
-reached through the trait
-test unit_tests::dropping_a_sink_releases_the_right_to_make_one ... ok
+okreached through the trait
+
 test unit_tests::writing_through_both_methods_reports_nothing_and_panics_on_nothing ... ok
 test unit_tests::the_sink_is_the_output_trait_implementation_dirnav_binds_to ... ok
+test unit_tests::dropping_a_sink_releases_the_right_to_make_one ... ok
 
 test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
@@ -450,38 +523,47 @@ test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
       <a id="integrationoutput"></a>
       <h3>5. &nbsp;Integration Suite Output</h3>
       <t-b>
-        Captured in the same run, from <code>run_integration_tests.bat</code>. Each of these 21
+        Captured in the same run, from <code>run_integration_tests.bat</code>. Each of these 22
         tests spawns the executable one or more times, which is why this suite accounts for nearly
         all the runtime while the three in-process suites finish in hundredths of a second combined.
+      </t-b>
+      <t-b>
+        The twenty-second arrived with Spec_TextFinder.md &sect;3.6 and asserts an absence:
+        <code>a_run_that_traverses_nothing_writes_no_summary</code> drives the bare command line,
+        <code>/H</code>, and a malformed <code>/r</code> and requires that none of the three write
+        the closing line. A rule about runs that do not traverse can only be tested that way, and
+        the other 21 tests gained the line in their expected stdout instead - which is what
+        asserting exact output costs when the output grows, and what it buys.
       </t-b>
 <pre><code class="language-text">=== starting integration suite: integration
     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
      Running tests\integration.rs (target\debug\deps\integration-be2acb173234ccd1.exe)
 
-running 21 tests
+running 22 tests
 test a_malformed_expression_prints_the_listing_to_stdout_then_the_diagnostic ... ok
 test a_malformed_expression_under_verbose_lists_the_options_once ... ok
 test help_prints_the_specified_text_to_stdout_and_exits_zero ... ok
 test a_root_of_dot_contributes_no_leading_dot_slash ... ok
 test a_named_root_is_part_of_every_path_and_separators_are_normalized ... ok
-test a_crlf_file_yields_lines_free_of_the_carriage_return ... ok
 test a_bare_command_line_lists_the_resolved_options_and_exits_zero ... ok
 test a_block_carries_its_path_once_and_its_detail_lines_beneath_it ... ok
+test a_crlf_file_yields_lines_free_of_the_carriage_return ... ok
 test an_unopenable_root_is_announced_and_leaves_the_exit_code_zero ... ok
 test help_is_taken_before_any_traversal ... ok
-test every_examined_file_appears_exactly_once_under_h_false ... ok
-test the_no_content_case_reports_a_binary_file_and_omits_an_empty_one ... ok
+test no_path_is_ever_printed_twice ... ok
 test recursion_off_searches_the_root_directory_alone ... ok
 test the_default_h_hides_only_the_files_that_matched_nothing ... ok
+test every_examined_file_appears_exactly_once_under_h_false ... ok
 test the_extension_filter_selects_by_last_dot_suffix ... ok
-test no_path_is_ever_printed_twice ... ok
 test the_compiled_skip_list_prunes_a_matching_directory ... ok
+test the_no_content_case_reports_a_binary_file_and_omits_an_empty_one ... ok
 test verbose_lists_the_options_ahead_of_the_search_output ... ok
 test each_root_is_traversed_in_the_order_given ... ok
 test stdout_is_terminated_with_lf_on_every_platform ... ok
+test a_run_that_traverses_nothing_writes_no_summary ... ok
 test every_parse_failure_reaches_stderr_with_exit_code_one ... ok
 
-test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.72s
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.84s
 
 === integration suite integration returned 0</code></pre>
       <t-b>
@@ -525,7 +607,7 @@ test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
             surrogate on Windows or a non-UTF-8 byte sequence on POSIX, and neither
             <code>TempTree</code> builds one. The
             <a target="_blank" href="Spec_Driven_Design_Cpp_Testing.html">C++ suite reports the same
-            gap</a>, so the rule that cost both implementations a code change is tested in
+            gap</a>, so the rule that cost two implementations a code change is tested in
             neither.</li>
           <li><strong>The failed write.</strong> Nothing breaks stdout mid-run, so the
             <code>output failed</code> notice, the permanence of the failed state, and the rule that

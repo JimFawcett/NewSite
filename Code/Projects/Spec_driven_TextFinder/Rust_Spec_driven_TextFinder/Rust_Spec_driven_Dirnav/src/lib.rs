@@ -21,6 +21,8 @@ pub struct Dirnav<'a, O: Output> {
     commands: &'a ProgramCommands,
     expression: Regex,
     path_line_only: bool,
+    files: usize,
+    directories: usize,
 }
 
 const SIZE_LIMIT: u64 = 10_485_760;
@@ -34,7 +36,14 @@ impl<'a, O: Output> Dirnav<'a, O> {
         let expression = Regex::new(&commands.regex_text)?;
         let path_line_only =
             commands.regex_text == "." && !commands.line_numbers && !commands.matched_line;
-        Ok(Dirnav { out, skips, commands, expression, path_line_only })
+        Ok(Dirnav { out, skips, commands, expression, path_line_only, files: 0, directories: 0 })
+    }
+
+    /// Section 8.1: the run summary of Spec_TextFinder.md section 3.6, written once
+    /// after the last root.
+    pub fn emit_run_summary(&mut self) {
+        let text = format!("accessed {} files, {} directories", self.files, self.directories);
+        self.out.output(&text);
     }
 
     pub fn search(&mut self, root: &Path) {
@@ -48,6 +57,7 @@ impl<'a, O: Output> Dirnav<'a, O> {
             self.announce("cannot open", &display);
         } else if kind.is_file() {
             if self.selected(basename(&display)) {
+                self.files += 1;   // section 8.1: after the /p test, ahead of every later outcome
                 self.examine(root, &display, &info);
             }
         } else {
@@ -56,6 +66,7 @@ impl<'a, O: Output> Dirnav<'a, O> {
     }
 
     fn walk(&mut self, dir: &Path, display: &str) {
+        self.directories += 1;   // section 8.1: counted before read_dir, so one that fails counts too
         let prefix = if display == "." { "" } else { display };
         let entries = match fs::read_dir(dir) {
             Ok(entries) => entries,
@@ -93,6 +104,7 @@ impl<'a, O: Output> Dirnav<'a, O> {
                 }
             } else if kind.is_file() {
                 if self.selected(name) {
+                    self.files += 1;   // section 8.1
                     match entry.metadata() {
                         Ok(info) => self.examine(&entry.path(), &child, &info),
                         Err(_) => self.announce("cannot open", &child),

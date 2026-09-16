@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_CSharp_Testing.html - C# thread, page 6
+-->
+<head>
+  <title>Spec-Driven C#: Testing</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_CSharp_Testing.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/16/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/CSharp_Spec_driven_TextFinder">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven C#: Testing</h2>
+        <h4 class="indent" id="subtitle">four suites, 172 checks, and no dotnet test</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Testing.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Testing.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="suites"></a>
+      <h3>1. &nbsp;Four Suites</h3>
+      <t-b>
+        Three unit suites cover the three libraries and one integration suite covers the binary by
+        driving the built executable end to end. The division follows from what
+        <code>CSharp_TextFinder_Entry</code> is: a binary whose behavior is its startup sequence,
+        its exit codes, and its stream routing, none of which can be exercised without running it.
+      </t-b>
+      <t-b>
+        Spec_TextFinder.md &sect;6.2 asks every implementation for unit suites one per library
+        component, one integration suite driving the built executable, one demonstration, and a
+        runner per kind that announces each suite and exits with the number that failed. A suite
+        that was never built counts as a failure rather than passing by absence.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:12rem;" />
+          <col style="width:7rem;" />
+          <col style="width:37rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Suite</th>
+          <th class="darkItem">Checks</th>
+          <th class="darkItem">What it covers</th>
+        </tr>
+        <tr>
+          <td class="lightItem">Cmdline</td>
+          <td class="lightItem">67</td>
+          <td class="lightItem">Every default, both introducers, boolean case folding, last-occurrence-wins, <code>/P</code> accumulation, the six trimmed characters and the one not trimmed, all six parse diagnostics, the 21-line help text, and the nine listing lines</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Dirnav</td>
+          <td class="lightItem">31</td>
+          <td class="lightItem">Skip-list pruning including the root carve-out, <code>/p</code> selection with the dot-file rule, <code>/s false</code>, all four block forms, the <code>/h</code> gating, <code>cannot open</code>, LF, CRLF and bare CR splitting, BOM consumption, and the 10 MB limit at and just above the boundary</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Output</td>
+          <td class="lightItem">7</td>
+          <td class="lightItem">The one-sink rule, the release of that right on disposal, idempotent disposal, a write after disposal, both write methods, and dispatch through the interface and through a generic constraint</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Integration</td>
+          <td class="lightItem">56</td>
+          <td class="lightItem">The executable end to end: exit codes, stream routing, <code>/H</code>, the bare command line, the <code>/v</code> ordering, separator normalization, the absence of a BOM, and all seven usage diagnostics</td>
+        </tr>
+      </table>
+      <t-b>
+        172 checks in total, each one a named claim. The counts are comparable with the
+        <a target="_blank" href="Spec_Driven_Design_Cpp_Testing.html">C++ suites'</a> 151 assertions
+        and not with the <a target="_blank" href="Spec_Driven_Design_Rust_Testing.html">Rust
+        suites'</a> 88 tests, since a Rust <code>#[test]</code> holds as many assertions as its
+        claim needs and a check here is one assertion with one name.
+      </t-b>
+      <t-b>
+        Two suites deserve a note on what they prove beyond their counts. The Dirnav suite builds a
+        temp tree and supplies its own <code>Recorder</code>, a class holding one
+        <code>List&lt;string&gt;</code> that implements <code>IOutput</code>, which satisfies the
+        same constraint the real sink does and so shows that the generic parameter binds to any
+        implementation of the interface. The Output suite cannot read stdout back, since the sink
+        owns the only writer over it, so it checks what does not depend on reading the stream and
+        leaves the bytes to Section 5.
+      </t-b>
+      <t-b>
+        The Dirnav and integration suites sort emitted lines before comparing wherever more than one
+        directory entry is involved, because &sect;3.2 leaves the order of a directory's entries to
+        the filesystem. A suite that compared unsorted output would be asserting a property the
+        specification declines to guarantee.
+      </t-b>
+
+      <a id="harness"></a>
+      <h3>2. &nbsp;The Harness, and Why Not dotnet test</h3>
+      <t-b>
+        &sect;6.2 bars a third-party test framework, and that one sentence rules out the way C# is
+        normally tested. <code>dotnet test</code> discovers and runs tests through a test adapter,
+        and every adapter - xUnit, NUnit, MSTest - arrives as a NuGet package. The dependency rule
+        of &sect;6 admits a package only for regex and filesystem access, and the framework supplies
+        both.
+      </t-b>
+      <t-b>
+        Each suite is therefore a console project whose <code>Main</code> runs its checks and
+        returns the number that failed, and the runners invoke those executables directly. That is
+        the arrangement the
+        <a target="_blank" href="Spec_Driven_Design_Cpp_Testing.html">C++ implementation</a> reaches
+        for the same reason, its <code>*_TestDriver.cpp</code> mapping a failure count to an exit
+        status. Rust is the one of the three that gets a runner from its language:
+        <code>#[test]</code> and <code>cargo test</code> ship with it, so &sect;6's confinement
+        costs Rust nothing and costs C# a harness.
+      </t-b>
+      <t-b>
+        The harness is a <code>Check</code> class of about 30 lines.
+      </t-b>
+<pre><code class="language-csharp">internal sealed class Check
+{
+    private int _failures;
+    private int _total;
+
+    public void That(bool ok, string name) =&gt; Record(ok, name);
+
+    public void Equal(string actual, string expected, string name)
+    {
+        bool ok = actual == expected;
+        Record(ok, name);
+        if (ok) return;
+        Console.WriteLine("          expected: [" + Visible(expected) + "]");
+        Console.WriteLine("          actual:   [" + Visible(actual) + "]");
+    }
+
+    // The CRLF failures of a first run look identical to their expected text without this.
+    private static string Visible(string text) =&gt;
+        text.Replace("\r", "\\r").Replace("\n", "\\n");
+}</code></pre>
+      <t-b>
+        <code>Visible</code> earns its place from the other implementations' experience rather than
+        from this one's. The C++ integration suite's first run failed eight assertions whose
+        expected and actual text looked identical, which is the signature of a CRLF difference, and
+        that suite gained the same helper afterward. Here it was written before the first run and
+        has never yet printed anything.
+      </t-b>
+      <t-b>
+        The <code>Check</code> class is duplicated across the four suites rather than shared. The
+        C++ project made that choice deliberately - a shared support module was proposed, would have
+        removed about seventy lines, and was rejected so that each component could be read and built
+        alone. This thread follows it, and in C# the cost is lower than it looks: a shared harness
+        would be a fifth project that every suite references, and the duplication is 30 lines
+        against one more node in the dependency graph.
+      </t-b>
+      <t-b>
+        Each unit suite sits in its component's <code>test/</code> folder as its own project, which
+        is what &sect;6.2's "beside the code it tests" asks for and what costs each library project
+        one <code>&lt;Compile Remove="test/**" /&gt;</code> item. The
+        <a target="_blank" href="Spec_Driven_Design_CSharp_Structure.html">Structure page</a> covers
+        that trade.
+      </t-b>
+      <t-b>
+        One consequence of separate projects is worth naming: a unit suite sees only its component's
+        public surface. Rust's suites reach private items through
+        <code>#[cfg(test)] mod unit_tests;</code> and <code>use super::*;</code>, and the C# suites
+        cannot without an <code>InternalsVisibleTo</code> attribute. None is used. Every claim
+        &sect;3 through &sect;5 fixes is observable through the public API, so the suites test
+        behavior rather than internals, and the one place that hurts is the Output suite, which
+        cannot inspect the private failed state and asserts only that no write throws.
+      </t-b>
+      <t-b>
+        The integration suite locates the executable from its own assembly's directory, walking up
+        to the folder <code>CSharp_TextFinder_Structure.md</code> names and back down to the
+        binary's output path, with a command-line argument overriding it. C++ gets that string from
+        a CMake generator expression and Rust from <code>env!("CARGO_BIN_EXE_rust_textfinder")</code>
+        at compile time; the .NET SDK offers no equivalent for a project that references the binary
+        without referencing its assembly, so the path is computed from the layout the structure
+        document fixes.
+      </t-b>
+      <t-b>
+        Both the Dirnav and integration suites build temp trees through a <code>TempTree</code>
+        whose <code>Dispose</code> removes the directory, so a failing check leaves nothing behind.
+        Each tree's name carries the process id and an incrementing counter.
+      </t-b>
+
+      <a id="runners"></a>
+      <h3>3. &nbsp;The Runners</h3>
+      <t-b>
+        Three batch files sit at the top of the C# folder. Each builds the solution first, brackets
+        every suite with a <code>=== starting ...</code> banner and a
+        <code>=== ... returned N</code> line, then prints a summary and returns the number of failed
+        suites as its own exit code.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:20rem;" />
+          <col style="width:36rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Runner</th>
+          <th class="darkItem">What it does</th>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>run_unit_tests.bat</code></td>
+          <td class="lightItem">Runs the Cmdline, Dirnav, and Output suite executables in turn</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>run_integration_tests.bat</code></td>
+          <td class="lightItem">Runs the integration suite; an argument overrides the executable under test</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>run_demo.bat</code></td>
+          <td class="lightItem">Runs the demonstration and supplies the capture date through <code>TEXTFINDER_DEMO_DATE</code></td>
+        </tr>
+      </table>
+      <t-b>
+        Each takes its working directory from its own location with <code>cd /d "%~dp0"</code>, so
+        any of the three runs from any working directory.
+      </t-b>
+      <t-b>
+        Each builds the solution before its first suite, which is what &sect;6.2 asks of a runner so
+        that a fresh checkout needs no separate step and a reader cannot run yesterday's binary
+        against today's source. <code>dotnet build</code> is incremental, so a run after a build
+        costs about a second and one after an edit rebuilds only the projects that changed. The
+        <code>--verbosity quiet</code> flag keeps the build's own output from burying the suite
+        report.
+      </t-b>
+      <t-b>
+        Two failure paths follow from that, and &sect;6.2 requires both. A build that fails stops
+        the runner before any suite and counts every suite it would have run as failed. And a suite
+        executable that is absent after a build that succeeded prints <code>not built:</code> with
+        its path and counts as a failure - which catches a renamed project or a changed output path,
+        the cases a green run would otherwise hide.
+      </t-b>
+      <t-b>
+        Each also holds the console after its summary, so a reader who starts one from a file
+        manager sees its output rather than a window that closes. The hold is one
+        <code>:hold</code> subroutine, it comes last, and it does not change the exit code - a
+        <code>pause</code> leaves <code>ERRORLEVEL</code> untouched, and the runner returns its
+        failure count explicitly in any case. Setting <code>TEXTFINDER_NO_PAUSE</code> to a
+        non-empty value suppresses it, which is how the captures in Sections 4 and 5 were taken and
+        how the demonstration of &sect;7.5 is recaptured.
+      </t-b>
+      <t-b>
+        <code>run_demo.bat</code> passes the local date in rather than letting the demonstration
+        compute it. The demonstration falls back to the UTC date when the variable is absent, which
+        reads as the previous day late in the evening, so the runner is the authority for the date a
+        capture carries.
+      </t-b>
+
+      <a id="unitoutput"></a>
+      <h3>4. &nbsp;Unit Suite Output</h3>
+      <t-b>
+        Captured 2026-09-16 from <code>run_unit_tests.bat</code>. Each suite names every check,
+        prints its count, and ends with the line its own <code>Main</code> writes. The check names
+        are the specification restated as claims, which is what makes a passing run readable as
+        coverage rather than only as a number.
+      </t-b>
+<pre><code class="language-text">=== starting unit suite: CSharp_TextFinder_Cmdline_UnitTest
+CSharp_TextFinder_Cmdline unit tests
+  PASS  default /P is .
+  PASS  default /p is empty
+  PASS  default /r is .
+  PASS  default /s is true
+  PASS  default /h is true
+  PASS  default /v is false
+  PASS  default /H is false
+  PASS  default /n is false
+  PASS  default /L is false
+  PASS  a new ProgramCommands equals the result of parsing an empty array
+  PASS  the first element is a switch, not a program name
+  PASS  a program name in args[0] is refused, since Main's array carries none
+  PASS  introducers / and - are equivalent
+  PASS  boolean values fold case
+  PASS  /h and /H are distinct switches
+  PASS  last occurrence wins for /r
+  PASS  an argument beginning with an introducer is taken verbatim
+  PASS  /P accumulates in the order given
+  PASS  the first /P replaces the default even when equal to it
+  PASS  items are split, trimmed, and stripped of one dot, and empties discarded
+  PASS  only one leading dot is stripped
+  PASS  duplicates are retained
+  PASS  an all-separator list is empty
+  PASS  extension case is not folded by the parser
+  PASS  the six characters §5 names are trimmed
+  PASS  no-break space is not trimmed, since §5 does not name it
+  PASS  not a switch
+  PASS  unrecognized switch
+  PASS  an over-long token is unrecognized
+  PASS  a bare introducer is unrecognized
+  PASS  missing argument
+  PASS  invalid boolean
+  PASS  empty root path
+  PASS  empty expression
+  PASS  parsing stops at the first violation
+  PASS  every diagnostic ends with the usage line
+  PASS  a diagnostic carries LF and no CR
+  PASS  the help text begins with the usage line
+  PASS  the usage line names the executable
+  PASS  the help text ends with a newline
+  PASS  the help text carries LF and no CR
+  PASS  the help text is the 22 lines §5.1 fixes
+  PASS  help names the run summary of §3.6
+  PASS  help lists /P
+  PASS  help lists /p
+  PASS  help lists /r
+  PASS  help lists /s
+  PASS  help lists /h
+  PASS  help lists /v
+  PASS  help lists /H
+  PASS  help lists /n
+  PASS  help lists /L
+  PASS  the usage line is one line
+  PASS  the listing of the defaults is the nine lines of §5.3, with /v false
+  PASS  the listing of a bare -v true is the nine lines §5.3 gives
+  PASS  one /P line per root path, in traversal order
+  PASS  the extension list is joined by comma and space
+  PASS  booleans render lower case, so bool.ToString is not used
+  PASS  no line of the listing ends in whitespace: [/P .]
+  PASS  no line of the listing ends in whitespace: [/p]
+  PASS  no line of the listing ends in whitespace: [/r a b]
+  PASS  no line of the listing ends in whitespace: [/s true]
+  PASS  no line of the listing ends in whitespace: [/h true]
+  PASS  no line of the listing ends in whitespace: [/v false]
+  PASS  no line of the listing ends in whitespace: [/H false]
+  PASS  no line of the listing ends in whitespace: [/n false]
+  PASS  no line of the listing ends in whitespace: [/L false]
+  PASS  /r renders the expression verbatim, backslash included
+  68 of 68 passed
+PASS
+=== unit suite CSharp_TextFinder_Cmdline_UnitTest returned 0
+
+=== starting unit suite: CSharp_TextFinder_Dirnav_UnitTest
+CSharp_TextFinder_Dirnav unit tests
+  PASS  a malformed expression throws RegexParseException from the constructor
+  PASS  a skip-list directory is pruned silently
+  PASS  a root named in the skip list is traversed, and pruning resumes below it
+  PASS  /s false searches the root's own files and enters no subdirectory
+  PASS  an empty /p list selects every file, files without an extension included
+  PASS  a non-empty /p list selects by last dot suffix and excludes a file without one
+  PASS  a dot-file's extension is its last dot-suffix
+  PASS  a root path that is a regular file is searched
+  PASS  a root path that is a regular file is filtered by /p like any other
+  PASS  the default command line reports every non-empty file without opening it
+  PASS  the default /h leaves only the matching file's block
+  PASS  /h false announces every examined file exactly once
+  PASS  a file above the limit draws an error announcement under /h true
+  PASS  a file exactly at the limit is searched
+  PASS  LF terminates a line
+  PASS  CRLF terminates a line and the CR is not part of it
+  PASS  a bare CR terminates a line
+  PASS  a final unterminated run is a line
+  PASS  a leading BOM is not part of the first line
+  PASS  /n and /L true give a path line and a number-and-text detail line per match
+  PASS  /L false leaves the number alone on the detail line
+  PASS  /n false leaves the text alone on the detail line
+  PASS  with neither /n nor /L a block is its path line alone
+  PASS  line numbers count every matching line in line order
+  PASS  a matching line yields one detail line however many occurrences it holds
+  PASS  every path is rendered with forward separators
+  PASS  every path begins with the root it was reached through
+  PASS  a separator the user typed in a root path is normalized
+  PASS  a root path that cannot be opened is announced
+  PASS  an error announcement is not gated on /h
+  PASS  one navigator serves every root path, in the order given
+  PASS  every examined file and every entered directory is counted
+  PASS  a file the /p list excluded is not counted
+  PASS  a directory holding no selected file is still counted
+  PASS  a pruned directory and its files are counted once the list no longer prunes it
+  PASS  under /s false no subdirectory is counted
+  PASS  a root that is a regular file counts as a file, and neither noun is inflected
+  PASS  a root that cannot be opened is counted as neither
+  PASS  the counts are of the whole run, not of one root
+  PASS  an entry reached under two roots counts once for each
+  PASS  the summary is not gated on /h
+  41 of 41 passed
+PASS
+=== unit suite CSharp_TextFinder_Dirnav_UnitTest returned 0
+
+=== starting unit suite: CSharp_TextFinder_Output_UnitTest
+CSharp_TextFinder_Output unit tests
+  PASS  a second sink is refused while the first lives
+  PASS  the sink is the IOutput implementation Dirnav binds to
+verbatim text, already terminated
+one line, terminator added by the sink
+
+  PASS  writing through both methods reports nothing and throws nothing
+  PASS  a sink disposed releases the right to make one
+  PASS  disposing twice is safe
+  PASS  the interface method is reached through a generic constraint
+reached through the constraint
+  PASS  a write after disposal is discarded and reports nothing
+  7 of 7 passed
+PASS
+=== unit suite CSharp_TextFinder_Output_UnitTest returned 0
+
+0 unit suite(s) failed</code></pre>
+      <t-b>
+        Four groups of the 67 Cmdline names carry the C#-specific decisions rather than the parent
+        specification's rules. <code>the first element is a switch, not a program name</code> and
+        <code>a program name in args[0] is refused, since Main's array carries none</code> are the
+        index-0 scan asserted from both sides. <code>the six characters &sect;5 names are
+        trimmed</code> and <code>no-break space is not trimmed, since &sect;5 does not name
+        it</code> bound the trim set in both directions, which is what rules out
+        <code>string.Trim()</code>. <code>only one leading dot is stripped</code> rules out
+        <code>string.TrimStart('.')</code>. And <code>booleans render lower case, so bool.ToString
+        is not used</code> names the method it excludes.
+      </t-b>
+      <t-b>
+        The nine <code>no line of the listing ends in whitespace</code> checks are one loop over the
+        listing's lines rather than nine written claims, and each prints the line it examined. That
+        is the rule &sect;5.3 states as a property of the whole listing, asserted per line so that a
+        failure names which one.
+      </t-b>
+      <t-b>
+        The Dirnav suite tests the accepted costs rather than only the rules.
+        <code>the default command line reports every non-empty file without opening it</code> is
+        &sect;3.3's no-content case with both of its costs in one claim: a binary file is reported,
+        and an empty one is not. <code>a file exactly at the limit is searched</code> pairs with the
+        line above it to pin 10,485,760 as a boundary rather than an approximation. And
+        <code>a separator the user typed in a root path is normalized</code> is &sect;3.4's rule
+        applied to the one part of a path that is not an entry name.
+      </t-b>
+      <t-b>
+        Twelve of its 41 checks cover the run summary of &sect;3.6, and they read as that section's
+        exclusion list turned into claims: <code>a file the /p list excluded is not counted</code>,
+        <code>a pruned directory and its files are counted once the list no longer prunes it</code>,
+        <code>under /s false no subdirectory is counted</code>,
+        <code>a root that cannot be opened is counted as neither</code>. Two of the twelve test
+        properties no other check could reach - that the counts are of the whole run rather than of
+        one root, and that an entry reached under two roots counts once for each - by driving one
+        navigator over two roots the way the binary does. And
+        <code>a root that is a regular file counts as a file, and neither noun is inflected</code>
+        asserts <code>accessed 1 files, 0 directories</code> verbatim, pinning the uninflected
+        singular &sect;3.6 accepts rather than leaving a later reader to correct it.
+      </t-b>
+      <t-b>
+        Four lines of the Output capture are not the harness speaking.
+        <code>verbatim text, already terminated</code>,
+        <code>one line, terminator added by the sink</code>, the empty line after it, and
+        <code>reached through the constraint</code> are what two of the checks wrote to the real
+        stdout, which is the one thing this suite cannot redirect. The empty line is the
+        <code>Output("")</code> case, and seeing it in the capture is the assertion made visible: an
+        empty string still terminates a line.
+      </t-b>
+      <t-b>
+        Those four lines appear at a different point in the list from run to run, and the reason is
+        the component under test. The suite writes its own report to stderr precisely because the
+        type it tests owns stdout, and when a runner sends both streams to one file the order is the
+        operating system's rather than the program's - the sink's buffered lines arriving whenever
+        its <code>Dispose</code> flushed them. A reader comparing two captures of this suite should
+        expect those four lines to move and the seven <code>PASS</code> lines not to.
+      </t-b>
+
+      <a id="integrationoutput"></a>
+      <h3>5. &nbsp;Integration Suite Output</h3>
+      <t-b>
+        Captured in the same run, from <code>run_integration_tests.bat</code>. Each of these 56
+        checks spawns the executable one or more times, which is why this suite accounts for nearly
+        all the runtime while the three in-process suites finish in hundredths of a second combined.
+      </t-b>
+      <t-b>
+        Four of the 56 arrived with Spec_TextFinder.md &sect;3.6, and three of them assert an
+        absence: the bare command line, <code>/H</code>, and a malformed <code>/r</code> must each
+        write no closing line, which is the only way to test a rule about runs that do not traverse.
+        The fourth asserts that a traversing run's last line is its summary. The other 14 checks
+        &sect;3.6 touched were already here and simply gained the line in their expected stdout -
+        which is what asserting exact output costs when the output grows, and what it buys.
+      </t-b>
+<pre><code class="language-text">=== starting integration suite: integration
+CSharp_TextFinder integration tests
+  PASS  a bare command line lists every default, with /v false
+  PASS  a bare command line writes nothing to stderr
+  PASS  a bare command line exits 0
+  PASS  /H prints the text §5.1 fixes
+  PASS  /H exits 0
+  PASS  /H writes nothing to stderr
+  PASS  the help text carries LF only
+  PASS  stdout carries no byte-order mark
+  PASS  /H is taken before any traversal
+  PASS  /v lists the resolved options before the search output
+  PASS  the search output follows the /v listing
+  PASS  the run summary closes the output, per §3.6
+  PASS  a bare command line traverses nothing and writes no run summary
+  PASS  /H traverses nothing and writes no run summary
+  PASS  a malformed expression traverses nothing and writes no run summary
+  PASS  not a switch: P diagnostic
+  PASS  not a switch: P exits 1
+  PASS  not a switch: P leaves stdout empty
+  PASS  unrecognized switch: /x diagnostic
+  PASS  unrecognized switch: /x exits 1
+  PASS  unrecognized switch: /x leaves stdout empty
+  PASS  missing argument for switch: /P diagnostic
+  PASS  missing argument for switch: /P exits 1
+  PASS  missing argument for switch: /P leaves stdout empty
+  PASS  invalid boolean for -s: yes diagnostic
+  PASS  invalid boolean for -s: yes exits 1
+  PASS  invalid boolean for -s: yes leaves stdout empty
+  PASS  empty root path for switch: /P diagnostic
+  PASS  empty root path for switch: /P exits 1
+  PASS  empty root path for switch: /P leaves stdout empty
+  PASS  empty expression for switch: /r diagnostic
+  PASS  empty expression for switch: /r exits 1
+  PASS  empty expression for switch: /r leaves stdout empty
+  PASS  a malformed expression puts the option listing on stdout first
+  PASS  the malformed-expression diagnostic follows on stderr
+  PASS  a malformed expression exits 1
+  PASS  under /v the listing is written once, not twice
+  PASS  a block carries its path once and its detail lines beneath it
+  PASS  a normal search exits 0
+  PASS  a normal search writes nothing to stderr
+  PASS  a root of . contributes no leading ./
+  PASS  a named root is part of every path and its separators are normalized
+  PASS  roots are traversed in the order given
+  PASS  reversing the roots reverses the output
+  PASS  the compiled skip list prunes a matching directory
+  PASS  /s false enters no subdirectory
+  PASS  /p filters by extension after normalization
+  PASS  /h false announces every examined file exactly once
+  PASS  the default /h hides only the files that matched nothing
+  PASS  an unopenable root is announced through the output component
+  PASS  an unopenable root does not affect the exit code
+  PASS  an unopenable root writes nothing to stderr
+  PASS  the no-content case reports a binary file and omits an empty one
+  PASS  stdout carries no CR byte on any platform
+  PASS  stdout ends with a terminator
+  PASS  a CRLF file yields lines free of the carriage return
+  56 of 56 passed
+PASS
+=== integration suite integration returned 0
+
+0 integration suite(s) failed</code></pre>
+      <t-b>
+        The 18 checks whose names begin with a reason line are the six parse diagnostics tested
+        three ways each - the diagnostic text, the exit code, and that stdout stayed empty - through
+        one <code>expect_usage_failure</code>-style helper and one loop. The third of those three is
+        the one a reader might not expect, and it is where the specification is strictest: six of
+        the seven refusals leave stdout empty and the seventh puts the option listing there first,
+        so testing only the text and the code would miss half the rule.
+      </t-b>
+      <t-b>
+        Two checks read the bytes rather than the characters, and they are the ones this thread
+        exists to make. <code>stdout carries no CR byte on any platform</code> scans the raw
+        standard output for 0x0D, and <code>stdout carries no byte-order mark</code> checks the
+        first two bytes are not 0xEF 0xBB. Both would pass trivially in Rust and both would have
+        failed in C# had the sink used <code>Console.WriteLine</code> and
+        <code>Encoding.UTF8</code>, which is the pair the
+        <a target="_blank" href="Spec_Driven_Design_CSharp_Output.html">Output specification</a>
+        rejects by name.
+      </t-b>
+      <t-b>
+        <code>a CRLF file yields lines free of the carriage return</code> is the pair to the first
+        of those: one asserts the program adds no CR, the other that it removes one the file
+        carried. Together they cover &sect;3.3's line splitting and &sect;3.4's terminator from
+        opposite ends.
+      </t-b>
+      <t-b>
+        The suite compares expected stdout against <code>CommandLine.HelpText()</code> and
+        <code>CommandLine.UsageLine()</code> imported from the library rather than against string
+        literals of its own, so the fixture and the source cannot drift. It then checks two
+        properties a literal would have caught anyway - that the help text begins with
+        <code>usage: CSharp_TextFinder [</code> and that it is 22 lines - so a library returning the
+        wrong text consistently still fails.
+      </t-b>
+
+      <a id="gaps"></a>
+      <h3>6. &nbsp;What the Suites Do Not Reach</h3>
+      <t-b>
+        Every check passes, and four claims in the specifications are unchecked. Naming them is
+        worth more than the count above, since &sect;6.2 asks the suites to check a claim rather
+        than let it be read.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>The unrenderable name.</strong> &sect;3.4 settles what happens to a file whose
+            name the implementation cannot render as text, and this implementation answers that the
+            case cannot arise on Windows and resolves through a failed attributes query on POSIX. No
+            fixture tests either half: building such a name means an unpaired surrogate on Windows,
+            which a <code>string</code> carries without complaint, or a non-UTF-8 byte sequence on
+            POSIX, which this machine cannot produce. The
+            <a target="_blank" href="Spec_Driven_Design_Cpp_Testing.html">C++</a> and
+            <a target="_blank" href="Spec_Driven_Design_Rust_Testing.html">Rust</a> suites report the
+            same gap, so the rule that cost two implementations a code change is tested in
+            none.</li>
+          <li><strong>The failed write.</strong> Nothing breaks stdout mid-run, so the
+            <code>output failed</code> notice, the permanence of the failed state, and the rule that
+            one notice is written rather than one per discarded line are all read rather than
+            checked.</li>
+          <li><strong>Exit code 2 from the binary.</strong> The unit suite confirms that a second
+            <code>StdoutSink</code> throws, but no run of the executable can provoke it, since the
+            binary builds one sink. The other path, standard output failing to open, is not
+            reachable from a test either.</li>
+          <li><strong>The POSIX side of everything.</strong> The captures above are Windows runs.
+            The comparison field folds case under <code>OperatingSystem.IsWindows()</code> and
+            compares ordinally otherwise, and only the first branch is exercised here. This is the
+            gap a .NET assembly makes most visible, since the same binary would take the other
+            branch on a second machine without being rebuilt.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Three of the four are properties of failure paths, which is the ordinary shape of a coverage
+        gap. The fourth is a platform, and it is the one a second machine would close without a line
+        of new test code.
+      </t-b>
+      <t-b>
+        One more thing is worth saying about a suite that passed on its first run. The C++
+        implementation's first run failed eight integration assertions, and that failure found a
+        real contradiction between two specification sections. A first run that passes says the code
+        matches a specification written hours earlier by the same author, which is a narrower claim
+        than a first run that fails and is then reconciled. The
+        <a target="_blank" href="Spec_Driven_Design_CSharp_Process.html">Process page</a> makes the
+        same point about this thread's evidence as a whole.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>7. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 assigns it a
+        <code>Prompts_CSharp_Spec_driven_TextFinder_Tests.md</code>, and this thread produced one
+        record covering every turn, which sits on the
+        <a target="_blank" href="Spec_Driven_Design_CSharp_Process.html">Process page</a>. The turn
+        that wrote these four suites and the three runners is summarized there.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#suites">four suites</a></menu-elem>
+        <menu-elem class="secElem"><a href="#harness">the harness</a></menu-elem>
+        <menu-elem class="secElem"><a href="#runners">runners</a></menu-elem>
+        <menu-elem class="secElem"><a href="#unitoutput">unit output</a></menu-elem>
+        <menu-elem class="secElem"><a href="#integrationoutput">integration output</a></menu-elem>
+        <menu-elem class="secElem"><a href="#gaps">coverage gaps</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenCSharpPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 6, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past.
+       A block whose content fits needs no arrows, so they stay hidden until it
+       overflows, and are rechecked whenever its width changes. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      /* the 1px allowance keeps subpixel rounding from showing arrows that cannot move */
+      const showArrows = () => {
+        arrows.style.display = pre.scrollWidth - pre.clientWidth > 1 ? '' : 'none';
+      };
+      showArrows();
+      /* the splitter resizes the panel and prism rewrites the content, so one
+         measurement at load is not enough */
+      new ResizeObserver(showArrows).observe(pre);
+      window.addEventListener('resize', showArrows);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

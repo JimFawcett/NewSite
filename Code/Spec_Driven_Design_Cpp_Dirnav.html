@@ -58,7 +58,7 @@
   <div id="about" class="hidden" onclick="toggleAbout()">
     Spec_Driven_Design_Cpp_Dirnav.html<br />
     copyright &copy; James Fawcett<br />
-    Revised: 09/15/2026
+    Revised: 09/16/2026
   </div>
 
   <content-block>
@@ -74,7 +74,7 @@
         <a class="repoLinks" href="Spec_Driven_Design_Behavior_Traversal.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
         <a class="repoLinks" href="Spec_Driven_Design_Cpp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
         <a class="repoLinks" href="Spec_Driven_Design_Rust_Dirnav.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
-        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Dirnav.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
         <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
       </div>
     </header>
@@ -106,6 +106,7 @@ class Cpp_TextFinder_Dirnav {
 public:
     Cpp_TextFinder_Dirnav(Out&amp; out, const SkipList&amp; skips, const ProgramCommands&amp; commands);
     void search(const std::filesystem::path&amp; root);
+    void emitRunSummary();
 };</code></pre>
       <t-b>
         The class template declares the <code>Output</code> base class it does not implement, which
@@ -134,8 +135,18 @@ public:
       </t-b>
       <t-b>
         A single instance is reused across every root path, so the compiled expression is built once
-        per run, and <code>search</code> carries no state from one call to the next. Member
-        definitions live in the interface unit, since the class is a template.
+        per run. <code>search</code> carries no state from one call to the next but for the two run
+        counts of Section 5.1, which accumulate across calls by design. Member definitions live in
+        the interface unit, since the class is a template.
+      </t-b>
+      <t-b>
+        <code>emitRunSummary</code> writes the run summary Spec_TextFinder.md &sect;3.6 requires. It
+        takes no argument and returns nothing, the counts being this instance's own, and
+        <code>Cpp_TextFinder_Entry</code> calls it once after the last <code>search</code> returns.
+        The split is deliberate: the counts belong here because nothing else sees the entries, and
+        the call belongs to the caller because nothing here knows which root was the last. No
+        accessor is exported for either count - the line is the whole of what they are for, and the
+        unit suite reads them by reading that line through its own <code>Output</code>.
       </t-b>
 
       <a id="traversal"></a>
@@ -375,6 +386,54 @@ contentNotNeeded_{pathOnly_ &amp;&amp; commands.regexText == "."}</code></pre>
         can drift.
       </t-b>
 
+      <a id="summary"></a>
+      <h4>5.1 &nbsp;The Run Summary</h4>
+      <t-b>
+        Spec_TextFinder.md &sect;3.6 puts the two run counts in this library, for every
+        implementation alike, and fixes the line they produce. Two <code>std::size_t</code> members
+        hold them, both zero on construction, and neither is reset by <code>search</code>, so they
+        accumulate over every root the instance is given.
+      </t-b>
+      <t-b>
+        Each increment sits at the one point that decides the count, which is what keeps the rule to
+        two lines of code and no second test.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>Files</strong> are counted in <code>examine</code>, immediately after the
+            <code>/p</code> test of Section 3 admits the file and before
+            <code>std::filesystem::file_size</code> is called. A file admitted and then announced
+            <code>too large</code> or <code>cannot open</code> is therefore counted, the increment
+            standing ahead of both.</li>
+          <li><strong>Directories</strong> are counted at the head of <code>walk</code>, before
+            <code>directory_iterator</code> is constructed, so a directory that cannot be
+            enumerated is counted and announced alike.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Everything &sect;3.6 excludes is excluded by where those two lines sit rather than by a test
+        of its own. An entry refused by <code>/p</code>, a symbolic link, an entry beneath a pruned
+        directory, an entry whose name will not render, and an entry that is neither a regular file
+        nor a directory all fail or bypass the <code>/p</code> test and never reach the increment -
+        though the last two draw <code>cannot open</code> on the way past, which is why the file
+        count can be smaller than the number of announcements a run writes. A root that resolved to
+        a directory reaches <code>walk</code> and is counted; a pruned directory and, under
+        <code>/s false</code>, every subdirectory never reach it.
+      </t-b>
+      <t-b>
+        <code>emitRunSummary</code> composes the line with <code>std::to_string</code> on each count
+        and sends it through the same <code>Output</code> as every other line, in &sect;3.6's fixed
+        form and with neither noun inflected:
+      </t-b>
+<pre><code class="language-text">accessed &lt;files&gt; files, &lt;directories&gt; directories</code></pre>
+      <t-b>
+        It is not gated on <code>/h</code>, which governs file announcements alone, and it names no
+        path, so this section's rendering rules do not reach it. Eleven unit-suite assertions cover
+        it, and the one worth naming reads
+        <code>accessed 1 files, 0 directories</code> from a root that is a regular file - the
+        uninflected singular, asserted rather than left to be noticed.
+      </t-b>
+
       <a id="linkage"></a>
       <h3>6. &nbsp;Module Linkage and the inline Helpers</h3>
       <t-b>
@@ -406,7 +465,7 @@ contentNotNeeded_{pathOnly_ &amp;&amp; commands.regexText == "."}</code></pre>
       <a id="source"></a>
       <h3>7. &nbsp;Source</h3>
       <t-b>
-        <code>Cpp_TextFinder_Dirnav.ixx</code> in full - 342 lines, the largest file in the
+        <code>Cpp_TextFinder_Dirnav.ixx</code> in full - 353 lines, the largest file in the
         project. The comments cite the C++ specification's sections, which cite
         Spec_TextFinder.md in turn.
       </t-b>
@@ -622,10 +681,18 @@ public:
         walk(root);
     }
 
+    // §8.1: the run summary of Spec_TextFinder.md §3.6, written once after the last root.
+    void emitRunSummary() {
+        emit("accessed " + std::to_string(files_) + " files, " +
+             std::to_string(directories_) + " directories");
+    }
+
 private:
     // §5 rule 2: one level per call, entries taken as directory_iterator yields them -
     // neither collected nor reordered - with explicit recursion into each subdirectory entered.
     void walk(const std::filesystem::path&amp; directory) {
+        ++directories_;   // §8.1: counted before enumeration, so one that fails is counted too
+
         std::error_code error;
         std::filesystem::directory_iterator entry{directory, error};
         if (error) { announceCannotOpen(directory); return; }
@@ -661,6 +728,7 @@ private:
     // §7: the three admission tests of Spec_TextFinder.md §3.3.
     void examine(const std::filesystem::path&amp; file) {
         if (!selected(file)) return;
+        ++files_;   // §8.1: after the /p test admits it, ahead of every later outcome
 
         std::error_code error;
         const std::uintmax_t size = std::filesystem::file_size(file, error);
@@ -752,6 +820,8 @@ private:
     std::regex              expression_;
     bool                    pathOnly_;
     bool                    contentNotNeeded_;
+    std::size_t             files_{0};          // §8.1: never reset between roots
+    std::size_t             directories_{0};
 };</code></pre>
 
       <a id="records"></a>
@@ -1042,6 +1112,7 @@ Created this file, [Prompts_Fix_Spec_Cpp_TextFinder_Dirnav.md](Prompts_Fix_Spec_
         <menu-elem class="secElem"><a href="#selection">selection</a></menu-elem>
         <menu-elem class="secElem"><a href="#admission">admission</a></menu-elem>
         <menu-elem class="secElem"><a href="#matching">matching</a></menu-elem>
+        <menu-elem class="secElem"><a href="#summary">run summary</a></menu-elem>
         <menu-elem class="secElem"><a href="#linkage">module linkage</a></menu-elem>
         <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
         <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
