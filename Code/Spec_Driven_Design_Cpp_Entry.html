@@ -729,7 +729,9 @@ Created this file, [Prompts_Fix_Spec_Cpp_TextFinder_Entry.md](Prompts_Fix_Spec_C
   <script>
     /* arrows at the top right of each pre block, to reach the right-hand content
        without hunting for the scrollbar at the bottom of the block. They precede
-       the pre and are sticky, so they stay in view while the block scrolls past. */
+       the pre and are sticky, so they stay in view while the block scrolls past.
+       A block whose content fits needs no arrows, so they stay hidden until it
+       overflows, and are rechecked whenever its width changes. */
     document.querySelectorAll('#github pre').forEach(pre => {
       const wrap = document.createElement('div');
       wrap.className = 'preScrollWrap';
@@ -741,6 +743,16 @@ Created this file, [Prompts_Fix_Spec_Cpp_TextFinder_Entry.md](Prompts_Fix_Spec_C
                          '<button type="button" title="move text right">&#9654;</button>';
       wrap.append(arrows);
       wrap.append(pre);
+
+      /* the 1px allowance keeps subpixel rounding from showing arrows that cannot move */
+      const showArrows = () => {
+        arrows.style.display = pre.scrollWidth - pre.clientWidth > 1 ? '' : 'none';
+      };
+      showArrows();
+      /* the splitter resizes the panel and prism rewrites the content, so one
+         measurement at load is not enough */
+      new ResizeObserver(showArrows).observe(pre);
+      window.addEventListener('resize', showArrows);
 
       const pan = (dir, smooth) => pre.scrollBy({
         left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
