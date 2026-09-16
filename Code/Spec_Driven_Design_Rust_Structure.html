@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Rust_Structure.html - Rust thread, page 1
+-->
+<head>
+  <title>Spec-Driven Rust: Structure</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Rust_Structure.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Rust: Structure</h2>
+        <h4 class="indent" id="subtitle">three library crates, one binary, one Cargo workspace</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Structure.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="components"></a>
+      <h3>1. &nbsp;Three Libraries and One Binary</h3>
+      <t-b>
+        <code>Rust_TextFinder_Structure.md</code> fixes the components, the dependency direction,
+        and the build. It is one of the two file patterns Constitution.md rule 1 names as
+        authoritative for code, which is what lets it declare a trait rather than only describe a
+        layout.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:20rem;" />
+          <col style="width:8rem;" />
+          <col style="width:28rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Component</th>
+          <th class="darkItem">Kind</th>
+          <th class="darkItem">Responsibility</th>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>rust_textfinder_cmdline</code></td>
+          <td class="lightItem">library crate</td>
+          <td class="lightItem">Parses a slice of argument strings into <code>ProgramCommands</code>. Opens no stream, touches no filesystem</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>rust_textfinder_dirnav</code></td>
+          <td class="lightItem">library crate</td>
+          <td class="lightItem">Walks, reads, matches, formats. The only component that touches file contents. Compiles the expression once per run</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>rust_textfinder_output</code></td>
+          <td class="lightItem">library crate</td>
+          <td class="lightItem">Writes each string to stdout as one line. Absorbs every write failure</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>rust_textfinder_entry</code></td>
+          <td class="lightItem">binary crate</td>
+          <td class="lightItem">Produces the executable <code>rust_textfinder</code>. Owns the skip list and wires the three together</td>
+        </tr>
+      </table>
+      <t-b>
+        Each library's Cargo package name matches its component name. The binary package is
+        <code>rust_textfinder_entry</code> and the executable it produces is
+        <code>rust_textfinder</code> - two names for two things, which Cargo expresses as a
+        <code>[[bin]]</code> section naming the target rather than letting it default to the package
+        name.
+      </t-b>
+      <t-b>
+        The division matches the boundaries the
+        <a target="_blank" href="Spec_Driven_Design_Behavior_Overview.html">Behavior thread</a>
+        uses, and matches the C++ division component for component. Identifiers follow Rust
+        convention, so this implementation spells in snake_case what the
+        <a target="_blank" href="Spec_Driven_Design_Cpp_Structure.html">C++ implementation</a>
+        spells in camelCase: <code>usage_line</code> for <code>usageLine</code>,
+        <code>line_numbers</code> for <code>lineNumbers</code>. The switch letters, the emitted
+        text, and the exit codes come from Spec_TextFinder.md and are identical in both.
+      </t-b>
+
+      <a id="chain"></a>
+      <h3>2. &nbsp;Dependency Direction</h3>
+      <t-b>
+        The binary depends on all three libraries. The libraries themselves form a chain rather than
+        a star.
+      </t-b>
+<pre><code class="language-text">rust_textfinder_cmdline
+        ^
+        | depends on (ProgramCommands)
+        |
+rust_textfinder_dirnav
+        ^
+        | depends on (the Output trait)
+        |
+rust_textfinder_output
+        ^
+        | depends on (all three)
+        |
+rust_textfinder_entry  ---&gt;  rust_textfinder.exe</code></pre>
+      <t-b>
+        <code>rust_textfinder_dirnav</code> depends on <code>rust_textfinder_cmdline</code> for
+        <code>ProgramCommands</code>, and <code>rust_textfinder_output</code> depends on
+        <code>rust_textfinder_dirnav</code> for the <code>Output</code> trait it implements. Nothing
+        depends on <code>rust_textfinder_output</code> but the binary, which supplies it as the
+        generic argument that binds <code>Dirnav</code> to a concrete sink.
+      </t-b>
+      <t-b>
+        Each library is a separate package rather than a module of one crate, and the structure
+        document says why: Cargo enforces the chain above, so a call in the wrong direction fails to
+        build rather than passing review. Four <code>Cargo.toml</code> files state the four
+        dependency sets, and a fifth at the root lists the members.
+      </t-b>
+      <t-b>
+        The direction is what keeps <code>rust_textfinder_dirnav</code> testable without a real
+        sink. Its unit suite supplies its own <code>Recorder</code>, a struct of one
+        <code>Vec&lt;String&gt;</code> that implements <code>Output</code>, which satisfies the same
+        bound the real sink does and also demonstrates that the generic parameter binds to any
+        implementation of the trait.
+      </t-b>
+
+      <a id="output"></a>
+      <h3>3. &nbsp;The Output Trait and the Generic Parameter</h3>
+      <t-b>
+        The structure document declares one interface, and it is the seam between traversal and the
+        sink:
+      </t-b>
+<pre><code class="language-rust">pub trait Output {
+    fn output(&amp;mut self, text: &amp;str);
+}</code></pre>
+      <t-b>
+        <code>Dirnav</code> binds to a concrete <code>Output</code> through a generic type
+        parameter rather than through a trait object, so the call is statically dispatched and the
+        bound is checked at compile time. The receiver is <code>&amp;mut self</code>, because
+        emitting a line mutates the sink, and that one word is what puts a unique borrow rather than
+        a shared one into the <code>Dirnav</code> constructor.
+      </t-b>
+      <t-b>
+        The parameter is <code>&amp;str</code> rather than <code>String</code>. The sink neither
+        stores what it is handed nor modifies it, so ownership would be transferred only to be
+        dropped, and <code>rust_textfinder_dirnav</code> can pass a borrowed path line without
+        allocating.
+      </t-b>
+      <t-b>
+        The rejected alternative is recorded in the document rather than forgotten: a
+        <code>Box&lt;dyn Output&gt;</code> trades static dispatch for a
+        <code>Dirnav</code> signature carrying no type parameter, and is named as viable and not
+        adopted. The C++ implementation faces the same choice one layer down and answers it the same
+        way, with a concept constraint naming the base class and a template parameter making the
+        call direct. A structure document that records the road not taken tells the next reader that
+        the choice was a choice.
+      </t-b>
+
+      <a id="build"></a>
+      <h3>4. &nbsp;Cargo, the Workspace, and the One Dependency</h3>
+      <t-b>
+        <ul class="tight">
+          <li><strong>Rust edition 2021, Cargo.</strong> The structure document holds the edition
+            and the toolchain floor once, and each component's Build section reads "Per
+            Rust_TextFinder_Structure.md" and names only its own package.</li>
+          <li><strong>One workspace</strong> at the root of the Rust folder with four members, one
+            per component, sharing one <code>Cargo.lock</code> and one <code>target/</code>
+            directory.</li>
+          <li><strong>Toolchain minimum:</strong> rustc 1.70 with the matching Cargo, declared as
+            <code>rust-version</code> in all four manifests. No nightly feature is used.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        One third-party crate appears in the whole project. Spec_TextFinder.md &sect;6.1 assigns the
+        <code>regex</code> crate to Rust, &sect;6 permits a package from the language's supported
+        ecosystem for regex access, and only <code>rust_textfinder_dirnav</code> declares it.
+        Everything else comes from the standard library. The binary declares no third-party crate at
+        all, so the dependency reaches it through one package rather than four.
+      </t-b>
+      <t-b>
+        Building is two lines from the Rust project directory, and the workspace flag is what makes
+        the first of them build all four packages rather than the one the current directory names.
+      </t-b>
+<pre><code class="language-bash">cargo build --workspace
+target\debug\rust_textfinder.exe -H true</code></pre>
+      <t-b>
+        Nothing in this build is experimental, and nothing about it is version-fragile. That is
+        worth one sentence only because the C++ build is the other case: it gates
+        <code>import std;</code> behind an opt-in token that CMake neither prints nor documents. The
+        two projects implement one specification and their build sections have almost nothing in
+        common.
+      </t-b>
+      <t-b>
+        One requirement of Spec_TextFinder.md &sect;3.4 this implementation meets by doing nothing.
+        &sect;3.4 obliges an implementation to stop its runtime translating the LF terminator to
+        CRLF; Rust's standard output writes the bytes it is given on every platform, so no stream
+        mode is set, and no <code>#[cfg]</code> on the target platform appears in
+        <code>rust_textfinder_output</code>. The
+        <a target="_blank" href="Spec_Driven_Design_Rust_Output.html">Output page</a> covers what
+        follows from that.
+      </t-b>
+
+      <a id="source"></a>
+      <h3>5. &nbsp;Source</h3>
+      <t-b>
+        The structure document in full, then the workspace manifest and the four package manifests.
+        The document is 40 lines and fixes everything above; the manifests add nothing to it beyond
+        the paths.
+      </t-b>
+      <h5 class="indent">Rust_TextFinder_Structure.md</h5>
+<pre><code class="language-markdown"># Rust_TextFinder — Project Structure
+
+The Rust_TextFinder project comprises three libraries and one binary, arranged as a single Cargo workspace. The binary depends on all three. The libraries themselves form a chain: `rust_textfinder_dirnav` depends on `rust_textfinder_cmdline` for the program-command struct, and `rust_textfinder_output` depends on `rust_textfinder_dirnav` for the `Output` trait. Nothing depends on `rust_textfinder_output` but the binary.
+
+## Libraries
+
+- **rust_textfinder_cmdline** — parses the command line into a `struct` of program commands that control the behavior of `rust_textfinder_dirnav`. Specified in [Spec_Rust_TextFinder_Cmdline.md](Rust_Spec_driven_Cmdline/Spec_Rust_TextFinder_Cmdline.md).
+- **rust_textfinder_dirnav** — directory navigation. Reads file contents, runs regex matching, and formats each matching file into the block Spec_TextFinder.md §3.4 fixes before emitting its lines. Compiles the regular expression once per run, not once per file. Defines the trait:
+  ```rust
+  pub trait Output {
+      fn output(&amp;mut self, text: &amp;str);
+  }
+  ```
+  `Dirnav` binds to a concrete `Output` through a generic type parameter, so the call is statically dispatched. Specified in [Spec_Rust_TextFinder_Dirnav.md](Rust_Spec_driven_Dirnav/Spec_Rust_TextFinder_Dirnav.md).
+- **rust_textfinder_output** — implements `Output::output` according to its specification, [Spec_Rust_TextFinder_Output.md](Rust_Spec_driven_Output/Spec_Rust_TextFinder_Output.md). Handles output errors internally.
+
+Each library's Cargo package name matches its component name above, and each is a library crate exporting the items its specification fixes.
+
+## Binary
+
+- **rust_textfinder_entry** — binary package name; produces the executable `rust_textfinder`. Depends on the three libraries above. Specified in [Spec_Rust_TextFinder_Entry.md](Rust_Spec_driven_TextFinder_Entry/Spec_Rust_TextFinder_Entry.md).
+- Owns the skip list and passes it to `rust_textfinder_dirnav` for use during traversal.
+- On execution, the binary command line is parsed into a program-command struct using `rust_textfinder_cmdline`.
+- A value of the concrete output type is created and bound to a `Dirnav` value through its generic parameter.
+- The `Dirnav` value is started at each of the specified (possibly default) root paths in turn and performs a DFS for regex matches on files in each directory tree.
+- Owns the process's one output value, which in turn owns the only handle to stdout. Every write to stdout, the binary's own help text and option listing included, passes through that value, so nothing else can interleave with the search output or reorder it.
+
+## Build
+
+- Language: Rust, edition 2021. Build system: Cargo. These apply to every package below, and each component's `Spec_*.md` names only its own package.
+- One workspace at the root of this folder with four members, one per component. Each library is a separate package rather than a module of one crate, so the dependency chain above is enforced by Cargo rather than by convention.
+- Dependencies: the `regex` crate, which Spec_TextFinder.md §6.1 assigns to Rust, is the only third-party dependency, and only `rust_textfinder_dirnav` declares it. Everything else comes from the standard library. Spec_TextFinder.md §6 permits a package from the language's supported ecosystem for regex access.
+- Toolchain minimum: rustc 1.70 with the matching Cargo. No nightly feature is used.
+
+## Notes
+
+- This forms a data pipeline architecture that emits an output immediately following evaluation of a regex match.
+- Identifiers follow Rust convention, so this implementation spells in snake_case what the C++ implementation spells in camelCase: `usage_line` for `usageLine`, `line_numbers` for `lineNumbers`. The switch letters, the emitted text, and the exit codes are fixed by Spec_TextFinder.md and are identical in both.
+- The `Output` trait with a generic parameter is the current design choice. A boxed trait object, `Box&lt;dyn Output&gt;`, is a viable alternative that trades static dispatch for a signature carrying no type parameter; it is not adopted here.
+- Spec_TextFinder.md §3.4 obliges an implementation to stop its runtime translating the LF terminator. Rust's standard output performs no such translation on any platform, so this implementation meets that requirement without configuring the stream. [Spec_Rust_TextFinder_Output.md](Rust_Spec_driven_Output/Spec_Rust_TextFinder_Output.md) §5 records what follows from that.</code></pre>
+      <h5 class="indent">Cargo.toml (workspace root)</h5>
+<pre><code class="language-toml">[workspace]
+resolver = "2"
+members = [
+    "Rust_Spec_driven_Cmdline",
+    "Rust_Spec_driven_Dirnav",
+    "Rust_Spec_driven_Output",
+    "Rust_Spec_driven_TextFinder_Entry",
+]</code></pre>
+      <h5 class="indent">Rust_Spec_driven_Cmdline/Cargo.toml</h5>
+<pre><code class="language-toml">[package]
+name = "rust_textfinder_cmdline"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]</code></pre>
+      <h5 class="indent">Rust_Spec_driven_Dirnav/Cargo.toml</h5>
+<pre><code class="language-toml">[package]
+name = "rust_textfinder_dirnav"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+regex = "1"
+rust_textfinder_cmdline = { path = "../Rust_Spec_driven_Cmdline" }</code></pre>
+      <h5 class="indent">Rust_Spec_driven_Output/Cargo.toml</h5>
+<pre><code class="language-toml">[package]
+name = "rust_textfinder_output"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+rust_textfinder_dirnav = { path = "../Rust_Spec_driven_Dirnav" }</code></pre>
+      <h5 class="indent">Rust_Spec_driven_TextFinder_Entry/Cargo.toml</h5>
+<pre><code class="language-toml">[package]
+name = "rust_textfinder_entry"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+
+[[bin]]
+name = "rust_textfinder"
+path = "src/main.rs"
+
+[dependencies]
+rust_textfinder_cmdline = { path = "../Rust_Spec_driven_Cmdline" }
+rust_textfinder_dirnav = { path = "../Rust_Spec_driven_Dirnav" }
+rust_textfinder_output = { path = "../Rust_Spec_driven_Output" }</code></pre>
+      <t-b>
+        The four manifests are the dependency chain of Section 2 written down. Read the
+        <code>[dependencies]</code> sections in order and the chain reads back: Cmdline declares
+        none, Dirnav declares <code>regex</code> and Cmdline, Output declares Dirnav, and the binary
+        declares all three.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>6. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 assigns it
+        <code>Prompts_Rust_TextFinder_Structure.md</code> and
+        <code>Prompts_Fix_Rust_TextFinder_Structure.md</code>, and neither was written: the
+        structure document and the four component specifications were produced in one turn, recorded
+        at the project level, which &sect;8's level rule sends to the Process thread. &sect;8 lets a
+        page stand without a block rather than requiring one, and the
+        <a target="_blank" href="Spec_Driven_Design_Rust_Process.html">Process page</a> says what
+        the thread's evidence does and does not cover.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#components">components</a></menu-elem>
+        <menu-elem class="secElem"><a href="#chain">the chain</a></menu-elem>
+        <menu-elem class="secElem"><a href="#output">Output seam</a></menu-elem>
+        <menu-elem class="secElem"><a href="#build">cargo and build</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenRustPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 1, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

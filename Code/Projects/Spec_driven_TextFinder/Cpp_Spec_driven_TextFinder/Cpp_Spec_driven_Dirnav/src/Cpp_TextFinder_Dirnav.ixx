@@ -33,47 +33,128 @@ inline bool sameName(std::string_view left, std::string_view right) {
 #endif
 }
 
-inline std::string baseName(const std::filesystem::path& path) {
-    const std::filesystem::path base = path.has_filename() ? path : path.parent_path();
-    return base.filename().string();
+inline constexpr std::string_view replacement{"\xEF\xBF\xBD"};   // U+FFFD, per §8
+
+// §7: the length of the valid UTF-8 sequence beginning at i, or 0 if none does. Rejects
+// truncated sequences, overlong encodings, encoded surrogates, and values above U+10FFFF.
+inline std::size_t utf8Sequence(std::string_view bytes, std::size_t i) {
+    const auto lead = static_cast<unsigned char>(bytes[i]);
+    std::size_t trailing = 0;
+    char32_t point = 0;
+
+    if (lead < 0x80) return 1;
+    else if ((lead & 0xE0) == 0xC0) { trailing = 1; point = lead & 0x1Fu; }
+    else if ((lead & 0xF0) == 0xE0) { trailing = 2; point = lead & 0x0Fu; }
+    else if ((lead & 0xF8) == 0xF0) { trailing = 3; point = lead & 0x07u; }
+    else return 0;
+
+    if (i + trailing >= bytes.size()) return 0;
+    for (std::size_t k = 1; k <= trailing; ++k) {
+        const auto next = static_cast<unsigned char>(bytes[i + k]);
+        if ((next & 0xC0) != 0x80) return 0;
+        point = (point << 6) | (next & 0x3Fu);
+    }
+
+    if (trailing == 1 && point < 0x80) return 0;        // overlong
+    if (trailing == 2 && point < 0x800) return 0;       // overlong
+    if (trailing == 3 && point < 0x10000) return 0;     // overlong
+    if (point > 0x10FFFF) return 0;                     // beyond Unicode
+    if (point >= 0xD800 && point <= 0xDFFF) return 0;   // encoded surrogate
+
+    return trailing + 1;
 }
 
-// §8: generic_string(), not generic_u8string(), whose std::u8string Output::output will not take.
-inline std::string displayPath(const std::filesystem::path& path) {
-    std::string text = path.generic_string();
+// §7: the admission test of Spec_TextFinder.md §3.3, over the same sequence rule §8 renders with.
+inline bool validUtf8(std::string_view bytes) {
+    for (std::size_t i = 0; i < bytes.size();) {
+        const std::size_t length = utf8Sequence(bytes, i);
+        if (length == 0) return false;
+        i += length;
+    }
+    return true;
+}
+
+#ifdef _WIN32
+inline void appendUtf8(std::string& text, char32_t point) {
+    if (point < 0x80) text += static_cast<char>(point);
+    else if (point < 0x800) {
+        text += static_cast<char>(0xC0 | (point >> 6));
+        text += static_cast<char>(0x80 | (point & 0x3F));
+    }
+    else if (point < 0x10000) {
+        text += static_cast<char>(0xE0 | (point >> 12));
+        text += static_cast<char>(0x80 | ((point >> 6) & 0x3F));
+        text += static_cast<char>(0x80 | (point & 0x3F));
+    }
+    else {
+        text += static_cast<char>(0xF0 | (point >> 18));
+        text += static_cast<char>(0x80 | ((point >> 12) & 0x3F));
+        text += static_cast<char>(0x80 | ((point >> 6) & 0x3F));
+        text += static_cast<char>(0x80 | (point & 0x3F));
+    }
+}
+#endif
+
+// §8: the generic form Spec_TextFinder.md §3.4 fixes, with U+FFFD for each unit that will not
+// render and a report of whether any was substituted. Calls neither generic_string() nor
+// filename().string(): on Windows both convert and can throw out of the walk, and on POSIX
+// both pass invalid bytes through unexamined, so neither reports the condition §3.4 defines.
+inline std::string renderPath(const std::filesystem::path& path, bool& lossy) {
+    lossy = false;
+    std::string text;
+
+#ifdef _WIN32
+    // The native string is UTF-16. Walk its units, mapping the separator and encoding each
+    // scalar value, and substitute for a surrogate that is not part of a pair.
+    const std::wstring& native = path.native();
+    for (std::size_t i = 0; i < native.size(); ++i) {
+        char32_t point = static_cast<unsigned short>(native[i]);
+        if (point == L'\\') point = U'/';
+
+        if (point >= 0xD800 && point <= 0xDBFF) {
+            const bool paired = i + 1 < native.size() &&
+                                static_cast<unsigned short>(native[i + 1]) >= 0xDC00 &&
+                                static_cast<unsigned short>(native[i + 1]) <= 0xDFFF;
+            if (!paired) { text += replacement; lossy = true; continue; }
+            const char32_t low = static_cast<unsigned short>(native[++i]);
+            point = 0x10000 + ((point - 0xD800) << 10) + (low - 0xDC00);
+        }
+        else if (point >= 0xDC00 && point <= 0xDFFF) { text += replacement; lossy = true; continue; }
+
+        appendUtf8(text, point);
+    }
+#else
+    // The native string is bytes and the separator is already /. Copy each valid sequence and
+    // substitute for each byte that begins none.
+    const std::string& native = path.native();
+    for (std::size_t i = 0; i < native.size();) {
+        const std::size_t length = utf8Sequence(native, i);
+        if (length == 0) { text += replacement; lossy = true; ++i; continue; }
+        text.append(native, i, length);
+        i += length;
+    }
+#endif
+
     if (text.starts_with("./")) text.erase(0, 2);   // a root of . contributes no leading ./
     return text;
 }
 
-// §7: rejects truncated sequences, overlong encodings, encoded surrogates, and values above U+10FFFF.
-inline bool validUtf8(std::string_view bytes) {
-    for (std::size_t i = 0; i < bytes.size();) {
-        const auto lead = static_cast<unsigned char>(bytes[i]);
-        std::size_t trailing = 0;
-        char32_t point = 0;
+inline std::string baseName(const std::filesystem::path& path) {
+    const std::filesystem::path base = path.has_filename() ? path : path.parent_path();
+    bool lossy = false;
+    return renderPath(base.filename(), lossy);
+}
 
-        if (lead < 0x80) { ++i; continue; }
-        else if ((lead & 0xE0) == 0xC0) { trailing = 1; point = lead & 0x1Fu; }
-        else if ((lead & 0xF0) == 0xE0) { trailing = 2; point = lead & 0x0Fu; }
-        else if ((lead & 0xF8) == 0xF0) { trailing = 3; point = lead & 0x07u; }
-        else return false;
+inline std::string displayPath(const std::filesystem::path& path) {
+    bool lossy = false;
+    return renderPath(path, lossy);
+}
 
-        if (i + trailing >= bytes.size()) return false;
-        for (std::size_t k = 1; k <= trailing; ++k) {
-            const auto next = static_cast<unsigned char>(bytes[i + k]);
-            if ((next & 0xC0) != 0x80) return false;
-            point = (point << 6) | (next & 0x3Fu);
-        }
-
-        if (trailing == 1 && point < 0x80) return false;        // overlong
-        if (trailing == 2 && point < 0x800) return false;       // overlong
-        if (trailing == 3 && point < 0x10000) return false;     // overlong
-        if (point > 0x10FFFF) return false;                     // beyond Unicode
-        if (point >= 0xD800 && point <= 0xDFFF) return false;   // encoded surrogate
-
-        i += trailing + 1;
-    }
-    return true;
+// §5 rule 6: whether this entry's own name renders without substitution.
+inline bool renderable(const std::filesystem::path& path) {
+    bool lossy = false;
+    renderPath(path, lossy);
+    return !lossy;
 }
 
 // LF, CRLF, and bare CR terminate a line; a final unterminated run is still a line.
@@ -115,6 +196,9 @@ public:
         const bool link = std::filesystem::is_symlink(root, error);
         if (error || link) { announceCannotOpen(root); return; }
 
+        // §5 rule 6: a root whose text will not render is announced and not traversed.
+        if (!renderable(root)) { announceCannotOpen(root); return; }
+
         const std::filesystem::file_status status = std::filesystem::status(root, error);
         if (error) { announceCannotOpen(root); return; }
 
@@ -142,6 +226,10 @@ private:
             const bool link = entry->is_symlink(kind);
             if (kind) { announceCannotOpen(path); continue; }
             if (link) continue;   // §5 rule 5: passed over silently, never opened
+
+            // §5 rule 6: after the link test and before the skip list, the extension filter,
+            // and any open, so a name that will not render is announced whatever /p holds.
+            if (!renderable(path.filename())) { announceCannotOpen(path); continue; }
 
             const bool folder = entry->is_directory(kind);
             if (kind) { announceCannotOpen(path); continue; }

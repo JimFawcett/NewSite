@@ -73,7 +73,7 @@
         <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
         <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
         <a class="repoLinks" href="Spec_Driven_Design_Cpp_Structure.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
-        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Structure.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
         <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
         <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
       </div>
@@ -180,7 +180,7 @@
         <tr>
           <td class="lightItem"><code>cannot open &lt;path&gt;</code></td>
           <td class="lightItem">error</td>
-          <td class="lightItem">a file, directory, or root path could not be opened, is a symbolic link named as a root, or is neither a regular file nor a directory</td>
+          <td class="lightItem">a file, directory, or root path could not be opened, is a symbolic link named as a root, is neither a regular file nor a directory, or carries a name the implementation cannot render as text</td>
         </tr>
       </table>
       <t-b>
@@ -204,9 +204,27 @@
         examined file appears exactly once.
       </t-b>
       <t-b>
+        The last clause of the <code>cannot open</code> row covers a case only a filesystem
+        produces: a name the implementation's string type cannot carry, which means bytes that are
+        not valid UTF-8 on POSIX and unpaired surrogate code units on Windows. Such a file is not
+        searched, and its announcement names it with U+FFFD REPLACEMENT CHARACTER substituted for
+        each unit that will not render, since an announcement naming nothing would leave the reader
+        no way to find the file. &sect;3.4 states the two costs it accepts for that: the path
+        reported is not the path on disk, and which names reach the case depends on the
+        implementation's string type, so &sect;6's match set agrees only over trees whose names
+        every implementation can carry.
+      </t-b>
+      <t-b>
+        Rendering a name may not end the run. Where an implementation's conversion reports failure
+        by throwing, or by anything else that would propagate out of the walk, it is contained
+        where it arises: the entry draws its announcement and traversal continues with the next one.
+        One unrenderable name costs one file, never the remainder of the search, and the run still
+        exits 0.
+      </t-b>
+      <t-b>
         Announcements route through the implementation's output component, not to stderr, and
         nothing announced affects the exit code. Usage diagnostics are the only text that goes to
-        stderr, and &sect;5.2 fixes their content.
+        stderr, and &sect;5.2 binds their shape while leaving their wording to each implementation.
       </t-b>
 
       <a id="exit"></a>

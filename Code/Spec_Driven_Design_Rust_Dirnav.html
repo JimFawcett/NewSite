@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Rust_Dirnav.html - Rust thread, page 4
+-->
+<head>
+  <title>Spec-Driven Rust: Dirnav</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Rust_Dirnav.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_Spec_driven_Dirnav">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Rust: Dirnav</h2>
+        <h4 class="indent" id="subtitle">traversal, admission, matching, and emission in one generic struct</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Traversal.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Dirnav.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="interface"></a>
+      <h3>1. &nbsp;Public Interface</h3>
+      <t-b>
+        <code>rust_textfinder_dirnav</code> walks a directory tree, reads each selected file,
+        evaluates the expression against each line, and formats every matching file into the block
+        Spec_TextFinder.md &sect;3.4 fixes, emitting each of its lines as it is produced. It is the
+        only component that touches file contents, and it writes to no stream.
+      </t-b>
+      <t-b>
+        The crate root exports three things.
+      </t-b>
+<pre><code class="language-rust">pub trait Output {
+    fn output(&amp;mut self, text: &amp;str);
+}
+
+pub type SkipList = Vec&lt;String&gt;;
+
+pub struct Dirnav&lt;'a, O: Output&gt; { /* private */ }
+
+impl&lt;'a, O: Output&gt; Dirnav&lt;'a, O&gt; {
+    pub fn new(out: &amp;'a mut O, skips: &amp;'a SkipList, commands: &amp;'a ProgramCommands)
+        -&gt; Result&lt;Self, regex::Error&gt;;
+
+    pub fn search(&amp;mut self, root: &amp;Path);
+}</code></pre>
+      <t-b>
+        The struct declares the <code>Output</code> trait it does not implement, which is what puts
+        <code>rust_textfinder_output</code> downstream of it in the dependency chain. The generic
+        parameter makes the call direct, so the polymorphism is a compile-time bound rather than a
+        runtime dispatch.
+      </t-b>
+      <t-b>
+        <code>new</code> compiles <code>commands.regex_text</code> with
+        <code>regex::Regex::new</code> - the engine Spec_TextFinder.md &sect;6.1 assigns to Rust -
+        and returns <code>Err</code> carrying the crate's own error when the expression will not
+        compile. The failure is a returned value rather than a panic, and the specification says why
+        in one sentence: a malformed pattern is something the user typed, so it is an ordinary
+        outcome of construction. <code>rust_textfinder_cmdline</code> guarantees the text is
+        non-empty, so <code>new</code> never sees an empty expression.
+      </t-b>
+      <t-b>
+        All three arguments are borrowed for the lifetime <code>'a</code> and are owned by
+        <code>rust_textfinder_entry</code>, which the borrow checker obliges to keep them alive for
+        the lifetime of the <code>Dirnav</code>. The skip list and the commands are shared borrows
+        and cannot be modified through them; <code>out</code> is a unique borrow, since emitting a
+        line mutates the sink. That one distinction is the whole of the access control this
+        component needs, and it is checked rather than documented.
+      </t-b>
+      <t-b>
+        <code>search</code> returns nothing. Every failure it meets is announced through
+        <code>Output</code>, so the caller has nothing to report on its behalf. A single value is
+        reused across every root path, so the compiled expression is built once per run, and
+        <code>search</code> carries no state from one call to the next.
+      </t-b>
+
+      <a id="traversal"></a>
+      <h3>2. &nbsp;Traversal</h3>
+      <t-b>
+        <code>search</code> resolves a root before walking it. A symbolic link, a kind that is
+        neither regular file nor directory, and a failed metadata query each draw
+        <code>cannot open</code>; a regular file is examined as a single file; a directory is
+        walked. The skip list is never consulted for the root, which Spec_TextFinder.md &sect;3.2
+        exempts because the user named it explicitly.
+      </t-b>
+      <t-b>
+        The root's kind comes from <code>std::fs::symlink_metadata</code> and not
+        <code>std::fs::metadata</code>. The specification rejects the second by name: it follows a
+        symbolic link and would report the target's kind, hiding the very case &sect;3.2 requires be
+        announced.
+      </t-b>
+      <t-b>
+        The recursion is written explicitly. <code>walk</code> iterates one directory and calls
+        itself on each subdirectory it decides to enter, so entries are handled as
+        <code>std::fs::read_dir</code> yields them, without being collected or reordered.
+      </t-b>
+      <t-b>
+        Two choices are stated in the specification rather than left to the implementer.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>No directory-walking crate.</strong> <code>walkdir</code> and its kind own the
+            descent this library must own, since <code>/s</code> and the skip list both decide
+            whether to enter a directory, and such a crate may impose an order of its own.</li>
+          <li><strong><code>read_dir</code> enumerates a single level only.</strong> Its order is
+            unspecified by the standard library and is whatever <code>readdir</code> or
+            <code>FindFirstFileW</code> returns, which is the platform facility &sect;3.2 requires
+            an implementation to enumerate through. Entries are neither sorted nor grouped, as
+            &sect;3.2 forbids.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Every fallible call in the walk yields an <code>io::Result</code> and every one of them is
+        matched. <code>read_dir</code> failing announces the directory and returns; an entry yielded
+        as <code>Err</code> announces the directory and returns, so a directory that becomes
+        unreadable part way through is announced rather than silently truncated; a failed
+        <code>file_type</code> announces that entry and continues with the next. No
+        <code>unwrap</code> and no <code>expect</code> appear, which is what the specification means
+        when it says nothing in traversal panics.
+      </t-b>
+      <t-b>
+        The order of the entry tests matters, and &sect;5 fixes it.
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li><strong>Symbolic link, tested first.</strong> An entry that is a link is passed over
+            silently whatever its target, since no attempt is made to open it. The kind comes from
+            <code>DirEntry::file_type</code>, which does not follow a link;
+            <code>std::fs::metadata</code> is rejected by name here for the same reason it is
+            rejected for the root.</li>
+          <li><strong>Unrenderable name, tested second.</strong> An entry whose name is not valid
+            UTF-8 draws <code>cannot open</code> and is neither entered nor searched.
+            <code>OsStr::to_str</code> reports the condition by returning <code>None</code>, so
+            nothing propagates and nothing is caught.</li>
+          <li><strong>Skip list, extension filter, and the open, after both.</strong></li>
+        </ol>
+      </t-b>
+      <t-b>
+        Putting the name test before the skip-list test is what makes such a name announced whatever
+        <code>/p</code> holds, and Spec_TextFinder.md &sect;3.4 writes that rule over every such
+        file rather than over the selected ones. This position is a correction: the Rust text
+        originally let the extension filter reach the entry first, which would have made the same
+        tree and the same command line produce different stdout from the two implementations. The
+        <a target="_blank" href="Spec_Driven_Design_Rust_Process.html">Process page</a> covers how
+        that was found.
+      </t-b>
+      <t-b>
+        The link test staying ahead of the name test is a deliberate asymmetry both implementations
+        carry: a link whose name cannot be rendered stays silent, because rule 1 turns on the
+        entry's kind, which costs no decoding, and &sect;3.2 asks for silence there.
+      </t-b>
+      <t-b>
+        A pruned directory draws no announcement. Pruning is work the library chose not to do, and
+        <code>cannot open</code> reports work it could not do.
+      </t-b>
+
+      <a id="selection"></a>
+      <h3>3. &nbsp;File Selection</h3>
+      <t-b>
+        Selection follows the <code>/p</code> rules of Spec_TextFinder.md &sect;5, and the list
+        arrives from <code>rust_textfinder_cmdline</code> already normalized to bare extensions. An
+        empty list selects every file; a non-empty list selects a file whose extension matches an
+        entry.
+      </t-b>
+      <t-b>
+        <code>std::path::Path::extension</code> does not implement those rules, and the
+        specification rejects it by name: it returns <code>None</code> for <code>.gitignore</code>,
+        whereas &sect;5 gives that file the extension <code>gitignore</code>. The extension is
+        therefore taken as the text after the last <code>.</code> in the file name, with
+        <code>rfind('.')</code> and a slice, no special case for a leading dot, and a name holding
+        no <code>.</code> at all has no extension.
+      </t-b>
+      <t-b>
+        Selection never meets a name it cannot read. The Section 2 gate has already refused every
+        entry whose name is not valid UTF-8, so <code>selected</code> takes a <code>&amp;str</code>
+        rather than an <code>OsStr</code> and has no failure case of its own. Neither an empty nor a
+        non-empty <code>/p</code> list changes what happens to such a file.
+      </t-b>
+      <t-b>
+        Comparison goes through <code>same_name</code>, which is case-sensitive on POSIX and
+        case-insensitive on Windows per &sect;3.2 and &sect;5. It is written twice, once under
+        <code>#[cfg(windows)]</code> and once under <code>#[cfg(not(windows))]</code>, and it is the
+        only place in the file where the target platform changes behavior. The same function serves
+        the skip list, since &sect;3.2 and &sect;5 fix one comparison for both, and the
+        specification names the function rather than restating the rule so that the two cannot
+        drift.
+      </t-b>
+      <t-b>
+        The Windows comparison uses <code>eq_ignore_ascii_case</code>, so it folds ASCII only. An
+        extension holding a non-ASCII character therefore compares case-sensitively on both
+        platforms, which the specification states as a consequence rather than leaving a reader to
+        discover it.
+      </t-b>
+      <t-b>
+        Selection applies uniformly: a root path that is a regular file is filtered by
+        <code>/p</code> like any other file. A root named on <code>/P</code> escapes the skip list
+        and does not escape the extension filter.
+      </t-b>
+
+      <a id="admission"></a>
+      <h3>4. &nbsp;Admission and the No-Content Case</h3>
+      <t-b>
+        <code>examine</code> applies the three admission tests of Spec_TextFinder.md &sect;3.3 in
+        the order the specification fixes. The size test reads the length
+        <code>std::fs::Metadata::len</code> reports, so a file above the limit is never read into
+        memory; the NUL and UTF-8 tests read bytes. The limit is 10,485,760 bytes, the number
+        &sect;3.3 fixes, written <code>10_485_760</code> so that a reader can count the digits.
+      </t-b>
+      <t-b>
+        <code>new</code> records once, for the whole run, whether the no-content case applies:
+      </t-b>
+<pre><code class="language-rust">let path_line_only =
+    commands.regex_text == "." &amp;&amp; !commands.line_numbers &amp;&amp; !commands.matched_line;</code></pre>
+      <t-b>
+        When it holds, a selected file that passes the size test and is not empty produces a block of
+        its path line alone, and the file is never opened. No file announcement accompanies that
+        block: <code>searched</code> reports a file that was read and matched nothing and
+        <code>skipped</code> reports one a content test rejected, and in this case neither happened,
+        so the library emits neither whatever <code>/h</code> says. A selected file of zero size
+        produces no block and draws no announcement either.
+      </t-b>
+      <t-b>
+        Both error announcements still work in this case, because both rest on metadata: a file
+        above the limit draws <code>too large</code>, and one whose metadata cannot be read draws
+        <code>cannot open</code>.
+      </t-b>
+      <t-b>
+        A file that needs reading is read in full with <code>std::fs::read</code>, so one failing a
+        later test is skipped entirely rather than searched in part. The NUL test is
+        <code>bytes.contains(&amp;0)</code>. The UTF-8 test is <code>std::str::from_utf8</code>,
+        which rejects truncated sequences, overlong encodings, encoded surrogates, and scalar values
+        above U+10FFFF - the four rejections &sect;3.3 requires - so this implementation performs no
+        validation of its own and the standard library is the authority for what valid UTF-8 means.
+        The C++ implementation writes those four rejections out by hand, one line each, because it
+        has no such call to lean on.
+      </t-b>
+      <t-b>
+        A leading UTF-8 BOM is stripped with <code>strip_prefix('\u{FEFF}')</code> after the
+        admission tests, not before, so its three bytes count toward the size limit and toward the
+        NUL scan like any others.
+      </t-b>
+
+      <a id="matching"></a>
+      <h3>5. &nbsp;Matching and Emission</h3>
+      <t-b>
+        Each line is evaluated with <code>Regex::is_match</code>, which gives the
+        anywhere-in-the-line match &sect;3.3 requires and asks the engine for nothing more - no
+        match position, no matched substring, no capture group.
+      </t-b>
+      <t-b>
+        The line is passed as <code>&amp;str</code>, so <code>.</code>, a character class, and a
+        class escape each match one Unicode scalar value. &sect;6.1 records <code>std::regex</code>
+        over <code>char</code> as the one engine of the four that matches a byte instead, so on a
+        line holding a non-ASCII character this implementation agrees with the C# and Python
+        implementations and the C++ one is the outlier.
+      </t-b>
+      <t-b>
+        Three rules govern the emission, and all three are visible in a dozen lines of
+        <code>examine</code>:
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li><strong>The path line goes out at the first match</strong>, ahead of the detail line
+            for that same match, and a <code>path_written</code> flag makes sure it goes out once. A
+            file that never matches produces no line at all; a file that matches many produces its
+            path line once.</li>
+          <li><strong>With neither <code>/n</code> nor <code>/L</code>, the loop returns as soon as
+            the path line is written.</strong> The block has no detail lines, so the first match
+            settles the file.</li>
+          <li><strong>Otherwise the loop runs to the end of the file</strong>, writing one detail
+            line - two spaces of indent, then the fields <code>/n</code> and <code>/L</code> select
+            - as each matching line is evaluated.</li>
+        </ol>
+      </t-b>
+      <t-b>
+        Nothing is accumulated for the file. <code>Output</code> receives each line as it is
+        produced, which is the pipeline behavior &sect;3.4's "as they occur" requires. Announcements
+        go through the same <code>Output</code>, at the point the failure or the finding is met, and
+        an error announcement is not gated on <code>/h</code>.
+      </t-b>
+      <t-b>
+        The <code>/h</code> gate is one function, <code>file_announcement</code>, and it reads as
+        the rule it implements: emit unless <code>suppress_on_no_match</code>. A file announcement
+        reports only a file that produced no block, so it never repeats a path the output already
+        carries - <code>searched</code> once the last line has been evaluated, which is the first
+        moment the library knows the file matched nothing, and <code>skipped</code> at the point of
+        rejection.
+      </t-b>
+      <t-b>
+        Path rendering is where this library does its own string work rather than the standard
+        library's. &sect;3.4 requires <code>/</code> on every platform for the whole of
+        <code>&lt;path&gt;</code>, so a path is built by joining the root's own text with the entry
+        names descended through, and <code>Path::display</code> is rejected by name: it renders the
+        platform's separator, which on Windows would emit <code>\</code> and make the same tree
+        produce different output on two platforms.
+      </t-b>
+      <t-b>
+        The root's own text is normalized too, since &sect;3.4's rule covers all of
+        <code>&lt;path&gt;</code>. <code>normalize</code> replaces every <code>\</code> with
+        <code>/</code> before the first entry name is appended, so <code>-P src\sub</code> on
+        Windows yields <code>src/sub/file.rs</code> and not <code>src\sub/file.rs</code>. That was a
+        gap the audit found, and the integration suite now asserts it. A root path of <code>.</code>
+        contributes no leading <code>./</code>, which <code>walk</code> arranges by taking an empty
+        prefix for that root and <code>join</code> by returning the name alone when the prefix is
+        empty.
+      </t-b>
+      <t-b>
+        One announcement carries a path that is not the path on disk. An entry name that is not
+        valid UTF-8 cannot be rendered as text, and &sect;3.4 fixes the outcome: the file is not
+        searched and draws <code>cannot open</code>, naming it with U+FFFD substituted for each unit
+        that will not render. <code>OsStr::to_string_lossy</code> does exactly that, so this library
+        needs no substitution code. Every name that survives the Section 2 gate renders without
+        substitution, so a block's path line is always the name itself.
+      </t-b>
+      <t-b>
+        That is the one place the two implementations solve the same requirement with different
+        amounts of code. <code>to_string_lossy</code> is the whole of it here;
+        <a target="_blank" href="Spec_Driven_Design_Cpp_Dirnav.html">C++ writes a
+        <code>renderPath</code> helper</a> that walks bytes on POSIX and UTF-16 units on Windows,
+        because the two calls it would otherwise use behave differently by platform and one of them
+        throws.
+      </t-b>
+
+      <a id="lines"></a>
+      <h3>6. &nbsp;Line Splitting Without str::lines</h3>
+      <t-b>
+        Spec_TextFinder.md &sect;3.3 makes LF, CRLF, and a bare CR each terminate a line, and treats
+        a final unterminated run as a line. <code>str::lines</code> is rejected by name because it
+        implements two of those three: it splits on LF and strips a trailing CR, and it does not
+        treat a bare CR as a terminator, so a classic Mac OS file would arrive as one line.
+      </t-b>
+      <t-b>
+        The library carries a <code>Lines</code> iterator of its own, 30 lines including the
+        <code>Iterator</code> impl. It holds <code>Option&lt;&amp;str&gt;</code> for the remainder,
+        finds the next <code>\r</code> or <code>\n</code>, consumes two bytes when the tail starts
+        with <code>\r\n</code> and one otherwise, and yields <code>None</code> when the remainder is
+        empty. Starting from <code>None</code> for empty input is what makes an empty file produce
+        no line rather than one empty line.
+      </t-b>
+      <t-b>
+        Writing it as an <code>Iterator</code> rather than as a function returning
+        <code>Vec&lt;&amp;str&gt;</code> is what lets rule 2 of Section 5 stop reading at the first
+        match: the caller's <code>for</code> loop returns and the remaining bytes are never scanned.
+        Each item borrows the buffer rather than copying it, so a 10 MB file costs one allocation
+        for its contents and nothing per line.
+      </t-b>
+      <t-b>
+        <code>enumerate</code> supplies the line number, offset by one at the point of use. Line
+        numbers count every line, matching or not, which follows from numbering the iterator rather
+        than the matches.
+      </t-b>
+
+      <a id="source"></a>
+      <h3>7. &nbsp;Source</h3>
+      <t-b>
+        <code>lib.rs</code> in full - 249 lines, the largest file in the project. The comments cite
+        the Rust specification's sections, which cite Spec_TextFinder.md in turn.
+      </t-b>
+      <h5 class="indent">Rust_Spec_driven_Dirnav/src/lib.rs</h5>
+<pre><code class="language-rust">//! rust_textfinder_dirnav - directory navigation, matching, and block formatting.
+//! Implements Spec_Rust_TextFinder_Dirnav.md, the Rust binding of Spec_TextFinder.md sections 3.2-3.4.
+
+use regex::Regex;
+use rust_textfinder_cmdline::ProgramCommands;
+use std::fs::{self, Metadata};
+use std::path::Path;
+
+#[cfg(test)]
+mod unit_tests;
+
+pub trait Output {
+    fn output(&amp;mut self, text: &amp;str);
+}
+
+pub type SkipList = Vec&lt;String&gt;;
+
+pub struct Dirnav&lt;'a, O: Output&gt; {
+    out: &amp;'a mut O,
+    skips: &amp;'a SkipList,
+    commands: &amp;'a ProgramCommands,
+    expression: Regex,
+    path_line_only: bool,
+}
+
+const SIZE_LIMIT: u64 = 10_485_760;
+
+impl&lt;'a, O: Output&gt; Dirnav&lt;'a, O&gt; {
+    pub fn new(
+        out: &amp;'a mut O,
+        skips: &amp;'a SkipList,
+        commands: &amp;'a ProgramCommands,
+    ) -&gt; Result&lt;Self, regex::Error&gt; {
+        let expression = Regex::new(&amp;commands.regex_text)?;
+        let path_line_only =
+            commands.regex_text == "." &amp;&amp; !commands.line_numbers &amp;&amp; !commands.matched_line;
+        Ok(Dirnav { out, skips, commands, expression, path_line_only })
+    }
+
+    pub fn search(&amp;mut self, root: &amp;Path) {
+        let display = normalize(&amp;root.to_string_lossy());
+        let info = match fs::symlink_metadata(root) {
+            Ok(info) =&gt; info,
+            Err(_) =&gt; return self.announce("cannot open", &amp;display),
+        };
+        let kind = info.file_type();
+        if kind.is_symlink() || !(kind.is_file() || kind.is_dir()) {
+            self.announce("cannot open", &amp;display);
+        } else if kind.is_file() {
+            if self.selected(basename(&amp;display)) {
+                self.examine(root, &amp;display, &amp;info);
+            }
+        } else {
+            self.walk(root, &amp;display);
+        }
+    }
+
+    fn walk(&amp;mut self, dir: &amp;Path, display: &amp;str) {
+        let prefix = if display == "." { "" } else { display };
+        let entries = match fs::read_dir(dir) {
+            Ok(entries) =&gt; entries,
+            Err(_) =&gt; return self.announce("cannot open", display),
+        };
+        for entry in entries {
+            let entry = match entry {
+                Ok(entry) =&gt; entry,
+                Err(_) =&gt; return self.announce("cannot open", display),
+            };
+            let raw = entry.file_name();
+            let kind = match entry.file_type() {
+                Ok(kind) =&gt; kind,
+                Err(_) =&gt; {
+                    let child = join(prefix, &amp;raw.to_string_lossy());
+                    self.announce("cannot open", &amp;child);
+                    continue;
+                }
+            };
+            if kind.is_symlink() {
+                continue;
+            }
+            let name = match raw.to_str() {
+                Some(name) =&gt; name,
+                None =&gt; {
+                    let child = join(prefix, &amp;raw.to_string_lossy());
+                    self.announce("cannot open", &amp;child);
+                    continue;
+                }
+            };
+            let child = join(prefix, name);
+            if kind.is_dir() {
+                if self.commands.recurse &amp;&amp; !self.skips.iter().any(|skip| same_name(skip, name)) {
+                    self.walk(&amp;entry.path(), &amp;child);
+                }
+            } else if kind.is_file() {
+                if self.selected(name) {
+                    match entry.metadata() {
+                        Ok(info) =&gt; self.examine(&amp;entry.path(), &amp;child, &amp;info),
+                        Err(_) =&gt; self.announce("cannot open", &amp;child),
+                    }
+                }
+            } else {
+                self.announce("cannot open", &amp;child);
+            }
+        }
+    }
+
+    fn examine(&amp;mut self, path: &amp;Path, display: &amp;str, info: &amp;Metadata) {
+        if info.len() &gt; SIZE_LIMIT {
+            return self.announce("too large", display);
+        }
+        if self.path_line_only {
+            if info.len() &gt; 0 {
+                self.out.output(display);
+            }
+            return;
+        }
+        let bytes = match fs::read(path) {
+            Ok(bytes) =&gt; bytes,
+            Err(_) =&gt; return self.announce("cannot open", display),
+        };
+        if bytes.contains(&amp;0) {
+            return self.file_announcement("skipped", display);
+        }
+        let text = match std::str::from_utf8(&amp;bytes) {
+            Ok(text) =&gt; text,
+            Err(_) =&gt; return self.file_announcement("skipped", display),
+        };
+        let text = text.strip_prefix('\u{FEFF}').unwrap_or(text);
+
+        let details = self.commands.line_numbers || self.commands.matched_line;
+        let mut path_written = false;
+        for (number, line) in Lines::over(text).enumerate() {
+            if !self.expression.is_match(line) {
+                continue;
+            }
+            if !path_written {
+                self.out.output(display);
+                path_written = true;
+            }
+            if !details {
+                return;
+            }
+            let detail = self.detail(number + 1, line);
+            self.out.output(&amp;detail);
+        }
+        if !path_written {
+            self.file_announcement("searched", display);
+        }
+    }
+
+    fn detail(&amp;self, number: usize, line: &amp;str) -&gt; String {
+        let mut text = String::from("  ");
+        if self.commands.line_numbers {
+            text.push_str(&amp;number.to_string());
+            if self.commands.matched_line {
+                text.push_str(" - ");
+            }
+        }
+        if self.commands.matched_line {
+            text.push_str(line);
+        }
+        text
+    }
+
+    fn selected(&amp;self, name: &amp;str) -&gt; bool {
+        if self.commands.extensions.is_empty() {
+            return true;
+        }
+        match name.rfind('.') {
+            None =&gt; false,
+            Some(dot) =&gt; {
+                let extension = &amp;name[dot + 1..];
+                self.commands.extensions.iter().any(|candidate| same_name(candidate, extension))
+            }
+        }
+    }
+
+    fn announce(&amp;mut self, kind: &amp;str, path: &amp;str) {
+        self.out.output(&amp;format!("{kind} {path}"));
+    }
+
+    fn file_announcement(&amp;mut self, kind: &amp;str, path: &amp;str) {
+        if !self.commands.suppress_on_no_match {
+            self.announce(kind, path);
+        }
+    }
+}
+
+/// Spec_TextFinder.md section 3.4: every path is rendered with `/` on every platform.
+fn normalize(text: &amp;str) -&gt; String {
+    text.replace('\\', "/")
+}
+
+fn join(prefix: &amp;str, name: &amp;str) -&gt; String {
+    if prefix.is_empty() {
+        String::from(name)
+    } else if prefix.ends_with('/') {
+        format!("{prefix}{name}")
+    } else {
+        format!("{prefix}/{name}")
+    }
+}
+
+fn basename(display: &amp;str) -&gt; &amp;str {
+    display.rsplit('/').next().unwrap_or(display)
+}
+
+#[cfg(windows)]
+fn same_name(left: &amp;str, right: &amp;str) -&gt; bool {
+    left.eq_ignore_ascii_case(right)
+}
+
+#[cfg(not(windows))]
+fn same_name(left: &amp;str, right: &amp;str) -&gt; bool {
+    left == right
+}
+
+/// Line splitting per Spec_TextFinder.md section 3.3: LF, CRLF, and bare CR terminate
+/// a line, and a final unterminated run is a line. `str::lines` does neither.
+struct Lines&lt;'t&gt; {
+    rest: Option&lt;&amp;'t str&gt;,
+}
+
+impl&lt;'t&gt; Lines&lt;'t&gt; {
+    fn over(text: &amp;'t str) -&gt; Self {
+        Lines { rest: if text.is_empty() { None } else { Some(text) } }
+    }
+}
+
+impl&lt;'t&gt; Iterator for Lines&lt;'t&gt; {
+    type Item = &amp;'t str;
+
+    fn next(&amp;mut self) -&gt; Option&lt;&amp;'t str&gt; {
+        let rest = self.rest?;
+        match rest.find(|c| c == '\r' || c == '\n') {
+            None =&gt; {
+                self.rest = None;
+                Some(rest)
+            }
+            Some(at) =&gt; {
+                let (line, tail) = rest.split_at(at);
+                let consumed = if tail.starts_with("\r\n") { 2 } else { 1 };
+                let remainder = &amp;tail[consumed..];
+                self.rest = if remainder.is_empty() { None } else { Some(remainder) };
+                Some(line)
+            }
+        }
+    }
+}</code></pre>
+      <h5 class="indent">Rust_Spec_driven_Dirnav/Cargo.toml</h5>
+<pre><code class="language-toml">[package]
+name = "rust_textfinder_dirnav"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+regex = "1"
+rust_textfinder_cmdline = { path = "../Rust_Spec_driven_Cmdline" }</code></pre>
+      <t-b>
+        This manifest is the only one in the project that names a third-party crate. It does not
+        name <code>rust_textfinder_output</code>, which supplies the generic argument at the point
+        of use rather than at the point of definition, and that absence is the dependency direction
+        of Section 2 of the
+        <a target="_blank" href="Spec_Driven_Design_Rust_Structure.html">Structure page</a> stated
+        in a build file.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>8. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 assigns it
+        <code>Prompts_Spec_Rust_TextFinder_Dirnav.md</code> and its <code>Fix</code> companion, and
+        neither was written: the Dirnav specification was produced in the same turn as the other
+        four documents, recorded at the project level. Three audit items reach this component - the
+        unnormalized root separators, the unnamed skip-list folding rule, and the gate's position -
+        and all three sit on the
+        <a target="_blank" href="Spec_Driven_Design_Rust_Process.html">Process page</a>.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#interface">interface</a></menu-elem>
+        <menu-elem class="secElem"><a href="#traversal">traversal</a></menu-elem>
+        <menu-elem class="secElem"><a href="#selection">selection</a></menu-elem>
+        <menu-elem class="secElem"><a href="#admission">admission</a></menu-elem>
+        <menu-elem class="secElem"><a href="#matching">matching</a></menu-elem>
+        <menu-elem class="secElem"><a href="#lines">line splitting</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenRustPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 4, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

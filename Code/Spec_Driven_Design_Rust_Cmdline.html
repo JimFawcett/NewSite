@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Rust_Cmdline.html - Rust thread, page 3
+-->
+<head>
+  <title>Spec-Driven Rust: Cmdline</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Rust_Cmdline.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_Spec_driven_Cmdline">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Rust: Cmdline</h2>
+        <h4 class="indent" id="subtitle">an argument slice to ProgramCommands, with the defaults in one Default impl</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_CommandLine.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Cmdline.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="interface"></a>
+      <h3>1. &nbsp;Public Interface</h3>
+      <t-b>
+        <code>rust_textfinder_cmdline</code> converts a slice of argument strings into a struct that
+        controls the other two libraries. It is the single place in the Rust implementation where
+        switch letters, argument syntax, and defaults are known, and it performs no traversal, no
+        matching, no file I/O, and no stream writing.
+      </t-b>
+      <t-b>
+        The crate root <code>lib.rs</code> exports one struct and four functions.
+      </t-b>
+<pre><code class="language-rust">pub struct ProgramCommands {
+    pub root_paths: Vec&lt;String&gt;,    // /P
+    pub extensions: Vec&lt;String&gt;,    // /p
+    pub regex_text: String,         // /r
+    pub recurse: bool,              // /s
+    pub suppress_on_no_match: bool, // /h
+    pub verbose: bool,              // /v
+    pub help: bool,                 // /H
+    pub line_numbers: bool,         // /n
+    pub matched_line: bool,         // /L
+}
+
+pub fn parse(args: &amp;[String]) -&gt; Result&lt;ProgramCommands, String&gt;;
+pub fn usage_line() -&gt; String;
+pub fn help_text() -&gt; String;
+pub fn options_text(commands: &amp;ProgramCommands) -&gt; String;</code></pre>
+      <t-b>
+        <code>parse</code> returns <code>Result</code> because
+        <code>rust_textfinder_entry</code> needs two things from a failure: the signal, and the text
+        to write. The <code>Err</code> variant carries the complete diagnostic, so the caller's
+        error path is one <code>eprint!</code> and a return rather than a lookup and a format.
+      </t-b>
+      <t-b>
+        <code>parse</code> takes <code>&amp;[String]</code> rather than reading the arguments
+        itself. The binary collects them and decodes them, per Spec_Rust_TextFinder_Entry.md &sect;4
+        step 1, so this library never sees an undecodable argument and defines no behavior for one.
+        The unit suite hands it hand-built slices as a consequence, which is why 29 tests run in
+        under a millisecond and none of them spawns a process.
+      </t-b>
+      <t-b>
+        <code>ProgramCommands</code> derives <code>Clone</code> and <code>Debug</code> and has no
+        invariants: every field combination the parser can produce is valid. <code>Dirnav</code>
+        borrows the value <code>rust_textfinder_entry</code> owns rather than cloning it, so that
+        value must outlive the <code>Dirnav</code> it was passed to. The borrow checker enforces
+        that rule, where the C++ implementation states the same lifetime requirement in prose and
+        relies on the caller.
+      </t-b>
+      <t-b>
+        The field names are the switch meanings spelled out rather than the switch letters.
+        <code>suppress_on_no_match</code> for <code>/h</code> is the one worth pausing on: it names
+        what the flag does rather than what it is called, so the gating check in
+        <code>rust_textfinder_dirnav</code> reads as a sentence.
+      </t-b>
+
+      <a id="defaults"></a>
+      <h3>2. &nbsp;Defaults Live in the Default Impl</h3>
+      <t-b>
+        The field comments are the switch-to-field mapping, and the <code>Default</code>
+        implementation is the sole authority in code for the defaults of Spec_TextFinder.md
+        &sect;5.
+      </t-b>
+<pre><code class="language-rust">impl Default for ProgramCommands {
+    fn default() -&gt; Self {
+        ProgramCommands {
+            root_paths: vec![String::from(".")],
+            extensions: Vec::new(),
+            regex_text: String::from("."),
+            recurse: true,
+            suppress_on_no_match: true,
+            verbose: false,
+            help: false,
+            line_numbers: false,
+            matched_line: false,
+        }
+    }
+}</code></pre>
+      <t-b>
+        <code>ProgramCommands::default()</code> equals the result of parsing an empty command line,
+        because <code>parse</code> starts from it and overwrites only what the arguments name. That
+        is what makes step 5 of the Entry startup sequence a one-liner: the bare command line prints
+        the listing of a default-constructed value.
+      </t-b>
+      <t-b>
+        <code>#[derive(Default)]</code> would not do. Three of the nine fields need a value the
+        derive cannot produce - <code>.</code> for <code>root_paths</code>, <code>.</code> for
+        <code>regex_text</code>, and <code>true</code> for <code>recurse</code> and
+        <code>suppress_on_no_match</code> - so the implementation is written out, and every default
+        &sect;5 fixes appears once, in table order, in one block a reader can compare against the
+        specification line by line.
+      </t-b>
+      <t-b>
+        The wording in the specification is load-bearing: this is the sole authority
+        <em>in code</em>. Spec_TextFinder.md &sect;5 remains the authority overall, and a
+        disagreement between the two is a defect in this crate. The unit suite asserts each of the
+        nine against &sect;5 separately rather than asserting the struct equals its own
+        <code>Default</code>, which would compare the code against itself.
+      </t-b>
+
+      <a id="parsing"></a>
+      <h3>3. &nbsp;Parsing Rules</h3>
+      <t-b>
+        <code>parse</code> scans <code>args[1..]</code> left to right, alternating switch token and
+        argument token; <code>args[0]</code> is the program name and is not inspected. It stops at
+        the first violation and returns that diagnostic; no partial result is produced. It touches
+        no filesystem: root paths are not tested for existence, and extensions are not compared
+        against any file.
+      </t-b>
+      <t-b>
+        Four rules govern it.
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li><strong>Switch tokens.</strong> A token in switch position is valid only when it is
+            exactly two characters, the first <code>/</code> or <code>-</code>, the second one of
+            the nine letters. A token with no introducer is <em>not a switch</em>; any other
+            introducer-led token, including a bare <code>/</code> or <code>-</code>, is an
+            <em>unrecognized switch</em>.</li>
+          <li><strong>Arguments.</strong> Each switch consumes the following token verbatim,
+            including when that token begins with <code>/</code> or <code>-</code>, since there are
+            no bare flags. A switch with no following token is <em>missing its argument</em>.</li>
+          <li><strong>Conversion.</strong> Boolean switches accept only <code>true</code> or
+            <code>false</code>, compared with <code>eq_ignore_ascii_case</code>. <code>/r</code> and
+            <code>/P</code> take the token verbatim and each rejects an empty argument.
+            <code>/p</code> is normalized.</li>
+          <li><strong>Accumulation.</strong> <code>/P</code> clears the default
+            <code>vec![String::from(".")]</code> on its first occurrence and appends thereafter,
+            preserving argument order. Every other switch overwrites any earlier value, silently
+            discarding it.</li>
+        </ol>
+      </t-b>
+      <t-b>
+        Rule 1 partitions the first two diagnostics of &sect;5.2 rather than leaving them to
+        overlap. Before the partition, <code>/ss</code>, <code>-abc</code>, and a bare
+        <code>/</code> each satisfied both conditions, and two implementations could have reported
+        different reason lines for the same token while both following the specification.
+        <code>switch_letter</code> reads the partition directly: it takes the first character from
+        an iterator and returns <code>not a switch</code> unless that character is an introducer,
+        then takes two more and returns <code>unrecognized switch</code> unless the second is one of
+        the nine letters and the third does not exist.
+      </t-b>
+      <t-b>
+        Walking a <code>Chars</code> iterator rather than indexing is what keeps the length test
+        correct for a multi-byte token. <code>token.len()</code> counts bytes, so a two-character
+        token holding one non-ASCII character reports 3 or more and would be refused as over-long
+        rather than as an unrecognized switch - the same outcome by the wrong route. An earlier
+        draft of the specification defended counting characters on the ground that the two differ,
+        and the review struck that sentence: both routes produce
+        <code>unrecognized switch</code> for every input, so the claim did not hold even though the
+        code it defended is the one to write.
+      </t-b>
+      <t-b>
+        Rule 4's first-occurrence-clears behavior needs one bit of state,
+        <code>roots_supplied</code>, and the code carries it as a local rather than inferring it
+        from the vector's contents. Inferring would work until a user typed <code>-P .</code>, which
+        is indistinguishable from the default by value.
+      </t-b>
+      <t-b>
+        The <code>match</code> over the switch letter carries a <code>_</code> arm returning
+        <code>unrecognized switch</code> that no input reaches, since
+        <code>switch_letter</code> has already refused every letter outside the nine. Rust requires
+        a <code>match</code> over <code>char</code> to be exhaustive, so the arm is the compiler's
+        requirement rather than a second validation, and it returns the diagnostic the token would
+        have drawn had the earlier test not caught it.
+      </t-b>
+      <t-b>
+        Every violation returns the complete usage diagnostic Spec_TextFinder.md &sect;5.2 binds -
+        its reason line, a newline, then <code>usage_line()</code> - built by one three-line
+        <code>diagnostic</code> helper, so the shape has one definition. Six of the seven rows are
+        this library's. The seventh, a malformed <code>/r</code>, is detected later:
+        <code>Dirnav::new</code> compiles the expression and returns its failure, and the binary
+        composes the diagnostic. Neither library composes it - the one supplies a string, the other
+        reports the failure, and the binary joins them.
+      </t-b>
+      <t-b>
+        Spec_Rust_TextFinder_Cmdline.md &sect;6 carries the six reason lines and owns them.
+        Spec_TextFinder.md &sect;2 leaves the wording of anything reaching stderr to each language,
+        and this implementation adopts &sect;5.2's supplied wording unchanged, which costs nothing
+        and leaves its stderr comparable with the C++ implementation's.
+      </t-b>
+      <t-b>
+        There is no error condition for a duplicated switch or an empty <code>/p</code> list.
+        Duplicates resolve by rule 4, and an empty extension list means every file is searched.
+      </t-b>
+
+      <a id="normalization"></a>
+      <h3>4. &nbsp;Extension-List Normalization</h3>
+      <t-b>
+        The <code>/p</code> argument arrives as one token, the shell having already removed the
+        quotes. Normalization implements the <code>/p</code> rules of Spec_TextFinder.md &sect;5 as
+        one iterator chain: split on commas, trim each item, strip one leading <code>.</code> if
+        present, discard empty items, and collect the survivors in order.
+      </t-b>
+<pre><code class="language-rust">/// The six characters Spec_TextFinder.md section 5 names, and no others.
+fn is_trimmed(c: char) -&gt; bool {
+    matches!(c, ' ' | '\t' | '\n' | '\u{000B}' | '\u{000C}' | '\r')
+}
+
+fn normalize_extensions(argument: &amp;str) -&gt; Vec&lt;String&gt; {
+    argument
+        .split(',')
+        .map(|item| item.trim_matches(is_trimmed))
+        .map(|item| item.strip_prefix('.').unwrap_or(item))
+        .filter(|item| !item.is_empty())
+        .map(String::from)
+        .collect()
+}</code></pre>
+      <t-b>
+        <code>" .rs , , txt "</code> therefore normalizes to <code>rs, txt</code>, which is the pair
+        the option listing reports.
+      </t-b>
+      <t-b>
+        Two standard-library calls are rejected by name, and each stops an implementer writing
+        something plausible and wrong.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong><code>str::trim</code> is not used.</strong> It trims every character Unicode
+            calls whitespace, a set including no-break space and the en and em spaces, so this
+            implementation would accept an extension list another rejects.</li>
+          <li><strong><code>char::is_ascii_whitespace</code> is not used either.</strong> It omits
+            vertical tab, which &sect;5 names. That omission is the one-character difference that
+            sent the rule up to the parent specification: C's <code>isspace</code> in the C locale
+            includes U+000B, so <code>/p "cpp,\vrs"</code> would have normalized differently in the
+            two implementations. &sect;5 now names the six characters, and both implementations
+            test against that list and nothing else.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        <code>strip_prefix('.')</code> removes the dot, and one call removes at most one, which is
+        the rule &sect;5 states. <code>unwrap_or(item)</code> supplies the unstripped item when
+        there was no dot, so the chain needs no branch.
+      </t-b>
+      <t-b>
+        Duplicates are retained. They are harmless to the membership test
+        <code>rust_textfinder_dirnav</code> performs, and the specification says so rather than
+        leaving a reader to wonder whether the omission was an oversight. Case folding is not
+        applied here: the platform-dependent comparison &sect;5 fixes is performed by
+        <code>rust_textfinder_dirnav</code> when it matches a file name against the list, because
+        that is where the platform question arises.
+      </t-b>
+
+      <a id="text"></a>
+      <h3>5. &nbsp;Help Text and Option Listing</h3>
+      <t-b>
+        Three functions render text the binary writes, and none of them writes it.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><code>help_text()</code> returns the text Spec_TextFinder.md &sect;5.1 fixes with
+            <code>&lt;executable&gt;</code> replaced by <code>rust_textfinder</code>. The body is a
+            raw string literal, <code>r#"..."#</code>, so the fixture and the source agree by
+            construction and the backslashes and quotes inside it need no escaping.</li>
+          <li><code>usage_line()</code> returns its first line - the line that terminates every
+            usage diagnostic - and <code>help_text()</code> is built from it, so the synopsis has
+            one definition.</li>
+          <li><code>options_text(commands)</code> returns the resolved option set in the form
+            &sect;5.3 fixes.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        One function serves all three cases &sect;5.3 calls for, since the text is the same in each
+        and only the caller's next move differs: <code>/v true</code>, after which traversal
+        follows; the bare command line, after which the process exits 0; and the invalid-regex
+        diagnostic, where the listing precedes that diagnostic whatever <code>/v</code> says and the
+        process then exits 1. The listing reflects whatever <code>commands</code> holds, so its
+        <code>/v</code> line reads <code>false</code> in the latter two unless <code>/v</code> was
+        itself typed.
+      </t-b>
+      <t-b>
+        The Rust specification adds one sentence about <code>options_text</code> that is worth more
+        than it looks: it chooses none of that form and must not be read as the place the form is
+        decided. A reader who wants to change the listing changes Spec_TextFinder.md &sect;5.3.
+      </t-b>
+      <t-b>
+        The listing's construction shows where the form is fixed and where it is not. The six
+        boolean lines come from one loop over an array of switch-and-value pairs in &sect;5 table
+        order, so no line can be forgotten and none can be reordered without moving an array
+        element. The <code>/P</code>, <code>/p</code>, and <code>/r</code> lines are written out,
+        because each has a rule of its own: one line per root path, the extension list joined by
+        <code>", "</code> with <code>/p</code> alone when the list is empty, and the expression
+        verbatim. The unit suite asserts that no line of the listing ends in whitespace, which is
+        the rule that lets this text serve as a test fixture.
+      </t-b>
+      <t-b>
+        All three functions end their returned string with a newline, and none writes to a stream.
+        The library opens no stream at all, which is what lets its unit suite check the rendered
+        text as a string rather than by capturing output.
+      </t-b>
+
+      <a id="source"></a>
+      <h3>6. &nbsp;Source</h3>
+      <t-b>
+        <code>lib.rs</code> in full - 188 lines, of which the help body is 21. The comments cite the
+        Rust specification, which cites Spec_TextFinder.md in turn.
+      </t-b>
+      <h5 class="indent">Rust_Spec_driven_Cmdline/src/lib.rs</h5>
+<pre><code class="language-rust">//! rust_textfinder_cmdline - command-line parsing for TextFinder.
+//! Implements Spec_Rust_TextFinder_Cmdline.md, the Rust binding of Spec_TextFinder.md sections 4-5.
+
+#[cfg(test)]
+mod unit_tests;
+
+#[derive(Clone, Debug)]
+pub struct ProgramCommands {
+    pub root_paths: Vec&lt;String&gt;,    // /P
+    pub extensions: Vec&lt;String&gt;,    // /p
+    pub regex_text: String,         // /r
+    pub recurse: bool,              // /s
+    pub suppress_on_no_match: bool, // /h
+    pub verbose: bool,              // /v
+    pub help: bool,                 // /H
+    pub line_numbers: bool,         // /n
+    pub matched_line: bool,         // /L
+}
+
+impl Default for ProgramCommands {
+    fn default() -&gt; Self {
+        ProgramCommands {
+            root_paths: vec![String::from(".")],
+            extensions: Vec::new(),
+            regex_text: String::from("."),
+            recurse: true,
+            suppress_on_no_match: true,
+            verbose: false,
+            help: false,
+            line_numbers: false,
+            matched_line: false,
+        }
+    }
+}
+
+const EXECUTABLE: &amp;str = "rust_textfinder";
+
+const SWITCH_LETTERS: [char; 9] = ['P', 'p', 'r', 's', 'h', 'v', 'H', 'n', 'L'];
+
+const HELP_BODY: &amp;str = r#"
+  /P  path (.)             root path for traversal; repeat to add more root paths
+  /p  "ext, ext" ()        comma-separated bare extensions to search; empty searches every file
+  /r  regex (.)            regular expression evaluated against each line
+  /s  true|false (true)    recurse into subdirectories
+  /h  true|false (true)    hide files that matched nothing; errors always appear
+  /v  true|false (false)   list the resolved option set before traversal
+  /H  true|false (false)   print this help and exit
+  /n  true|false (false)   add a detail line per match, carrying the line number
+  /L  true|false (false)   add a detail line per match, carrying the line text
+
+A matching file prints its path on one line; /n and /L add indented detail
+lines beneath it. A path is never printed twice.
+
+Switch introducers / and - are equivalent. Switch letters are case-sensitive,
+so /h and /H differ. Every switch takes exactly one argument; there are no bare
+flags. Arguments containing whitespace or commas must be quoted.
+
+Run with no switches at all to list the resolved options and exit without
+searching.
+"#;
+
+pub fn usage_line() -&gt; String {
+    format!(
+        "usage: {EXECUTABLE} [/P path] [/p \"ext, ext\"] [/r regex] [/s bool] [/h bool] [/v bool] [/H bool] [/n bool] [/L bool]\n"
+    )
+}
+
+pub fn help_text() -&gt; String {
+    format!("{}{}", usage_line(), HELP_BODY)
+}
+
+pub fn options_text(commands: &amp;ProgramCommands) -&gt; String {
+    let mut text = String::new();
+    for root in &amp;commands.root_paths {
+        text.push_str("/P ");
+        text.push_str(root);
+        text.push('\n');
+    }
+    if commands.extensions.is_empty() {
+        text.push_str("/p\n");
+    } else {
+        text.push_str("/p ");
+        text.push_str(&amp;commands.extensions.join(", "));
+        text.push('\n');
+    }
+    text.push_str("/r ");
+    text.push_str(&amp;commands.regex_text);
+    text.push('\n');
+    for (switch, value) in [
+        ("/s", commands.recurse),
+        ("/h", commands.suppress_on_no_match),
+        ("/v", commands.verbose),
+        ("/H", commands.help),
+        ("/n", commands.line_numbers),
+        ("/L", commands.matched_line),
+    ] {
+        text.push_str(switch);
+        text.push(' ');
+        text.push_str(if value { "true" } else { "false" });
+        text.push('\n');
+    }
+    text
+}
+
+pub fn parse(args: &amp;[String]) -&gt; Result&lt;ProgramCommands, String&gt; {
+    let mut commands = ProgramCommands::default();
+    let mut roots_supplied = false;
+    let mut index = 1;
+
+    while index &lt; args.len() {
+        let token = args[index].as_str();
+        let letter = switch_letter(token)?;
+        let value = match args.get(index + 1) {
+            Some(next) =&gt; next.as_str(),
+            None =&gt; return Err(diagnostic(&amp;format!("missing argument for switch: {token}"))),
+        };
+
+        match letter {
+            'P' =&gt; {
+                if value.is_empty() {
+                    return Err(diagnostic(&amp;format!("empty root path for switch: {token}")));
+                }
+                if !roots_supplied {
+                    commands.root_paths.clear();
+                    roots_supplied = true;
+                }
+                commands.root_paths.push(String::from(value));
+            }
+            'p' =&gt; commands.extensions = normalize_extensions(value),
+            'r' =&gt; {
+                if value.is_empty() {
+                    return Err(diagnostic(&amp;format!("empty expression for switch: {token}")));
+                }
+                commands.regex_text = String::from(value);
+            }
+            's' =&gt; commands.recurse = boolean(token, value)?,
+            'h' =&gt; commands.suppress_on_no_match = boolean(token, value)?,
+            'v' =&gt; commands.verbose = boolean(token, value)?,
+            'H' =&gt; commands.help = boolean(token, value)?,
+            'n' =&gt; commands.line_numbers = boolean(token, value)?,
+            'L' =&gt; commands.matched_line = boolean(token, value)?,
+            _ =&gt; return Err(diagnostic(&amp;format!("unrecognized switch: {token}"))),
+        }
+        index += 2;
+    }
+    Ok(commands)
+}
+
+fn switch_letter(token: &amp;str) -&gt; Result&lt;char, String&gt; {
+    let mut chars = token.chars();
+    match chars.next() {
+        Some('/') | Some('-') =&gt; {}
+        _ =&gt; return Err(diagnostic(&amp;format!("not a switch: {token}"))),
+    }
+    match (chars.next(), chars.next()) {
+        (Some(letter), None) if SWITCH_LETTERS.contains(&amp;letter) =&gt; Ok(letter),
+        _ =&gt; Err(diagnostic(&amp;format!("unrecognized switch: {token}"))),
+    }
+}
+
+fn boolean(switch: &amp;str, value: &amp;str) -&gt; Result&lt;bool, String&gt; {
+    if value.eq_ignore_ascii_case("true") {
+        Ok(true)
+    } else if value.eq_ignore_ascii_case("false") {
+        Ok(false)
+    } else {
+        Err(diagnostic(&amp;format!("invalid boolean for {switch}: {value}")))
+    }
+}
+
+fn diagnostic(reason: &amp;str) -&gt; String {
+    format!("{reason}\n{}", usage_line())
+}
+
+/// The six characters Spec_TextFinder.md section 5 names, and no others.
+fn is_trimmed(c: char) -&gt; bool {
+    matches!(c, ' ' | '\t' | '\n' | '\u{000B}' | '\u{000C}' | '\r')
+}
+
+fn normalize_extensions(argument: &amp;str) -&gt; Vec&lt;String&gt; {
+    argument
+        .split(',')
+        .map(|item| item.trim_matches(is_trimmed))
+        .map(|item| item.strip_prefix('.').unwrap_or(item))
+        .filter(|item| !item.is_empty())
+        .map(String::from)
+        .collect()
+}</code></pre>
+      <t-b>
+        <code>#[cfg(test)] mod unit_tests;</code> at the top is how the 29 assertions of the
+        <a target="_blank" href="Spec_Driven_Design_Rust_Testing.html">Testing page</a> reach the
+        private items beside them. The module compiles only under <code>cargo test</code>, so
+        nothing of the suite reaches the shipped library.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>7. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 assigns it
+        <code>Prompts_Spec_Rust_TextFinder_Cmdline.md</code> and its <code>Fix</code> companion, and
+        neither was written: the Cmdline specification was produced in the same turn as the other
+        four documents, recorded at the project level. The two audit items that reach this component
+        - the struck char-counting claim and the whitespace set - sit on the
+        <a target="_blank" href="Spec_Driven_Design_Rust_Process.html">Process page</a>.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#interface">interface</a></menu-elem>
+        <menu-elem class="secElem"><a href="#defaults">defaults</a></menu-elem>
+        <menu-elem class="secElem"><a href="#parsing">parsing rules</a></menu-elem>
+        <menu-elem class="secElem"><a href="#normalization">normalization</a></menu-elem>
+        <menu-elem class="secElem"><a href="#text">help and listing</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenRustPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

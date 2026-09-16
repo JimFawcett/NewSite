@@ -73,7 +73,7 @@
         <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
         <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
         <a class="repoLinks" href="Spec_Driven_Design_Cpp_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
-        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
         <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
         <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
       </div>
@@ -147,6 +147,19 @@
         Three further things are fixed rather than left to the implementation, so that a comparison
         can rest on them: the two-level block form and its indent, the exit code, and the form of
         the option listing.
+      </t-b>
+      <t-b>
+        The guarantee is over stdout. Two implementations given the same command line write the
+        same bytes there and return the same exit code; what they write to stderr is each one's
+        own. That boundary follows &sect;2, which fixes what a user sees on stdout and leaves the
+        rest - the argument vector's type and encoding, the skip-list signature, the wording of
+        anything on stderr, and the standard-library facilities behind each rule - to each
+        component specification, in its own language's idiom. A test comparing two implementations
+        therefore compares stdout and the exit code and leaves stderr to whichever implementation
+        it belongs to. The
+        <a target="_blank" href="Spec_Driven_Design_Behavior_CommandLine.html">Command Line page</a>
+        covers what that leaves fixed among the diagnostics, which is more than the wording
+        suggests.
       </t-b>
 
       <a id="limit"></a>
@@ -261,7 +274,7 @@
       </t-b>
       <t-b>
         <ol class="tight">
-          <li>An engine that rejects the pattern reports <code>invalid regex for switch: /r</code>
+          <li>An engine that rejects the pattern reports the diagnostic &sect;5.2 calls for
             and exits non-zero, while an engine that accepts it searches the tree and exits 0. The
             two runs then differ in exit code, in stderr, and in every record. This is the larger
             cost of the two, and it is not a difference in output so much as a difference in
@@ -284,8 +297,45 @@
         class escape, so none turns on which engine an implementation names.
       </t-b>
 
+      <a id="verification"></a>
+      <h3>6. &nbsp;What Every Implementation Must Provide</h3>
+      <t-b>
+        &sect;6.2 requires two kinds of automated test and one demonstration from each
+        implementation, so that a claim about behavior can be checked rather than read.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>Unit suites</strong>, one per library component, each beside the code it
+            tests and exercising that component's own specification.</li>
+          <li><strong>One integration suite</strong>, driving the built executable end to end. It
+            covers the entry binary, whose behavior is its startup sequence, its exit codes, and
+            its stream routing, none of which a unit suite reaches.</li>
+          <li><strong>One demonstration</strong>, running the built executable against this
+            project's own tree and capturing what it produces. It is a record of observed behavior
+            rather than a test: it asserts nothing and fails nothing.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Each implementation also provides a runner per kind, announcing each suite it starts and
+        the status that suite returned, and exiting with the number that failed. A suite never
+        built counts as a failure rather than passing by absence, so a green run cannot mean that
+        nothing ran.
+      </t-b>
+      <t-b>
+        The dependency rule of Section 2 applies, so a suite uses the standard library and the
+        packages that rule already permits and introduces no third-party test framework - which is
+        why the C++ suites carry a hand-written <code>Checker</code> rather than a framework.
+        Assertion wording and counts belong to each implementation; what the suites must agree on
+        across implementations is the observable behavior &sect;3 through &sect;5 already fix. A
+        demonstration's output moves as this project's tree changes, so a capture states its date
+        and is replaced wholesale rather than edited. The
+        <a target="_blank" href="Spec_Driven_Design_Cpp_Testing.html">C++ Testing</a> and
+        <a target="_blank" href="Spec_Driven_Design_Cpp_Demonstration.html">C++ Demonstration</a>
+        pages are that requirement satisfied once.
+      </t-b>
+
       <a id="nongoals"></a>
-      <h3>6. &nbsp;Two Non-Goals</h3>
+      <h3>7. &nbsp;Two Non-Goals</h3>
       <t-b>
         &sect;7 holds two:
       </t-b>
@@ -335,6 +385,7 @@
         <menu-elem class="secElem"><a href="#limit">the limit</a></menu-elem>
         <menu-elem class="secElem"><a href="#engines">four engines</a></menu-elem>
         <menu-elem class="secElem"><a href="#outside">outside the subset</a></menu-elem>
+        <menu-elem class="secElem"><a href="#verification">verification</a></menu-elem>
         <menu-elem class="secElem"><a href="#nongoals">non-goals</a></menu-elem>
         <a href="#bottom">bottom</a>
       </div>

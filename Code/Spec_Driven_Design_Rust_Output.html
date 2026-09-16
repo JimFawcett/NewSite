@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Rust_Output.html - Rust thread, page 5
+-->
+<head>
+  <title>Spec-Driven Rust: Output</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Rust_Output.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_Spec_driven_Output">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Rust: Output</h2>
+        <h4 class="indent" id="subtitle">83 lines that write a line, absorb a failure, and refuse a second sink</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Matching.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Output.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="sink"></a>
+      <h3>1. &nbsp;The Sink</h3>
+      <t-b>
+        <code>rust_textfinder_output</code> receives fully formed strings from
+        <code>rust_textfinder_dirnav</code>, writes each as one line to stdout, and absorbs any
+        write failure so that neither the traversal nor the binary has to reason about it.
+      </t-b>
+<pre><code class="language-rust">pub struct StdoutSink { /* private */ }
+
+impl StdoutSink {
+    pub fn new() -&gt; Option&lt;Self&gt;;
+    pub fn write_text(&amp;mut self, text: &amp;str);
+    pub fn flush(&amp;mut self);
+}
+
+impl Output for StdoutSink {
+    fn output(&amp;mut self, text: &amp;str);
+}
+
+impl Drop for StdoutSink {
+    fn drop(&amp;mut self);
+}</code></pre>
+      <t-b>
+        Two methods write, and they differ only in what they add.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><code>output</code>, the trait method, writes the string it is given followed by the
+            single LF Spec_TextFinder.md &sect;3.4 fixes. It is the method
+            <code>rust_textfinder_dirnav</code> reaches, and the trait is the only thing that
+            library knows about this one.</li>
+          <li><code>write_text</code> writes the string verbatim, adding nothing. It exists for the
+            help text of &sect;5.1 and the option listing of &sect;5.3, which
+            <code>rust_textfinder_cmdline</code> returns already newline-terminated.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        <code>write_text</code> is an inherent method rather than part of the trait, and that
+        placement is the access control: <code>rust_textfinder_dirnav</code> holds an
+        <code>O: Output</code> and can reach only what the trait declares, so it cannot emit
+        unterminated text. Both route through one private <code>emit(text, terminate)</code>, so the
+        failed-state check and the write have one definition.
+      </t-b>
+      <t-b>
+        The type takes no configuration. <code>rust_textfinder_dirnav</code> formats every line in
+        full before emitting it - a block's path line, a block's indented detail lines, and every
+        announcement alike - so there is nothing left here to parameterize. The library does not
+        know a block line from an announcement, does not indent a detail line, and does not apply
+        <code>/h</code>, <code>/n</code>, or <code>/L</code>.
+      </t-b>
+      <t-b>
+        Once constructed, neither method panics and neither reports failure to a caller.
+      </t-b>
+
+      <a id="nomode"></a>
+      <h3>2. &nbsp;No Stream Mode to Set</h3>
+      <t-b>
+        Spec_TextFinder.md &sect;3.4 obliges an implementation to prevent its runtime translating
+        the LF terminator to CRLF. Rust's standard output writes the bytes it is given on every
+        platform and performs no such translation, so this implementation meets the requirement by
+        doing nothing. No <code>#[cfg]</code> on the target platform appears in this crate.
+      </t-b>
+      <t-b>
+        That is worth a section because the
+        <a target="_blank" href="Spec_Driven_Design_Cpp_Output.html">C++ sink</a> meets the same
+        requirement with a constructor that calls <code>_setmode(1, _O_BINARY)</code>, can fail
+        trying, and needs two headers in a global module fragment to do it. One requirement, one
+        parent specification, and two components whose constructors have nothing in common.
+      </t-b>
+      <t-b>
+        The comparison also explains a difference in the startup sequences. C++ must construct its
+        sink before any write to stdout, because the mode is a property of the stream and the help
+        text would otherwise carry CRLF; Rust must construct its sink before any write to stdout for
+        a different reason, because the sink owns the only handle. Both specifications place the
+        step identically and give different reasons, which is what &sect;2's delegation to each
+        language's idiom looks like in practice.
+      </t-b>
+      <t-b>
+        <code>output</code> adds the terminator and nothing else - no prefix, no separator, no
+        trailing content - because the string arrives fully formatted.
+      </t-b>
+
+      <a id="onesink"></a>
+      <h3>3. &nbsp;One Sink, One Buffer</h3>
+      <t-b>
+        <code>new</code> takes no arguments and yields <code>Some</code> the first time it is called
+        and <code>None</code> every time after, so that the process holds one sink and one only. The
+        flag lives in a <code>thread_local!</code> <code>Cell&lt;bool&gt;</code>, and
+        <code>Drop</code> clears it, so a sink dropped before another is created releases the right
+        to make one.
+      </t-b>
+<pre><code class="language-rust">thread_local! {
+    static SINK_TAKEN: Cell&lt;bool&gt; = Cell::new(false);
+}</code></pre>
+      <t-b>
+        The reason is the buffer of Section 5. Two sinks would wrap the same stdout with two
+        independent <code>BufWriter</code>s, and their contents would reach the stream in the order
+        the buffers happened to fill rather than the order the lines were written - which would
+        break the emission order &sect;3.4 fixes, silently and only under load. A rule against a
+        second sink is cheaper to enforce than a defect that appears only on long searches.
+      </t-b>
+      <t-b>
+        <code>None</code> is the only way construction fails, and
+        <code>rust_textfinder_entry</code> builds exactly one sink, so its own code cannot provoke
+        it. It handles the case all the same, and the specification gives the reason: a constructor
+        with a failure mode that callers ignore is a constructor whose failure mode will eventually
+        be reached. That <code>None</code> is one of the two paths to exit code 2, which
+        Spec_TextFinder.md &sect;3.4 fixes for a failure that is not about the command line.
+      </t-b>
+      <t-b>
+        <code>Default</code> is not implemented, and the omission is deliberate rather than an
+        oversight: <code>Default::default</code> must return <code>Self</code>, and this type cannot
+        promise one. A <code>#[derive(Default)]</code> here would offer callers a constructor that
+        silently produces a second buffer.
+      </t-b>
+      <t-b>
+        The <code>thread_local!</code> choice is the same one the binary makes for its skip list,
+        and for the same reason: interior mutability without <code>unsafe</code> and without a
+        synchronization primitive, on a value only one thread reaches. A plain <code>static</code>
+        would require <code>Sync</code>, and <code>Cell</code> is not.
+      </t-b>
+
+      <a id="errors"></a>
+      <h3>4. &nbsp;Error Handling</h3>
+      <t-b>
+        A write that fails - a closed pipe, a full disk - sets an internal failed state. On the
+        first such failure the library flushes stdout and then writes the single line
+        <code>output failed</code> to stderr. Thereafter it discards every string it is given and
+        writes nothing more, to stdout or stderr.
+      </t-b>
+      <t-b>
+        Three properties of that sequence are stated in the specification rather than left to the
+        code.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>The flush comes first</strong>, so every line already buffered reaches the
+            stream ahead of the notice explaining why the lines stop. It is best-effort: whatever
+            broke the write may break the flush too, and the code discards that
+            <code>Result</code> with <code>let _ =</code> rather than acting on it.</li>
+          <li><strong>The failed state is permanent.</strong> One notice, not one per discarded
+            line, which is what keeps a broken pipe from turning a long search into a long stderr
+            transcript.</li>
+          <li><strong>The failure reaches no caller.</strong> All three methods swallow the
+            <code>io::Result</code> their writes return. The library never panics, never returns a
+            status, and never lets the failure reach <code>rust_textfinder_dirnav</code>, which goes
+            on traversing. <code>unwrap</code> and <code>expect</code> appear nowhere in it.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        A method returning <code>()</code> where the operation returns a <code>Result</code> is
+        usually a smell, and here it is the interface the structure document asked for. The
+        <code>Output</code> trait's method returns nothing, so absorbing the failure is the
+        contract; the alternative is a trait method returning <code>Result</code> and a traversal
+        that must decide what to do about a sink it was given rather than chose.
+      </t-b>
+      <t-b>
+        The flush performed when the value is dropped obeys the same rule, and &sect;6 of the
+        specification explains why that case is named separately: the final flush is the write most
+        likely to be the first one that fails, being the only one that must reach the stream and, on
+        a short search, the only one that reaches it at all. Nothing follows it, so nothing is left
+        to discard.
+      </t-b>
+      <t-b>
+        A failed write does not affect the exit code, which the Entry specification reserves for
+        command-line and startup failures. A run whose output went nowhere still exits 0: the exit
+        code answers whether TextFinder could do what it was asked, not whether the reader received
+        it.
+      </t-b>
+
+      <a id="buffering"></a>
+      <h3>5. &nbsp;Buffering and the One Flush</h3>
+      <t-b>
+        <code>std::io::stdout</code> returns a handle that flushes on every newline, and every line
+        this library writes ends in one, so writing through it directly would flush once per emitted
+        line. A search emitting 60 lines would pay 60 system calls for nothing. The sink therefore
+        holds a <code>std::io::BufWriter</code> wrapping that handle, which defers the write until
+        its buffer fills.
+      </t-b>
+      <t-b>
+        No flush is performed per line. The stream is flushed when the value is dropped, and
+        <code>rust_textfinder_entry</code> reaches that drop on every path out of the program, since
+        each of its exits returns from <code>main</code> rather than calling
+        <code>std::process::exit</code>. Those two facts are one requirement stated in two
+        documents, and the
+        <a target="_blank" href="Spec_Driven_Design_Rust_Entry.html">Entry page</a> covers the other
+        half.
+      </t-b>
+      <t-b>
+        <code>Drop</code> is implemented explicitly rather than left to <code>BufWriter</code>'s
+        own, and the specification says why: <code>BufWriter</code> discards a failing flush without
+        notice, and &sect;6 fixes what this one does with it instead. The inherent
+        <code>flush</code> performs the same write on demand, for the one case that needs the buffer
+        drained before the process ends.
+      </t-b>
+      <t-b>
+        One rule keeps the deferral from reordering the output:
+      </t-b>
+      <t-b>
+        <strong>stdout is flushed before any write to stderr.</strong>
+      </t-b>
+      <t-b>
+        This library applies the rule to its own <code>output failed</code> notice, and
+        <code>rust_textfinder_entry</code> applies it to the diagnostic that follows the option
+        listing on an invalid <code>/r</code>. Invocation 10 of the demonstration is that case: nine
+        listing lines on stdout, then two diagnostic lines on stderr, in that order.
+      </t-b>
+      <t-b>
+        Because this value owns the only stdout handle in the process, the binary's help text and
+        option listing pass through <code>write_text</code> rather than through a handle of their
+        own. They therefore share this buffer and reach the stream in the order written, and the
+        ordering rule above is the only coordination needed.
+      </t-b>
+
+      <a id="source"></a>
+      <h3>6. &nbsp;Source</h3>
+      <t-b>
+        <code>lib.rs</code> in full. It is the smallest source in the project at 83 lines, and the
+        ratio to its 110-line specification is the point of the component: a sink that does one
+        thing can be specified exhaustively.
+      </t-b>
+      <h5 class="indent">Rust_Spec_driven_Output/src/lib.rs</h5>
+<pre><code class="language-rust">//! rust_textfinder_output - the process's one stdout sink.
+//! Implements Spec_Rust_TextFinder_Output.md.
+
+use rust_textfinder_dirnav::Output;
+use std::cell::Cell;
+use std::io::{BufWriter, Stdout, Write};
+
+#[cfg(test)]
+mod unit_tests;
+
+thread_local! {
+    static SINK_TAKEN: Cell&lt;bool&gt; = Cell::new(false);
+}
+
+pub struct StdoutSink {
+    writer: BufWriter&lt;Stdout&gt;,
+    failed: bool,
+}
+
+impl StdoutSink {
+    pub fn new() -&gt; Option&lt;Self&gt; {
+        let available = SINK_TAKEN.with(|taken| {
+            let free = !taken.get();
+            taken.set(true);
+            free
+        });
+        if available {
+            Some(StdoutSink { writer: BufWriter::new(std::io::stdout()), failed: false })
+        } else {
+            None
+        }
+    }
+
+    /// Writes the text verbatim. The help text and option listing arrive already terminated.
+    pub fn write_text(&amp;mut self, text: &amp;str) {
+        self.emit(text, false);
+    }
+
+    pub fn flush(&amp;mut self) {
+        if self.failed {
+            return;
+        }
+        if self.writer.flush().is_err() {
+            self.fail();
+        }
+    }
+
+    fn emit(&amp;mut self, text: &amp;str, terminate: bool) {
+        if self.failed {
+            return;
+        }
+        let mut wrote = self.writer.write_all(text.as_bytes());
+        if wrote.is_ok() &amp;&amp; terminate {
+            wrote = self.writer.write_all(b"\n");
+        }
+        if wrote.is_err() {
+            self.fail();
+        }
+    }
+
+    /// Spec section 6: flush what is buffered, then write one notice, then discard everything after.
+    fn fail(&amp;mut self) {
+        self.failed = true;
+        let _ = self.writer.flush();
+        let _ = writeln!(std::io::stderr(), "output failed");
+    }
+}
+
+impl Output for StdoutSink {
+    fn output(&amp;mut self, text: &amp;str) {
+        self.emit(text, true);
+    }
+}
+
+impl Drop for StdoutSink {
+    fn drop(&amp;mut self) {
+        if !self.failed &amp;&amp; self.writer.flush().is_err() {
+            self.failed = true;
+            let _ = writeln!(std::io::stderr(), "output failed");
+        }
+        SINK_TAKEN.with(|taken| taken.set(false));
+    }
+}</code></pre>
+      <t-b>
+        <code>Drop</code> repeats the failure handling rather than calling <code>fail</code>,
+        because <code>fail</code> flushes first and the flush is what has just been attempted. The
+        duplication is four lines and the alternative is a flush of a buffer that was reported
+        unwritable one statement earlier.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>7. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 assigns it
+        <code>Prompts_Spec_Rust_TextFinder_Output.md</code> and its <code>Fix</code> companion, and
+        neither was written: the Output specification was produced in the same turn as the other
+        four documents, recorded at the project level. Three audit items reach this component - the
+        missing <code>flush</code>, the unspecified failing flush in <code>Drop</code>, and the
+        second sink nothing prevented - and all three sit on the
+        <a target="_blank" href="Spec_Driven_Design_Rust_Process.html">Process page</a>.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#sink">the sink</a></menu-elem>
+        <menu-elem class="secElem"><a href="#nomode">no stream mode</a></menu-elem>
+        <menu-elem class="secElem"><a href="#onesink">one sink</a></menu-elem>
+        <menu-elem class="secElem"><a href="#errors">error handling</a></menu-elem>
+        <menu-elem class="secElem"><a href="#buffering">buffering</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenRustPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

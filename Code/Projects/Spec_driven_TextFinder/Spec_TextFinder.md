@@ -8,6 +8,8 @@ TextFinder is a command-line utility that traverses a directory tree — recursi
 
 This document specifies behavior common to all TextFinder implementations. Each lives in its own `<Lang>_Spec_driven_TextFinder/` folder holding a `<Lang>_TextFinder_Structure.md` and one subfolder per component, and refines this document without redefining it. [Cpp_Spec_driven_TextFinder/](Cpp_Spec_driven_TextFinder/) is the first; Rust, C#, and Python follow.
 
+What this document fixes is what a user sees on stdout: the blocks and announcements of §3.4, the help text of §5.1, the option listing of §5.3, and the exit codes. Everything else is a component specification's to settle in its own language's idiom and to that language's needs — the argument vector's type and encoding (§4), the signature of the skip-list extension point (§3.5), the wording of any text written to stderr (§5.2), and the standard-library facilities each rule is implemented with. A detail fixed in a component specification is a fact about that implementation rather than a departure from this document, and an implementation whose idiom reads badly under a rule written here should say so in its own specification rather than follow the rule into awkward code.
+
 Higher-level principles that constrain every implementation are recorded in [Constitution.md](Constitution.md) in this folder.
 
 ## 3. Functional Requirements
@@ -88,7 +90,11 @@ Besides blocks, TextFinder announces the files and directories that produced no 
 | Announcement         | Emitted when                                                                                              |
 |----------------------|-----------------------------------------------------------------------------------------------------------|
 | `too large <path>`   | a file exceeded the size limit of §3.3                                                                      |
-| `cannot open <path>` | a file, directory, or root path could not be opened, is a symbolic link named as a root, or is neither a regular file nor a directory |
+| `cannot open <path>` | a file, directory, or root path could not be opened, is a symbolic link named as a root, is neither a regular file nor a directory, or carries a name the implementation cannot render as text |
+
+A name that cannot be rendered as text is one the filesystem admits and the implementation's string type cannot carry: bytes that are not valid UTF-8 on POSIX, unpaired surrogate code units on Windows. Such a file is not searched. Its `cannot open` announcement names it with U+FFFD REPLACEMENT CHARACTER substituted for each unit that will not render, since an announcement that named nothing would leave the user with no way to find the file. Two costs follow, and this specification accepts both: the path reported is not the path on disk, and which names reach this case depends on the implementation's string type, so §6's match set agrees only over trees whose names every implementation can carry.
+
+Rendering a name is not permitted to end the run. Where an implementation's conversion reports failure by throwing, or by any other means that would propagate out of the walk, it is contained where it arises: the entry draws the announcement above, and traversal continues with the next entry. One unrenderable name costs one file, never the remainder of the search, and a run that meets one still exits 0 — an error announcement does not change the exit code.
 
 Every file TextFinder examines therefore contributes at most one of two things, never both: a block if it matched, a file announcement if it did not. Under the default /h `true` the output holds blocks and error announcements, and a file that matched nothing is silent. Under /h `false` every examined file appears exactly once. Under the default regex every file matches, so /h hides nothing there, and the no-content case of §3.3 reaches that state without opening a file — its block is the path line alone.
 
@@ -96,17 +102,17 @@ Every line of a block and every announcement is terminated by a single LF (U+000
 
 That rule governs stdout alone. What terminator an implementation writes to stderr is whatever its runtime and platform produce, and this specification does not fix it. Comparing one implementation against another means comparing stdout: a run that writes to stderr has written a usage diagnostic and traversed nothing, so it has no search output to compare, and holding its stderr to the byte would test the platform rather than the implementation.
 
-Usage diagnostics, whose exact text §5.2 fixes, are written to stderr. The announcements above are routed through the output component, not to stderr, and nothing announced above affects the exit code.
+Usage diagnostics, whose shape §5.2 binds and whose wording each implementation owns, are written to stderr. The announcements above are routed through the output component, not to stderr, and nothing announced above affects the exit code.
 
 The process returns one of three exit codes. The values are fixed here, not left to the implementation, so that two implementations can be compared by exit code as well as by output:
 
 | Code | Returned when |
 |------|---------------|
 | 0 | The invocation succeeded. Whether matches were found, and whether any file or root path drew an error announcement, does not change this. /H returns 0 as well, per §5, as does the bare command line of §3.1. |
-| 1 | The command line was invalid. TextFinder wrote the usage diagnostic §5.2 fixes for the violation, to stderr, and traversed nothing. An invalid /r writes the §5.3 listing to stdout ahead of that diagnostic, per §5.2; every other violation leaves stdout empty. |
+| 1 | The command line was invalid. TextFinder wrote the usage diagnostic §5.2 calls for, to stderr, and traversed nothing. An invalid /r writes the §5.3 listing to stdout ahead of that diagnostic, per §5.2; every other violation leaves stdout empty. |
 | 2 | TextFinder could not start, for a reason that is not about what the user typed — a failure to initialize its output component, for instance. No usage diagnostic is written, and traversal does not begin. |
 
-No other value is returned. Code 2 separates a failure of the program from a failure of the command line, so a test can tell the two apart; §5.2 fixes the text a code-1 failure writes and leaves the text of a code-2 failure to the implementation.
+No other value is returned. Code 2 separates a failure of the program from a failure of the command line, so a test can tell the two apart; §5.2 binds the shape of a code-1 failure and requires it carry a usage line, where a code-2 failure carries none; the wording of both belongs to the implementation.
 
 ### 3.5 Skip-List Extension
 
@@ -147,7 +153,7 @@ The form in which the program receives its arguments — the type of the argumen
 | Switch | Argument (default)      | Meaning                                                                                                  |
 |--------|-------------------------|----------------------------------------------------------------------------------------------------------|
 | /P     | path (`.`)              | Root path for traversal. May be an absolute or a relative path. /P may be given more than once; each occurrence adds a root path, and the paths are traversed in the order given. |
-| /p     | `"ext, ext, ..."` (`""`)| Comma-separated list of file extensions to search, quoted. The extension of a file is its last dot-suffix, a leading dot on the name notwithstanding: `.gitignore` has extension `gitignore`, so a dot-file is searched like any other and is excluded only by /p or by the skip list. Each item is trimmed of surrounding whitespace and loses one leading dot if present, so `cpp` and `.cpp` are equivalent; empty items are discarded, so `"cpp,,rs"` and `"cpp, rs"` name the same two extensions. Extensions compare case-sensitively on POSIX and case-insensitively on Windows, as skip-list entries do. When the resulting list is empty, every file is searched, including files with no extension. When it is non-empty, files with no extension are not searched. |
+| /p     | `"ext, ext, ..."` (`""`)| Comma-separated list of file extensions to search, quoted. The extension of a file is its last dot-suffix, a leading dot on the name notwithstanding: `.gitignore` has extension `gitignore`, so a dot-file is searched like any other and is excluded only by /p or by the skip list. Each item is trimmed of surrounding whitespace — space (U+0020), horizontal tab (U+0009), line feed (U+000A), vertical tab (U+000B), form feed (U+000C), and carriage return (U+000D), fixed here so that two implementations trim the same six characters — and loses one leading dot if present, so `cpp` and `.cpp` are equivalent; empty items are discarded, so `"cpp,,rs"` and `"cpp, rs"` name the same two extensions. Extensions compare case-sensitively on POSIX and case-insensitively on Windows, as skip-list entries do. When the resulting list is empty, every file is searched, including files with no extension. When it is non-empty, files with no extension are not searched. |
 | /r     | regex (`"."`)           | Regular expression evaluated against each line. §6.1 names the engine that compiles it and fixes the syntax every engine accepts alike; the expression is compiled once per invocation. It must not be empty — the default `.` is the way to match every line. |
 | /s     | `true` \| `false` (`true`)  | Recursive search. When `false`, the files directly within the root path are searched but no subdirectory is entered. |
 | /h     | `true` \| `false` (`true`)  | Suppress the file announcements of §3.4, which report only files that matched nothing, leaving the blocks of matching files and the error announcements. When `false`, each file that was searched without matching or was skipped is announced, so that every examined file appears in the output exactly once. Announcements go through the implementation's output component, not to stderr. |
@@ -202,7 +208,9 @@ A usage diagnostic reports a command line TextFinder will not act on. Every impl
 
 One diagnostic is preceded by output on stdout. A pattern the regex engine rejects is a pattern whose effect the user cannot see, so before writing `invalid regex for switch: /r` TextFinder writes the resolved option listing of §5.3 to stdout, whatever /v says — the listing's /r line carries the offending expression verbatim, which is the point of emitting it. Under /v `true` the listing has already been written and is not repeated. Every other row of the table leaves stdout empty.
 
-These reason lines are fixed text, identical across implementations. Failures that are not about what the user typed — a search that cannot initialize its output component, for instance — are not usage diagnostics. Their text is specified per implementation; their exit code is not, being the 2 that §3.4 fixes.
+These reason lines are the wording this document supplies, and an implementation that adopts them unchanged is the expected case. They are not binding text: §2 leaves what reaches stderr to each language, so a component specification may fix different wording where its idiom calls for it, and it then owns that wording. What this section does bind is the shape every implementation shares — a reason line, a newline, the usage line of §5.1 — together with the destination, the exit code, and the stdout behavior of the invalid-regex row above. Two implementations therefore agree on which command lines they refuse and on what each refusal leaves on stdout, and may differ in how they say so.
+
+Failures that are not about what the user typed — a search that cannot initialize its output component, for instance — are not usage diagnostics at all. They carry no usage line, their text is specified per implementation, and their exit code is not, being the 2 that §3.4 fixes.
 
 ### 5.3 Resolved Option Listing
 
@@ -241,7 +249,7 @@ The /v line reads `true` only in the listing /v itself asked for. The other two 
 
 - Portability: each implementation must run on Windows and on POSIX systems (Linux, macOS).
 - Dependencies: implementations use only the standard library and, where necessary, packages from the language's supported package ecosystem for regex and filesystem access. No third-party TextFinder library is used.
-- Consistency: for the same inputs, every implementation produces the same match set, emitted in depth-first traversal order and, within a file, in line order. §6.1 scopes that guarantee to the patterns the four regex engines accept alike, and states what a pattern outside them costs. Because §3.2 leaves a directory's entries in filesystem order, the total emission order is reproducible only across runs over the same tree on the same platform and filesystem. There every implementation agrees, because §3.2 requires each to enumerate through its platform's own facility and forbids it to reorder what that facility yields, and runs can be compared line-for-line. Elsewhere the match set still agrees but the order of matches from different directory entries may not. §4 scopes it further to the command lines every implementation's argument vector can carry. Three further things are fixed rather than left to the implementation, so that a comparison can rest on them: the two-level block form and its indent (§3.4), the exit code (§3.4), and the form of the option listing (§5.3).
+- Consistency: for the same inputs, every implementation produces the same match set, emitted in depth-first traversal order and, within a file, in line order. §6.1 scopes that guarantee to the patterns the four regex engines accept alike, and states what a pattern outside them costs. Because §3.2 leaves a directory's entries in filesystem order, the total emission order is reproducible only across runs over the same tree on the same platform and filesystem. There every implementation agrees, because §3.2 requires each to enumerate through its platform's own facility and forbids it to reorder what that facility yields, and runs can be compared line-for-line. Elsewhere the match set still agrees but the order of matches from different directory entries may not. §4 scopes it further to the command lines every implementation's argument vector can carry. Three further things are fixed rather than left to the implementation, so that a comparison can rest on them: the two-level block form and its indent (§3.4), the exit code (§3.4), and the form of the option listing (§5.3). The guarantee is over stdout. Two implementations given the same command line write the same bytes there and return the same exit code; what they write to stderr is each one's own, per §2 and §5.2, so a test that compares two implementations compares stdout and the exit code and leaves stderr to whichever implementation it belongs to.
 
 ### 6.1 Regular-Expression Portability
 
@@ -273,10 +281,24 @@ Two of those rest on rules stated elsewhere. `.`, `^`, and `$` agree because §3
 
 TextFinder accepts a pattern outside the subset. It does not inspect a pattern for portability, and §5.2 defines no diagnostic for one. Two costs follow, and this specification accepts both:
 
-1. An engine that rejects the pattern reports `invalid regex for switch: /r` per §5.2 and exits non-zero, while an engine that accepts it searches the tree and exits 0. The two runs then differ in exit code, in stderr, and in every record. This is the larger cost of the two, and it is not a difference in output so much as a difference in whether there is output.
+1. An engine that rejects the pattern reports the diagnostic §5.2 calls for and exits non-zero, while an engine that accepts it searches the tree and exits 0. The two runs then differ in exit code, in stderr, and in every record. This is the larger cost of the two, and it is not a difference in output so much as a difference in whether there is output.
 2. Two engines that both accept the pattern may still disagree on which lines it matches.
 
 The match-set guarantee of §6 holds for a pattern in the subset over ASCII lines. Outside that, each implementation's output is the output of the engine named above for it, and a difference between two implementations is evidence about those engines rather than a defect in either. A test that compares implementations states the pattern it uses and stays inside the subset, or it is testing the engines.
+
+### 6.2 Verification
+
+Each implementation provides two kinds of automated test and one demonstration, so that a claim about its behavior can be checked rather than read.
+
+- **Unit suites**, one per library component, each living beside the code it tests and exercising that component's own specification.
+- **One integration suite**, driving the built executable end to end. It covers the entry binary, whose behavior is its startup sequence, its exit codes, and its stream routing, none of which a unit suite reaches.
+- **One demonstration**, running the built executable against this project's own tree and capturing what it produces. It is a record of observed behavior rather than a test: it asserts nothing and fails nothing.
+
+Each implementation also provides a runner per kind. A runner announces each suite it starts and the exit status that suite returned, and exits with the number of suites that failed. A suite that was never built counts as a failure rather than passing by absence, so a green run cannot mean that nothing ran.
+
+The dependency rule of §6 applies, so a suite uses the standard library and the packages that rule already permits; no third-party test framework is introduced. Assertion wording and assertion counts belong to each implementation. What the suites must agree on across implementations is the observable behavior §3 through §5 already fix.
+
+A demonstration's output moves as this project's own tree changes. A capture therefore states the date it was taken, and a stale capture is replaced by a fresh one rather than edited, since the same counts appear both in the captured text and in whatever prose surrounds it.
 
 ## 7. Non-Goals
 

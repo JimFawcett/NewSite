@@ -63,13 +63,28 @@ The field comments are the switch-to-field mapping, and the initializers are the
 
 ## 6. Error Conditions
 
-Every violation in §5 is a usage error. `parse` returns the usage diagnostic that Spec_TextFinder.md §5.2 fixes for that condition — its reason line verbatim, a newline, then `usageLine()`. `Cpp_TextFinder_Entry` writes the returned string to stderr unaltered and exits with code `1` (Spec_Cpp_TextFinder_Entry.md §4 step 1). §5's six conditions are the first six rows of that table. The last, a malformed `/r`, is detected later: `Cpp_TextFinder_Dirnav` compiles the expression and lets the failure propagate, and `Cpp_TextFinder_Entry` composes the diagnostic from the same table, drawing its usage line from `usageLine()` below (§8). Neither this library nor `Cpp_TextFinder_Dirnav` composes it — the one supplies a string, the other raises the failure, and the binary joins them.
+Every violation in §5 is a usage error. `parse` returns a usage diagnostic in the shape Spec_TextFinder.md §5.2 binds — a reason line, a newline, then `usageLine()`. `Cpp_TextFinder_Entry` writes the returned string to stderr unaltered and exits with code `1` (Spec_Cpp_TextFinder_Entry.md §4 step 1).
+
+Spec_TextFinder.md §2 leaves the wording of stderr text to each language, and §5.2 supplies reason lines without binding them. This implementation adopts §5.2's six parse-time reason lines unchanged, and this section is where they are fixed for C++:
+
+| Condition                                                    | Reason line                             |
+|--------------------------------------------------------------|-----------------------------------------|
+| Token in switch position has no `/` or `-` introducer        | `not a switch: <token>`                 |
+| Introducer-led token that is not a switch defined in §5      | `unrecognized switch: <token>`          |
+| Switch is the last token, with no argument token following   | `missing argument for switch: <switch>` |
+| Boolean switch given a value other than `true` or `false`    | `invalid boolean for <switch>: <token>` |
+| `/P` given an empty argument                                 | `empty root path for switch: <switch>`  |
+| `/r` given an empty argument                                 | `empty expression for switch: <switch>` |
+
+`<token>` is the offending token and `<switch>` the switch, each reproduced exactly as typed, preserving the introducer. The integration suite compares its expectations against this table, not against the parent, which no longer fixes the wording for anyone.
+
+The seventh condition of §5.2, a malformed `/r`, is detected later: `Cpp_TextFinder_Dirnav` compiles the expression and lets the failure propagate, and `Cpp_TextFinder_Entry` composes that diagnostic, drawing its usage line from `usageLine()` below (§8). Spec_Cpp_TextFinder_Entry.md §6 fixes its reason line, since the binary is what writes it. Neither this library nor `Cpp_TextFinder_Dirnav` composes it — the one supplies a string, the other raises the failure, and the binary joins them.
 
 There is no error condition for a duplicated switch or an empty `/p` list: duplicates resolve by §5 rule 4, and an empty extension list means every file is searched.
 
 ## 7. Extension-List Normalization
 
-The `/p` argument arrives as one token; the shell has already removed the quotes. Normalization implements the `/p` rules of Spec_TextFinder.md §5: split the token on commas, trim each item, strip one leading `.` if present, discard empty items, and preserve the order of the survivors. Whitespace is any character for which `std::isspace` returns true in the C locale.
+The `/p` argument arrives as one token; the shell has already removed the quotes. Normalization implements the `/p` rules of Spec_TextFinder.md §5: split the token on commas, trim each item, strip one leading `.` if present, discard empty items, and preserve the order of the survivors. Spec_TextFinder.md §5 fixes which characters are trimmed, naming six of them, so this document chooses none of them. `std::isspace` in the C locale reports exactly those six and is what the implementation calls, through a cast to `unsigned char` — passing a negative `char` to it is undefined, and a path holding a byte above 0x7F produces one.
 
 Duplicates are retained — they are harmless to the membership test `Cpp_TextFinder_Dirnav` performs. Case folding is not applied here; the platform-dependent comparison fixed by Spec_TextFinder.md §5 is performed by `Cpp_TextFinder_Dirnav` when it matches a file name against the list.
 

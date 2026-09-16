@@ -73,7 +73,7 @@
         <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
         <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
         <a class="repoLinks" href="Spec_Driven_Design_Cpp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
-        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Testing.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
         <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
         <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
       </div>
@@ -88,6 +88,15 @@
         driving the built executable end to end. The division follows from what
         <code>Cpp_TextFinder_Entry</code> is: a binary whose behavior is its startup sequence, its
         exit codes, and its stream routing, none of which can be exercised without running it.
+      </t-b>
+      <t-b>
+        That division is now a requirement rather than a habit. Spec_TextFinder.md &sect;6.2 asks
+        every implementation for unit suites one per library component, one integration suite
+        driving the built executable, one demonstration, and a runner per kind that announces each
+        suite and exits with the number that failed. These four suites and the two runners predate
+        the requirement and satisfy it; the
+        <a target="_blank" href="Spec_Driven_Design_Behavior_Contracts.html">Contracts page</a>
+        covers what &sect;6.2 asks of the three implementations still to come.
       </t-b>
       <table>
         <colgroup>
@@ -461,12 +470,20 @@ PASS</code></pre>
         binary. On Windows both arrived CRLF-translated.
       </t-b>
       <t-b>
-        Whether that is a defect depends on how the specifications are read, and the record says so
-        rather than deciding. &sect;3.4's terminator rule covers every block line and every
-        announcement, and neither of these is one. But &sect;5.1 says every implementation prints
-        "exactly this text" under <code>/H</code>, and &sect;5.2 calls the reason lines "fixed
-        text, identical across implementations" - which CRLF on Windows against LF on POSIX is
-        not.
+        Whether that was a defect depended on how the specifications were read then, and the
+        record says so rather than deciding. &sect;3.4's terminator rule covers every block line
+        and every announcement, and neither of these is one. But &sect;5.1 says every
+        implementation prints "exactly this text" under <code>/H</code>, and &sect;5.2 at the time
+        called the reason lines "fixed text, identical across implementations" - which CRLF on
+        Windows against LF on POSIX is not.
+      </t-b>
+      <t-b>
+        The specification has since conceded that half of the argument. &sect;5.2 no longer binds
+        the reason lines: it supplies wording, binds the shape and the destination and the exit
+        code, and leaves what a language writes to stderr to that language, with each
+        implementation's own specification owning its text. The contradiction the suite ran into
+        is gone, because the claim it contradicted is gone. &sect;5.1's help text is still fixed
+        byte for byte, reaching stdout as it does, and the suite still asserts it.
       </t-b>
       <t-b>
         The resolution was to normalize line endings in the two affected comparisons and document
@@ -482,6 +499,18 @@ PASS</code></pre>
         defaults changed; 48, 24, 8, 42 after the first-match rule arrived; and 50, 28, 9, 49 after
         the two-level block form of &sect;3.4 replaced the single-line record. A suite whose count
         tracks the documents is a suite that was rewritten from them.
+      </t-b>
+      <t-b>
+        One change did not move them, and that is a gap rather than a reassurance. &sect;3.4 now
+        settles what happens to a file whose name the implementation cannot render as text, and
+        <code>Cpp_TextFinder_Dirnav</code> gained <code>renderPath</code> and a traversal gate to
+        satisfy it. No suite exercises either. Building such a name means an unpaired surrogate on
+        Windows or a non-UTF-8 byte sequence on POSIX, neither of which the existing fixtures
+        create, and the POSIX branch does not compile on the machine this build runs on. What the
+        136 assertions prove is that the new rendering produces byte-identical output to the call
+        it replaced for every ordinary name - the regression risk, and the reason they all still
+        pass - not that the substitution branch is correct. &sect;6.2 asks the suites to check a
+        claim rather than let it be read, so that claim is currently unchecked.
       </t-b>
 
       <a id="records"></a>

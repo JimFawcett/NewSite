@@ -73,7 +73,7 @@
         <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
         <a class="repoLinks" href="Spec_Driven_Design_Behavior_Traversal.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
         <a class="repoLinks" href="Spec_Driven_Design_Cpp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
-        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Dirnav.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
         <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
         <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
       </div>
@@ -184,6 +184,21 @@ public:
         is work the library chose not to do, and <code>cannot open</code> reports work it could not
         do.
       </t-b>
+      <t-b>
+        One gate sits between the link test and everything after it, and &sect;5 rule 6 fixes its
+        position: an entry whose own name will not render as text is announced with
+        <code>cannot open</code> and skipped. It runs before the skip-list test, before the
+        extension filter, and before any attempt to open, so such a name is announced whatever
+        <code>/p</code> holds - Spec_TextFinder.md &sect;3.4 writes that rule over every such file
+        rather than over the selected ones. A symbolic link is still tested first, so a link with
+        an unrenderable name stays silent: rule 5 turns on the entry's kind, which costs no
+        conversion, and &sect;3.2 asks for silence there.
+      </t-b>
+      <t-b>
+        The gate is what lets the rest of the library assume it holds a name. Everything after it
+        takes text as a <code>std::string</code>, and Section 5 covers the helper that produces
+        that text and decides whether an entry passes.
+      </t-b>
 
       <a id="selection"></a>
       <h3>3. &nbsp;File Selection</h3>
@@ -198,8 +213,15 @@ public:
         specification rejects it by name: it returns an empty string for
         <code>.gitignore</code>, whereas &sect;5 gives that file the extension
         <code>gitignore</code>. The extension is therefore taken as the text after the last
-        <code>.</code> in <code>path::filename().string()</code>, with no special case for a
-        leading dot, and a name holding no <code>.</code> at all has no extension.
+        <code>.</code> in the file name, with no special case for a leading dot, and a name holding
+        no <code>.</code> at all has no extension.
+      </t-b>
+      <t-b>
+        The name itself comes from <code>baseName</code>, which routes through the
+        <code>renderPath</code> of Section 5 rather than calling
+        <code>path::filename().string()</code> - that call converts on Windows and can throw.
+        Nothing here has to handle the failure, because the Section 2 gate has already refused
+        every entry whose name will not render: selection sees a name and never a failure.
       </t-b>
       <t-b>
         <code>u8string()</code> is rejected by name too, for a duller reason: it returns
@@ -311,19 +333,56 @@ contentNotNeeded_{pathOnly_ &amp;&amp; commands.regexText == "."}</code></pre>
         rejection.
       </t-b>
       <t-b>
-        Path rendering uses <code>generic_string()</code> and strips a leading <code>./</code>
-        contributed by a root of <code>.</code>, per &sect;3.4.
-        <code>generic_u8string()</code> is rejected by name for the same reason
+        Path rendering strips a leading <code>./</code> contributed by a root of <code>.</code>,
+        per &sect;3.4. <code>generic_u8string()</code> is rejected by name for the same reason
         <code>u8string()</code> is: <code>Output::output</code> takes a <code>std::string</code>.
+      </t-b>
+      <t-b>
+        <code>generic_string()</code> is rejected too, and its rejection is the most instructive
+        of the three, because the function looks correct and behaves differently on the two
+        platforms this implementation targets. On POSIX the native string is already
+        <code>char</code>, so it copies bytes and cannot fail - and a name holding bytes that are
+        not valid UTF-8 passes straight through, unexamined. On Windows the native string is
+        <code>wchar_t</code>, so it must convert UTF-16 to narrow, and an unpaired surrogate has no
+        encoding; the standard has that conversion throw <code>std::system_error</code>. One
+        platform never reports the condition &sect;3.4 defines, and the other reports it by
+        throwing out of the walk, where nothing catches it.
+      </t-b>
+      <t-b>
+        <code>renderPath</code> replaces it and behaves the same on both. It produces the generic
+        form, substitutes U+FFFD REPLACEMENT CHARACTER for each unit that will not render, and
+        reports through a reference parameter whether it substituted any. On POSIX it walks the
+        bytes with the same sequence test <code>validUtf8</code> applies to file contents, copying
+        each valid sequence and substituting for each byte that begins none. On Windows it walks
+        the UTF-16 units, mapping the separator, encoding each scalar value, and substituting for
+        each surrogate not part of a pair. It calls neither <code>generic_string()</code> nor
+        <code>filename().string()</code>, so there is no conversion left to throw and nothing to
+        catch - a stronger guarantee than wrapping the old calls in a <code>try</code> would give.
+      </t-b>
+      <t-b>
+        That second return is what the Section 2 gate consumes, through a one-line
+        <code>renderable</code>. Every name that survives the gate renders without substitution, so
+        <code>baseName</code> and a block's path line receive text that is the name, and the U+FFFD
+        form appears in exactly one place: the <code>cannot open</code> announcement naming the
+        entry that failed the gate.
+      </t-b>
+      <t-b>
+        Adding <code>renderPath</code> also split the old <code>validUtf8</code> in two.
+        <code>utf8Sequence</code> now returns the length of the valid sequence beginning at an
+        offset, or 0 where none does, and <code>validUtf8</code> is a loop over it. The
+        specification requires the POSIX branch to use "the same validity test <code>validUtf8</code>
+        applies to file contents", so the two share one definition rather than carrying two that
+        can drift.
       </t-b>
 
       <a id="linkage"></a>
       <h3>6. &nbsp;Module Linkage and the inline Helpers</h3>
       <t-b>
-        Five helpers sit at module scope, not exported and marked <code>inline</code>:
-        <code>sameName</code>, <code>baseName</code>, <code>displayPath</code>,
-        <code>validUtf8</code>, and <code>splitLines</code>. The combination is deliberate and the
-        source says why.
+        Every helper sits at module scope, not exported and marked <code>inline</code>:
+        <code>sameName</code>, <code>utf8Sequence</code>, <code>validUtf8</code>,
+        <code>renderPath</code>, <code>baseName</code>, <code>displayPath</code>,
+        <code>renderable</code>, <code>splitLines</code>, and <code>appendUtf8</code> on Windows.
+        The combination is deliberate and the source says why.
       </t-b>
       <t-b>
         They were written first in an anonymous namespace, which is the reflex for "private to this
@@ -347,7 +406,7 @@ contentNotNeeded_{pathOnly_ &amp;&amp; commands.regexText == "."}</code></pre>
       <a id="source"></a>
       <h3>7. &nbsp;Source</h3>
       <t-b>
-        <code>Cpp_TextFinder_Dirnav.ixx</code> in full - 254 lines, the largest file in the
+        <code>Cpp_TextFinder_Dirnav.ixx</code> in full - 342 lines, the largest file in the
         project. The comments cite the C++ specification's sections, which cite
         Spec_TextFinder.md in turn.
       </t-b>
@@ -387,47 +446,128 @@ inline bool sameName(std::string_view left, std::string_view right) {
 #endif
 }
 
-inline std::string baseName(const std::filesystem::path&amp; path) {
-    const std::filesystem::path base = path.has_filename() ? path : path.parent_path();
-    return base.filename().string();
+inline constexpr std::string_view replacement{"\xEF\xBF\xBD"};   // U+FFFD, per §8
+
+// §7: the length of the valid UTF-8 sequence beginning at i, or 0 if none does. Rejects
+// truncated sequences, overlong encodings, encoded surrogates, and values above U+10FFFF.
+inline std::size_t utf8Sequence(std::string_view bytes, std::size_t i) {
+    const auto lead = static_cast&lt;unsigned char&gt;(bytes[i]);
+    std::size_t trailing = 0;
+    char32_t point = 0;
+
+    if (lead &lt; 0x80) return 1;
+    else if ((lead &amp; 0xE0) == 0xC0) { trailing = 1; point = lead &amp; 0x1Fu; }
+    else if ((lead &amp; 0xF0) == 0xE0) { trailing = 2; point = lead &amp; 0x0Fu; }
+    else if ((lead &amp; 0xF8) == 0xF0) { trailing = 3; point = lead &amp; 0x07u; }
+    else return 0;
+
+    if (i + trailing &gt;= bytes.size()) return 0;
+    for (std::size_t k = 1; k &lt;= trailing; ++k) {
+        const auto next = static_cast&lt;unsigned char&gt;(bytes[i + k]);
+        if ((next &amp; 0xC0) != 0x80) return 0;
+        point = (point &lt;&lt; 6) | (next &amp; 0x3Fu);
+    }
+
+    if (trailing == 1 &amp;&amp; point &lt; 0x80) return 0;        // overlong
+    if (trailing == 2 &amp;&amp; point &lt; 0x800) return 0;       // overlong
+    if (trailing == 3 &amp;&amp; point &lt; 0x10000) return 0;     // overlong
+    if (point &gt; 0x10FFFF) return 0;                     // beyond Unicode
+    if (point &gt;= 0xD800 &amp;&amp; point &lt;= 0xDFFF) return 0;   // encoded surrogate
+
+    return trailing + 1;
 }
 
-// §8: generic_string(), not generic_u8string(), whose std::u8string Output::output will not take.
-inline std::string displayPath(const std::filesystem::path&amp; path) {
-    std::string text = path.generic_string();
+// §7: the admission test of Spec_TextFinder.md §3.3, over the same sequence rule §8 renders with.
+inline bool validUtf8(std::string_view bytes) {
+    for (std::size_t i = 0; i &lt; bytes.size();) {
+        const std::size_t length = utf8Sequence(bytes, i);
+        if (length == 0) return false;
+        i += length;
+    }
+    return true;
+}
+
+#ifdef _WIN32
+inline void appendUtf8(std::string&amp; text, char32_t point) {
+    if (point &lt; 0x80) text += static_cast&lt;char&gt;(point);
+    else if (point &lt; 0x800) {
+        text += static_cast&lt;char&gt;(0xC0 | (point &gt;&gt; 6));
+        text += static_cast&lt;char&gt;(0x80 | (point &amp; 0x3F));
+    }
+    else if (point &lt; 0x10000) {
+        text += static_cast&lt;char&gt;(0xE0 | (point &gt;&gt; 12));
+        text += static_cast&lt;char&gt;(0x80 | ((point &gt;&gt; 6) &amp; 0x3F));
+        text += static_cast&lt;char&gt;(0x80 | (point &amp; 0x3F));
+    }
+    else {
+        text += static_cast&lt;char&gt;(0xF0 | (point &gt;&gt; 18));
+        text += static_cast&lt;char&gt;(0x80 | ((point &gt;&gt; 12) &amp; 0x3F));
+        text += static_cast&lt;char&gt;(0x80 | ((point &gt;&gt; 6) &amp; 0x3F));
+        text += static_cast&lt;char&gt;(0x80 | (point &amp; 0x3F));
+    }
+}
+#endif
+
+// §8: the generic form Spec_TextFinder.md §3.4 fixes, with U+FFFD for each unit that will not
+// render and a report of whether any was substituted. Calls neither generic_string() nor
+// filename().string(): on Windows both convert and can throw out of the walk, and on POSIX
+// both pass invalid bytes through unexamined, so neither reports the condition §3.4 defines.
+inline std::string renderPath(const std::filesystem::path&amp; path, bool&amp; lossy) {
+    lossy = false;
+    std::string text;
+
+#ifdef _WIN32
+    // The native string is UTF-16. Walk its units, mapping the separator and encoding each
+    // scalar value, and substitute for a surrogate that is not part of a pair.
+    const std::wstring&amp; native = path.native();
+    for (std::size_t i = 0; i &lt; native.size(); ++i) {
+        char32_t point = static_cast&lt;unsigned short&gt;(native[i]);
+        if (point == L'\\') point = U'/';
+
+        if (point &gt;= 0xD800 &amp;&amp; point &lt;= 0xDBFF) {
+            const bool paired = i + 1 &lt; native.size() &amp;&amp;
+                                static_cast&lt;unsigned short&gt;(native[i + 1]) &gt;= 0xDC00 &amp;&amp;
+                                static_cast&lt;unsigned short&gt;(native[i + 1]) &lt;= 0xDFFF;
+            if (!paired) { text += replacement; lossy = true; continue; }
+            const char32_t low = static_cast&lt;unsigned short&gt;(native[++i]);
+            point = 0x10000 + ((point - 0xD800) &lt;&lt; 10) + (low - 0xDC00);
+        }
+        else if (point &gt;= 0xDC00 &amp;&amp; point &lt;= 0xDFFF) { text += replacement; lossy = true; continue; }
+
+        appendUtf8(text, point);
+    }
+#else
+    // The native string is bytes and the separator is already /. Copy each valid sequence and
+    // substitute for each byte that begins none.
+    const std::string&amp; native = path.native();
+    for (std::size_t i = 0; i &lt; native.size();) {
+        const std::size_t length = utf8Sequence(native, i);
+        if (length == 0) { text += replacement; lossy = true; ++i; continue; }
+        text.append(native, i, length);
+        i += length;
+    }
+#endif
+
     if (text.starts_with("./")) text.erase(0, 2);   // a root of . contributes no leading ./
     return text;
 }
 
-// §7: rejects truncated sequences, overlong encodings, encoded surrogates, and values above U+10FFFF.
-inline bool validUtf8(std::string_view bytes) {
-    for (std::size_t i = 0; i &lt; bytes.size();) {
-        const auto lead = static_cast&lt;unsigned char&gt;(bytes[i]);
-        std::size_t trailing = 0;
-        char32_t point = 0;
+inline std::string baseName(const std::filesystem::path&amp; path) {
+    const std::filesystem::path base = path.has_filename() ? path : path.parent_path();
+    bool lossy = false;
+    return renderPath(base.filename(), lossy);
+}
 
-        if (lead &lt; 0x80) { ++i; continue; }
-        else if ((lead &amp; 0xE0) == 0xC0) { trailing = 1; point = lead &amp; 0x1Fu; }
-        else if ((lead &amp; 0xF0) == 0xE0) { trailing = 2; point = lead &amp; 0x0Fu; }
-        else if ((lead &amp; 0xF8) == 0xF0) { trailing = 3; point = lead &amp; 0x07u; }
-        else return false;
+inline std::string displayPath(const std::filesystem::path&amp; path) {
+    bool lossy = false;
+    return renderPath(path, lossy);
+}
 
-        if (i + trailing &gt;= bytes.size()) return false;
-        for (std::size_t k = 1; k &lt;= trailing; ++k) {
-            const auto next = static_cast&lt;unsigned char&gt;(bytes[i + k]);
-            if ((next &amp; 0xC0) != 0x80) return false;
-            point = (point &lt;&lt; 6) | (next &amp; 0x3Fu);
-        }
-
-        if (trailing == 1 &amp;&amp; point &lt; 0x80) return false;        // overlong
-        if (trailing == 2 &amp;&amp; point &lt; 0x800) return false;       // overlong
-        if (trailing == 3 &amp;&amp; point &lt; 0x10000) return false;     // overlong
-        if (point &gt; 0x10FFFF) return false;                     // beyond Unicode
-        if (point &gt;= 0xD800 &amp;&amp; point &lt;= 0xDFFF) return false;   // encoded surrogate
-
-        i += trailing + 1;
-    }
-    return true;
+// §5 rule 6: whether this entry's own name renders without substitution.
+inline bool renderable(const std::filesystem::path&amp; path) {
+    bool lossy = false;
+    renderPath(path, lossy);
+    return !lossy;
 }
 
 // LF, CRLF, and bare CR terminate a line; a final unterminated run is still a line.
@@ -469,6 +609,9 @@ public:
         const bool link = std::filesystem::is_symlink(root, error);
         if (error || link) { announceCannotOpen(root); return; }
 
+        // §5 rule 6: a root whose text will not render is announced and not traversed.
+        if (!renderable(root)) { announceCannotOpen(root); return; }
+
         const std::filesystem::file_status status = std::filesystem::status(root, error);
         if (error) { announceCannotOpen(root); return; }
 
@@ -496,6 +639,10 @@ private:
             const bool link = entry-&gt;is_symlink(kind);
             if (kind) { announceCannotOpen(path); continue; }
             if (link) continue;   // §5 rule 5: passed over silently, never opened
+
+            // §5 rule 6: after the link test and before the skip list, the extension filter,
+            // and any open, so a name that will not render is announced whatever /p holds.
+            if (!renderable(path.filename())) { announceCannotOpen(path); continue; }
 
             const bool folder = entry-&gt;is_directory(kind);
             if (kind) { announceCannotOpen(path); continue; }

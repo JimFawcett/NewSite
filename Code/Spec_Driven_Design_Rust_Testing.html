@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Rust_Testing.html - Rust thread, page 6
+-->
+<head>
+  <title>Spec-Driven Rust: Testing</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Rust_Testing.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Rust: Testing</h2>
+        <h4 class="indent" id="subtitle">four suites, 79 tests, the harness the language ships with</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Testing.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="suites"></a>
+      <h3>1. &nbsp;Four Suites</h3>
+      <t-b>
+        Three unit suites cover the three libraries and one integration suite covers the binary by
+        driving the built executable end to end. The division follows from what
+        <code>rust_textfinder_entry</code> is: a binary whose behavior is its startup sequence, its
+        exit codes, and its stream routing, none of which can be exercised without running it.
+      </t-b>
+      <t-b>
+        That division is a requirement rather than a habit. Spec_TextFinder.md &sect;6.2 asks every
+        implementation for unit suites one per library component, one integration suite driving the
+        built executable, one demonstration, and a runner per kind that announces each suite and
+        exits with the number that failed. &sect;6.2 arrived out of the Rust audit, so this is the
+        first implementation written against it rather than found to satisfy it; the
+        <a target="_blank" href="Spec_Driven_Design_Behavior_Contracts.html">Contracts page</a>
+        covers what it asks of the two implementations still to come.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:12rem;" />
+          <col style="width:7rem;" />
+          <col style="width:37rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Suite</th>
+          <th class="darkItem">Tests</th>
+          <th class="darkItem">What it covers</th>
+        </tr>
+        <tr>
+          <td class="lightItem">Cmdline</td>
+          <td class="lightItem">29</td>
+          <td class="lightItem">Every default, both introducers, boolean case folding, last-occurrence-wins, <code>/P</code> accumulation, the <code>/p</code> normalization rules including the six trimmed characters, all six parse diagnostics, and the rendered help and option listings</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Dirnav</td>
+          <td class="lightItem">25</td>
+          <td class="lightItem">Skip-list pruning including the root carve-out, <code>/p</code> selection with the dot-file rule, <code>/s false</code>, all four block forms, the <code>/h</code> gating, <code>cannot open</code>, LF, CRLF and bare CR splitting, BOM consumption, and the 10 MB limit</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Output</td>
+          <td class="lightItem">4</td>
+          <td class="lightItem">The one-sink rule, the release of that right on drop, both write methods reporting nothing and panicking on nothing, and dispatch through the <code>Output</code> trait</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Integration</td>
+          <td class="lightItem">21</td>
+          <td class="lightItem">The executable end to end: exit codes, stream routing, <code>/H</code>, the bare command line, the <code>/v</code> ordering, LF-only output, separator normalization, and all seven usage diagnostics</td>
+        </tr>
+      </table>
+      <t-b>
+        79 tests in total. A Rust test is one <code>#[test]</code> function holding as many
+        assertions as the claim needs, so these counts are not comparable with the C++ suites'
+        assertion counts. The
+        <a target="_blank" href="Spec_Driven_Design_Cpp_Testing.html">C++ Testing page</a> reports
+        136 assertions over the same ground, and the difference is one of unit rather than of
+        coverage: <code>every_parse_failure_reaches_stderr_with_exit_code_one</code> is one test and
+        18 assertions, three for each of the six reason lines.
+      </t-b>
+      <t-b>
+        Two suites deserve a note on what they prove beyond their counts. The Dirnav suite builds a
+        temp tree and supplies its own <code>Recorder</code>, a struct holding one
+        <code>Vec&lt;String&gt;</code> that implements <code>Output</code>, which satisfies the same
+        bound the real sink does and so demonstrates that the generic parameter binds to any
+        implementation of the trait. The Output suite cannot read stdout back, since the sink owns
+        the only handle to it, so it checks what does not depend on reading the stream and leaves
+        the bytes to the integration suite.
+      </t-b>
+      <t-b>
+        The Dirnav and integration suites sort emitted lines before comparing wherever more than one
+        file is involved, because Spec_TextFinder.md &sect;3.2 leaves the order of a directory's
+        entries to the filesystem. A suite that compared unsorted output would be asserting a
+        property the specification declines to guarantee.
+      </t-b>
+
+      <a id="harness"></a>
+      <h3>2. &nbsp;The Harness</h3>
+      <t-b>
+        No test framework, and in Rust that costs nothing: <code>#[test]</code>,
+        <code>assert_eq!</code>, and <code>cargo test</code> ship with the language, so
+        Spec_TextFinder.md &sect;6's confinement to the standard library leaves the suites with a
+        working runner, per-test isolation, and a failure report that prints both sides of a
+        mismatch. The C++ implementation writes a <code>Checker</code> struct in each of its four
+        test modules to get the same three things.
+      </t-b>
+      <t-b>
+        Each unit suite sits beside the code it tests, as a <code>src/unit_tests.rs</code> the crate
+        root declares:
+      </t-b>
+<pre><code class="language-rust">#[cfg(test)]
+mod unit_tests;</code></pre>
+      <t-b>
+        The module compiles only under <code>cargo test</code>, so nothing of a suite reaches the
+        shipped library, and <code>use super::*;</code> at its top gives it the crate's private
+        items. That is what lets the Output suite read <code>SINK_TAKEN</code> directly and the
+        Dirnav suite call <code>normalize</code>, neither of which is <code>pub</code>. A
+        <code>tests/</code> directory would compile against the public interface alone and could
+        reach neither.
+      </t-b>
+      <t-b>
+        The integration suite is a <code>tests/integration.rs</code> for that reason reversed: it
+        must see the binary rather than the library, and Cargo hands it the built executable's path
+        as an environment variable at compile time.
+      </t-b>
+<pre><code class="language-rust">const EXECUTABLE: &amp;str = env!("CARGO_BIN_EXE_rust_textfinder");</code></pre>
+      <t-b>
+        <code>env!</code> resolves at compile time, so the constant is a literal and the suite
+        cannot run against a path that does not exist. The C++ integration suite gets the same
+        string through a CMake generator expression and a <code>target_compile_definitions</code>
+        call; Cargo supplies it because the test target and the binary target are in one package.
+      </t-b>
+      <t-b>
+        Both the Dirnav and integration suites build temp trees through a <code>TempTree</code>
+        helper whose <code>Drop</code> removes the directory, so a failing test leaves nothing
+        behind. Each tree's name carries the process id and an
+        <code>AtomicUsize</code> counter, which is what keeps two trees apart when the harness runs
+        the tests in parallel.
+      </t-b>
+      <t-b>
+        That parallelism is worth one more sentence, because the Output suite depends on it. Cargo
+        runs each <code>#[test]</code> on its own thread, and <code>SINK_TAKEN</code> is a
+        <code>thread_local!</code>, so each test sees a fresh flag and the four sink tests do not
+        interfere. A plain <code>static</code> would have made them order-dependent, which is the
+        second argument for the choice Spec_Rust_TextFinder_Output.md &sect;4 makes on other
+        grounds.
+      </t-b>
+
+      <a id="runners"></a>
+      <h3>3. &nbsp;The Runners</h3>
+      <t-b>
+        Three batch files sit at the top of the Rust project. Each builds the workspace first,
+        brackets every suite with a <code>=== starting ... </code> banner and a
+        <code>=== ... returned N</code> line, then prints a summary and returns the number of failed
+        suites as its own exit code.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:20rem;" />
+          <col style="width:36rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Runner</th>
+          <th class="darkItem">What it does</th>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>run_unit_tests.bat</code></td>
+          <td class="lightItem">Runs the Cmdline, Dirnav, and Output suites in turn with <code>cargo test -p &lt;package&gt; --lib</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>run_integration_tests.bat</code></td>
+          <td class="lightItem">Runs <code>cargo test -p rust_textfinder_entry --test integration</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>run_demo.bat</code></td>
+          <td class="lightItem">Runs the demonstration with <code>--nocapture</code> and supplies the capture date through <code>TEXTFINDER_DEMO_DATE</code></td>
+        </tr>
+      </table>
+      <t-b>
+        Each takes its working directory from its own location with <code>cd /d "%~dp0"</code>, so
+        any of the three runs from any working directory. A failed build exits before running a
+        suite and says that every suite counts as failed, which satisfies &sect;6.2's rule that a
+        suite never built counts as a failure rather than being skipped silently.
+      </t-b>
+      <t-b>
+        The <code>--lib</code> flag on the unit runs is what keeps the three suites separate.
+        Without it <code>cargo test -p rust_textfinder_entry</code> would also build and run the
+        integration and demonstration targets, and the unit runner would report a number that
+        included them.
+      </t-b>
+      <t-b>
+        <code>run_demo.bat</code> passes the local date in rather than letting the demonstration
+        compute it. The demonstration falls back to a civil date derived from the UTC clock when the
+        variable is absent, which reads as the previous day late in the evening, so the runner is
+        the authority for the date a capture carries.
+      </t-b>
+      <h5 class="indent">run_unit_tests.bat</h5>
+<pre><code class="language-text">@echo off
+setlocal enabledelayedexpansion
+cd /d "%~dp0"
+
+set FAILURES=0
+
+echo building the workspace
+cargo build --workspace --quiet
+if errorlevel 1 (
+  echo   build failed; every unit suite counts as failed
+  exit /b 3
+)
+
+call :suite rust_textfinder_cmdline
+call :suite rust_textfinder_dirnav
+call :suite rust_textfinder_output
+
+echo.
+echo %FAILURES% unit suite^(s^) failed
+exit /b %FAILURES%
+
+:suite
+echo.
+echo === starting unit suite: %1
+cargo test -p %1 --lib
+set STATUS=!errorlevel!
+echo === unit suite %1 returned !STATUS!
+if not "!STATUS!"=="0" set /a FAILURES+=1
+exit /b 0</code></pre>
+      <h5 class="indent">run_integration_tests.bat</h5>
+<pre><code class="language-text">@echo off
+setlocal enabledelayedexpansion
+cd /d "%~dp0"
+
+set FAILURES=0
+
+echo building the workspace
+cargo build --workspace --quiet
+if errorlevel 1 (
+  echo   build failed; the integration suite counts as failed
+  exit /b 1
+)
+
+echo.
+echo === starting integration suite: integration
+cargo test -p rust_textfinder_entry --test integration
+set STATUS=!errorlevel!
+echo === integration suite integration returned !STATUS!
+if not "!STATUS!"=="0" set /a FAILURES+=1
+
+echo.
+echo %FAILURES% integration suite^(s^) failed
+exit /b %FAILURES%</code></pre>
+
+      <a id="unitoutput"></a>
+      <h3>4. &nbsp;Unit Suite Output</h3>
+      <t-b>
+        Captured 2026-09-15 from <code>run_unit_tests.bat</code>. Each suite names every test,
+        prints its count, and ends with the line the harness writes. The test names are the
+        specification restated as claims, which is what makes a passing run readable as coverage
+        rather than only as a number.
+      </t-b>
+      <t-b>
+        The order the names appear in is the order the tests finished, not the order they are
+        written, since the harness runs them in parallel. A reader looking for a particular claim
+        reads the list rather than scanning it in source order.
+      </t-b>
+<pre><code class="language-text">=== starting unit suite: rust_textfinder_cmdline
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+     Running unittests src\lib.rs (target\debug\deps\rust_textfinder_cmdline-96a227066ace06c9.exe)
+
+running 29 tests
+test unit_tests::a_token_without_an_introducer_is_not_a_switch ... ok
+test unit_tests::a_boolean_switch_rejects_any_other_value ... ok
+test unit_tests::a_trailing_switch_is_missing_its_argument ... ok
+test unit_tests::an_undefined_introducer_led_token_is_unrecognized ... ok
+test unit_tests::duplicate_extensions_are_retained_and_order_preserved ... ok
+test unit_tests::booleans_are_matched_case_insensitively ... ok
+test unit_tests::an_argument_is_consumed_verbatim_even_when_it_looks_like_a_switch ... ok
+test unit_tests::both_introducers_are_equivalent ... ok
+test unit_tests::empty_arguments_are_rejected_for_root_path_and_expression ... ok
+test unit_tests::empty_command_line_yields_the_defaults ... ok
+test unit_tests::every_returned_string_ends_with_a_newline ... ok
+test unit_tests::extension_case_is_not_folded_by_the_parser ... ok
+test unit_tests::empty_extension_items_are_discarded ... ok
+test unit_tests::every_diagnostic_ends_with_the_usage_line ... ok
+test unit_tests::extensions_are_split_trimmed_and_stripped_of_one_dot ... ok
+test unit_tests::help_text_carries_every_switch_and_ends_with_a_newline ... ok
+test unit_tests::last_occurrence_wins_for_every_other_switch ... ok
+test unit_tests::first_root_path_replaces_the_default_even_when_equal_to_it ... ok
+test unit_tests::no_line_of_the_option_listing_ends_in_whitespace ... ok
+test unit_tests::only_one_leading_dot_is_stripped ... ok
+test unit_tests::option_listing_emits_one_line_per_root_and_a_joined_extension_list ... ok
+test unit_tests::option_listing_of_a_bare_v_true_command_line ... ok
+test unit_tests::option_listing_of_the_defaults_reads_v_false ... ok
+test unit_tests::parsing_stops_at_the_first_violation ... ok
+test unit_tests::program_name_is_not_inspected ... ok
+test unit_tests::repeated_root_paths_accumulate_in_order ... ok
+test unit_tests::switch_letters_are_case_sensitive ... ok
+test unit_tests::the_six_named_characters_are_trimmed_and_no_others ... ok
+test unit_tests::usage_line_is_the_first_line_of_the_help_text ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+=== unit suite rust_textfinder_cmdline returned 0</code></pre>
+      <t-b>
+        The 29 Cmdline tests divide three ways: the defaults against Spec_TextFinder.md &sect;5, the
+        four parsing rules and the six diagnostics this library owns, and the rendered text against
+        &sect;5.1 and &sect;5.3. Two names carry the audit findings of the
+        <a target="_blank" href="Spec_Driven_Design_Rust_Process.html">Process page</a> as claims:
+        <code>the_six_named_characters_are_trimmed_and_no_others</code> is the whitespace rule that
+        moved up to the parent specification, and
+        <code>first_root_path_replaces_the_default_even_when_equal_to_it</code> is the
+        <code>-P .</code> case that rules out inferring the first occurrence from the vector.
+      </t-b>
+<pre><code class="language-text">=== starting unit suite: rust_textfinder_dirnav
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running unittests src\lib.rs (target\debug\deps\rust_textfinder_dirnav-aee1a9ce695c7482.exe)
+
+running 25 tests
+test unit_tests::a_malformed_expression_is_returned_rather_than_panicking ... ok
+test unit_tests::line_iteration_treats_a_final_unterminated_run_as_a_line ... ok
+test unit_tests::a_root_path_that_cannot_be_opened_is_announced ... ok
+test unit_tests::an_error_announcement_is_not_gated_on_h ... ok
+test unit_tests::path_joining_never_doubles_a_separator ... ok
+test unit_tests::a_root_named_in_the_skip_list_is_traversed_and_pruning_resumes_below_it ... ok
+test unit_tests::a_block_writes_its_path_once_however_many_lines_match ... ok
+test unit_tests::every_path_begins_with_the_root_and_uses_forward_separators ... ok
+test unit_tests::a_detail_line_carries_only_the_fields_n_and_l_select ... ok
+test unit_tests::evaluation_stops_at_the_first_match_when_neither_n_nor_l_is_set ... ok
+test unit_tests::line_numbers_count_lines_that_did_not_match ... ok
+test unit_tests::lf_crlf_and_bare_cr_each_terminate_a_line ... ok
+test unit_tests::a_searched_file_that_matched_nothing_is_announced_only_under_h_false ... ok
+test unit_tests::a_matching_line_yields_one_detail_line_however_many_occurrences_it_holds ... ok
+test unit_tests::a_root_path_that_is_a_regular_file_is_searched_and_filtered_like_any_other ... ok
+test unit_tests::a_leading_bom_does_not_belong_to_the_first_line ... ok
+test unit_tests::a_skip_list_directory_is_pruned_silently ... ok
+test unit_tests::an_empty_extension_list_selects_every_file ... ok
+test unit_tests::a_skipped_file_is_silent_under_the_default_h ... ok
+test unit_tests::one_navigator_serves_every_root_path ... ok
+test unit_tests::default_command_line_reports_every_nonempty_file_without_opening_it ... ok
+test unit_tests::a_file_above_the_size_limit_is_never_read ... ok
+test unit_tests::a_file_holding_a_nul_byte_or_invalid_utf8_is_skipped ... ok
+test unit_tests::recursion_off_searches_the_root_directory_alone ... ok
+test unit_tests::a_non_empty_extension_list_selects_by_last_dot_suffix ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+=== unit suite rust_textfinder_dirnav returned 0</code></pre>
+      <t-b>
+        The Dirnav suite tests the accepted costs rather than only the rules.
+        <code>default_command_line_reports_every_nonempty_file_without_opening_it</code> is
+        Spec_TextFinder.md &sect;3.3's no-content case with both of its costs in one claim: a binary
+        file is reported, and an empty one is not.
+        <code>a_root_named_in_the_skip_list_is_traversed_and_pruning_resumes_below_it</code> is the
+        &sect;3.2 carve-out and its limit in one name, and
+        <code>every_path_begins_with_the_root_and_uses_forward_separators</code> is the
+        normalization gap the audit found.
+      </t-b>
+<pre><code class="language-text">=== starting unit suite: rust_textfinder_output
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running unittests src\lib.rs (target\debug\deps\rust_textfinder_output-828f4f4650b5899b.exe)
+
+running 4 tests
+test unit_tests::a_second_sink_is_refused_while_the_first_lives ... ok
+verbatim text, already terminated
+one line, terminator added by the sink
+
+reached through the trait
+test unit_tests::dropping_a_sink_releases_the_right_to_make_one ... ok
+test unit_tests::writing_through_both_methods_reports_nothing_and_panics_on_nothing ... ok
+test unit_tests::the_sink_is_the_output_trait_implementation_dirnav_binds_to ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+=== unit suite rust_textfinder_output returned 0</code></pre>
+      <t-b>
+        Four lines in that capture are not the harness speaking. <code>verbatim text, already
+        terminated</code>, <code>one line, terminator added by the sink</code>, the empty line after
+        it, and <code>reached through the trait</code> are what two of the tests wrote to the real
+        stdout, which is the one thing this library owns and therefore the one thing its suite
+        cannot redirect. The empty line is the <code>output("")</code> case, and seeing it in the
+        capture is the whole assertion made visible: an empty string still terminates a line.
+      </t-b>
+      <t-b>
+        Four tests for an 83-line library is the right ratio when three of the library's four
+        properties can only be observed from outside the process. The C++ Output suite asserts nine
+        things because it can redirect <code>std::cout</code>'s stream buffer and inspect the bytes;
+        this one asserts what holds in process and leaves the bytes to Section 5.
+      </t-b>
+
+      <a id="integrationoutput"></a>
+      <h3>5. &nbsp;Integration Suite Output</h3>
+      <t-b>
+        Captured in the same run, from <code>run_integration_tests.bat</code>. Each of these 21
+        tests spawns the executable one or more times, which is why this suite accounts for nearly
+        all the runtime while the three in-process suites finish in hundredths of a second combined.
+      </t-b>
+<pre><code class="language-text">=== starting integration suite: integration
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running tests\integration.rs (target\debug\deps\integration-be2acb173234ccd1.exe)
+
+running 21 tests
+test a_malformed_expression_prints_the_listing_to_stdout_then_the_diagnostic ... ok
+test a_malformed_expression_under_verbose_lists_the_options_once ... ok
+test help_prints_the_specified_text_to_stdout_and_exits_zero ... ok
+test a_root_of_dot_contributes_no_leading_dot_slash ... ok
+test a_named_root_is_part_of_every_path_and_separators_are_normalized ... ok
+test a_crlf_file_yields_lines_free_of_the_carriage_return ... ok
+test a_bare_command_line_lists_the_resolved_options_and_exits_zero ... ok
+test a_block_carries_its_path_once_and_its_detail_lines_beneath_it ... ok
+test an_unopenable_root_is_announced_and_leaves_the_exit_code_zero ... ok
+test help_is_taken_before_any_traversal ... ok
+test every_examined_file_appears_exactly_once_under_h_false ... ok
+test the_no_content_case_reports_a_binary_file_and_omits_an_empty_one ... ok
+test recursion_off_searches_the_root_directory_alone ... ok
+test the_default_h_hides_only_the_files_that_matched_nothing ... ok
+test the_extension_filter_selects_by_last_dot_suffix ... ok
+test no_path_is_ever_printed_twice ... ok
+test the_compiled_skip_list_prunes_a_matching_directory ... ok
+test verbose_lists_the_options_ahead_of_the_search_output ... ok
+test each_root_is_traversed_in_the_order_given ... ok
+test stdout_is_terminated_with_lf_on_every_platform ... ok
+test every_parse_failure_reaches_stderr_with_exit_code_one ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.72s
+
+=== integration suite integration returned 0</code></pre>
+      <t-b>
+        Two tests carry the seven usage diagnostics.
+        <code>every_parse_failure_reaches_stderr_with_exit_code_one</code> checks the six
+        <code>parse</code> produces three ways each - the diagnostic text, the exit code, and that
+        stdout stayed empty - through one <code>expect_usage_failure</code> helper. The third of
+        those three is the one a reader might not expect, and it is where the specification is
+        strictest.
+        <code>a_malformed_expression_prints_the_listing_to_stdout_then_the_diagnostic</code> is the
+        seventh, and it is the one refusal that leaves the option listing on stdout first.
+      </t-b>
+      <t-b>
+        Four tests cover ordering and terminator rules that no unit suite can reach: that the
+        <code>/v</code> listing precedes the search output, that help is taken before any traversal,
+        that stdout carries no CR on any platform, and that a CRLF file yields lines free of the
+        carriage return. The last of those is the pair to the third: one asserts the program does
+        not add a CR, the other that it removes one the file carried.
+      </t-b>
+      <t-b>
+        The suite compares expected stdout against <code>help_text()</code> and
+        <code>usage_line()</code> imported from <code>rust_textfinder_cmdline</code> rather than
+        against string literals of its own, so the fixture and the source cannot drift. It then
+        checks the two properties a literal would have caught anyway - that the help text begins
+        with <code>usage: rust_textfinder [</code> and ends with <code>searching.\n</code> - so a
+        library that returned the wrong text consistently still fails.
+      </t-b>
+
+      <a id="gaps"></a>
+      <h3>6. &nbsp;What the Suites Do Not Reach</h3>
+      <t-b>
+        Every suite passes, and four claims in the specifications are unchecked. Naming them is
+        worth more than the count above, since &sect;6.2 asks the suites to check a claim rather
+        than let it be read.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>The unrenderable name.</strong> &sect;3.4 settles what happens to a file whose
+            name the implementation cannot render as text, and Spec_Rust_TextFinder_Dirnav.md
+            &sect;5 rule 6 places the gate. No fixture creates such a name: it means an unpaired
+            surrogate on Windows or a non-UTF-8 byte sequence on POSIX, and neither
+            <code>TempTree</code> builds one. The
+            <a target="_blank" href="Spec_Driven_Design_Cpp_Testing.html">C++ suite reports the same
+            gap</a>, so the rule that cost both implementations a code change is tested in
+            neither.</li>
+          <li><strong>The failed write.</strong> Nothing breaks stdout mid-run, so the
+            <code>output failed</code> notice, the permanence of the failed state, and the rule that
+            one notice is written rather than one per discarded line are all read rather than
+            checked.</li>
+          <li><strong>Exit code 2.</strong> Both of its paths are unreachable from a test. The unit
+            suite confirms that a second <code>StdoutSink::new</code> returns <code>None</code>, but
+            no run of the binary can provoke it, since the binary builds one sink. An undecodable
+            argument cannot be produced on Windows at all, where every argument arrives as
+            UTF-16.</li>
+          <li><strong>The POSIX side of everything.</strong> The capture above is a Windows run.
+            <code>same_name</code> folds case under <code>#[cfg(windows)]</code> and compares
+            exactly otherwise, and only the first branch is exercised here.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Three of the four are properties of failure paths, which is the ordinary shape of a coverage
+        gap. The fourth is a platform, and it is the one a second machine would close without a
+        line of new test code.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>7. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 assigns it a
+        <code>Prompts_Rust_Spec_driven_TextFinder_Tests.md</code>, and the turn that wrote the four
+        suites and the three runners produced no record. The
+        <a target="_blank" href="Spec_Driven_Design_Rust_Process.html">Process page</a> says what
+        follows from that for the thread as a whole.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#suites">four suites</a></menu-elem>
+        <menu-elem class="secElem"><a href="#harness">harness</a></menu-elem>
+        <menu-elem class="secElem"><a href="#runners">runners</a></menu-elem>
+        <menu-elem class="secElem"><a href="#unitoutput">unit output</a></menu-elem>
+        <menu-elem class="secElem"><a href="#integrationoutput">integration output</a></menu-elem>
+        <menu-elem class="secElem"><a href="#gaps">coverage gaps</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenRustPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 6, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

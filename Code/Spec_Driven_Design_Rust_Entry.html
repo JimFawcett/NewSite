@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Rust_Entry.html - Rust thread, page 2
+-->
+<head>
+  <title>Spec-Driven Rust: Entry</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Rust_Entry.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_Spec_driven_TextFinder_Entry">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Rust: Entry</h2>
+        <h4 class="indent" id="subtitle">ten steps, a thread_local skip list, three exit codes, and no call to process::exit</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Contracts.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="owns"></a>
+      <h3>1. &nbsp;What the Binary Owns</h3>
+      <t-b>
+        <code>rust_textfinder_entry</code> is the command-line entry point. It collects the
+        program's arguments, parses them through <code>rust_textfinder_cmdline</code>, wires the
+        three libraries together, and drives traversal. Matching and file I/O belong to
+        <code>rust_textfinder_dirnav</code> and <code>rust_textfinder_output</code>; the binary
+        performs neither.
+      </t-b>
+      <t-b>
+        The binary does write process-level text of its own - help, the resolved option listing, and
+        startup diagnostics - but it composes none of it. Each is a string
+        <code>rust_textfinder_cmdline</code> hands it, and the binary decides only when to write it
+        and to which stream. Block lines and announcements it neither composes nor writes.
+      </t-b>
+      <t-b>
+        Three things it owns outright:
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>The skip list</strong>, and <code>add_skip_directory</code> as the build-time
+            extension point Spec_TextFinder.md &sect;3.5 defines. Section 3 covers it.</li>
+          <li><strong>The lifetime of all three values.</strong> <code>Dirnav</code> borrows rather
+            than clones, so the <code>StdoutSink</code>, the finalized skip list, and the parsed
+            commands must outlive it. All three are locals of <code>main</code>, and the borrow
+            checker enforces the rule rather than leaving it to convention.</li>
+          <li><strong>The exit code.</strong> Section 4 covers the three values and how they map
+            onto this binary's failure modes.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        It is 113 lines, and the specification that fixes it is 105. That ratio is the point of the
+        component: the design goal is to make the wiring itself readable, and everything harder than
+        wiring lives in a library.
+      </t-b>
+
+      <a id="startup"></a>
+      <h3>2. &nbsp;The Startup Sequence</h3>
+      <t-b>
+        <code>fn main() -&gt; ExitCode</code> performs ten steps in order. The order is the
+        specification rather than a consequence of it: three of the ten are placed where they are
+        for reasons that would not survive rearranging.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:4rem;" />
+          <col style="width:52rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Step</th>
+          <th class="darkItem">What happens</th>
+        </tr>
+        <tr>
+          <td class="lightItem">1</td>
+          <td class="lightItem">Collect the arguments from <code>std::env::args_os</code> and decode each to a <code>String</code>. An argument that will not decode writes <code>invalid argument encoding: &lt;token&gt;</code> to stderr and returns 2, having parsed nothing</td>
+        </tr>
+        <tr>
+          <td class="lightItem">2</td>
+          <td class="lightItem">Invoke <code>parse</code> on the decoded arguments. On <code>Err</code>, write the returned usage diagnostic to stderr unaltered and return 1. A malformed <code>/r</code> is not detected here; step 8 reaches it</td>
+        </tr>
+        <tr>
+          <td class="lightItem">3</td>
+          <td class="lightItem">Construct the <code>StdoutSink</code>. On <code>None</code>, write <code>cannot initialize output</code> to stderr and return 2</td>
+        </tr>
+        <tr>
+          <td class="lightItem">4</td>
+          <td class="lightItem">If <code>/H true</code>, write <code>help_text()</code> through the sink and return 0</td>
+        </tr>
+        <tr>
+          <td class="lightItem">5</td>
+          <td class="lightItem">If the argument list holds one element, write <code>options_text(&amp;commands)</code> through the sink and return 0. This is the bare command line of &sect;3.1</td>
+        </tr>
+        <tr>
+          <td class="lightItem">6</td>
+          <td class="lightItem">If <code>/v true</code>, write <code>options_text(&amp;commands)</code> through the sink before traversal begins</td>
+        </tr>
+        <tr>
+          <td class="lightItem">7</td>
+          <td class="lightItem">Finalize the skip list: the defaults, then the <code>add_skip_directory</code> calls compiled into the binary, then <code>RefCell::take</code> into a local that outlives the traversal</td>
+        </tr>
+        <tr>
+          <td class="lightItem">8</td>
+          <td class="lightItem">Construct the <code>Dirnav</code>, generic over <code>StdoutSink</code>. Regex compilation happens here, and <code>Dirnav::new</code> returns <code>Err</code> when <code>/r</code> will not compile</td>
+        </tr>
+        <tr>
+          <td class="lightItem">9</td>
+          <td class="lightItem">For each root path, in the order <code>/P</code> gave them, invoke <code>search</code> on the same value</td>
+        </tr>
+        <tr>
+          <td class="lightItem">10</td>
+          <td class="lightItem">Return exit code 0</td>
+        </tr>
+      </table>
+      <t-b>
+        <strong>Step 1 uses <code>args_os</code> and not <code>args</code>.</strong>
+        <code>std::env::args</code> panics on an argument that is not valid Unicode, and a command
+        line the user typed must not crash the program. The decode is an explicit
+        <code>into_string</code> per argument, and its <code>Err</code> carries the undecodable
+        <code>OsString</code>, which <code>to_string_lossy</code> renders for the diagnostic. That
+        is the only rendering available for text that is not valid Unicode.
+      </t-b>
+      <t-b>
+        <strong>Step 3 precedes every write to stdout.</strong> The sink owns the process's only
+        stdout handle, so the binary's own help text and option listing pass through it rather than
+        through a handle of their own. They therefore share one buffer with the search output and
+        reach the stream in the order written. The C++ implementation needs this ordering for a
+        second reason, since constructing its sink also sets the stream mode; Rust needs no stream
+        mode, and the ordering still holds because of the shared buffer.
+      </t-b>
+      <t-b>
+        <strong>Step 5 reads the argument list's length and nothing else.</strong> It inspects no
+        element, because "no switch at all" is exactly "no tokens after the program name".
+        <code>commands</code> here is <code>ProgramCommands::default()</code>, so the listing names
+        every default and its <code>/v</code> line reads <code>false</code>. Steps 5 and 6 are
+        mutually exclusive: a command line bearing <code>/v</code> is not bare.
+      </t-b>
+      <t-b>
+        <strong>Step 8 is where a bad pattern is refused</strong>, and it takes four sub-steps to
+        report:
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li>If step 6 did not already write it, write <code>options_text(&amp;commands)</code>
+            through the sink now, so the user sees the <code>/r</code> line carrying the expression
+            that failed.</li>
+          <li>Call <code>flush</code> on the sink, so the listing reaches the stream ahead of the
+            diagnostic that explains it. The sink buffers stdout without per-line flushing, so
+            without this the two arrive out of order.</li>
+          <li>Compose the diagnostic - <code>invalid regex for switch: /r</code>, a newline, then
+            <code>usage_line()</code> - and write it to stderr. The binary composes it; neither
+            library does, the one supplying only <code>usage_line()</code> and the other only the
+            failure that triggers it.</li>
+          <li>Return exit code 1, having traversed nothing.</li>
+        </ol>
+      </t-b>
+      <t-b>
+        The error text the <code>regex</code> crate puts in its own <code>Error</code> is not
+        written, and the specification gives a reason that outlives any wording change: that text
+        belongs to the crate, so a crate upgrade would alter this program's output with no document
+        in this tree recording the change.
+      </t-b>
+      <t-b>
+        Steps 8 and 9 are one <code>match</code> in the source rather than two statements, and the
+        borrow checker is why. The <code>Dirnav</code> borrows the sink for as long as it lives, so
+        the sink cannot be written to directly while the <code>Dirnav</code> exists. The
+        <code>match</code> runs the traversal inside its <code>Ok</code> arm and yields a
+        <code>bool</code>; the failure path then writes its listing after the borrow has ended. The
+        specification asks only that the listing precede the diagnostic, and this arrangement
+        satisfies both that and the borrow checker.
+      </t-b>
+      <t-b>
+        Step 9 passes a root-path failure to nobody. A root that cannot be searched - unopenable, a
+        symbolic link, or neither a regular file nor a directory - is announced by
+        <code>rust_textfinder_dirnav</code> itself, and the binary neither formats nor inspects that
+        notice. No root-path outcome affects the exit code.
+      </t-b>
+
+      <a id="skiplist"></a>
+      <h3>3. &nbsp;The Skip List, RefCell, and thread_local</h3>
+      <t-b>
+        The binary owns the process-wide skip list, initialized with the 11 defaults of
+        Spec_TextFinder.md &sect;3.2, and implements the extension point with that section's own
+        one-argument signature:
+      </t-b>
+<pre><code class="language-rust">thread_local! {
+    static SKIP_LIST: RefCell&lt;SkipList&gt; = RefCell::new(default_skip_list());
+}
+
+fn default_skip_list() -&gt; SkipList;
+fn add_skip_directory(name: &amp;str);</code></pre>
+      <t-b>
+        <code>add_skip_directory</code> takes the name alone, as &sect;3.5 writes it, and reaches
+        the list through the cell. The interior mutability a <code>RefCell</code> supplies is what
+        makes that possible without an <code>unsafe</code> block and without a synchronization
+        primitive: the borrow is checked at run time rather than at compile time, and the check
+        costs one integer comparison per call.
+      </t-b>
+      <t-b>
+        The declaration is a <code>thread_local!</code> rather than a plain <code>static</code>. A
+        <code>static</code> must be <code>Sync</code>, and <code>RefCell</code> is deliberately not,
+        its borrow flag being an ordinary integer rather than an atomic one.
+        <code>thread_local!</code> carries no <code>Sync</code> bound, since each thread receives
+        its own value, and that costs this binary nothing: the list is built before traversal begins
+        and traversal runs on one thread.
+      </t-b>
+      <t-b>
+        Neither function is <code>pub</code>, and both are defined in the binary crate, so no
+        library and no test can call them; the calls that extend the list are written into the
+        binary's source and compiled with it. <code>add_skip_directory</code> ignores a name the
+        list already holds, and <code>#[allow(dead_code)]</code> marks it so that a build adding no
+        directory compiles without a warning. The source carries a
+        <code>fn extend_skip_list()</code> with an empty body, which is where such calls go.
+      </t-b>
+      <t-b>
+        That is the narrow reading of &sect;3.5, which requires each language's specification to say
+        whether the function is exported from a library or confined to the component that owns the
+        list, and does not require it to be callable from outside the program. The C++
+        implementation reads it the same way, for the same reason.
+      </t-b>
+      <t-b>
+        Step 7 then takes the finished list out of the cell with <code>RefCell::take</code> and
+        holds it in a local. That local is what the <code>Dirnav</code> borrows, so the borrow lasts
+        the whole traversal rather than the body of a closure passed to <code>with</code>. The
+        <code>Dirnav</code> takes it as a shared borrow, so it consults the list and cannot modify
+        it - a property the type system carries rather than a comment.
+      </t-b>
+
+      <a id="exit"></a>
+      <h3>4. &nbsp;Exit Codes</h3>
+      <t-b>
+        The three codes Spec_TextFinder.md &sect;3.4 fixes map onto four failure modes. No other
+        value is returned from <code>main</code>.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:5rem;" />
+          <col style="width:20rem;" />
+          <col style="width:31rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Code</th>
+          <th class="darkItem">Cause in this binary</th>
+          <th class="darkItem">What reaches which stream</th>
+        </tr>
+        <tr>
+          <td class="lightItem">0</td>
+          <td class="lightItem">Startup and traversal completed; or <code>/H</code>; or the bare command line</td>
+          <td class="lightItem">Search output, help, or the option listing on stdout. Match count and unopenable roots do not change it</td>
+        </tr>
+        <tr>
+          <td class="lightItem">1</td>
+          <td class="lightItem">Parse failure, or a malformed <code>/r</code></td>
+          <td class="lightItem">A usage diagnostic on stderr. Parse failure leaves stdout empty; a malformed <code>/r</code> puts the option listing there first</td>
+        </tr>
+        <tr>
+          <td class="lightItem">2</td>
+          <td class="lightItem">An argument would not decode, or <code>StdoutSink::new</code> returned <code>None</code></td>
+          <td class="lightItem"><code>invalid argument encoding: &lt;token&gt;</code> or <code>cannot initialize output</code> on stderr, no usage line, stdout empty</td>
+        </tr>
+      </table>
+      <t-b>
+        Only one exit-code-1 path writes to stdout, and the asymmetry is deliberate: &sect;5.2
+        requires the listing ahead of the invalid-regex diagnostic so the <code>/r</code> line shows
+        what failed, and leaves stdout empty for every other violation.
+      </t-b>
+      <t-b>
+        Every one of those strings is fixed in the Rust specifications rather than the project
+        specification. &sect;2 leaves the wording of anything reaching stderr to each language, so
+        Spec_Rust_TextFinder_Cmdline.md &sect;6 carries the six reason lines <code>parse</code>
+        produces and Spec_Rust_TextFinder_Entry.md &sect;6 carries the seventh,
+        <code>invalid regex for switch: /r</code>, plus the two code-2 strings. What binds everyone
+        is the shape of a usage diagnostic, the destination, the exit codes, and what each failure
+        leaves on stdout. Rust adopts &sect;5.2's supplied wording without changing a character, so
+        its stderr stays comparable with the C++ implementation's, which &sect;6 no longer requires
+        but does not forbid.
+      </t-b>
+      <t-b>
+        An undecodable argument taking code 2 rather than code 1 is a decision, and the
+        specification records why either would look defensible. &sect;5.2 fixes no reason line for
+        the case, since it cannot arise in an implementation whose argument vector carries bytes,
+        and &sect;3.4 defines code 1 as the code that accompanies a &sect;5.2 diagnostic. The binary
+        cannot form the command line it would have to validate, so the failure precedes
+        command-line validation rather than resulting from it.
+      </t-b>
+      <t-b>
+        A malformed regex taking code 1 is a decision too, and it went the other way: the expression
+        is something the user typed, so the failure is a usage failure even though it surfaces
+        inside a library constructor.
+      </t-b>
+
+      <a id="return"></a>
+      <h3>5. &nbsp;Why Every Exit Is a Return</h3>
+      <t-b>
+        Every exit in the sequence returns from <code>main</code>, never calling
+        <code>std::process::exit</code>. The <code>StdoutSink</code> is a local of
+        <code>main</code>, and only a return drops it and flushes its stdout buffer. Steps 4, 5, and
+        8 each write to stdout and then leave, and <code>std::process::exit</code> would discard
+        what they wrote.
+      </t-b>
+      <t-b>
+        <code>ExitCode</code> is what makes that practical. <code>main</code> returns
+        <code>ExitCode</code> rather than <code>()</code>, so a numeric status and a normal return
+        are the same act, and <code>ExitCode::from(2)</code> reads as plainly as
+        <code>std::process::exit(2)</code> would while leaving every destructor to run.
+      </t-b>
+      <t-b>
+        One rule pairs with it: nothing writes to stderr before stdout has been flushed. Steps 1 and
+        2 predate the sink and so have no buffer to flush; step 3 fails before one exists; step 8
+        flushes explicitly. <code>rust_textfinder_output</code> applies the same rule to its own
+        <code>output failed</code> notice.
+      </t-b>
+      <t-b>
+        Both rules exist because the sink defers flushing to <code>Drop</code>, which the
+        <a target="_blank" href="Spec_Driven_Design_Rust_Output.html">Output page</a> covers. Every
+        exit being a return is the half of that requirement this component owns.
+      </t-b>
+      <t-b>
+        Nothing in the sequence panics. No step calls <code>unwrap</code> or <code>expect</code>,
+        and every failure it can meet resolves to a diagnostic and an exit code. That is a claim a
+        reader can check against the 113 lines of Section 7 rather than take on trust, which is why
+        the specification states it as a property of the sequence rather than as advice.
+      </t-b>
+
+      <a id="limits"></a>
+      <h3>6. &nbsp;Stated Limits</h3>
+      <t-b>
+        Three non-goals, and one of them is a portability limit rather than a design choice.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>No per-file state in the binary.</strong> A single <code>Dirnav</code> value
+            is reused across every root path, and it carries no state from one <code>search</code>
+            call to the next.</li>
+          <li><strong>Every argument must be valid Unicode.</strong> The binary takes
+            <code>args_os</code> and decodes, and an argument that will not decode is refused with
+            exit code 2. On Windows that admits any command line the shell can express, since the
+            arguments arrive as UTF-16; on POSIX it refuses a path holding bytes that are not valid
+            UTF-8. Spec_TextFinder.md &sect;4 leaves the argument type and its encoding to this
+            document, so this is a stated limit of the Rust implementation rather than a departure
+            from the parent specification.</li>
+          <li><strong>No configuration file</strong>, and no runtime means of extending the skip
+            list.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        The second limit cuts both ways against C++, and the specification says so. This
+        implementation accepts non-ASCII root paths and expressions the C++ implementation cannot
+        carry, since C++ takes <code>main</code>'s <code>char* argv[]</code> undecoded, and it
+        refuses POSIX paths that the C++ implementation passes through as bytes. &sect;6's
+        consistency guarantee speaks only to the command lines all four implementations accept.
+      </t-b>
+
+      <a id="source"></a>
+      <h3>7. &nbsp;Source</h3>
+      <t-b>
+        <code>main.rs</code> in full, then the package manifest. The step numbers in the comments
+        are the ten steps of Section 2, and the citations name the specification section each step
+        satisfies.
+      </t-b>
+      <h5 class="indent">main.rs</h5>
+<pre><code class="language-rust">//! rust_textfinder_entry - the TextFinder binary.
+//! Implements Spec_Rust_TextFinder_Entry.md.
+
+use rust_textfinder_cmdline::{help_text, options_text, parse, usage_line, ProgramCommands};
+use rust_textfinder_dirnav::{Dirnav, SkipList};
+use rust_textfinder_output::StdoutSink;
+use std::cell::RefCell;
+use std::path::Path;
+use std::process::ExitCode;
+
+thread_local! {
+    static SKIP_LIST: RefCell&lt;SkipList&gt; = RefCell::new(default_skip_list());
+}
+
+fn default_skip_list() -&gt; SkipList {
+    [
+        "archive",
+        ".git",
+        ".svn",
+        ".hg",
+        "build",
+        "out",
+        "target",
+        "bin",
+        "obj",
+        "__pycache__",
+        "node_modules",
+    ]
+    .iter()
+    .map(|name| String::from(*name))
+    .collect()
+}
+
+/// The build-time extension point of Spec_TextFinder.md section 3.5.
+#[allow(dead_code)]
+fn add_skip_directory(name: &amp;str) {
+    SKIP_LIST.with(|list| {
+        let mut list = list.borrow_mut();
+        if !list.iter().any(|held| held == name) {
+            list.push(String::from(name));
+        }
+    });
+}
+
+/// Every call compiled in here runs before traversal begins. None is at present.
+fn extend_skip_list() {}
+
+fn main() -&gt; ExitCode {
+    let mut args: Vec&lt;String&gt; = Vec::new();
+    for argument in std::env::args_os() {
+        match argument.into_string() {
+            Ok(text) =&gt; args.push(text),
+            Err(raw) =&gt; {
+                eprintln!("invalid argument encoding: {}", raw.to_string_lossy());
+                return ExitCode::from(2);
+            }
+        }
+    }
+
+    let commands: ProgramCommands = match parse(&amp;args) {
+        Ok(commands) =&gt; commands,
+        Err(diagnostic) =&gt; {
+            eprint!("{diagnostic}");
+            return ExitCode::from(1);
+        }
+    };
+
+    let mut sink = match StdoutSink::new() {
+        Some(sink) =&gt; sink,
+        None =&gt; {
+            eprintln!("cannot initialize output");
+            return ExitCode::from(2);
+        }
+    };
+
+    if commands.help {
+        sink.write_text(&amp;help_text());
+        return ExitCode::SUCCESS;
+    }
+
+    if args.len() == 1 {
+        sink.write_text(&amp;options_text(&amp;commands));
+        return ExitCode::SUCCESS;
+    }
+
+    if commands.verbose {
+        sink.write_text(&amp;options_text(&amp;commands));
+    }
+
+    extend_skip_list();
+    let skips: SkipList = SKIP_LIST.with(|list| list.take());
+
+    let compiled = match Dirnav::new(&amp;mut sink, &amp;skips, &amp;commands) {
+        Ok(mut navigator) =&gt; {
+            for root in &amp;commands.root_paths {
+                navigator.search(Path::new(root));
+            }
+            true
+        }
+        Err(_) =&gt; false,
+    };
+
+    if !compiled {
+        if !commands.verbose {
+            sink.write_text(&amp;options_text(&amp;commands));
+        }
+        sink.flush();
+        eprint!("invalid regex for switch: /r\n{}", usage_line());
+        return ExitCode::from(1);
+    }
+
+    ExitCode::SUCCESS
+}</code></pre>
+      <h5 class="indent">Rust_Spec_driven_TextFinder_Entry/Cargo.toml</h5>
+<pre><code class="language-toml">[package]
+name = "rust_textfinder_entry"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+
+[[bin]]
+name = "rust_textfinder"
+path = "src/main.rs"
+
+[dependencies]
+rust_textfinder_cmdline = { path = "../Rust_Spec_driven_Cmdline" }
+rust_textfinder_dirnav = { path = "../Rust_Spec_driven_Dirnav" }
+rust_textfinder_output = { path = "../Rust_Spec_driven_Output" }</code></pre>
+      <t-b>
+        The <code>[[bin]]</code> section is what separates the package name from the executable
+        name. Without it Cargo would produce <code>rust_textfinder_entry.exe</code>, and
+        Spec_TextFinder.md &sect;5.1 fixes the help text's synopsis around
+        <code>rust_textfinder</code>.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>8. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 assigns it
+        <code>Prompts_Spec_Rust_TextFinder_Entry.md</code> and its <code>Fix</code> companion, and
+        neither was written: the Entry specification was produced in the same turn as the other four
+        documents, recorded at the project level. The audit that reshaped it sits on the
+        <a target="_blank" href="Spec_Driven_Design_Rust_Process.html">Process page</a>, where three
+        of its four behavioral items reach this component.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#owns">what it owns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#startup">startup</a></menu-elem>
+        <menu-elem class="secElem"><a href="#skiplist">skip list</a></menu-elem>
+        <menu-elem class="secElem"><a href="#exit">exit codes</a></menu-elem>
+        <menu-elem class="secElem"><a href="#return">every exit returns</a></menu-elem>
+        <menu-elem class="secElem"><a href="#limits">stated limits</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenRustPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

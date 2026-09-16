@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Rust_Demonstration.html - Rust thread, page 7
+-->
+<head>
+  <title>Spec-Driven Rust: Demonstration</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Rust_Demonstration.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/15/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Rust: Demonstration</h2>
+        <h4 class="indent" id="subtitle">the built executable run against this project's own tree, 2026-09-15</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Demonstration.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+
+      <a id="what"></a>
+      <h3>1. &nbsp;What the Demonstration Runs</h3>
+      <t-b>
+        <code>tests/demonstration.rs</code> runs the built executable against this project's own
+        tree, rooted at <code>Spec_driven_TextFinder/</code>, and shows 11 invocations. Nine of them
+        supply <code>-P . -p "md, ixx, cpp, rs"</code>, so each search covers the project's
+        documents together with both implementations' sources.
+      </t-b>
+      <t-b>
+        Every block below is captured output. Nothing on this page is paraphrased, reconstructed
+        from the specification, or edited after capture, per Page_Structure.md &sect;7.3. The
+        capture is dated, and Section 5 says what that means for a reader comparing it against a
+        fresh run.
+      </t-b>
+      <t-b>
+        Each block takes the same five parts, per Page_Structure.md &sect;7.2: the purpose in one or
+        two lines, the command line echoed as
+        <code>$ &lt;executable&gt; &lt;arguments&gt;</code>, at most 14 output lines followed by a
+        <code>... N more</code> line where <code>N</code> is the number withheld, each stderr line
+        prefixed <code>[stderr]</code>, and the total line count with the exit code. The count is of
+        stdout for the whole run rather than of the excerpt, so <code>N</code> plus 14 equals it
+        whenever a <code>... N more</code> line appears and no stderr line was shown.
+      </t-b>
+      <t-b>
+        Two divergences from the mandate are worth naming rather than hiding, and both are the same
+        kind of thing: the driver is code, and code changes start with a specification change.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>Eleven invocations, not six.</strong> Page_Structure.md &sect;7.1 fixes a set
+            of six, and this driver runs 11 with an argument set that is not that table's. The
+            <a target="_blank" href="Spec_Driven_Design_Cpp_Demonstration.html">C++ demonstration</a>
+            diverges the same way with eight. The blocks below are what the executable actually
+            produced, since &sect;7.3 forbids reconstructing a result from a document.</li>
+          <li><strong>Four extensions, not one.</strong> &sect;0 gives Rust the value
+            <code>rs</code> for <code>[ext]</code>, and this driver searches
+            <code>md, ixx, cpp, rs</code>. That is a superset of the C++ demonstration's
+            <code>md, ixx, cpp</code>, so the two captures differ in their file sets by more than
+            the one variation &sect;7.4 allows for. Section 4 states what survives that.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Two rules govern which patterns a demonstration may use, and this set satisfies both. Every
+        pattern stays inside the portable subset of Spec_TextFinder.md &sect;6.1, and none of the
+        patterns that match uses <code>.</code>, a character class, or a class escape, so none turns
+        on which engine an implementation names. And every pattern has something to find in every
+        implementation: <code>too large</code> is an announcement &sect;3.4 fixes,
+        <code>Spec_TextFinder.md</code> names a document every implementation searches, and
+        <code>Cargo</code> names a file this one's structure document fixes. Invocation 8's
+        <code>^pub </code> is the exception that proves the rule: it is a Rust keyword, so that
+        invocation demonstrates Rust and is confined to two Rust files by its own
+        <code>-P</code> arguments rather than pretending to a wider search.
+      </t-b>
+
+      <a id="header"></a>
+      <h3>2. &nbsp;The Header</h3>
+      <t-b>
+        The driver writes four fields before the first block: the date of the capture, the path of
+        the executable, the search root, and the extension list. This is the whole of the header.
+      </t-b>
+<pre><code class="language-text">Rust_TextFinder demonstration
+  date:       2026-09-15
+  executable: c:/github/JimFawcett/NewSite/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/target/debug/rust_textfinder.exe
+  root:       c:/github/JimFawcett/NewSite/Code/Projects/Spec_driven_TextFinder
+  extensions: "md, ixx, cpp, rs"</code></pre>
+      <t-b>
+        The date comes from <code>run_demo.bat</code> through the
+        <code>TEXTFINDER_DEMO_DATE</code> environment variable, since the runner can ask the shell
+        for a local date and the driver cannot: the standard library supplies a
+        <code>SystemTime</code> and no calendar. The driver falls back to a civil date it computes
+        from the UTC clock, which reads as the previous day late in the evening, so a capture taken
+        any other way carries a date this one does not.
+      </t-b>
+      <t-b>
+        The executable path is what <code>CARGO_BIN_EXE_rust_textfinder</code> resolved to at
+        compile time, and the root is two directory levels above the package manifest. Both are
+        rendered with forward slashes on every platform, matching the rule &sect;3.4 fixes for block
+        lines, which is a courtesy to a reader comparing headers rather than a requirement.
+      </t-b>
+
+      <a id="blocks"></a>
+      <h3>3. &nbsp;The Eleven Blocks</h3>
+
+      <a id="block1"></a>
+      <h4>3.1 &nbsp;No Switch at All</h4>
+      <t-b>
+        The bare command line of Spec_TextFinder.md &sect;3.1. It names no work, so
+        <code>rust_textfinder</code> lists the options a real invocation would start from and exits
+        0 without traversing. Look for the <code>/v</code> line: it reads <code>false</code>,
+        because this listing reports an option set in which <code>/v</code> was never set.
+      </t-b>
+<pre><code class="language-text">1. No switch at all. The command line names no work, so rust_textfinder lists the
+   options a real invocation would start from and exits 0 (Spec_TextFinder.md §3.1).
+  $ rust_textfinder
+
+      /P .
+      /p
+      /r .
+      /s true
+      /h true
+      /v false
+      /H false
+      /n false
+      /L false
+
+  9 line(s), exit 0</code></pre>
+      <t-b>
+        Nine lines, matching the nine &sect;5.3 fixes, in &sect;5 table order. The <code>/p</code>
+        line carries no value and no trailing space, which is the rule that lets this text serve as
+        a test fixture. These nine bytes for byte are what the C++ implementation prints, since
+        &sect;5.3 fixes the form and neither implementation chooses it.
+      </t-b>
+
+      <a id="block2"></a>
+      <h4>3.2 &nbsp;The Default Expression</h4>
+      <t-b>
+        The no-content case of &sect;3.3: the default <code>/r</code> of <code>.</code> with neither
+        <code>/n</code> nor <code>/L</code> needs no file content, so every selected file of
+        non-zero size is reported by its path line alone and none of them is opened.
+      </t-b>
+<pre><code class="language-text">2. Default expression. The default /r of . with no /n or /L needs no file content,
+   so each selected file is reported by its path line alone (Spec_TextFinder.md §3.3).
+  $ rust_textfinder -P . -p "md, ixx, cpp, rs"
+
+      Constitution.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Prompts_Fix_Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Prompts_Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline_TestDriver.cpp
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline_UnitTest.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Prompts_Fix_Spec_Cpp_TextFinder_Dirnav.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Prompts_Spec_Cpp_TextFinder_Dirnav.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Spec_Cpp_TextFinder_Dirnav.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav_TestDriver.cpp
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav_UnitTest.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/Prompts_Fix_Spec_Cpp_TextFinder_Output.md
+      ... 49 more
+
+  63 line(s), exit 0</code></pre>
+      <t-b>
+        63 lines for 63 selected files. What the count alone does not show is that this invocation
+        performed no reads: the size test ran on filesystem metadata and nothing else, which is why
+        this is among the fastest of the 11 and why a binary file among these paths would be
+        reported rather than skipped. The 14 shown are every one of them in filesystem order, which
+        is the order &sect;3.2 leaves to the platform.
+      </t-b>
+      <t-b>
+        The <code>target/</code> directory holding the build this run used contributes nothing to
+        that count, since <code>target</code> is one of the 11 default skip-list names. So is
+        <code>build</code>, which prunes the C++ build tree the same way.
+      </t-b>
+
+      <a id="block3"></a>
+      <h4>3.3 &nbsp;The Two-Level Block</h4>
+      <t-b>
+        The block form of &sect;3.4 with both optional fields on: a path written once, then an
+        indented detail line per match carrying the line number and the line's text. The pattern
+        <code>too large</code> is one of the four announcements the specification fixes, so it
+        appears as a literal in the documents and in the sources of every implementation.
+      </t-b>
+<pre><code class="language-text">3. The two-level block of §3.4: a path written once, then an indented detail line
+   per match carrying the line number and the line's text.
+  $ rust_textfinder -P . -p "md, ixx, cpp, rs" -r "too large" -n true -L true
+
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Prompts_Fix_Spec_Cpp_TextFinder_Dirnav.md
+        73 - [Spec_TextFinder.md](../../Spec_TextFinder.md) gained: symlink and non-file/non-directory root handling in §3.2; the three admission tests in §3.3 — 10 MB, no NUL byte, valid UTF-8 — with whole-file reading justified by "skipped entirely rather than searched in part"; path rendering and a four-row announcement table in §3.4 (`searched`, `skipped`, `too large`, `cannot open`) with the `/h` gating; the dotfile rule, extension case-sensitivity, the non-empty-regex requirement, and the new `/h` meaning across the `/p`, `/r`, and `/h` rows of §5; an empty-`/r` row in §5.2; and the NUL test named in §7.
+        80 - - **`too large` and `cannot open` ignore `/h`; `searched` and `skipped` obey it.** Item 6 suppressed announcements but item 3 wanted failures visible; silencing a 10 MB skip under the default would hide requested work that did not happen.
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Spec_Cpp_TextFinder_Dirnav.md
+        81 - No file announcement accompanies that block. `searched` reports a file that was read and matched nothing and `skipped` reports one a content test rejected, and in this case neither happened — every selected file matches — so the library emits neither, whatever `/h` says. A selected file of zero size produces no block and draws no announcement either. The size test still runs on filesystem metadata, so a file above the limit still draws the error announcement `too large`, and one whose metadata cannot be read still draws `cannot open`.
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav.ixx
+        255 -         if (size &gt; sizeLimit) { emit("too large " + displayPath(file)); return; }
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav_UnitTest.ixx
+        301 -     check.equal(relative(search(root / "big.txt", commands), root), "too large big.txt",
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/Prompts_Fix_Spec_Cpp_TextFinder_Output.md
+        33 - 1. Parent §3.4 contradicted itself in consecutive sentences — "under the default /h `true` no file announcement appears and the output holds match records alone," then "`too large` and `cannot open` are emitted whatever /h says." Both are file announcements.
+        58 - &gt; 1. treat "too large" and "cannot open" as error announcements not file announcements.  Make any name changes appropriate to this new definition
+        78 - Parent §3.4 now distinguishes **file announcements** — `searched` and `skipped`, gated on `/h` — from **error announcements** — `too large` and `cannot open`, emitted whatever `/h` says — in separate tables, which retires the self-contradiction: under the default the output holds match records and error announcements. The new names propagated to the `/h` row, the §5.1 help text, Dirnav §5 rule 6 and §8, and Entry's diagnostics section. Parent §3.4 also gained the terminator rule moved out of the Output spec: a single LF for every record and announcement on every platform, with implementations obliged to stop their runtime translating it.
+      Cpp_Spec_driven_TextFinder/Demo_9-14-2026.md
+      ... 46 more
+
+  60 line(s), exit 0</code></pre>
+      <t-b>
+        60 lines over 17 files: 17 path lines and 43 detail lines. The two-space indent, the
+        <code>&nbsp;-&nbsp;</code> between the number and the text, and the path appearing once
+        above its details are all &sect;3.4 rather than choices this implementation made. Line 255
+        of <code>Cpp_TextFinder_Dirnav.ixx</code> is the C++ implementation emitting the
+        announcement this search is looking for, which is the demonstration reading the other
+        implementation's source.
+      </t-b>
+      <t-b>
+        The detail lines are long because the matched lines are long. &sect;3.4 fixes the line's
+        text verbatim with no truncation, so a match inside a 600-character Markdown paragraph
+        produces a 600-character detail line. The arrows at the top right of the block reach the
+        right-hand end without scrolling to the bottom.
+      </t-b>
+
+      <a id="block4"></a>
+      <h4>3.4 &nbsp;The Same Search with /L false</h4>
+      <t-b>
+        Dropping <code>/L</code> leaves the line number alone on each detail line. The same 17
+        files, the same 43 matches, and the same 60 lines: <code>/n</code> and <code>/L</code>
+        select what a detail line carries and neither decides whether there is one.
+      </t-b>
+<pre><code class="language-text">4. The same search with /L false, leaving the line number alone on each detail line.
+  $ rust_textfinder -P . -p "md, ixx, cpp, rs" -r "too large" -n true
+
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Prompts_Fix_Spec_Cpp_TextFinder_Dirnav.md
+        73
+        80
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Spec_Cpp_TextFinder_Dirnav.md
+        81
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav.ixx
+        255
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav_UnitTest.ixx
+        301
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/Prompts_Fix_Spec_Cpp_TextFinder_Output.md
+        33
+        58
+        78
+      Cpp_Spec_driven_TextFinder/Demo_9-14-2026.md
+      ... 46 more
+
+  60 line(s), exit 0</code></pre>
+      <t-b>
+        The 14 shown here reach one file further than 3.3's did, which is the only visible effect of
+        the shorter lines. <code>Demo_9-14-2026.md</code> appears as a path line with no detail line
+        beneath it in the excerpt, because its first match falls past the 14-line cut rather than
+        because it has none.
+      </t-b>
+
+      <a id="block5"></a>
+      <h4>3.5 &nbsp;Path-Only Blocks</h4>
+      <t-b>
+        Which documents cite the parent specification. With neither <code>/n</code> nor
+        <code>/L</code>, every block is its path line, and rule 2 of the emission rules applies: the
+        loop over a file's lines returns at the first match, so a file matching 40 times costs the
+        same as one matching once.
+      </t-b>
+<pre><code class="language-text">5. Which documents cite the parent specification. Neither /n nor /L, so every block
+   is its path line and no path is written twice.
+  $ rust_textfinder -P . -p "md, ixx, cpp, rs" -r Spec_TextFinder\.md
+
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Prompts_Fix_Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Prompts_Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline_UnitTest.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Prompts_Fix_Spec_Cpp_TextFinder_Dirnav.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Prompts_Spec_Cpp_TextFinder_Dirnav.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Spec_Cpp_TextFinder_Dirnav.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav_UnitTest.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/Prompts_Fix_Spec_Cpp_TextFinder_Output.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/Prompts_Spec_Cpp_TextFinder_Output.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/Spec_Cpp_TextFinder_Output.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/src/Cpp_TextFinder_Output.ixx
+      ... 32 more
+
+  46 line(s), exit 0</code></pre>
+      <t-b>
+        46 lines for 46 files against 3.2's 63, so 17 of the selected files cite the parent
+        specification nowhere. The escaped dot in <code>Spec_TextFinder\.md</code> is the only
+        metacharacter in the whole pattern set outside invocations 8 and 10, and &sect;6.1 puts a
+        class escape inside the subset all four engines accept alike.
+      </t-b>
+
+      <a id="block6"></a>
+      <h4>3.6 &nbsp;One Level Deep</h4>
+      <t-b>
+        The same search with <code>-s false</code>, which enters no subdirectory. What remains is
+        the project root's own documents.
+      </t-b>
+<pre><code class="language-text">6. The same search one level deep, /s false entering no subdirectory.
+  $ rust_textfinder -P . -p "md, ixx, cpp, rs" -r Spec_TextFinder\.md -s false
+
+      Page_Structure.md
+      Project_Tree.md
+      Prompts_Fix_Constitution.md
+      Prompts_Fix_Spec_TextFinder.md
+      Prompts_Page_Structure.md
+      Prompts_Spec_TextFinder.md
+      README.md
+      Text_Tone.md
+
+  8 line(s), exit 0</code></pre>
+      <t-b>
+        Eight lines and no <code>... N more</code>, since a run emitting 14 lines or fewer shows all
+        of them. <code>Spec_TextFinder.md</code> itself is absent from this list, and its absence is
+        the rule rather than an omission: the pattern matches the file's own name in a citation, and
+        the file cites its own name nowhere.
+      </t-b>
+      <t-b>
+        These eight are the project-level documents, so this is the one invocation whose output does
+        not move when either implementation's sources change. It is also the one that moves when a
+        document is added at the project root, which Section 5 covers.
+      </t-b>
+
+      <a id="block7"></a>
+      <h4>3.7 &nbsp;Announcements and the Resolved Option Set</h4>
+      <t-b>
+        <code>-h false</code> adds a line for each file that matched nothing - the files 3.5 left
+        silent - alongside the listing <code>-v true</code> writes ahead of the search.
+      </t-b>
+<pre><code class="language-text">7. /h false adds a line for each file that matched nothing - the files case 5 left
+   silent - alongside the resolved option set from /v true.
+  $ rust_textfinder -P . -p "md, ixx, cpp, rs" -r Spec_TextFinder\.md -h false -v true
+
+      /P .
+      /p md, ixx, cpp, rs
+      /r Spec_TextFinder\.md
+      /s true
+      /h false
+      /v true
+      /H false
+      /n false
+      /L false
+      searched Constitution.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Prompts_Fix_Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Prompts_Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline.ixx
+      ... 58 more
+
+  72 line(s), exit 0</code></pre>
+      <t-b>
+        72 lines against 3.5's 46: nine listing lines plus 17 <code>searched</code> announcements
+        added to the same 46 paths. The listing's <code>/r</code> line carries the expression
+        verbatim as typed, backslash included, and its <code>/h</code> and <code>/v</code> lines
+        report the values that produced this output.
+      </t-b>
+      <t-b>
+        <code>searched Constitution.md</code> is the first line after the listing, which shows
+        announcements interleaved with blocks in traversal order rather than collected at the end.
+        The 17 announcements are exactly 3.2's 63 files less 3.5's 46, which is the arithmetic
+        &sect;3.4 promises: a file announcement reports only a file that produced no block, so the
+        two sets partition the selected files and neither path appears twice.
+      </t-b>
+
+      <a id="block8"></a>
+      <h4>3.8 &nbsp;Two Roots</h4>
+      <t-b>
+        Two <code>-P</code> arguments, traversed in the order given. Each path begins with the root
+        whose subtree holds it, per &sect;3.4, and the skip list prunes <code>target/</code> beneath
+        both. This is the one invocation whose pattern names a construct of one language, so it is
+        held to two Rust directories rather than let loose on the tree.
+      </t-b>
+<pre><code class="language-text">8. Two roots, traversed in the order /P gave them. Each path begins with the root
+   whose subtree holds it, and the skip list prunes target/ beneath both.
+  $ rust_textfinder -P Rust_Spec_driven_TextFinder/Rust_Spec_driven_Cmdline -P Rust_Spec_driven_TextFinder/Rust_Spec_driven_Output -p rs -r "^pub " -n true -L true
+
+      Rust_Spec_driven_TextFinder/Rust_Spec_driven_Cmdline/src/lib.rs
+        8 - pub struct ProgramCommands {
+        62 - pub fn usage_line() -&gt; String {
+        68 - pub fn help_text() -&gt; String {
+        72 - pub fn options_text(commands: &amp;ProgramCommands) -&gt; String {
+        105 - pub fn parse(args: &amp;[String]) -&gt; Result&lt;ProgramCommands, String&gt; {
+      Rust_Spec_driven_TextFinder/Rust_Spec_driven_Output/src/lib.rs
+        15 - pub struct StdoutSink {
+
+  8 line(s), exit 0</code></pre>
+      <t-b>
+        The five detail lines under <code>Rust_Spec_driven_Cmdline/src/lib.rs</code> are that
+        library's whole public interface, which the
+        <a target="_blank" href="Spec_Driven_Design_Rust_Cmdline.html">Cmdline page</a> lists in its
+        Section 1. The anchor <code>^</code> is what keeps the count to five: <code>pub</code>
+        appears 12 more times in that file as a field, each indented and so not at a line's start.
+      </t-b>
+      <t-b>
+        <code>unit_tests.rs</code> sits beside both files and neither run reports it, since
+        <code>#[cfg(test)]</code> keeps its items out of the public interface and its own items are
+        not <code>pub</code>. That is the filter being a regular expression and nothing cleverer:
+        the file was searched and matched nothing.
+      </t-b>
+
+      <a id="block9"></a>
+      <h4>3.9 &nbsp;An Unopenable Root</h4>
+      <t-b>
+        A root path that does not exist is announced and the run still exits 0. The second root is a
+        regular file, which &sect;3.2 has searched as a single file rather than traversed.
+      </t-b>
+<pre><code class="language-text">9. A root path that cannot be opened is announced and the run still exits 0, while
+   an error announcement ignores /h true.
+  $ rust_textfinder -P no_such_directory -P Rust_Spec_driven_TextFinder/Rust_TextFinder_Structure.md -r Cargo
+
+      cannot open no_such_directory
+      Rust_Spec_driven_TextFinder/Rust_TextFinder_Structure.md
+
+  2 line(s), exit 0</code></pre>
+      <t-b>
+        Two lines showing three rules. The announcement appears under the default <code>/h true</code>,
+        because &sect;3.4 gates file announcements on <code>/h</code> and error announcements on
+        nothing. It reaches stdout rather than stderr, since
+        <code>rust_textfinder_dirnav</code> emits it through the same <code>Output</code> as every
+        block line, and the binary neither formats nor inspects it. And the exit code is 0: a root
+        that could not be searched is a result, not a usage failure, so
+        <code>rust_textfinder_entry</code> has nothing to report.
+      </t-b>
+      <t-b>
+        The second root carries no <code>-p</code> filter, so the extension filter admits it. A
+        <code>-p rs</code> on the same command line would have dropped it silently, since a root
+        path escapes the skip list and does not escape the extension filter.
+      </t-b>
+
+      <a id="block10"></a>
+      <h4>3.10 &nbsp;A Malformed Expression</h4>
+      <t-b>
+        <code>-r "pub fn ("</code> is an unbalanced group that the <code>regex</code> crate will not
+        compile. &sect;5.2 puts the option listing on stdout first, so the <code>/r</code> line
+        shows what failed, then the diagnostic on stderr.
+      </t-b>
+<pre><code class="language-text">10. A malformed expression. §5.2 puts the option listing on stdout first, so the /r
+    line shows what failed, then the diagnostic on stderr, and the exit code is 1.
+  $ rust_textfinder -P . -p "md, ixx, cpp, rs" -r "pub fn ("
+
+      /P .
+      /p md, ixx, cpp, rs
+      /r pub fn (
+      /s true
+      /h true
+      /v false
+      /H false
+      /n false
+      /L false
+      [stderr] invalid regex for switch: /r
+      [stderr] usage: rust_textfinder [/P path] [/p "ext, ext"] [/r regex] [/s bool] [/h bool] [/v bool] [/H bool] [/n bool] [/L bool]
+
+  9 line(s), exit 1</code></pre>
+      <t-b>
+        Nine lines on stdout and exit 1. Three rules are visible at once: the listing appears
+        whatever <code>/v</code> says, since the <code>/v</code> line itself reads
+        <code>false</code>; the diagnostic is a reason line followed by the &sect;5.1 usage line,
+        with <code>&lt;executable&gt;</code> resolved to <code>rust_textfinder</code>; and the
+        listing reaches the stream ahead of the diagnostic, which the binary buys with an explicit
+        <code>flush</code> because the sink defers its writes.
+      </t-b>
+      <t-b>
+        The <code>regex</code> crate's own error text appears nowhere, and the specification gives
+        the reason: that text belongs to the crate, so a crate upgrade would alter this program's
+        output with no document in this tree recording the change. What the user gets instead is the
+        <code>/r</code> line above, carrying the expression as typed.
+      </t-b>
+      <t-b>
+        The run traversed nothing. Compilation happens at <code>Dirnav::new</code>, before the first
+        root path is visited, so a bad pattern costs no file reads.
+      </t-b>
+
+      <a id="block11"></a>
+      <h4>3.11 &nbsp;The Help Text</h4>
+      <t-b>
+        <code>/H true</code> writes the text &sect;5.1 fixes to stdout and exits 0, traversing
+        nothing. This block uses the <code>/</code> introducer where the others use
+        <code>-</code>, which &sect;4 makes equivalent.
+      </t-b>
+<pre><code class="language-text">11. The help text of §5.1, written to stdout under /H, traversing nothing.
+  $ rust_textfinder /H true
+
+      usage: rust_textfinder [/P path] [/p "ext, ext"] [/r regex] [/s bool] [/h bool] [/v bool] [/H bool] [/n bool] [/L bool]
+
+        /P  path (.)             root path for traversal; repeat to add more root paths
+        /p  "ext, ext" ()        comma-separated bare extensions to search; empty searches every file
+        /r  regex (.)            regular expression evaluated against each line
+        /s  true|false (true)    recurse into subdirectories
+        /h  true|false (true)    hide files that matched nothing; errors always appear
+        /v  true|false (false)   list the resolved option set before traversal
+        /H  true|false (false)   print this help and exit
+        /n  true|false (false)   add a detail line per match, carrying the line number
+        /L  true|false (false)   add a detail line per match, carrying the line text
+
+      A matching file prints its path on one line; /n and /L add indented detail
+      lines beneath it. A path is never printed twice.
+      ... 7 more
+
+  21 line(s), exit 0</code></pre>
+      <t-b>
+        21 lines, of which the first is the usage line invocation 10 sent to stderr.
+        <code>help_text()</code> is built from <code>usage_line()</code>, so the two agree by
+        construction rather than by proofreading, and the integration suite asserts that this
+        capture equals what the library returns.
+      </t-b>
+      <t-b>
+        The seven withheld lines are the three paragraphs on introducers, quoting, and the bare
+        command line. &sect;5.1 fixes every one of these 21 lines byte for byte with
+        <code>&lt;executable&gt;</code> as the only substitution, so a C++ capture of this block
+        differs from this one in exactly two words.
+      </t-b>
+<pre><code class="language-text">demonstration complete</code></pre>
+
+      <a id="comparability"></a>
+      <h3>4. &nbsp;Comparability</h3>
+      <t-b>
+        Page_Structure.md &sect;7.4 states comparability against the part two runs share, allowing
+        one variation: the extension list. This driver varies two things rather than one, since it
+        searches <code>md, ixx, cpp, rs</code> where &sect;0 gives Rust <code>rs</code>, and it runs
+        11 invocations where the C++ driver runs eight. What follows is what survives that.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:26rem;" />
+          <col style="width:30rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Comparable across implementations</th>
+          <th class="darkItem">Is this run's own</th>
+        </tr>
+        <tr>
+          <td class="lightItem">Block 3.1's nine listing lines and block 3.11's 21 help lines, but for the executable name &sect;5.1 parameterizes</td>
+          <td class="lightItem">Every file count, since the file sets differ</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Block 3.10's two stderr lines in full, but for that same name</td>
+          <td class="lightItem">The header's executable and search root</td>
+        </tr>
+        <tr>
+          <td class="lightItem">The exit code of every invocation, &sect;3.4 fixing all three values</td>
+          <td class="lightItem">The echoed command line's executable and extension list</td>
+        </tr>
+        <tr>
+          <td class="lightItem">The block form itself: the indent, the field separator, and the path written once</td>
+          <td class="lightItem">Blocks 3.8, 3.9, and 3.11, which the C++ driver does not run</td>
+        </tr>
+      </table>
+      <t-b>
+        The row that &sect;7.4 leads with is missing from the left column, and its absence is the
+        cost of the second variation. &sect;7.4 makes the document paths an invocation reports agree
+        across implementations in the same relative order, and that holds only where the two runs
+        select the same files. This run's <code>rs</code> admits both Rust sources and the C++
+        run's list does not, so the two path lists interleave differently even over the documents
+        they share.
+      </t-b>
+      <t-b>
+        Bringing the two into line means changing one driver, which is a code change and so starts
+        with a specification change. Either &sect;7.1 gains the set both drivers run, or the drivers
+        are rewritten to the six invocations it fixes. This page states the divergence rather than
+        resolving it.
+      </t-b>
+      <t-b>
+        A mismatch in the comparable part is a defect in one of the two implementations or an
+        ambiguity in <code>Spec_TextFinder.md</code>, and the page reporting it says which. A
+        disagreement in the exit code in particular is a defect rather than a difference of
+        convention, since the three values are fixed rather than left to the implementation.
+      </t-b>
+      <t-b>
+        Comparing two implementations means comparing captures taken over the same tree state on the
+        same platform. Spec_TextFinder.md &sect;6 permits a line-for-line comparison only under that
+        condition, because &sect;3.2 leaves a directory's entries in filesystem order, and &sect;6
+        now scopes the guarantee to stdout, so stderr wording is each implementation's own.
+      </t-b>
+
+      <a id="dated"></a>
+      <h3>5. &nbsp;The Capture Is Dated</h3>
+      <t-b>
+        Six of the 11 invocations count files in this project, so their output moves when a document
+        is added to the tree or removed from it. This page therefore states the date of its capture,
+        2026-09-15, and a page whose counts disagree with a fresh run is stale rather than wrong.
+      </t-b>
+      <t-b>
+        The tree moves for reasons the program has nothing to do with, and this capture carries the
+        clearest case of it. An earlier capture taken the same day, recorded in
+        <code>Demo_9-15-2026.md</code>, reported 60 lines for invocation 2 where this one reports
+        63, and 47 lines for invocations 3 and 4 where this one reports 60. Nothing about the
+        program changed between them.
+      </t-b>
+      <t-b>
+        That earlier capture is itself one of the 17 files invocation 3 now reports. A demonstration
+        of a search for <code>too large</code>, written into the tree it searches, becomes a file
+        that matches <code>too large</code> - which is worth more than the arithmetic, because it is
+        the plainest statement of why &sect;7.5 dates a capture rather than treating one as a fixed
+        expected result.
+      </t-b>
+      <t-b>
+        Invocation 6 is the one that did not move. It searches the project root alone with
+        <code>-s false</code>, and no file was added there between the two captures.
+      </t-b>
+      <t-b>
+        A page rebuilt after the tree changes is recaptured in full rather than edited in place,
+        since the counts appear both in the blocks and in the prose around them. Recapturing is one
+        command:
+      </t-b>
+<pre><code class="language-bash">run_demo.bat</code></pre>
+
+      <a id="source"></a>
+      <h3>6. &nbsp;Source</h3>
+      <t-b>
+        <code>demonstration.rs</code> in full, then its runner. The 11 <code>case</code> calls at the
+        bottom are the 11 blocks above, and their note strings are the prose each capture carries.
+      </t-b>
+      <t-b>
+        The driver is a <code>#[test]</code> that asserts nothing and fails nothing, which is a
+        deliberate reading of &sect;6.2: a demonstration shows what the program produces, and a
+        demonstration that asserted its own output would be a third test suite whose fixtures go
+        stale every time a document joins the tree. <code>run_demo.bat</code> passes
+        <code>--nocapture</code> so the harness lets the output through.
+      </t-b>
+      <h5 class="indent">Rust_Spec_driven_TextFinder_Entry/tests/demonstration.rs</h5>
+<pre><code class="language-rust">//! Demonstration, per Spec_TextFinder.md section 6.2. It runs the built executable against
+//! this project's own tree and shows what it produces. It asserts nothing and fails nothing;
+//! its output moves as the tree changes, so a capture states the date it was taken.
+//!
+//! Run through run_demo.bat.
+
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+const EXECUTABLE: &amp;str = env!("CARGO_BIN_EXE_rust_textfinder");
+const EXTENSIONS: &amp;str = "md, ixx, cpp, rs";
+const SHOWN: usize = 14;
+
+fn project_root() -&gt; PathBuf {
+    // &lt;project&gt;/Rust_Spec_driven_TextFinder/Rust_Spec_driven_TextFinder_Entry
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
+    match manifest.parent().and_then(Path::parent) {
+        Some(root) =&gt; root.to_path_buf(),
+        None =&gt; manifest.to_path_buf(),
+    }
+}
+
+fn forward(path: &amp;Path) -&gt; String {
+    path.to_string_lossy().replace('\\', "/")
+}
+
+/// The local date when run_demo.bat supplies it, the UTC civil date otherwise,
+/// so that a capture dates itself however the demonstration was started.
+fn today() -&gt; String {
+    if let Ok(supplied) = std::env::var("TEXTFINDER_DEMO_DATE") {
+        if !supplied.is_empty() {
+            return supplied;
+        }
+    }
+    let seconds = match SystemTime::now().duration_since(UNIX_EPOCH) {
+        Ok(since) =&gt; since.as_secs() as i64,
+        Err(_) =&gt; 0,
+    };
+    let days = seconds.div_euclid(86_400) + 719_468;
+    let era = days.div_euclid(146_097);
+    let day_of_era = days.rem_euclid(146_097);
+    let year_of_era =
+        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let shifted = (5 * day_of_year + 2) / 153;
+    let day = day_of_year - (153 * shifted + 2) / 5 + 1;
+    let month = if shifted &lt; 10 { shifted + 3 } else { shifted - 9 };
+    let year = year_of_era + era * 400 + if month &lt;= 2 { 1 } else { 0 };
+    format!("{year:04}-{month:02}-{day:02}")
+}
+
+/// Restores the quotes the shell removed, so the echoed command line can be retyped.
+fn quoted(argument: &amp;str) -&gt; String {
+    if argument.contains(' ') || argument.contains(',') {
+        format!("\"{argument}\"")
+    } else {
+        String::from(argument)
+    }
+}
+
+fn case(number: usize, note: &amp;[&amp;str], args: &amp;[&amp;str]) {
+    let indent = " ".repeat(number.to_string().len() + 2);
+    println!("{number}. {}", note.join(&amp;format!("\n{indent}")));
+    let command: Vec&lt;String&gt; = args.iter().map(|argument| quoted(argument)).collect();
+    println!("{}", format!("  $ rust_textfinder {}", command.join(" ")).trim_end());
+    println!();
+
+    let outcome = Command::new(EXECUTABLE).args(args).current_dir(project_root()).output();
+    let outcome = match outcome {
+        Ok(outcome) =&gt; outcome,
+        Err(error) =&gt; {
+            println!("      [the executable could not be run: {error}]\n");
+            return;
+        }
+    };
+
+    let stdout = String::from_utf8_lossy(&amp;outcome.stdout).into_owned();
+    let mut lines: Vec&lt;String&gt; = stdout.lines().map(String::from).collect();
+    let emitted = lines.len();
+    for line in String::from_utf8_lossy(&amp;outcome.stderr).lines() {
+        lines.push(format!("[stderr] {line}"));
+    }
+
+    for line in lines.iter().take(SHOWN) {
+        if line.is_empty() {
+            println!();
+        } else {
+            println!("      {line}");
+        }
+    }
+    if lines.len() &gt; SHOWN {
+        println!("      ... {} more", lines.len() - SHOWN);
+    }
+    println!();
+    println!("  {emitted} line(s), exit {}", outcome.status.code().unwrap_or(-1));
+    println!();
+}
+
+#[test]
+fn demonstration() {
+    println!();
+    println!("Rust_TextFinder demonstration");
+    println!("  date:       {}", today());
+    println!("  executable: {}", forward(Path::new(EXECUTABLE)));
+    println!("  root:       {}", forward(&amp;project_root()));
+    println!("  extensions: \"{EXTENSIONS}\"");
+    println!();
+
+    case(
+        1,
+        &amp;[
+            "No switch at all. The command line names no work, so rust_textfinder lists the",
+            "options a real invocation would start from and exits 0 (Spec_TextFinder.md §3.1).",
+        ],
+        &amp;[],
+    );
+
+    case(
+        2,
+        &amp;[
+            "Default expression. The default /r of . with no /n or /L needs no file content,",
+            "so each selected file is reported by its path line alone (Spec_TextFinder.md §3.3).",
+        ],
+        &amp;["-P", ".", "-p", EXTENSIONS],
+    );
+
+    case(
+        3,
+        &amp;[
+            "The two-level block of §3.4: a path written once, then an indented detail line",
+            "per match carrying the line number and the line's text.",
+        ],
+        &amp;["-P", ".", "-p", EXTENSIONS, "-r", "too large", "-n", "true", "-L", "true"],
+    );
+
+    case(
+        4,
+        &amp;["The same search with /L false, leaving the line number alone on each detail line."],
+        &amp;["-P", ".", "-p", EXTENSIONS, "-r", "too large", "-n", "true"],
+    );
+
+    case(
+        5,
+        &amp;[
+            "Which documents cite the parent specification. Neither /n nor /L, so every block",
+            "is its path line and no path is written twice.",
+        ],
+        &amp;["-P", ".", "-p", EXTENSIONS, "-r", "Spec_TextFinder\\.md"],
+    );
+
+    case(
+        6,
+        &amp;["The same search one level deep, /s false entering no subdirectory."],
+        &amp;["-P", ".", "-p", EXTENSIONS, "-r", "Spec_TextFinder\\.md", "-s", "false"],
+    );
+
+    case(
+        7,
+        &amp;[
+            "/h false adds a line for each file that matched nothing - the files case 5 left",
+            "silent - alongside the resolved option set from /v true.",
+        ],
+        &amp;["-P", ".", "-p", EXTENSIONS, "-r", "Spec_TextFinder\\.md", "-h", "false", "-v", "true"],
+    );
+
+    case(
+        8,
+        &amp;[
+            "Two roots, traversed in the order /P gave them. Each path begins with the root",
+            "whose subtree holds it, and the skip list prunes target/ beneath both.",
+        ],
+        &amp;[
+            "-P",
+            "Rust_Spec_driven_TextFinder/Rust_Spec_driven_Cmdline",
+            "-P",
+            "Rust_Spec_driven_TextFinder/Rust_Spec_driven_Output",
+            "-p",
+            "rs",
+            "-r",
+            "^pub ",
+            "-n",
+            "true",
+            "-L",
+            "true",
+        ],
+    );
+
+    case(
+        9,
+        &amp;[
+            "A root path that cannot be opened is announced and the run still exits 0, while",
+            "an error announcement ignores /h true.",
+        ],
+        &amp;["-P", "no_such_directory", "-P", "Rust_Spec_driven_TextFinder/Rust_TextFinder_Structure.md", "-r", "Cargo"],
+    );
+
+    case(
+        10,
+        &amp;[
+            "A malformed expression. §5.2 puts the option listing on stdout first, so the /r",
+            "line shows what failed, then the diagnostic on stderr, and the exit code is 1.",
+        ],
+        &amp;["-P", ".", "-p", EXTENSIONS, "-r", "pub fn ("],
+    );
+
+    case(
+        11,
+        &amp;["The help text of §5.1, written to stdout under /H, traversing nothing."],
+        &amp;["/H", "true"],
+    );
+
+    println!("demonstration complete");
+}</code></pre>
+      <h5 class="indent">run_demo.bat</h5>
+<pre><code class="language-text">@echo off
+setlocal enabledelayedexpansion
+cd /d "%~dp0"
+
+set FAILURES=0
+
+echo building the workspace
+cargo build --workspace --quiet
+if errorlevel 1 (
+  echo   build failed; the demonstration counts as failed
+  exit /b 1
+)
+
+for /f %%d in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd"') do set TEXTFINDER_DEMO_DATE=%%d
+
+echo.
+echo === starting demonstration: demonstration
+echo === captured %TEXTFINDER_DEMO_DATE%
+cargo test -p rust_textfinder_entry --test demonstration -- --nocapture
+set STATUS=!errorlevel!
+echo === demonstration returned !STATUS!
+if not "!STATUS!"=="0" set /a FAILURES+=1
+
+echo.
+echo %FAILURES% demonstration^(s^) failed
+exit /b %FAILURES%</code></pre>
+      <t-b>
+        <code>quoted</code> restores the quotes the shell removed, so every echoed command line can
+        be retyped as it appears. Without it block 3.2's command would read
+        <code>-p md, ixx, cpp, rs</code>, which a shell would hand the program as four arguments and
+        which would draw <code>not a switch: ixx,</code>.
+      </t-b>
+      <t-b>
+        <code>case</code> counts stdout lines before appending the stderr lines, which is why block
+        3.10 reports 9 while showing 11. The count &sect;7.2 asks for is of the run's stdout, and the
+        <code>[stderr]</code> prefix keeps a diagnostic distinguishable from a record without
+        reordering either.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>7. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 gives its last row to any record of
+        demonstration changes made at the language level, stated by role rather than by name, and
+        the turn that wrote this driver produced none. The
+        <a target="_blank" href="Spec_Driven_Design_Rust_Process.html">Process page</a> says what
+        follows from that for the thread as a whole.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#what">what it runs</a></menu-elem>
+        <menu-elem class="secElem"><a href="#header">header</a></menu-elem>
+        <menu-elem class="secElem"><a href="#blocks">eleven blocks</a></menu-elem>
+        <menu-elem class="secElem"><a href="#block1">no switch</a></menu-elem>
+        <menu-elem class="secElem"><a href="#block2">default regex</a></menu-elem>
+        <menu-elem class="secElem"><a href="#block3">two-level block</a></menu-elem>
+        <menu-elem class="secElem"><a href="#block4">/L false</a></menu-elem>
+        <menu-elem class="secElem"><a href="#block5">path only</a></menu-elem>
+        <menu-elem class="secElem"><a href="#block6">one level</a></menu-elem>
+        <menu-elem class="secElem"><a href="#block7">announcements</a></menu-elem>
+        <menu-elem class="secElem"><a href="#block8">two roots</a></menu-elem>
+        <menu-elem class="secElem"><a href="#block9">unopenable root</a></menu-elem>
+        <menu-elem class="secElem"><a href="#block10">malformed regex</a></menu-elem>
+        <menu-elem class="secElem"><a href="#block11">help text</a></menu-elem>
+        <menu-elem class="secElem"><a href="#comparability">comparability</a></menu-elem>
+        <menu-elem class="secElem"><a href="#dated">dated capture</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenRustPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 7, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

@@ -73,7 +73,7 @@
         <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
         <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
         <a class="repoLinks" href="Spec_Driven_Design_Cpp_Cmdline.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
-        <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Cmdline.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
         <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">C#</a>
         <a class="repoLinks" href="javascript:;" style="color:var(--atten); opacity:0.5; text-decoration:none; margin-top:0.25em; margin-left:1.5em;">Python</a>
       </div>
@@ -245,10 +245,18 @@ searching.</code></pre>
       <h3>4. &nbsp;The Seven Usage Diagnostics</h3>
       <t-b>
         A usage diagnostic reports a command line TextFinder will not act on. Every implementation
-        writes it to stderr as a reason line from the table below, a newline, then the usage line
-        of &sect;5.1, and exits 1. <code>&lt;token&gt;</code> is the offending token and
+        writes it to stderr as a reason line, a newline, then the usage line of &sect;5.1, and
+        exits 1. <code>&lt;token&gt;</code> is the offending token and
         <code>&lt;switch&gt;</code> the switch, each reproduced exactly as typed, preserving the
         introducer.
+      </t-b>
+      <t-b>
+        &sect;5.2 binds that shape, the destination, the exit code, and what reaches stdout. It
+        does not bind the wording. The reason lines below are the text the specification supplies,
+        and a language whose idiom calls for different wording fixes its own in its component
+        specification and owns it from there. Both implementations built so far adopt these
+        unchanged, so the table is what they emit; Section 6 covers why the line falls where it
+        does.
       </t-b>
       <table>
         <colgroup>
@@ -305,8 +313,9 @@ searching.</code></pre>
         repeated.
       </t-b>
       <t-b>
-        Failures that are not about what the user typed are not usage diagnostics. Their text is
-        specified per implementation; their exit code is the 2 that &sect;3.4 fixes.
+        Failures that are not about what the user typed are not usage diagnostics at all. They
+        carry no usage line, their text is specified per implementation, and their exit code is the
+        2 that &sect;3.4 fixes.
       </t-b>
 
       <a id="listing"></a>
@@ -350,33 +359,44 @@ searching.</code></pre>
       </t-b>
 
       <a id="why"></a>
-      <h3>6. &nbsp;Why the Text Is Fixed Byte for Byte</h3>
+      <h3>6. &nbsp;Where the Line Falls: stdout, Not stderr</h3>
       <t-b>
-        Three blocks of text in this page are quoted rather than described: the help text, the seven
-        reason lines, and the nine-line listing. Fixing them is what lets two implementations be
-        compared by test rather than by reading.
+        Three blocks of text appear on this page, and the specification treats two of them
+        differently from the third. The help text and the nine-line listing are fixed byte for
+        byte. The seven reason lines are not.
       </t-b>
       <t-b>
-        The comparison the project wants is a line-for-line diff of two runs over one tree. Anything
-        an implementation is free to word its own way defeats that diff at the first difference, and
-        a reviewer then has to decide whether the difference is a defect or a preference. Quoting
-        the text removes the question.
+        The dividing line is the stream. &sect;2 states what the project specification fixes: what a
+        user sees on stdout - the blocks and announcements of &sect;3.4, the help text of &sect;5.1,
+        the listing of &sect;5.3, and the exit codes. Everything else belongs to a component
+        specification, in its own language's idiom, and the wording of anything written to stderr
+        is named among those. &sect;6 scopes the consistency guarantee to match: two implementations
+        given the same command line write the same bytes to stdout and return the same exit code,
+        and what they write to stderr is each one's own.
       </t-b>
       <t-b>
-        The specification fixes the form of the listing for the same reason, and says so: an
-        implementation free to choose it would make the listing of two implementations
-        uncomparable. &sect;7.4 of the page structure applies that to the demonstration - invocation
-        5 sets <code>-v true</code>, and its nine lines must agree across implementations but for
-        the <code>/p</code> line, which carries that implementation's own extension list.
+        The comparison the project wants is a line-for-line diff of two runs over one tree, and
+        that diff runs over stdout. Anything an implementation is free to word its own way would
+        defeat it at the first difference, and a reviewer would then have to decide whether the
+        difference is a defect or a preference. Quoting the help text and the listing removes the
+        question where it matters. &sect;5.3 says as much about the listing: an implementation free
+        to choose its form would make two listings uncomparable.
       </t-b>
       <t-b>
-        One boundary is drawn where the comparison would stop measuring the implementation.
-        &sect;3.4 governs the stdout terminator and leaves the stderr terminator to the runtime and
-        platform, because a run that writes to stderr has written a usage diagnostic and traversed
-        nothing, so it has no search output to compare, and holding its stderr to the byte would
-        test the platform. The C++ integration suite found that boundary the hard way: eight
+        Two implementations still agree on more than the guarantee requires. &sect;5.2 binds which
+        command lines are refused, the shape of the refusal, the exit code, and what each refusal
+        leaves on stdout - so a test can check every one of those across implementations. Only the
+        words differ, and both implementations built so far have chosen not to differ in them
+        either.
+      </t-b>
+      <t-b>
+        Relaxing the wording also retired a claim the project could not keep. &sect;3.4 governs the
+        stdout terminator and leaves the stderr terminator to the runtime and platform, so
+        diagnostic text was never comparable to the byte across platforms even while &sect;5.2 said
+        it was fixed. The C++ integration suite found that contradiction the hard way: eight
         assertions failed on a CRLF-against-LF difference in exactly the two outputs that bypass
-        the output component, and the suite normalizes line endings in those two comparisons.
+        the output component, and the suite normalizes line endings in those two comparisons. The
+        specification now says what the suite always had to do.
       </t-b>
 
     </div>
@@ -396,7 +416,7 @@ searching.</code></pre>
         <menu-elem class="secElem"><a href="#help">help text</a></menu-elem>
         <menu-elem class="secElem"><a href="#diagnostics">diagnostics</a></menu-elem>
         <menu-elem class="secElem"><a href="#listing">option listing</a></menu-elem>
-        <menu-elem class="secElem"><a href="#why">why fixed</a></menu-elem>
+        <menu-elem class="secElem"><a href="#why">stdout, not stderr</a></menu-elem>
         <a href="#bottom">bottom</a>
       </div>
     </div>
