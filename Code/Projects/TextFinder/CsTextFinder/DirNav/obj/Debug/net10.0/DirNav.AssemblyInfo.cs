@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DirNav")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7da63525890426626492648605b62ab23c9ced1c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3b412984084766c314ca1d39aefea23745e01f8f")]
 [assembly: System.Reflection.AssemblyProductAttribute("DirNav")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DirNav")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
