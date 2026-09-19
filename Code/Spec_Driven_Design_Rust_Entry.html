@@ -52,6 +52,19 @@
       setPersistantElements();
     }
   </script>
+  <style>
+    .synopsis {
+      border: 2px dashed var(--dark);
+      margin: 2rem 0rem;
+      padding: 0.25rem 1rem;
+    }
+    div.synopsis ul {
+      margin: 0rem 0rem;
+    }
+    div.synopsis ul li {
+      margin: 0.1rem 2rem;
+    }
+  </style>
 </head>
 <body id="github" onload="load()">
 
@@ -80,6 +93,39 @@
     </header>
 
     <div class="indent">
+      <div class="synopsis">
+        <strong>Synopsis:</strong><br>
+        <t-b>
+          This page covers <code>rust_textfinder_entry</code>, the binary. It wires the three
+          libraries together and does no matching and no file I/O of its own.
+          <ul>
+            <li>
+              It owns the skip list, the lifetime of all three values, and the exit code. Here the
+              borrow checker enforces the lifetime rule rather than leaving it to convention.
+            </li>
+            <li>
+              114 lines of code against a 106-line specification. Everything harder than wiring
+              lives in a library.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          Eleven startup steps, one more than C++ needs, and the order is the specification rather
+          than a consequence of it.
+          <ul>
+            <li>Step 1 uses <code>args_os</code>, because <code>std::env::args</code> panics on an argument that is not valid Unicode and a command line the user typed must not crash the program.</li>
+            <li>Step 3 constructs the sink first, and here it matters because the sink owns the process's only stdout handle - so the binary's own text shares one buffer with the search output.</li>
+            <li>Step 10 asks for the run summary, supplying the one fact the library cannot have: that step 9 is finished.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Two places where the type system shapes the code rather than the specification.
+          <ul>
+            <li>A <code>thread_local!</code> <code>RefCell</code> holds the skip list, which recovers the one-argument signature without <code>unsafe</code> and without a lock.</li>
+            <li>Steps 8 and 9 are one <code>match</code> rather than two statements, because the sink cannot be written to directly while the <code>Dirnav</code> borrowing it exists.</li>
+          </ul>
+        </t-b>
+      </div>
 
       <a id="owns"></a>
       <h3>1. &nbsp;What the Binary Owns</h3>

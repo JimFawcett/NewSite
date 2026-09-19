@@ -52,6 +52,19 @@
       setPersistantElements();
     }
   </script>
+  <style>
+    .synopsis {
+      border: 2px dashed var(--dark);
+      margin: 2rem 0rem;
+      padding: 0.25rem 1rem;
+    }
+    div.synopsis ul {
+      margin: 0rem 0rem;
+    }
+    div.synopsis ul li {
+      margin: 0.1rem 2rem;
+    }
+  </style>
 </head>
 <body id="github" onload="load()">
 
@@ -80,6 +93,40 @@
     </header>
 
     <div class="indent">
+      <div class="synopsis">
+        <strong>Synopsis:</strong><br>
+        <t-b>
+          This page covers <code>CSharp_TextFinder_Entry</code>, the binary. It wires the three
+          libraries together and does no matching and no file I/O of its own.
+          <ul>
+            <li>
+              It owns the skip list, the exit code, and - where both siblings own three lifetimes -
+              the sink's <em>disposal</em>, which no collector can time.
+            </li>
+            <li>
+              121 lines of code against a 112-line specification. Everything harder than wiring
+              lives in a library.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          Nine startup steps, two fewer than Rust needs, and the differences are all the runtime's
+          doing.
+          <ul>
+            <li>There is no argument-decoding step at all, the runtime handing <code>Main</code> a decoded <code>string[]</code> - so this binary has nothing to decode and no failure to report.</li>
+            <li>Step 4 tests <code>args.Length == 0</code> where the siblings test 1, since this vector does not carry the executable name.</li>
+            <li>The skip list is a <code>List&lt;string&gt;</code> in a static field, where Rust needs two constructs to reach the same place.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          The flush is the one guarantee this language does not supply.
+          <ul>
+            <li>No destructor runs at scope exit and a finalizer is not a substitute, so the sink is held by a <code>using</code> statement and the guarantee lives in the caller.</li>
+            <li>The construction sits in its own <code>try</code> outside that statement, because a <code>using</code> declaration would put the one thing that can fail beyond the reach of a <code>catch</code>.</li>
+            <li>Every stderr write uses <code>Console.Error.Write</code> with an explicit <code>\n</code>, never <code>WriteLine</code>.</li>
+          </ul>
+        </t-b>
+      </div>
 
       <a id="owns"></a>
       <h3>1. &nbsp;What the Binary Owns</h3>

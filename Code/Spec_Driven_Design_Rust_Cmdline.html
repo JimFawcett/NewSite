@@ -52,6 +52,19 @@
       setPersistantElements();
     }
   </script>
+  <style>
+    .synopsis {
+      border: 2px dashed var(--dark);
+      margin: 2rem 0rem;
+      padding: 0.25rem 1rem;
+    }
+    div.synopsis ul {
+      margin: 0rem 0rem;
+    }
+    div.synopsis ul li {
+      margin: 0.1rem 2rem;
+    }
+  </style>
 </head>
 <body id="github" onload="load()">
 
@@ -80,6 +93,41 @@
     </header>
 
     <div class="indent">
+      <div class="synopsis">
+        <strong>Synopsis:</strong><br>
+        <t-b>
+          This page covers <code>rust_textfinder_cmdline</code>, the single place in the Rust
+          implementation where switch letters, argument syntax, and defaults are known.
+          <ul>
+            <li>
+              One struct and four functions. <code>parse</code> returns <code>Result</code>, whose
+              <code>Err</code> carries the complete diagnostic, so the caller's error path is one
+              print and a return.
+            </li>
+            <li>
+              It takes a slice the binary already decoded, so it never sees an undecodable
+              argument and defines no behavior for one - which is why its 29 tests run without
+              spawning a process.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          The <code>Default</code> implementation is the sole authority in code for the nine
+          defaults.
+          <ul>
+            <li><code>#[derive(Default)]</code> would not do, since four fields need a value the derive cannot produce.</li>
+            <li>The unit suite asserts each default against the specification separately, rather than asserting the struct equals its own <code>Default</code> - which would compare the code against itself.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Several rules here are written against a plausible wrong call rather than from scratch.
+          <ul>
+            <li><code>switch_letter</code> walks a <code>Chars</code> iterator, because <code>len()</code> counts bytes and a two-character token holding one non-ASCII character would be refused by the wrong route.</li>
+            <li><code>str::trim</code> is rejected for trimming too much, and <code>char::is_ascii_whitespace</code> for trimming one character too little - the omission that sent the whitespace rule up to the parent specification.</li>
+            <li>The exhaustive <code>match</code> carries an arm no input reaches, which the record marks as the compiler's requirement rather than a second validation.</li>
+          </ul>
+        </t-b>
+      </div>
 
       <a id="interface"></a>
       <h3>1. &nbsp;Public Interface</h3>

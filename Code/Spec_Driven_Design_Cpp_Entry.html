@@ -52,6 +52,19 @@
       setPersistantElements();
     }
   </script>
+  <style>
+    .synopsis {
+      border: 2px dashed var(--dark);
+      margin: 2rem 0rem;
+      padding: 0.25rem 1rem;
+    }
+    div.synopsis ul {
+      margin: 0rem 0rem;
+    }
+    div.synopsis ul li {
+      margin: 0.1rem 2rem;
+    }
+  </style>
 </head>
 <body id="github" onload="load()">
 
@@ -80,6 +93,43 @@
     </header>
 
     <div class="indent">
+      <div class="synopsis">
+        <strong>Synopsis:</strong><br>
+        <t-b>
+          This page covers <code>Cpp_TextFinder_Entry</code>, the binary. It wires the three
+          libraries together and does no matching and no file I/O of its own.
+          <ul>
+            <li>
+              It owns three things outright - the skip list, the lifetime of all three objects,
+              and the exit code.
+            </li>
+            <li>
+              It writes process-level text but composes almost none of it. Each string comes from
+              Cmdline; the binary decides only when to write it and to which stream.
+            </li>
+            <li>
+              86 lines of code against an 87-line specification. Everything harder than wiring
+              lives in a library.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          Ten startup steps, and the order is the specification rather than a consequence of it.
+          <ul>
+            <li>Step 2 constructs the sink before anything reaches stdout, so every write carries LF - an ordering that was a defect once.</li>
+            <li>Step 4 reads <code>argc</code> and no element of <code>argv</code>, because "no switch at all" is exactly "no tokens after the executable name".</li>
+            <li>Step 7 refuses a bad pattern in four sub-steps, one of which is a flush.</li>
+            <li>Step 9 asks for the run summary. The counts are Dirnav's; the one fact the library cannot have is that step 8 is finished.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Two rules come out of the sink deferring its flush to destruction.
+          <ul>
+            <li>Every exit is a <code>return</code>, never <code>std::exit</code>, which would discard what steps 3, 4, and 7 wrote.</li>
+            <li>Nothing writes to stderr before stdout has been flushed.</li>
+          </ul>
+        </t-b>
+      </div>
 
       <a id="owns"></a>
       <h3>1. &nbsp;What the Binary Owns</h3>

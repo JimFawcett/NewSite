@@ -52,6 +52,19 @@
       setPersistantElements();
     }
   </script>
+  <style>
+    .synopsis {
+      border: 2px dashed var(--dark);
+      margin: 2rem 0rem;
+      padding: 0.25rem 1rem;
+    }
+    div.synopsis ul {
+      margin: 0rem 0rem;
+    }
+    div.synopsis ul li {
+      margin: 0.1rem 2rem;
+    }
+  </style>
 </head>
 <body id="github" onload="load()">
 
@@ -80,6 +93,42 @@
     </header>
 
     <div class="indent">
+      <div class="synopsis">
+        <strong>Synopsis:</strong><br>
+        <t-b>
+          This page covers <code>CSharp_TextFinder_Output</code>, the sink. It receives fully formed
+          strings, writes each as one line, and adds nothing but the terminator.
+          <ul>
+            <li>
+              Two write methods differing only in what they add, and the placement is the access
+              control - <code>WriteText</code> is on the class rather than the interface, so
+              traversal cannot emit unterminated text.
+            </li>
+            <li>
+              The class is <code>sealed</code>, since a sink whose <code>Output</code> a subclass
+              could override would put the emission order in the hands of a type this specification
+              does not describe.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          C# is the language the terminator rule was written for, and this component is where the
+          prediction gets tested.
+          <ul>
+            <li><code>Console.WriteLine</code> terminates with <code>Environment.NewLine</code>, so the framework's most obvious way to write a line is the one the specification forbids.</li>
+            <li>The rule was promoted to the parent specification on the C# case before any C# code existed. It held.</li>
+            <li><code>Console.Out</code> is not used at all - the sink wraps the standard output stream directly, so nothing a library loaded later reconfigures can reach this program's output.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          One sink, one buffer, and failure absorbed rather than reported.
+          <ul>
+            <li>A second sink throws, because two buffers over one stream reorder the output silently and only under load.</li>
+            <li>The rule costs one static field here, where Rust needs two constructs and C++ needs none at all.</li>
+            <li>A failed write flushes, writes one notice, and discards everything after - and no caller ever learns of it.</li>
+          </ul>
+        </t-b>
+      </div>
 
       <a id="sink"></a>
       <h3>1. &nbsp;The Sink</h3>

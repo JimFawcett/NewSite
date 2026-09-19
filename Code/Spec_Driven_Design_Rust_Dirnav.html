@@ -52,6 +52,19 @@
       setPersistantElements();
     }
   </script>
+  <style>
+    .synopsis {
+      border: 2px dashed var(--dark);
+      margin: 2rem 0rem;
+      padding: 0.25rem 1rem;
+    }
+    div.synopsis ul {
+      margin: 0rem 0rem;
+    }
+    div.synopsis ul li {
+      margin: 0.1rem 2rem;
+    }
+  </style>
 </head>
 <body id="github" onload="load()">
 
@@ -80,6 +93,47 @@
     </header>
 
     <div class="indent">
+      <div class="synopsis">
+        <strong>Synopsis:</strong><br>
+        <t-b>
+          This page covers <code>rust_textfinder_dirnav</code>, which walks, selects, reads,
+          matches, and formats. It is the only component that touches file contents, and it writes
+          to no stream.
+          <ul>
+            <li>
+              A struct generic over the <code>Output</code> trait it declares and does not
+              implement, so the polymorphism is a compile-time bound rather than a runtime
+              dispatch.
+            </li>
+            <li>
+              Two shared borrows and one unique borrow are the whole of the access control this
+              component needs, and it is checked rather than documented.
+            </li>
+            <li>
+              Nothing in traversal panics - every fallible call yields an <code>io::Result</code>
+              and every one is matched. No <code>unwrap</code>, no <code>expect</code>.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          Four standard-library calls are rejected by name, each because the plausible call is
+          subtly wrong.
+          <ul>
+            <li><code>fs::metadata</code> follows a link and would hide the case the specification requires be announced.</li>
+            <li><code>Path::extension</code> returns nothing for <code>.gitignore</code>.</li>
+            <li><code>str::lines</code> implements two of the three terminators, so a classic Mac OS file would arrive as one line.</li>
+            <li>A directory-walking crate would own the descent this library must own.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Two details are worth reading for what the language decides rather than the specification.
+          <ul>
+            <li><code>str::from_utf8</code> supplies all four UTF-8 rejections, where C++ writes them out by hand for want of such a call.</li>
+            <li>The file count is incremented at two call sites rather than inside <code>examine</code> - the one place this implementation's shape forced a choice the other two did not face.</li>
+            <li>The hand-written <code>Lines</code> iterator is what lets a search stop reading at the first match.</li>
+          </ul>
+        </t-b>
+      </div>
 
       <a id="interface"></a>
       <h3>1. &nbsp;Public Interface</h3>

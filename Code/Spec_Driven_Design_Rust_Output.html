@@ -52,6 +52,19 @@
       setPersistantElements();
     }
   </script>
+  <style>
+    .synopsis {
+      border: 2px dashed var(--dark);
+      margin: 2rem 0rem;
+      padding: 0.25rem 1rem;
+    }
+    div.synopsis ul {
+      margin: 0rem 0rem;
+    }
+    div.synopsis ul li {
+      margin: 0.1rem 2rem;
+    }
+  </style>
 </head>
 <body id="github" onload="load()">
 
@@ -80,6 +93,41 @@
     </header>
 
     <div class="indent">
+      <div class="synopsis">
+        <strong>Synopsis:</strong><br>
+        <t-b>
+          This page covers <code>rust_textfinder_output</code>, the sink. It receives fully formed
+          strings, writes each as one line, and adds nothing but the terminator.
+          <ul>
+            <li>
+              Two write methods differing only in what they add, and the placement is the access
+              control - <code>write_text</code> is inherent rather than part of the trait, so
+              traversal cannot emit unterminated text.
+            </li>
+            <li>
+              It takes no configuration. Dirnav formats every line in full, so there is nothing
+              left here to parameterize.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          The constructor is interesting for what it does not do and for what it refuses.
+          <ul>
+            <li>Rust writes the bytes it is given, so the LF requirement is met by doing nothing - where the C++ sink needs a mode call, two headers, and a failure path.</li>
+            <li><code>new</code> yields <code>Some</code> once and <code>None</code> thereafter, because two buffers over one stdout reorder the output silently and only under load.</li>
+            <li><code>Default</code> is deliberately not implemented, since it would offer callers a constructor that silently produces a second buffer.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Failure is absorbed rather than reported, and the specification states the three
+          properties that follow.
+          <ul>
+            <li>Flush first, one notice rather than one per discarded line, and nothing reaches a caller.</li>
+            <li>A method returning <code>()</code> where the operation returns a <code>Result</code> is usually a smell; here it is the interface the structure document asked for.</li>
+            <li>The flush on drop is named separately, being the write most likely to be the first one that fails.</li>
+          </ul>
+        </t-b>
+      </div>
 
       <a id="sink"></a>
       <h3>1. &nbsp;The Sink</h3>
