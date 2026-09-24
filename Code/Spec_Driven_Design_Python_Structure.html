@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Python_Structure.html - Python thread, page 1
+-->
+<head>
+  <title>Spec-Driven Python: Structure</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .synopsis {
+      border: 2px dashed var(--dark);
+      margin: 2rem 0rem;
+      padding: 0.25rem 1rem;
+    }
+    div.synopsis ul {
+      margin: 0rem 0rem;
+    }
+    div.synopsis ul li {
+      margin: 0.1rem 2rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Python_Structure.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/24/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Python: Structure</h2>
+        <h4 class="indent" id="subtitle">four packages, one dependency chain, and no build step</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Structure.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Structure.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Structure.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Python_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+      <div class="synopsis">
+        <strong>Synopsis:</strong><br>
+        <t-b>
+          This page covers <code>Python_TextFinder_Structure.md</code>: four importable packages
+          under one folder, three libraries and one binary, with the same dependency chain the three
+          siblings have.
+          <ul>
+            <li>
+              Each library is a separate package rather than a module of one package, so the
+              dependency chain is visible as an import graph.
+            </li>
+            <li>
+              Imports resolve through <code>PYTHONPATH</code>, which carries the four
+              <code>src/</code> folders. An editable <code>pip</code> install is the alternative and
+              is rejected.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          <strong>Python enforces no chain.</strong> This is the one structural claim the siblings
+          can make and this implementation cannot, and the document says so rather than claiming a
+          guarantee.
+          <ul>
+            <li>Any package on <code>sys.path</code> may import any other. The chain is a rule these specifications state and nothing holds.</li>
+            <li>In C++, Rust, and C#, the build refuses a dependency the structure does not declare.</li>
+            <li>There is no build step at all here - Python compiles on import - so <code>python -m compileall</code> stands in for it wherever Spec_TextFinder.md &sect;6.2 asks a runner to build what it is about to run.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Identifiers follow Python convention, so the same three things are spelled three ways
+          across four implementations.
+          <ul>
+            <li><code>usage_line</code> here, <code>usageLine</code> in C++, <code>UsageLine</code> in C#.</li>
+            <li>The switch letters, the emitted text, and the exit codes are fixed by Spec_TextFinder.md and are identical in all four.</li>
+          </ul>
+        </t-b>
+      </div>
+
+      <a id="shape"></a>
+      <h3>1. &nbsp;Four Packages, One Folder</h3>
+      <t-b>
+        The Python_TextFinder project comprises three libraries and one binary, arranged as four
+        importable packages under one folder. The shape is the one all four implementations share, and
+        Python_TextFinder_Structure.md takes it from Spec_TextFinder.md rather than from a sibling.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:20rem;" />
+          <col style="width:36rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Package</th>
+          <th class="darkItem">What it does</th>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>python_textfinder_cmdline</code></td>
+          <td class="lightItem">Parses the command line into a <code>ProgramCommands</code> object. The single place switch letters, argument syntax, and defaults are known.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>python_textfinder_dirnav</code></td>
+          <td class="lightItem">Directory navigation. Reads file contents, runs regex matching, formats each matching file into the block &sect;3.4 fixes. Defines the <code>Output</code> protocol.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>python_textfinder_output</code></td>
+          <td class="lightItem">The sink. Implements <code>Output.output</code> and handles output errors internally.</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>python_textfinder_entry</code></td>
+          <td class="lightItem">The binary. Imports the three libraries, owns the skip list, drives traversal, and returns the exit code.</td>
+        </tr>
+      </table>
+      <t-b>
+        Each library's package name matches its component name lower-cased with underscores, as Python
+        names a package. The types inside carry their own names rather than the package's: the sink is
+        <code>StdoutSink</code> in <code>python_textfinder_output</code>, so that
+        <code>from python_textfinder_output import StdoutSink</code> reads as a type being imported
+        from a place rather than a name being imported from itself.
+      </t-b>
+      <t-b>
+        Each component has its own folder holding its <code>Spec_*.md</code>, its package under
+        <code>src/</code>, and - for the three libraries - its unit suite under <code>test/</code>,
+        which Spec_TextFinder.md &sect;6.2 asks to live beside the code it tests. The integration suite
+        and the demonstration drive the assembled program, so both sit at the root of the folder rather
+        than in a component folder, as do the three runners and the two launchers.
+      </t-b>
+
+      <a id="chain"></a>
+      <h3>2. &nbsp;The Dependency Chain, and What Holds It</h3>
+      <t-b>
+        The binary imports all three libraries. The libraries themselves form a chain:
+      </t-b>
+<pre><code class="language-text">python_textfinder_entry
+    imports python_textfinder_cmdline, python_textfinder_dirnav, python_textfinder_output
+
+python_textfinder_output
+    imports python_textfinder_dirnav          (for the Output protocol)
+
+python_textfinder_dirnav
+    imports python_textfinder_cmdline         (for ProgramCommands)
+
+python_textfinder_cmdline
+    imports nothing in this project</code></pre>
+      <t-b>
+        Nothing imports <code>python_textfinder_output</code> but the binary. The sink is passed to
+        <code>Dirnav</code> at the point of construction, so the traversal knows the protocol and not
+        the type that satisfies it.
+      </t-b>
+      <t-b>
+        Each library is a separate package rather than a module of one package, so the chain above is
+        visible as an import graph rather than as a convention inside one namespace. That is the whole
+        of what the arrangement buys, and the document is explicit about what it does not buy.
+      </t-b>
+      <t-b>
+        <strong>Python enforces no such chain.</strong> Any package on <code>sys.path</code> may import
+        any other, and the chain is a rule these specifications state rather than one a tool holds.
+        That is a stated difference from the C++, Rust, and C# implementations, where the build refuses
+        a dependency the structure does not declare - a C++ module that imports an undeclared module
+        does not compile, a Rust crate that names an undeclared dependency does not resolve, and a C#
+        project that references an undeclared assembly does not build.
+      </t-b>
+      <t-b>
+        The document says so rather than claiming a guarantee. A reader comparing the four
+        implementations should know that this one's architecture is documented and the other three's
+        is also checked.
+      </t-b>
+      <t-b>
+        <code>StdoutSink</code> names <code>Output</code> as a base class, which a
+        <code>typing.Protocol</code> permits. That makes the dependency edge above a real import rather
+        than a convention, and lets a checker verify the sink against the protocol at the point the
+        sink is defined. Structural typing still holds for everything that does not subclass it, which
+        is what lets a test recorder satisfy the protocol without importing the traversal package at
+        all.
+      </t-b>
+
+      <a id="build"></a>
+      <h3>3. &nbsp;No Build Step</h3>
+      <t-b>
+        Language: Python. Interpreter minimum: CPython 3.10. Build system: none - Python compiles on
+        import, so this implementation has no build step and no build definition. Dependencies: none
+        beyond the standard library. <code>re</code>, which &sect;6.1 assigns to Python, ships with the
+        interpreter, so this implementation declares no package requirement at all and needs no virtual
+        environment to run.
+      </t-b>
+      <t-b>
+        The floor is 3.10 and two features fix it. <code>str.removeprefix</code>, which
+        <a target="_blank" href="Spec_Driven_Design_Python_Cmdline.html">Cmdline</a> needs for the
+        one-dot strip of &sect;5, arrived in 3.9. PEP 604 made <code>X | Y</code> a type expression
+        evaluated at run time, which is what <code>ProgramCommands | ParseFailure</code> is, and that
+        arrived in 3.10. The integration suite holds the claim for syntax rather than asserting it: one
+        check parses every source file with
+        <code>ast.parse(..., feature_version=(3, 10))</code>.
+      </t-b>
+      <t-b>
+        <strong>Imports resolve through <code>PYTHONPATH</code>, which carries the four
+        <code>src/</code> folders.</strong> The launchers and the runners set it; a reader invoking the
+        interpreter directly sets it too.
+      </t-b>
+      <t-b>
+        An editable install through <code>pip</code> is the alternative and is not adopted. It needs a
+        virtual environment and a packaging file this project otherwise has no use for, and it puts the
+        four packages on <code>sys.path</code> for every interpreter run, so a second checkout would
+        shadow the first in a way nothing in the second checkout records.
+      </t-b>
+      <t-b>
+        <strong>&sect;6.2 has a runner build what it is about to run, and there is no build here.</strong>
+        Each runner therefore does the two things a build would have done for it: it puts the four
+        <code>src/</code> folders on <code>PYTHONPATH</code>, and it runs
+        <code>python -m compileall -q</code> over them, which surfaces a syntax error in any source
+        file before the first suite starts. A <code>compileall</code> failure counts every suite the
+        runner would have run as failed and the runner stops there.
+      </t-b>
+      <t-b>
+        &sect;6.2's never-built rule still applies: a suite whose script is absent is a failure rather
+        than a pass by absence. The
+        <a target="_blank" href="Spec_Driven_Design_Python_Testing.html">Testing page</a> covers how
+        that was verified by test rather than by reading.
+      </t-b>
+      <t-b>
+        Annotations are written throughout and are not checked at run time. Running a type checker is
+        not part of running this program, and no checker is required to run it; the annotations are
+        documentation a checker can also read.
+      </t-b>
+
+      <a id="naming"></a>
+      <h3>4. &nbsp;Naming, and What It Does Not Change</h3>
+      <t-b>
+        Identifiers follow Python convention, so this implementation spells in snake_case what the C++
+        implementation spells in camelCase and the C# implementation in PascalCase:
+        <code>usage_line</code> for <code>usageLine</code> and <code>UsageLine</code>,
+        <code>line_numbers</code> for <code>lineNumbers</code> and <code>LineNumbers</code>.
+      </t-b>
+      <t-b>
+        The switch letters, the emitted text, and the exit codes are fixed by Spec_TextFinder.md and
+        are identical in all four. A reader who mistook the naming difference for a behavioral one
+        would be reading the wrong document: nothing a language convention touches reaches stdout.
+      </t-b>
+      <t-b>
+        Three decisions the structure document records that follow from the language rather than from
+        the design:
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong><code>ProgramCommands</code> is a dataclass</strong> whose field defaults carry
+            the defaults of &sect;5, so a newly constructed instance equals the result of parsing an
+            empty command line.</li>
+          <li><strong><code>sys.argv</code> holds the program name in element 0</strong>, as C++'s
+            <code>argv[0]</code> and Rust's first <code>args_os()</code> element do, where C#'s
+            <code>string[] args</code> holds the arguments alone. The bare command line of &sect;3.1 is
+            therefore a one-element list here, and the parser scans from index 1.</li>
+          <li><strong>A <code>str</code> is a sequence of Unicode scalar values</strong>, and the
+            interpreter decodes the command line before <code>main</code> sees it, so the
+            undecodable-argument exit code the Rust implementation defines has no counterpart here.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Each component spec states its own offset rather than inheriting a sibling's, which is the rule
+        that kept the second item above from being assumed in three places and stated in none.
+      </t-b>
+
+      <a id="language"></a>
+      <h3>5. &nbsp;Where the Language Forced a Different Answer</h3>
+      <t-b>
+        The structure document records six places where Python does not merely rename what a sibling
+        does. Each is settled in the component that owns it, and each is linked from here.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>Free functions.</strong> Cmdline's four entry points are module-level functions,
+            not static methods of a class. The C# structure exists to work around the absence of free
+            functions, so it does not carry over. See
+            <a target="_blank" href="Spec_Driven_Design_Python_Cmdline.html">Cmdline</a> Section 2.</li>
+          <li><strong>The seam buys less here.</strong> A C++ template instantiation and a Rust
+            monomorphization devirtualize the call; a C# generic still bounds the type at compile time;
+            a Python annotation bounds nothing at run time and changes no dispatch. See
+            <a target="_blank" href="Spec_Driven_Design_Python_Dirnav.html">Dirnav</a> Section 2.</li>
+          <li><strong><code>print</code> and <code>sys.stdout</code> are forbidden
+            implementation-wide.</strong> <code>sys.stdout</code> is opened with
+            <code>newline=None</code> and translates <code>\n</code> to <code>\r\n</code> on Windows,
+            so the interpreter's most obvious way to write a line is the one &sect;3.4 forbids. See
+            <a target="_blank" href="Spec_Driven_Design_Python_Output.html">Output</a> Section 2.</li>
+          <li><strong>No deterministic destructor.</strong> CPython's reference counting usually
+            collects at the last reference, and that is an implementation detail rather than a language
+            rule, so the sink implements the context-manager protocol and the binary holds it in a
+            <code>with</code> statement. A flush from <code>__del__</code> is not relied on, for the
+            same reason the C# implementation does not rely on a finalizer.</li>
+          <li><strong>Unrenderable names resolve the opposite way from C#.</strong> The
+            <code>surrogateescape</code> handler means such a file <em>can</em> be opened here, and
+            &sect;3.4 requires it not be searched, so this library runs an explicit test where C# needs
+            none. See <a target="_blank" href="Spec_Driven_Design_Python_Dirnav.html">Dirnav</a>
+            Section 4.</li>
+          <li><strong>No lock and no interior-mutability type.</strong> The skip list is a module-level
+            list built at import time, traversal runs on one thread, and it is handed over as a
+            <code>tuple</code>. The <code>thread_local!</code> and <code>RefCell</code> pair the Rust
+            implementation needs has no counterpart. See
+            <a target="_blank" href="Spec_Driven_Design_Python_Entry.html">Entry</a> Section 5.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        One item on that list runs against this implementation and is stated in the same voice as the
+        rest: <code>_SKIP_LIST</code> and <code>_add_skip_directory</code> carry a leading underscore,
+        which is the whole of Python's access control where C# has <code>private</code> and C++ has
+        internal linkage.
+      </t-b>
+      <t-b>
+        <code>Dirnav</code> holds references to the sink, the skip list, and the parsed commands, and
+        the interpreter keeps them alive as long as it does. The lifetime rule the C++ implementation
+        states in prose and the Rust implementation enforces with a borrow checker therefore has
+        nothing to enforce here, as it has nothing to enforce in C#.
+      </t-b>
+
+      <a id="suites"></a>
+      <h3>6. &nbsp;Suites, Runners, and Launchers</h3>
+      <t-b>
+        <strong>No third-party test framework</strong>, per &sect;6.2 and the dependency rule of
+        &sect;6. <code>unittest</code> is in the standard library, so the suites use it and
+        <code>pytest</code> is rejected by name as third-party.
+      </t-b>
+      <t-b>
+        That is the one place this thread had an easier time than the C# thread, which had to
+        hand-write a runner inside each suite because every .NET test adapter arrives as a NuGet
+        package. Each suite here is a script that runs its cases through <code>unittest</code> and
+        exits with the number that failed, and the runners invoke those scripts.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><code>run_unit_tests.bat</code> - compiles the four packages, then runs one unit suite
+            per library.</li>
+          <li><code>run_integration_tests.bat</code> - compiles, then drives the assembled program end
+            to end.</li>
+          <li><code>run_demo.bat</code> - compiles, supplies the capture date, then runs the
+            demonstration.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        The launchers <code>Python_TextFinder.bat</code> and <code>Python_TextFinder</code> set
+        <code>PYTHONPATH</code>, invoke <code>python -m python_textfinder_entry</code>, forward their
+        arguments, and return the interpreter's exit code unchanged. <code>Python_TextFinder</code> is
+        the name &sect;5.1 substitutes for <code>&lt;executable&gt;</code> in the help text, and that
+        text is fixed rather than derived from <code>sys.argv[0]</code>, which carries the path of
+        <code>__main__.py</code> under <code>python -m</code> and would otherwise put an interpreter
+        path in the usage line.
+      </t-b>
+
+      <a id="layout"></a>
+      <h3>7. &nbsp;The Layout</h3>
+      <t-b>
+        The folder as Project_Tree.md records it. Build output is omitted:
+        <code>__pycache__/</code> is one of the eleven names &sect;3.2's default skip list prunes, so a
+        demonstration rooted here does not report it either, and a path-scoped rule in the repository's
+        root <code>.gitignore</code> keeps it out of the repository.
+      </t-b>
+<pre><code class="language-text">Python_Spec_driven_TextFinder/
+    ├── Python_TextFinder_Structure.md
+    ├── Prompts_Build_Python_TextFinder.md
+    ├── Python_TextFinder.bat
+    ├── Python_TextFinder
+    ├── run_unit_tests.bat
+    ├── run_integration_tests.bat
+    ├── run_demo.bat
+    ├── Demo_9-24-2026.md
+    ├── test/
+    │   └── integration_tests.py
+    ├── demo/
+    │   └── demo.py
+    ├── Python_Spec_driven_TextFinder_Entry/
+    │   ├── Spec_Python_TextFinder_Entry.md
+    │   └── src/
+    │       └── python_textfinder_entry/
+    │           ├── __init__.py
+    │           ├── entry.py
+    │           └── __main__.py
+    ├── Python_Spec_driven_Cmdline/
+    │   ├── Spec_Python_TextFinder_Cmdline.md
+    │   ├── src/
+    │   │   └── python_textfinder_cmdline/
+    │   │       ├── __init__.py
+    │   │       ├── program_commands.py
+    │   │       └── command_line.py
+    │   └── test/
+    │       └── unit_tests.py
+    ├── Python_Spec_driven_Dirnav/
+    │   ├── Spec_Python_TextFinder_Dirnav.md
+    │   ├── src/
+    │   │   └── python_textfinder_dirnav/
+    │   │       ├── __init__.py
+    │   │       ├── output.py
+    │   │       └── dirnav.py
+    │   └── test/
+    │       └── unit_tests.py
+    └── Python_Spec_driven_Output/
+        ├── Spec_Python_TextFinder_Output.md
+        ├── src/
+        │   └── python_textfinder_output/
+        │       ├── __init__.py
+        │       └── stdout_sink.py
+        └── test/
+            └── unit_tests.py</code></pre>
+      <t-b>
+        Eleven source files across four packages, 552 lines of them. Three unit suites and one
+        integration suite add 1,175 lines, so the suites outweigh the implementation by better than two
+        to one - a ratio the
+        <a target="_blank" href="Spec_Driven_Design_Python_Testing.html">Testing page</a> reads
+        against what the suites hold to.
+      </t-b>
+      <t-b>
+        Each <code>__init__.py</code> re-exports its package's public names and declares
+        <code>__all__</code>, so the import lines in every other file name a package rather than a
+        module inside it. The unit suites sit under <code>test/</code> and are not part of any package,
+        so importing a package does not import its suite.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>8. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 assigns it
+        <code>Prompts_Python_TextFinder_Structure.md</code> and its <code>Fix</code> companion, and
+        neither was written: this thread produced one record covering every turn, and it sits on the
+        <a target="_blank" href="Spec_Driven_Design_Python_Process.html">Process page</a>, whose
+        Section 3 lists the twelve places the structure document records Python forcing a different
+        answer.
+      </t-b>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#shape">four packages</a></menu-elem>
+        <menu-elem class="secElem"><a href="#chain">the chain</a></menu-elem>
+        <menu-elem class="secElem"><a href="#build">no build step</a></menu-elem>
+        <menu-elem class="secElem"><a href="#naming">naming</a></menu-elem>
+        <menu-elem class="secElem"><a href="#language">language differences</a></menu-elem>
+        <menu-elem class="secElem"><a href="#suites">suites and runners</a></menu-elem>
+        <menu-elem class="secElem"><a href="#layout">layout</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenPythonPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 1, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past.
+       A block whose content fits needs no arrows, so they stay hidden until it
+       overflows, and are rechecked whenever its width changes. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      /* the 1px allowance keeps subpixel rounding from showing arrows that cannot move */
+      const showArrows = () => {
+        arrows.style.display = pre.scrollWidth - pre.clientWidth > 1 ? '' : 'none';
+      };
+      showArrows();
+      /* the splitter resizes the panel and prism rewrites the content, so one
+         measurement at load is not enough */
+      new ResizeObserver(showArrows).observe(pre);
+      window.addEventListener('resize', showArrows);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

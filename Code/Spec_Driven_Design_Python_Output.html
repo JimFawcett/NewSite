@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Python_Output.html - Python thread, page 5
+-->
+<head>
+  <title>Spec-Driven Python: Output</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .synopsis {
+      border: 2px dashed var(--dark);
+      margin: 2rem 0rem;
+      padding: 0.25rem 1rem;
+    }
+    div.synopsis ul {
+      margin: 0rem 0rem;
+    }
+    div.synopsis ul li {
+      margin: 0.1rem 2rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Python_Output.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/24/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder/Python_Spec_driven_Output">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Python: Output</h2>
+        <h4 class="indent" id="subtitle">81 lines that replace print and flush on release</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Matching.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Output.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Output.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Output.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Python_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+      <div class="synopsis">
+        <strong>Synopsis:</strong><br>
+        <t-b>
+          This page covers <code>python_textfinder_output</code>, the sink. It receives fully formed
+          strings, writes each as one line, and adds nothing but the terminator.
+          <ul>
+            <li>
+              Two write methods differing only in what they add, and the placement is the access
+              control - <code>write_text</code> is on the class rather than the protocol, so
+              traversal cannot emit unterminated text.
+            </li>
+            <li>
+              Python offers no <code>sealed</code>, so the rule against subclassing the sink is
+              stated in the specification rather than held by the language.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          The terminator rule the C# thread was written for lands harder here, because Python has
+          two ways to get it wrong rather than one.
+          <ul>
+            <li><code>sys.stdout</code> is opened with <code>newline=None</code>, which translates every <code>\n</code> to <code>\r\n</code> on Windows, and <code>print</code> writes through it.</li>
+            <li>The sink owns a <code>TextIOWrapper</code> over <code>sys.stdout.buffer</code> with four properties fixed by the specification, so <code>PYTHONIOENCODING</code> and <code>-X utf8</code> cannot reach this program's output.</li>
+            <li><code>print</code> and <code>sys.stdout.write</code> are forbidden implementation-wide, not merely unused here.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          One sink, one buffer, and every write guarded - including the one that reports a failure.
+          <ul>
+            <li>A second sink raises, because two buffers over one stream reorder the output silently and only under load.</li>
+            <li>The rule costs one module-level <code>bool</code> here, where Rust needs two constructs and C++ needs none at all.</li>
+            <li>Writing <code>output failed</code> is itself a write that can fail. A probe demonstrated the escape before the guard closed it.</li>
+            <li><code>__exit__</code> calls <code>detach</code> rather than <code>close</code>, because closing this wrapper would close the stream the interpreter still owns.</li>
+          </ul>
+        </t-b>
+      </div>
+
+      <a id="sink"></a>
+      <h3>1. &nbsp;The Sink</h3>
+      <t-b>
+        <code>python_textfinder_output</code> receives fully formed strings from
+        <code>python_textfinder_dirnav</code>, writes each as one line to stdout, and absorbs any
+        write failure so that neither the traversal nor the binary has to reason about it.
+      </t-b>
+<pre><code class="language-python">class StdoutSink(Output):
+    def __init__(self) -&gt; None: ...
+
+    def output(self, text: str) -&gt; None: ...
+    def write_text(self, text: str) -&gt; None: ...
+    def flush(self) -&gt; None: ...
+
+    def __enter__(self) -&gt; "StdoutSink": ...
+    def __exit__(self, exc_type, exc_value, traceback) -&gt; None: ...</code></pre>
+      <t-b>
+        The class names <code>Output</code> as a base. <code>Output</code> is a
+        <code>typing.Protocol</code>, so nothing requires the inheritance for the sink to satisfy it,
+        and Spec_Python_TextFinder_Output.md &sect;4 gives two reasons for writing it anyway: it
+        makes the dependency edge <code>Python_TextFinder_Structure.md</code> draws a real import
+        rather than a convention, and it lets a type checker verify the sink against the protocol
+        where the sink is defined rather than at the one call that passes it.
+      </t-b>
+      <t-b>
+        Nothing in this project derives from <code>StdoutSink</code>, and a subclass overriding
+        <code>output</code> would put the emission order Spec_TextFinder.md &sect;3.4 fixes in the
+        hands of a type this specification does not describe. C# closes that off with
+        <code>sealed</code> and C++ from the other direction, its sink deriving from a base class.
+        Python offers no such keyword, so this is a rule the specification states and the language
+        does not hold - the first of two places on this page where Python's access control is a
+        convention.
+      </t-b>
+      <t-b>
+        Two methods write, and they differ only in what they add.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><code>output</code>, the protocol method, writes the string it is given followed by
+            the single LF &sect;3.4 fixes. It is the method <code>python_textfinder_dirnav</code>
+            reaches, and the protocol is the only thing that library knows about this one.</li>
+          <li><code>write_text</code> writes the string verbatim, adding nothing. It exists for the
+            help text of &sect;5.1 and the option listing of &sect;5.3, which
+            <code>python_textfinder_cmdline</code> returns already terminated.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        <code>write_text</code> is declared on the class and not on the protocol, and that placement
+        is the access control: <code>python_textfinder_dirnav</code> holds a parameter annotated
+        <code>Output</code> and can reach only what the protocol declares, so it cannot emit
+        unterminated text. Both route through one private <code>_write</code>, so the failed-state
+        check and the write have one definition.
+      </t-b>
+      <t-b>
+        The type takes no configuration. <code>python_textfinder_dirnav</code> formats every line in
+        full before emitting it - a block's path line, a block's indented detail lines, and every
+        announcement alike - so there is nothing left here to parameterize. The library does not know
+        a block line from an announcement, does not indent a detail line, and does not apply
+        <code>/h</code>, <code>/n</code>, or <code>/L</code>.
+      </t-b>
+      <t-b>
+        Once constructed, neither method raises and neither reports failure to a caller.
+      </t-b>
+
+      <a id="terminator"></a>
+      <h3>2. &nbsp;The Rule Written for Another Language, Met Again Here</h3>
+      <t-b>
+        Spec_TextFinder.md &sect;3.4 obliges an implementation to prevent its runtime translating
+        the LF terminator to CRLF. The rule was written with C# in view, where
+        <code>Console.WriteLine</code> terminates with <code>Environment.NewLine</code>. Python
+        reaches the same hazard by a different route and one step earlier:
+        <code>sys.stdout</code> is a <code>TextIOWrapper</code> opened with
+        <code>newline=None</code>, which translates every <code>\n</code> written through it to
+        <code>\r\n</code> on Windows, and <code>print</code> writes through it.
+      </t-b>
+      <t-b>
+        So the interpreter's most obvious way to write a line is the one the specification forbids,
+        and the forbidding is implementation-wide rather than local to this component.
+        <code>print</code> is called nowhere in this implementation, and neither is
+        <code>sys.stdout.write</code>. Section 5 gives the second reason for that rule, which is
+        about buffers rather than terminators.
+      </t-b>
+      <t-b>
+        The sink owns a <code>TextIOWrapper</code> it constructs over <code>sys.stdout.buffer</code>,
+        with four properties fixed by Spec_Python_TextFinder_Output.md &sect;5 rather than left to
+        the code:
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong><code>newline="\n"</code></strong>, so no translation is performed on any
+            platform.</li>
+          <li><strong><code>encoding="utf-8"</code></strong>, so the bytes on stdout do not depend on
+            the machine's locale. No byte-order mark is written: <code>TextIOWrapper</code> emits
+            none, and the <code>utf-8-sig</code> codec, which would, is not named.</li>
+          <li><strong><code>errors="replace"</code></strong>, as a backstop described below.</li>
+          <li><strong><code>line_buffering=False</code> and <code>write_through=False</code></strong>,
+            per Section 5.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Fixing the encoding on this library's own writer is what makes the output independent of the
+        environment. <code>PYTHONIOENCODING</code> and <code>-X utf8</code> configure
+        <code>sys.stdout</code>, and this program never writes through it, so neither can change what
+        this program puts on stdout. That is a stronger position than configuring
+        <code>sys.stdout</code> would give, and it is the same argument the C# implementation makes
+        for not using <code>Console.Out</code>. On a Windows console,
+        <code>sys.stdout.buffer</code> is a <code>_WindowsConsoleIO</code> that takes UTF-8 bytes and
+        converts them to UTF-16 for the console, so writing UTF-8 through it is correct whatever the
+        console code page.
+      </t-b>
+      <t-b>
+        The <code>errors="replace"</code> backstop is reached by one kind of text only: a
+        <code>str</code> carrying a lone surrogate, which on POSIX is how the interpreter delivers a
+        command-line argument it could not decode. Such text reaches this library through the option
+        listing of &sect;5.3, which echoes <code>/P</code> and <code>/r</code> verbatim. The two
+        alternatives are rejected in the specification by name.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong><code>errors="strict"</code></strong> would raise on that text and turn a
+            user's undecodable argument into a lost run.</li>
+          <li><strong><code>errors="surrogateescape"</code></strong> would put the original invalid
+            bytes on stdout, so the output would no longer be valid UTF-8.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        <code>replace</code> substitutes <code>?</code> on encoding - not U+FFFD, which it
+        substitutes only on decoding - and that asymmetry is why the U+FFFD substitution &sect;3.4
+        requires for an unrenderable path is performed by
+        <a target="_blank" href="Spec_Driven_Design_Python_Dirnav.html">Dirnav</a> rather than left
+        to this codec. No path reaches this library carrying a surrogate, so the backstop never
+        applies to one.
+      </t-b>
+      <t-b>
+        One requirement, four implementations, four mechanisms: C++ calls
+        <code>_setmode(1, _O_BINARY)</code> and throws if it fails; Rust does nothing at all, its
+        standard output performing no translation on any platform; C# replaces the writer; Python
+        wraps the byte stream beneath the writer the interpreter gave it. The
+        <a target="_blank" href="Spec_Driven_Design_Python_Testing.html">integration suite</a>
+        checks the bytes rather than the characters, and finds no CR and no BOM.
+      </t-b>
+      <t-b>
+        <code>output</code> adds the terminator and nothing else - no prefix, no separator, no
+        trailing content - because the string arrives fully formatted.
+      </t-b>
+
+      <a id="onesink"></a>
+      <h3>3. &nbsp;One Sink, One Buffer</h3>
+      <t-b>
+        The constructor raises <code>RuntimeError</code> when a <code>StdoutSink</code> already
+        exists, so the process holds one sink and one only. It also lets an <code>OSError</code> from
+        the construction of its writer propagate, which is the failure of a process started with no
+        usable standard output handle. <code>python_textfinder_entry</code> catches both and exits 2,
+        the code &sect;3.4 fixes for a failure that is not about the command line.
+      </t-b>
+      <t-b>
+        The reason for the rule is the buffer of Section 5. Two sinks would wrap the same standard
+        output stream with two independent buffers, and their contents would reach the stream in the
+        order the buffers happened to fill rather than the order the lines were written - which would
+        break the emission order &sect;3.4 fixes, silently and only under load. A rule against a
+        second sink is cheaper to enforce than a defect that appears only on long searches.
+      </t-b>
+      <t-b>
+        The same reasoning is what forbids <code>print</code> implementation-wide rather than merely
+        in this file: <code>print</code> writes through <code>sys.stdout</code>, which is a third
+        buffer over the same stream.
+      </t-b>
+      <t-b>
+        The rule is held by a module-level <code>bool</code>, cleared by <code>__exit__</code>, so a
+        sink released before another is created releases the right to make one. Module-level mutable
+        state is a smell in general and the specification argues that it is right here: the thing
+        being guarded is a process-wide resource, one process holds one standard output handle, and
+        the flag is read and written on one thread before any other could exist. No lock is taken.
+      </t-b>
+      <t-b>
+        Rust reaches the same conclusion through a <code>thread_local!</code> <code>Cell</code>,
+        which it needs because a plain <code>static</code> there must be <code>Sync</code>. Python
+        places no such bound on a module attribute, so the same rule costs one <code>bool</code> and
+        a <code>global</code> statement here and two constructs there. C++ has no equivalent rule at
+        all, its sink being a local of <code>main</code> that nothing else constructs.
+      </t-b>
+      <t-b>
+        <code>python_textfinder_entry</code> builds exactly one sink, so its own code cannot provoke
+        the exception. It handles the case because a constructor with a failure mode that callers
+        ignore is a constructor whose failure mode will eventually be reached, and because that
+        exception is what gives exit code 2 a path in this implementation at all.
+      </t-b>
+
+      <a id="errors"></a>
+      <h3>4. &nbsp;Error Handling</h3>
+      <t-b>
+        A write that fails - a closed pipe, a full disk - sets an internal failed state. On the first
+        such failure the library flushes stdout and then writes the single line
+        <code>output failed</code> to stderr. Thereafter it discards every string it is given and
+        writes nothing more, to stdout or stderr.
+      </t-b>
+      <t-b>
+        Three properties of that sequence are stated in Spec_Python_TextFinder_Output.md &sect;6
+        rather than left to the code.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>The flush comes first</strong>, so every line already buffered reaches the
+            stream ahead of the notice explaining why the lines stop. It is best-effort: whatever
+            broke the write may break it too, and that inner flush is itself wrapped.</li>
+          <li><strong>The failed state is permanent.</strong> One notice, not one per discarded line,
+            which is what keeps a broken pipe from turning a long search into a long stderr
+            transcript.</li>
+          <li><strong>The failure reaches no caller.</strong> The library never raises after
+            construction, never returns a status, and never lets the failure reach
+            <code>python_textfinder_dirnav</code>, which goes on traversing.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Every write is wrapped against <code>OSError</code> and <code>ValueError</code>.
+        <code>OSError</code> covers the stream failures the interpreter raises,
+        <code>BrokenPipeError</code> among them, and is caught as the base rather than as a list of
+        its subclasses. <code>ValueError</code> is what a write to a stream already released raises.
+        A bare <code>except:</code> is not taken, and neither is <code>except Exception:</code>: a
+        <code>MemoryError</code> or an <code>AttributeError</code> from this library is a defect in it
+        rather than a stream failure, and swallowing one would hide that defect behind a notice about
+        output.
+      </t-b>
+      <t-b>
+        The third property above was an assertion the design did not hold until turn 6, and the gap
+        is worth stating plainly because it was found by running the code rather than by reading it.
+        <strong>Writing <code>output failed</code> to stderr is itself a write that can fail.</strong>
+        On a command line that closed both streams it does: a pipeline whose reader exits breaks
+        stdout, and the same redirection can break stderr.
+      </t-b>
+      <t-b>
+        Left unguarded, the <code>OSError</code> raised while reporting the first failure would leave
+        this library from inside its own <code>except</code> block, pass through
+        <code>python_textfinder_dirnav</code>, whose handlers wrap filesystem calls and not emission,
+        leave <code>main</code>, and reach the interpreter, which would print a traceback and exit 1 -
+        a code &sect;3.4 assigns to an invalid command line. A broken pipe would then be
+        indistinguishable from a usage error. A probe written during the review printed
+        <code>ESCAPED: OSError: broken pipe</code>, which is what turned a reading into a defect.
+      </t-b>
+      <t-b>
+        The stderr write and its flush are now wrapped against the same two types, and a failure
+        there is discarded. The failed state is already set by then, so the run continues in silence,
+        which is the whole of what the section promises in the case where nothing can be said. The
+        unconditional claim that no failure reaches a caller holds because of that guard: before it,
+        the one write in this library that was not wrapped was the one that ran only when a write had
+        already failed.
+      </t-b>
+      <t-b>
+        A failed write does not affect the exit code, which
+        Spec_Python_TextFinder_Entry.md &sect;6 reserves for command-line and startup failures. A run
+        whose output went nowhere still exits 0: the exit code answers whether TextFinder could do
+        what it was asked, not whether the reader received it.
+      </t-b>
+      <t-b>
+        The notice is written to <code>sys.stderr.buffer</code> as UTF-8 with an explicit
+        <code>\n</code>, followed by a flush, so stderr carries LF here as it does everywhere else in
+        this implementation and no text-layer translation applies.
+      </t-b>
+
+      <a id="release"></a>
+      <h3>5. &nbsp;Buffering and Release</h3>
+      <t-b>
+        <code>line_buffering</code> is <code>False</code> and <code>write_through</code> is
+        <code>False</code>, so the <code>TextIOWrapper</code> defers a write until its buffer fills
+        and the <code>BufferedWriter</code> beneath it defers again. With either set the writer would
+        push every call through to the operating system, and a search emitting 107 lines - the count
+        invocation 2 of the
+        <a target="_blank" href="Spec_Driven_Design_Python_Demonstration.html">demonstration</a>
+        reports - would pay 107 system calls for nothing.
+      </t-b>
+      <t-b>
+        No flush is performed per line. The stream is flushed when the sink is released, and
+        <code>flush</code> performs the same write on demand, for the one case that needs the buffer
+        drained before the process ends.
+      </t-b>
+      <t-b>
+        The context-manager protocol is the whole of the mechanism, and Python leaves no better
+        alternative. The language has no destructor that runs deterministically at scope exit:
+        CPython's reference counting usually collects an object at the last reference, which is an
+        implementation detail rather than a language rule, and the interpreter is free to leave a
+        <code>__del__</code> unrun at shutdown. The C++ implementation's reliance on a destructor and
+        the Rust implementation's on <code>Drop</code> therefore have no counterpart here, as they
+        have none in C#.
+      </t-b>
+      <t-b>
+        That moves the guarantee out of this type and into its caller, and both specifications say so
+        on their own side. This one states the requirement and records that the type cannot enforce it
+        alone; Spec_Python_TextFinder_Entry.md &sect;4 discharges it with a <code>with</code>
+        statement covering the rest of <code>main</code>. The
+        <a target="_blank" href="Spec_Driven_Design_Python_Entry.html">Entry page</a> covers why the
+        construction sits outside that statement.
+      </t-b>
+      <t-b>
+        <strong><code>__exit__</code> flushes the writer and then calls <code>detach</code>.</strong>
+        <code>close</code> is not called, and this is the one hazard of wrapping a stream the
+        interpreter also owns. Closing a <code>TextIOWrapper</code> closes the object beneath it, so
+        <code>close</code> here would close <code>sys.stdout.buffer</code> and leave the interpreter's
+        own shutdown flush of <code>sys.stdout</code> writing to a closed stream.
+        <code>detach</code> severs the wrapper from the buffer without closing it, and it also disarms
+        the wrapper's own finalizer, which would otherwise close the buffer whenever the wrapper was
+        collected. The sink holds a reference to the wrapper for as long as the run lasts, so that
+        collection cannot happen early.
+      </t-b>
+      <t-b>
+        The <code>detach</code> call is wrapped for a reason that is not obvious from its name:
+        <code>detach</code> flushes the wrapper before severing it, so on a broken pipe it raises the
+        failure the preceding flush already met. Without the guard that exception would leave
+        <code>__exit__</code>, and an exception leaving a <code>with</code> statement's exit is an
+        exception leaving <code>main</code> - the same outcome Section 4 describes for an unguarded
+        notice, reached at the end of an otherwise successful run rather than the start of a broken
+        one.
+      </t-b>
+      <t-b>
+        The flush performed at release obeys the failure rule of Section 4, and the specification
+        names that case separately for a reason: the final flush is the write most likely to be the
+        first one that fails, being the only one that must reach the stream and, on a short search,
+        the only one that reaches it at all. Nothing follows it, so nothing is left to discard.
+      </t-b>
+      <t-b>
+        <code>__exit__</code> is written to be safe to call twice, since a <code>with</code> statement
+        on a sink already released by other means would otherwise fault. A second call flushes nothing
+        and clears nothing. It returns <code>None</code>, so an exception raised inside the
+        <code>with</code> block propagates: this type suppresses output failures, not defects in its
+        caller. The unit suite asserts all three, because each is a property a later edit could remove
+        without any other test noticing.
+      </t-b>
+      <t-b>
+        One rule keeps the deferral from reordering the output:
+      </t-b>
+      <t-b>
+        <strong>stdout is flushed before any write to stderr.</strong>
+      </t-b>
+      <t-b>
+        This library applies the rule to its own <code>output failed</code> notice, and
+        <code>python_textfinder_entry</code> applies it to the diagnostic that follows the option
+        listing on an invalid <code>/r</code>. Invocation 10 of the demonstration is that case: nine
+        listing lines on stdout, then two diagnostic lines on stderr, in that order.
+      </t-b>
+      <t-b>
+        Because this object owns the only writer over standard output in the process, the binary's
+        help text and option listing pass through <code>write_text</code> rather than through a writer
+        of their own. They therefore share this buffer and reach the stream in the order written, and
+        the ordering rule above is the only coordination needed. One consequence is worth naming:
+        nothing in this implementation writes through <code>sys.stdout</code>, so the interpreter's
+        own flush of that stream at shutdown has nothing to write and can fail at nothing. A broken
+        pipe produces this library's one notice and not, in addition, the interpreter's shutdown
+        complaint about an unflushable stdout.
+      </t-b>
+
+      <a id="source"></a>
+      <h3>6. &nbsp;Source</h3>
+      <t-b>
+        <code>stdout_sink.py</code> in full. At 81 lines against a 127-line specification, this is
+        the one component in the implementation specified at greater length than it is written, and
+        that ratio is the point of it: a sink that does one thing can be specified exhaustively. Every
+        <code>try</code> in the file
+        catches the same two types, which is Section 4's rule written out five times rather than
+        factored into a predicate - the C# implementation names its two in one
+        <code>IsWriteFailure</code>, where Python's <code>except</code> clause already takes a tuple.
+      </t-b>
+      <h5 class="indent">Python_Spec_driven_Output/src/python_textfinder_output/stdout_sink.py</h5>
+<pre><code class="language-python"># stdout_sink.py - the process's only writer over standard output
+
+import io
+import sys
+
+from python_textfinder_dirnav import Output
+
+_sink_exists = False
+
+
+class StdoutSink(Output):
+    def __init__(self) -&gt; None:
+        global _sink_exists
+        if _sink_exists:
+            raise RuntimeError("a StdoutSink already exists")
+        self._writer = io.TextIOWrapper(
+            sys.stdout.buffer,
+            encoding="utf-8",
+            errors="replace",
+            newline="\n",
+            line_buffering=False,
+            write_through=False,
+        )
+        self._failed = False
+        self._released = False
+        _sink_exists = True
+
+    def output(self, text: str) -&gt; None:
+        self._write(text + "\n")
+
+    def write_text(self, text: str) -&gt; None:
+        self._write(text)
+
+    def flush(self) -&gt; None:
+        if self._failed:
+            return
+        try:
+            self._writer.flush()
+        except (OSError, ValueError):
+            self._fail()
+
+    def __enter__(self) -&gt; "StdoutSink":
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -&gt; None:
+        global _sink_exists
+        if self._released:
+            return
+        self._released = True
+        if not self._failed:
+            try:
+                self._writer.flush()
+            except (OSError, ValueError):
+                self._fail()
+        try:
+            self._writer.detach()
+        except (OSError, ValueError):
+            pass
+        _sink_exists = False
+
+    def _write(self, text: str) -&gt; None:
+        if self._failed:
+            return
+        try:
+            self._writer.write(text)
+        except (OSError, ValueError):
+            self._fail()
+
+    def _fail(self) -&gt; None:
+        if self._failed:
+            return
+        self._failed = True
+        try:
+            self._writer.flush()
+        except (OSError, ValueError):
+            pass
+        try:
+            sys.stderr.buffer.write(b"output failed\n")
+            sys.stderr.buffer.flush()
+        except (OSError, ValueError):
+            pass
+</code></pre>
+      <t-b>
+        <code>_fail</code> opens with its own failed-state test rather than trusting its callers,
+        which is what lets <code>__exit__</code> call it from the flush path without risking a second
+        notice. The file carries one annotation that is not a type: the <code>global</code> statement
+        appears twice, in the constructor and in <code>__exit__</code>, and those two are the whole of
+        the one-sink rule.
+      </t-b>
+      <t-b>
+        <code>output</code> builds <code>text + "\n"</code> and hands one string to
+        <code>_write</code> rather than calling the writer twice. A second call would be a second
+        chance to fail between a line and its terminator, and the failed-state test sits in
+        <code>_write</code>, so the two writes could straddle it.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>7. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 assigns it
+        <code>Prompts_Spec_Python_TextFinder_Output.md</code> and its <code>Fix</code> companion, and
+        neither was written: this thread produced one record covering every turn, and it sits on the
+        <a target="_blank" href="Spec_Driven_Design_Python_Process.html">Process page</a>, whose
+        Section 5 covers the guard this component gained in turn 6.
+      </t-b>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#sink">the sink</a></menu-elem>
+        <menu-elem class="secElem"><a href="#terminator">the terminator rule</a></menu-elem>
+        <menu-elem class="secElem"><a href="#onesink">one sink</a></menu-elem>
+        <menu-elem class="secElem"><a href="#errors">error handling</a></menu-elem>
+        <menu-elem class="secElem"><a href="#release">buffering and release</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenPythonPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 5, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past.
+       A block whose content fits needs no arrows, so they stay hidden until it
+       overflows, and are rechecked whenever its width changes. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      /* the 1px allowance keeps subpixel rounding from showing arrows that cannot move */
+      const showArrows = () => {
+        arrows.style.display = pre.scrollWidth - pre.clientWidth > 1 ? '' : 'none';
+      };
+      showArrows();
+      /* the splitter resizes the panel and prism rewrites the content, so one
+         measurement at load is not enough */
+      new ResizeObserver(showArrows).observe(pre);
+      window.addEventListener('resize', showArrows);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

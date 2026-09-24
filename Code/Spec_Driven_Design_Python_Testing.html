@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Python_Testing.html - Python thread, page 6
+-->
+<head>
+  <title>Spec-Driven Python: Testing</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .synopsis {
+      border: 2px dashed var(--dark);
+      margin: 2rem 0rem;
+      padding: 0.25rem 1rem;
+    }
+    div.synopsis ul {
+      margin: 0rem 0rem;
+    }
+    div.synopsis ul li {
+      margin: 0.1rem 2rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Python_Testing.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/24/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Python: Testing</h2>
+        <h4 class="indent" id="subtitle">128 unit checks, 34 integration checks, and 31 fixture cases</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Testing.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Testing.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Testing.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Python_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+      <div class="synopsis">
+        <strong>Synopsis:</strong><br>
+        <t-b>
+          Four suites and three runners. 128 unit checks across three libraries, 34 integration
+          checks against the assembled program, and 31 fixture cases driven as subtests inside one of
+          them.
+          <ul>
+            <li>
+              <code>unittest</code> is in the standard library, so Spec_TextFinder.md &sect;6.2's
+              no-third-party-framework rule admits it and no runner had to be hand-written inside a
+              suite. <code>pytest</code> is rejected by name.
+            </li>
+            <li>
+              &sect;6.2 has a runner build what it is about to run. There is no build here, so each
+              runner puts the four <code>src/</code> folders on <code>PYTHONPATH</code> and runs
+              <code>python -m compileall -q</code> over them.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          The suites are held to properties, not to a transcript, and several exist because a reading
+          of the specification could be wrong in a way nothing else would catch.
+          <ul>
+            <li>LF-only stdout asserted at the byte level through a pipe on Windows, before any decoding.</li>
+            <li>The eight terminators <code>str.splitlines()</code> would wrongly split on, one check each.</li>
+            <li>A file at 10,485,760 bytes searched and one at 10,485,761 announced.</li>
+            <li>Every source file parsed with <code>ast.parse(..., feature_version=(3, 10))</code>, which holds the interpreter floor for syntax rather than asserting it.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Two things were verified by running rather than by reading, and both are worth more than the
+          checks they produced.
+          <ul>
+            <li>&sect;6.2's never-built rule: the Output suite was renamed away, the runner reported <code>output - suite not present</code> and exited 1 rather than passing by absence, then the suite was restored.</li>
+            <li>The fixture bites: one expected file was corrupted, the integration suite failed and named the case, then the file was restored.</li>
+          </ul>
+        </t-b>
+      </div>
+
+      <a id="suites"></a>
+      <h3>1. &nbsp;Four Suites, Three Runners</h3>
+      <t-b>
+        Spec_TextFinder.md &sect;6.2 asks for a unit suite beside each library and an integration
+        suite driving the assembled program. This implementation has both, plus the shared fixture of
+        Section 4, which the integration suite drives.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:16rem;" />
+          <col style="width:10rem;" />
+          <col style="width:30rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Suite</th>
+          <th class="darkItem">Checks</th>
+          <th class="darkItem">What it drives</th>
+        </tr>
+        <tr>
+          <td class="lightItem">cmdline unit</td>
+          <td class="lightItem">53</td>
+          <td class="lightItem"><code>parse</code>, the three text renderers, and the dataclass defaults, in process</td>
+        </tr>
+        <tr>
+          <td class="lightItem">dirnav unit</td>
+          <td class="lightItem">51</td>
+          <td class="lightItem">Traversal, admission, splitting, and emission against a temporary tree, through a recording <code>Output</code></td>
+        </tr>
+        <tr>
+          <td class="lightItem">output unit</td>
+          <td class="lightItem">24</td>
+          <td class="lightItem">The sink, with <code>sys.stdout</code> and <code>sys.stderr</code> replaced by byte buffers</td>
+        </tr>
+        <tr>
+          <td class="lightItem">integration</td>
+          <td class="lightItem">34</td>
+          <td class="lightItem">The assembled program as a subprocess, plus the 31 fixture cases as subtests</td>
+        </tr>
+      </table>
+      <t-b>
+        <strong>No third-party test framework</strong>, per &sect;6.2 and the dependency rule of
+        &sect;6. <code>unittest</code> is in the standard library, so the suites use it and
+        <code>pytest</code> is rejected by name as third-party. That is the one place this thread had
+        an easier time than the
+        <a target="_blank" href="Spec_Driven_Design_CSharp_Testing.html">C# thread</a>, which had to
+        write a runner by hand inside each suite because every .NET test adapter arrives as a NuGet
+        package.
+      </t-b>
+      <t-b>
+        Each suite is a script rather than a module a framework discovers. Its last four lines are the
+        whole of the contract with the runner:
+      </t-b>
+<pre><code class="language-python">if __name__ == "__main__":
+    result = unittest.main(exit=False, verbosity=1).result
+    sys.exit(len(result.failures) + len(result.errors))</code></pre>
+      <t-b>
+        <code>exit=False</code> keeps <code>unittest.main</code> from calling
+        <code>sys.exit</code> with a status of its own, so the script reports the number of failures
+        rather than a boolean. A runner that summed booleans could not tell one broken suite from
+        twenty broken checks.
+      </t-b>
+      <t-b>
+        Three runners drive them - <code>run_unit_tests.bat</code>,
+        <code>run_integration_tests.bat</code>, and <code>run_demo.bat</code> - and each does the two
+        things &sect;6.2's build requirement means here.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li>It puts the four <code>src/</code> folders on <code>PYTHONPATH</code>.</li>
+          <li>It runs <code>python -m compileall -q</code> over them, which surfaces a syntax error in
+            any source file before the first suite starts. A <code>compileall</code> failure counts
+            every suite the runner would have run as failed and the runner stops there.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        There is no build step in this implementation, so <code>compileall</code> is what stands in for
+        one. It is a weaker check than a compiler: it catches a syntax error and not a name error, a
+        wrong argument count, or a type mismatch. That is stated rather than glossed, and it is why the
+        interpreter-floor check of Section 5 parses every source file explicitly rather than trusting
+        that the suites would have imported them all.
+      </t-b>
+
+      <a id="units"></a>
+      <h3>2. &nbsp;The Unit Suites</h3>
+      <t-b>
+        Each unit suite imports its library through the package name rather than through a file path,
+        so it exercises the same import the binary does. Each sits under the component's
+        <code>test/</code> folder and is not part of the package, so importing the package does not
+        import the suite.
+      </t-b>
+      <t-b>
+        <strong>The dirnav suite builds its tree from a dictionary of bytes.</strong> Eleven entries,
+        chosen so that each admission and selection rule is reached by at least one of them - three LF
+        lines, a CRLF file, a bare-CR file, an empty file, a file with a BOM, a file holding a NUL, a
+        file of invalid UTF-8, a dot-file, a file with no extension, one level down, and one under a
+        skip-list name.
+      </t-b>
+      <t-b>
+        Its <code>Output</code> is a nine-line recorder, which is the case for the protocol being
+        structural rather than nominal:
+      </t-b>
+<pre><code class="language-python">class Recorder:
+    def __init__(self):
+        self.lines = []
+
+    def output(self, text: str) -&gt; None:
+        self.lines.append(text)</code></pre>
+      <t-b>
+        It inherits from nothing and imports nothing from
+        <code>python_textfinder_dirnav</code> - which is the argument
+        <a target="_blank" href="Spec_Driven_Design_Python_Dirnav.html">Dirnav</a> Section 2 makes for
+        rejecting <code>abc.ABC</code>, made concrete. Two checks hold both ends of it: the recorder
+        satisfies <code>Output</code> under <code>isinstance</code>, and an object without the method
+        does not.
+      </t-b>
+      <t-b>
+        <strong>The output suite replaces the interpreter's own streams.</strong> It swaps
+        <code>sys.stdout</code> and <code>sys.stderr</code> for objects whose <code>buffer</code>
+        attribute is a <code>BytesIO</code>, so the sink wraps a byte buffer the test can read and
+        every check compares bytes rather than decoded text. A <code>BrokenBuffer</code> subclass whose
+        <code>write</code> raises <code>OSError</code> is what drives the failure paths, and a fixture
+        using it for both streams is what covers the case Section 4 of the
+        <a target="_blank" href="Spec_Driven_Design_Python_Output.html">Output page</a> describes,
+        where reporting a failure is itself a failure.
+      </t-b>
+      <t-b>
+        <strong>The cmdline suite needs no fixture at all</strong>, the library touching no filesystem
+        and opening no stream. Its one helper prepends a program name to the token list, since
+        <code>parse</code> scans from index 1 and a suite that passed a pre-sliced list would test a
+        different function than the binary calls.
+      </t-b>
+
+      <a id="integration"></a>
+      <h3>3. &nbsp;The Integration Suite</h3>
+      <t-b>
+        The integration suite drives the assembled program as a subprocess - <code>python -m
+        python_textfinder_entry</code> with a working directory of its own - and reads stdout and
+        stderr as bytes as well as as text. Running it as a subprocess is what makes the exit code and
+        the stream bytes observable at all, and it is the only way to check the three exit codes
+        &sect;3.4 fixes.
+      </t-b>
+      <t-b>
+        Its 34 checks fall into seven groups.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>The bare command line</strong> - the nine listing lines exactly, an empty stderr,
+            and no run summary, since &sect;3.6 requires none from a run that traversed nothing.</li>
+          <li><strong>Help</strong> - the text starts with the usage line, stderr is empty, nothing is
+            traversed, and <code>-H</code> and <code>/H</code> produce identical output, which is
+            &sect;4's introducer equivalence checked rather than assumed.</li>
+          <li><strong>Usage diagnostics</strong> - five of the six reason lines, each with an empty
+            stdout and exit 1, and one check that the diagnostic's second line equals the first line of
+            the help text. That last one is the shape &sect;5.2 binds, held against the text &sect;5.1
+            fixes rather than against a copy of it.</li>
+          <li><strong>The invalid expression</strong> - exit 1, the <code>/r</code> line on stdout
+            carrying what failed, exactly nine stdout lines, no traversal, the listing not repeated
+            when <code>/v</code> already wrote it, and stderr exactly two lines. The last is the check
+            that would fail if the interpreter's own <code>re.error</code> text ever reached the
+            user.</li>
+          <li><strong>Search</strong> - eight checks over a four-file scratch tree covering the default
+            run, the detail switches, the extension filter, <code>/s false</code>, the verbose listing
+            preceding the output, two roots under one summary, an unopenable root, and a search that
+            matched nothing.</li>
+          <li><strong>Stream bytes</strong> - four checks, covered in Section 5.</li>
+          <li><strong>Exit codes and the interpreter floor</strong> - the three codes and no other,
+            no traceback on any of six command lines, and the three floor checks of Section 5.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        Every search check names its expected run summary rather than only its paths. <code>/s
+        false</code> over that tree reports <code>accessed 2 files, 1 directories</code> and the
+        default run reports <code>accessed 3 files, 2 directories</code>, so the counts of &sect;3.6
+        are held by the suite and not only by the
+        <a target="_blank" href="Spec_Driven_Design_Python_Demonstration.html">demonstration</a>, whose
+        numbers move with the tree.
+      </t-b>
+
+      <a id="fixture"></a>
+      <h3>4. &nbsp;The Shared Fixture</h3>
+      <t-b>
+        <code>Spec_driven_TextFinder/Fixture/</code> is a project-level artifact rather than a Python
+        one, and the Python suite is the first to drive it. It holds one tree of eleven files,
+        <code>cases.txt</code> listing 31 command lines, and <code>expected/</code> holding one file
+        per case.
+      </t-b>
+      <t-b>
+        It exists because comparing four implementations with one another catches a difference and
+        gives no evidence about which side is wrong - and catches nothing at all when two
+        implementations share a misreading, which is the likely failure, since the later
+        implementations are written from documents the earlier ones shaped. A committed artifact turns
+        "the four agree" into "the four agree with something".
+      </t-b>
+      <t-b>
+        Each case carries four fields: a name, a comparison mode, an exit code, and the arguments. The
+        mode is the part that makes the artifact portable rather than platform-specific.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong><code>ordered</code></strong> - stdout must equal the expected bytes exactly.
+            Used where the output has one possible order: a root that is a single file, a listing, the
+            help text, or an empty stdout.</li>
+          <li><strong><code>unordered</code></strong> - the lines of stdout, sorted, must equal the
+            expected file, which is stored sorted. Used where the output spans a directory whose entry
+            order &sect;3.2 leaves to the platform. The runner additionally checks that the last line
+            emitted, <em>before</em> sorting, is the run summary, since &sect;3.6 fixes that and
+            sorting would otherwise hide it.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        stdout is compared as bytes, not as decoded text, so a CR a runtime inserted is a failure
+        rather than something a line-based comparison would absorb. The fixture does not fix stderr:
+        &sect;2 and &sect;5.2 leave every implementation its own wording there, so a case that exits 1
+        records what stdout held and what the process returned and says nothing about the text that
+        explained it.
+      </t-b>
+      <t-b>
+        <code>.gitattributes</code> in that folder sets <code>* -text</code>. Without it a checkout on
+        Windows would rewrite <code>crlf.txt</code> and <code>cr.md</code>, and three cases would fail
+        for a reason unrelated to the implementation under test. That line is the fixture's one
+        dependency on how the repository stores it, and it is there to remove every other one.
+      </t-b>
+      <t-b>
+        <strong>The provenance is stated rather than implied, and it is the honest limit of what the
+        fixture is worth.</strong> The expected files were captured from the Python implementation on
+        2026-09-24 and then read against &sect;3 through &sect;5 case by case. They were not derived
+        independently, so a case where this implementation and the specification disagree in the same
+        direction as the reviewer would have been committed as correct. If a case is ever found to
+        contradict Spec_TextFinder.md, the specification wins and the expected file is regenerated -
+        Constitution.md rule 1 applied to a folder of captured output.
+      </t-b>
+      <t-b>
+        Three cases exist only because a review found a rule unsettled or unstated.
+        <code>help-outranks-bad-regex</code> and <code>help-outranks-verbose</code> hold &sect;5.4's
+        resolution order, which was unspecified and observable until turn 6.
+        <code>skip-list-never-prunes-a-root</code> holds the &sect;3.2 exemption that is one sentence
+        of prose and easy to lose.
+      </t-b>
+      <t-b>
+        The C++, Rust, and C# suites do not drive the fixture yet, which Important_Notes.md N5 records.
+        Until they do, the artifact holds one implementation to the specification rather than four to
+        one another.
+      </t-b>
+
+      <a id="holds"></a>
+      <h3>5. &nbsp;What the Suites Hold To</h3>
+      <t-b>
+        Several checks exist because a reading of the specification could be wrong in a way nothing
+        else would catch. Those are the ones worth naming.
+      </t-b>
+      <t-b>
+        <strong>LF-only stdout, at the byte level, through a pipe, on Windows.</strong> Four command
+        lines are run and each is checked for the absence of <code>\r</code> in the raw bytes and for a
+        terminating <code>\n</code>, before any decoding. A check on decoded text would pass whatever
+        the sink wrote, since a text layer would have absorbed the translation. Two more checks assert
+        that stdout opens with no byte-order mark and that a non-ASCII line reaches the pipe as UTF-8.
+      </t-b>
+      <t-b>
+        <strong>The eight terminators <code>str.splitlines()</code> would wrongly split on.</strong>
+        Vertical tab, form feed, the file, group, record, and unit separators, NEL, and the line and
+        paragraph separators each get a check asserting they do <em>not</em> terminate a line. Those
+        eight are the difference between this implementation's match set and the one the obvious
+        standard call would produce, and no other check in the project would notice it.
+      </t-b>
+      <t-b>
+        <strong>The size limit from both sides.</strong> A file of exactly 10,485,760 bytes is
+        searched; one of 10,485,761 draws <code>too large</code> and is still counted. A limit asserted
+        from one side only is a limit whose comparison operator is untested.
+      </t-b>
+      <t-b>
+        <strong>The no-content fast path reporting a file it never opened.</strong> A binary file is
+        reported by its path line under the default expression, which is &sect;3.3's accepted cost made
+        visible rather than argued for. The same run draws no file announcement under either
+        <code>/h</code> setting.
+      </t-b>
+      <t-b>
+        <strong><code>.gitignore</code> selected by <code>/p gitignore</code>.</strong> &sect;5 fixes
+        that a dot-file's extension is the text after the dot, and both
+        <code>os.path.splitext</code> and <code>pathlib.Path.suffix</code> disagree. One check holds
+        the rule the standard library would have got wrong.
+      </t-b>
+      <t-b>
+        <strong>The interpreter floor held for syntax rather than asserted.</strong> Three checks: the
+        running interpreter meets 3.10; no source file carries a CR; and every source file parses under
+        <code>ast.parse(text, feature_version=(3, 10))</code>. The third is the one that matters -
+        running on 3.12 and asserting "we support 3.10" proves nothing, while parsing each file at the
+        declared feature version proves it for syntax. It also counts the files it checked and asserts
+        the count is 11, so a source file added and forgotten fails the suite rather than being skipped
+        by it.
+      </t-b>
+      <t-b>
+        <strong>No traceback on any path.</strong> Six command lines - bare, help, a search, an
+        unrecognized switch, a bad expression, and a missing root - are each checked for the absence of
+        <code>Traceback</code> in stderr. That is the claim of
+        <a target="_blank" href="Spec_Driven_Design_Python_Entry.html">Entry</a> Section 6 made
+        falsifiable: an uncaught exception would exit 1 with no usage line, which would read as a usage
+        failure.
+      </t-b>
+      <t-b>
+        <strong>Three checks for a sink with both streams broken.</strong> Nothing escapes when the
+        notice cannot be written, nothing escapes when release is the first failure, and the sink is
+        still released. All three were added in turn 6, after a probe demonstrated the escape rather
+        than after a reading predicted it.
+      </t-b>
+
+      <a id="verified"></a>
+      <h3>6. &nbsp;Two Things Verified by Running</h3>
+      <t-b>
+        A suite that would pass whether or not the thing it tests works is worse than no suite. Two
+        properties of this harness were checked by breaking something on purpose rather than by reading
+        the code that implements them.
+      </t-b>
+      <t-b>
+        <strong>&sect;6.2's never-built rule.</strong> The rule is that a suite that never ran is a
+        failure rather than a pass by absence. The Output suite was renamed away, the unit runner was
+        run, and it reported <code>output - suite not present</code> and exited 1. The suite was then
+        restored. Without that check the runner's <code>if not exist</code> branch is a line of batch
+        nobody has executed.
+      </t-b>
+      <t-b>
+        <strong>The fixture bites.</strong> One expected file was corrupted, the integration suite was
+        run, and it failed and named the case. The file was then restored. A fixture driven through
+        <code>subTest</code> is exactly the shape that can pass vacuously - an empty case list, a
+        mis-joined path, a comparison against itself - so the check is on the comparison rather than on
+        the cases.
+      </t-b>
+      <t-b>
+        The case-list length is asserted too, at 31 or more, for the same reason: a
+        <code>cases.txt</code> that failed to parse would otherwise produce zero subtests and a green
+        suite.
+      </t-b>
+
+      <a id="running"></a>
+      <h3>7. &nbsp;Running Them</h3>
+      <t-b>
+        Two commands, each from the implementation's own folder. Neither needs a virtual environment
+        and neither installs anything.
+      </t-b>
+<pre><code class="language-bash">run_unit_tests.bat
+run_integration_tests.bat</code></pre>
+      <t-b>
+        The unit runner as it reports, on 2026-09-24:
+      </t-b>
+<pre><code class="language-text">compiling the four packages
+
+=== cmdline unit suite ===
+.....................................................
+----------------------------------------------------------------------
+Ran 53 tests in 0.001s
+
+OK
+cmdline - exit status 0
+
+=== dirnav unit suite ===
+...................................................
+----------------------------------------------------------------------
+Ran 51 tests in 0.106s
+
+OK
+dirnav - exit status 0
+
+=== output unit suite ===
+........................
+----------------------------------------------------------------------
+Ran 24 tests in 0.001s
+
+OK
+output - exit status 0
+
+0 suite(s) failed</code></pre>
+      <t-b>
+        The dirnav suite costs a hundred times what the other two do, and the reason is the only one
+        that touches a filesystem: it writes eleven files to a temporary directory for each of several
+        fixtures. The other two run entirely in memory.
+      </t-b>
+      <t-b>
+        The integration runner:
+      </t-b>
+<pre><code class="language-text">compiling the four packages
+
+=== integration suite ===
+..................................
+----------------------------------------------------------------------
+Ran 34 tests in 6.520s
+
+OK
+integration - exit status 0
+
+0 suite(s) failed</code></pre>
+      <t-b>
+        6.5 seconds for 34 checks, against 0.1 for 128. Every check here starts an interpreter, and
+        the fixture check starts 31 of them inside one. That cost is what buys the exit code and the
+        stream bytes, which no in-process check can observe.
+      </t-b>
+      <t-b>
+        Each runner holds the console after its summary unless <code>TEXTFINDER_NO_PAUSE</code> is set,
+        which is what lets a capture run unattended and a reader run it by double-clicking.
+      </t-b>
+
+      <a id="gaps"></a>
+      <h3>8. &nbsp;What the Suites Do Not Cover</h3>
+      <t-b>
+        Four gaps, each stated in the specification that leaves it.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><strong>The recursion limit.</strong> The traversal is written as recursion, so a tree
+            deeper than the interpreter's limit ends the run with a <code>RecursionError</code> - 1000
+            frames by default, and the library spends more than one frame per level. No suite
+            exercises it, since no fixture builds a tree of that depth.</li>
+          <li><strong>Symbolic links.</strong> &sect;3.2 requires a link be passed over silently, and
+            creating one on Windows needs a privilege a test run cannot assume. The rule is held by the
+            <code>follow_symlinks=False</code> arguments being written out at every call rather than by
+            a check.</li>
+          <li><strong>Unrenderable names.</strong> The root-path case is covered - one check passes a
+            root carrying a surrogate and asserts the U+FFFD announcement - and the directory-entry
+            case is not, since creating such a name is a POSIX-only operation.</li>
+          <li><strong>The skip-list extension point.</strong> &sect;3.5 makes it a build-time facility
+            with no runtime path, and no suite calls <code>_add_skip_directory</code>, which is the
+            rule that gives the leading underscore its meaning. The defaults it starts from are covered
+            by the pruning checks.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        The first three are properties of the platform rather than of the harness, and naming them here
+        is what keeps a reader from mistaking a green suite for full coverage of &sect;3.2.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>9. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 assigns it
+        <code>Prompts_Python_Spec_driven_TextFinder_Tests.md</code>, and no such record was written:
+        this thread produced one record covering every turn, and it sits on the
+        <a target="_blank" href="Spec_Driven_Design_Python_Process.html">Process page</a>, whose
+        Section 4 reports the first run of each suite and whose Section 5 covers the thirteen checks
+        turn 6 added.
+      </t-b>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#suites">four suites</a></menu-elem>
+        <menu-elem class="secElem"><a href="#units">unit suites</a></menu-elem>
+        <menu-elem class="secElem"><a href="#integration">integration suite</a></menu-elem>
+        <menu-elem class="secElem"><a href="#fixture">shared fixture</a></menu-elem>
+        <menu-elem class="secElem"><a href="#holds">what they hold to</a></menu-elem>
+        <menu-elem class="secElem"><a href="#verified">verified by running</a></menu-elem>
+        <menu-elem class="secElem"><a href="#running">running them</a></menu-elem>
+        <menu-elem class="secElem"><a href="#gaps">coverage gaps</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenPythonPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 6, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past.
+       A block whose content fits needs no arrows, so they stay hidden until it
+       overflows, and are rechecked whenever its width changes. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      /* the 1px allowance keeps subpixel rounding from showing arrows that cannot move */
+      const showArrows = () => {
+        arrows.style.display = pre.scrollWidth - pre.clientWidth > 1 ? '' : 'none';
+      };
+      showArrows();
+      /* the splitter resizes the panel and prism rewrites the content, so one
+         measurement at load is not enough */
+      new ResizeObserver(showArrows).observe(pre);
+      window.addEventListener('resize', showArrows);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

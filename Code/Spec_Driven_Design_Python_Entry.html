@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Python_Entry.html - Python thread, page 2
+-->
+<head>
+  <title>Spec-Driven Python: Entry</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+    #github .preScrollWrap { width: max-content; max-width: 100%; }
+    #github .preScroll { position: sticky; top: 0.15rem; z-index: 1; text-align: right;
+      height: 2.2rem; padding: 1rem 1.3rem 0 0; margin-bottom: -2.2rem; }
+    #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
+      font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
+      color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .synopsis {
+      border: 2px dashed var(--dark);
+      margin: 2rem 0rem;
+      padding: 0.25rem 1rem;
+    }
+    div.synopsis ul {
+      margin: 0rem 0rem;
+    }
+    div.synopsis ul li {
+      margin: 0.1rem 2rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Python_Entry.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 09/24/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder/Python_Spec_driven_TextFinder_Entry">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Python: Entry</h2>
+        <h4 class="indent" id="subtitle">87 lines that wire three libraries together and own the exit codes</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Contracts.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Entry.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Python_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+      <div class="synopsis">
+        <strong>Synopsis:</strong><br>
+        <t-b>
+          This page covers <code>python_textfinder_entry</code>, the binary. It parses the arguments,
+          wires the three libraries together, drives traversal, and owns the skip list and the exit
+          codes.
+          <ul>
+            <li>
+              <code>main(argv)</code> is a function a suite can call with an argument list of its
+              own. <code>__main__.py</code> holds three lines and nothing else.
+            </li>
+            <li>
+              Every exit is a <code>return</code>. <code>sys.exit</code> appears once in the
+              component, after the <code>with</code> statement has already ended, and
+              <code>os._exit</code> appears nowhere.
+            </li>
+          </ul>
+        </t-b>
+        <t-b>
+          The sink is constructed inside a <code>try</code> and then held by a <code>with</code>, and
+          splitting the two is the point.
+          <ul>
+            <li><code>with StdoutSink() as sink:</code> would put the construction inside the statement, where an <code>except</code> covering the body would also cover the body's own failures.</li>
+            <li>This is the Python counterpart of the C++ implementation's <code>std::optional</code> and of the C# split between a <code>try</code> and a <code>using</code>.</li>
+            <li>Only a return leaves the <code>with</code> statement and releases the sink, which is what flushes the buffer.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Two things this implementation has that no sibling does, and one it has to give up.
+          <ul>
+            <li><code>sys.argv</code> is already decoded, so the undecodable-argument exit code the Rust implementation defines has no counterpart here.</li>
+            <li>The skip list is handed over as a <code>tuple</code>, which cannot be modified at all - stronger than C#'s <code>IReadOnlyList</code>.</li>
+            <li>Against that, <code>_SKIP_LIST</code> and <code>_add_skip_directory</code> carry a leading underscore, which is the whole of Python's access control. The specification calls that a stated weakness rather than a difference in design.</li>
+          </ul>
+        </t-b>
+      </div>
+
+      <a id="binary"></a>
+      <h3>1. &nbsp;The Binary</h3>
+      <t-b>
+        <code>python_textfinder_entry</code> is the command-line entry point. It parses the program's
+        arguments, wires the three libraries together, and drives directory traversal. Matching and
+        file I/O belong to <code>python_textfinder_dirnav</code> and
+        <code>python_textfinder_output</code>; the binary performs neither.
+      </t-b>
+      <t-b>
+        The binary does write process-level text of its own - help, the resolved option listing, and
+        startup diagnostics - but it composes none of it. Each is a string
+        <code>python_textfinder_cmdline</code> hands it, and the binary decides only when to write it
+        and to which stream. Block lines and announcements it neither composes nor writes, including
+        the error announcements about root paths it supplied itself.
+      </t-b>
+      <t-b>
+        The package holds two files, and the division between them is what makes the binary testable.
+      </t-b>
+      <t-b>
+        <ul class="tight">
+          <li><code>entry.py</code> defines <code>main(argv: list[str]) -&gt; int</code>, the skip
+            list, and the extension point.</li>
+          <li><code>__main__.py</code> holds three lines - the import, the call, and
+            <code>sys.exit(main(sys.argv))</code> - and nothing else, so that <code>main</code> is a
+            function a suite can call with an argument list of its own.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        The whole of <code>argv</code> is passed, element 0 included.
+        Spec_Python_TextFinder_Cmdline.md &sect;5 fixes that the parser skips it, so the offset is
+        stated once and this binary does not slice the list. It reads the list's length for the
+        bare-command-line test of Section 2 and inspects no element of it.
+      </t-b>
+
+      <a id="startup"></a>
+      <h3>2. &nbsp;The Startup Sequence</h3>
+      <t-b>
+        Spec_Python_TextFinder_Entry.md &sect;4 fixes nine steps in order. Every return above step 7
+        precedes traversal, which is what &sect;3.6 requires of a run that writes no summary.
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li><strong>Parse.</strong> Invoke <code>parse(argv)</code>. When it returns a
+            <code>ParseFailure</code>, write that failure's <code>diagnostic</code> to stderr
+            unaltered and return 1. The test is <code>isinstance(result, ParseFailure)</code>, which
+            is what narrows the union for a type checker. A malformed <code>/r</code> is not detected
+            here; step 6 reaches it.</li>
+          <li><strong>Construct the sink.</strong> On <code>RuntimeError</code> or
+            <code>OSError</code>, write <code>cannot initialize output</code> to stderr and return 2.
+            Every later write to stdout passes through this object, so it is constructed before any
+            of them.</li>
+          <li><strong><code>/H true</code></strong> writes <code>help_text()</code> through the sink
+            with <code>write_text</code>, returns 0, and does not proceed.</li>
+          <li><strong>The bare command line.</strong> If <code>argv</code> holds one element, write
+            <code>options_text(commands)</code> through the sink, return 0, and do not proceed. This
+            is &sect;3.1, and it succeeds: nothing was asked for and nothing failed.</li>
+          <li><strong><code>/v true</code></strong> writes the same listing before traversal begins.
+            Steps 4 and 5 are mutually exclusive: a command line bearing <code>/v</code> holds more
+            than one element.</li>
+          <li><strong>Finalize the skip list and construct the <code>Dirnav</code></strong>, passing
+            the sink, that list as a <code>tuple</code>, and the parsed commands. Expression
+            compilation occurs here. Section 4 covers what happens when it fails.</li>
+          <li><strong>Traverse.</strong> For each root path, in the order <code>/P</code> gave them,
+            invoke <code>search</code> on the same <code>Dirnav</code>. No root-path outcome affects
+            the exit code.</li>
+          <li><strong>The run summary.</strong> Call <code>emit_run_summary</code> once, after the
+            last root path returns. The binary supplies no count and composes no text; its whole part
+            is knowing that step 7 is finished, which nothing inside the library can know.</li>
+          <li><strong>Return 0.</strong></li>
+        </ol>
+      </t-b>
+      <t-b>
+        <strong>The test at step 4 is <code>len(argv) == 1</code> and not <code>len(argv) == 0</code>.</strong>
+        <code>sys.argv</code> carries the program name in element 0 - the path of
+        <code>__main__.py</code> under <code>python -m</code> - so a one-element list is the bare
+        command line, as it is in C++ and Rust and is not in C#, whose <code>string[] args</code>
+        holds the arguments alone. Invocation 1 of the
+        <a target="_blank" href="Spec_Driven_Design_Python_Demonstration.html">demonstration</a> is
+        that case, and its <code>/v</code> line reads <code>false</code> because the listing reports
+        an option set in which <code>/v</code> was never set.
+      </t-b>
+      <t-b>
+        <strong>There is no argument-decoding step before step 1.</strong> The interpreter decodes the
+        command line and builds <code>sys.argv</code> - on POSIX with the filesystem encoding and the
+        <code>surrogateescape</code> error handler, on Windows from the wide API - so the argument
+        collection and decode the Rust implementation performs, and the exit code it reserves for a
+        failure there, have no counterpart. The specification records that as a stated property rather
+        than an omission.
+      </t-b>
+      <t-b>
+        Two things follow, and the specification names both. Every command line the shell can express
+        reaches the parser, so this implementation accepts root paths and expressions the C++
+        implementation cannot carry through its narrow <code>argv</code>. And an argument the
+        interpreter could not decode carries lone surrogates into the option listing, where
+        Spec_Python_TextFinder_Output.md &sect;5 fixes what the sink writes for them; a root path
+        carrying them draws <code>cannot open</code>.
+      </t-b>
+      <t-b>
+        <strong>Every exit above is a <code>return</code> from <code>main</code>.</strong>
+        <code>sys.exit</code> is not called inside <code>main</code> and <code>os._exit</code> is not
+        called anywhere. The first would express a return value as an exception, which a suite calling
+        <code>main</code> would then have to catch; the second terminates the process immediately,
+        with the sink's buffer unwritten. Only a return leaves the <code>with</code> statement and
+        releases the sink, which flushes its stdout buffer. <code>sys.exit</code> appears once in this
+        component, in <code>__main__.py</code>, where it converts the returned value into the process's
+        exit code after the <code>with</code> statement has already ended.
+      </t-b>
+
+      <a id="construction"></a>
+      <h3>3. &nbsp;Why the Construction Sits Outside the <code>with</code></h3>
+      <t-b>
+        Step 2 splits what a Python reader would write as one statement. The sink is constructed
+        inside a <code>try</code> block and then held by a <code>with</code> statement covering the
+        rest of <code>main</code>:
+      </t-b>
+<pre><code class="language-python">try:
+    sink = StdoutSink()
+except (RuntimeError, OSError):
+    _write_stderr("cannot initialize output\n")
+    return 2
+
+with sink:
+    ...</code></pre>
+      <t-b>
+        Writing <code>with StdoutSink() as sink:</code> would put the construction inside the
+        statement, where an <code>except</code> clause covering the body would also cover the body's
+        own failures. Splitting the two is what lets the construction failure be handled alone and the
+        flush still be guaranteed.
+      </t-b>
+      <t-b>
+        Each implementation reaches the same split with the construct its language offers. C++ uses a
+        <code>std::optional</code> so the sink can be built in a guarded scope and outlive it; C#
+        splits a <code>try</code> from a <code>using</code> statement; Python splits a
+        <code>try</code> from a <code>with</code>. The three look unlike one another and answer the
+        same question: a failure in constructing the sink is not a failure of the run the sink would
+        have carried.
+      </t-b>
+      <t-b>
+        The two exception types are the ones Spec_Python_TextFinder_Output.md &sect;4 names.
+        <code>RuntimeError</code> is the one-sink rule refusing a second sink;
+        <code>OSError</code> is a process started with no usable standard output handle. Exit code 2
+        is reachable in this implementation, and the one-sink rule is what makes it so - this binary
+        constructs exactly one sink, so its own code cannot provoke the first, and it handles the case
+        because a constructor with a failure mode callers ignore is a constructor whose failure mode
+        will eventually be reached.
+      </t-b>
+
+      <a id="regex"></a>
+      <h3>4. &nbsp;The Malformed Expression</h3>
+      <t-b>
+        The <code>Dirnav</code> constructor compiles the <code>/r</code> expression and raises
+        <code>re.error</code> when it will not compile. That is the seventh usage condition of
+        &sect;5.2, and the binary is what writes it. Four things happen in order:
+      </t-b>
+      <t-b>
+        <ol class="tight">
+          <li><strong>If step 5 did not already write it, write the option listing now</strong>, so
+            that the user sees the <code>/r</code> line carrying the expression that failed. &sect;5.2
+            requires this listing whatever <code>/v</code> says, and &sect;5.3 requires it not be
+            repeated when <code>/v</code> already produced it.</li>
+          <li><strong>Call <code>flush</code> on the sink</strong>, so that the listing reaches the
+            stream ahead of the diagnostic that explains it. The sink buffers stdout without per-line
+            flushing, so without this the two arrive out of order.</li>
+          <li><strong>Compose the usage diagnostic</strong> in the shape &sect;5.2 binds - the reason
+            line <code>invalid regex for switch: /r</code>, a newline, then
+            <code>usage_line()</code> - and write it to stderr.</li>
+          <li><strong>Return 1</strong>, having traversed nothing.</li>
+        </ol>
+      </t-b>
+      <t-b>
+        The binary composes that diagnostic; neither <code>python_textfinder_cmdline</code> nor
+        <code>python_textfinder_dirnav</code> does, the former supplying only
+        <code>usage_line()</code> and the latter only the failure that triggers it.
+        Spec_Python_TextFinder_Entry.md &sect;6 fixes the reason line for this implementation, since
+        the binary is what writes it.
+      </t-b>
+      <t-b>
+        <strong>The message <code>re.error</code> carries is not written</strong>, for a reason that
+        outlives &sect;5.2's wording: that text is the interpreter's, so an interpreter upgrade would
+        change this program's output without any document in this tree recording the change. What the
+        user gets instead is the <code>/r</code> line above, carrying the expression as typed. The
+        integration suite asserts that stderr holds exactly two lines here, which is the check that
+        would fail if the interpreter's text ever reached it.
+      </t-b>
+      <t-b>
+        <code>re.error</code> is caught by its own type rather than as <code>Exception</code> or as
+        <code>ValueError</code>, which it derives from. A broader <code>except</code> would also
+        swallow an argument defect in this binary's own call and report it as a malformed user
+        pattern.
+      </t-b>
+      <t-b>
+        Invocation 10 of the demonstration is this path end to end: nine listing lines on stdout, two
+        diagnostic lines on stderr, exit 1, and no file read - the expression is built before the
+        first root path is visited, so a bad pattern costs no traversal.
+      </t-b>
+
+      <a id="skiplist"></a>
+      <h3>5. &nbsp;The Skip List</h3>
+      <t-b>
+        <code>python_textfinder_entry</code> owns the process-wide skip list, initialized with the
+        eleven defaults &sect;3.2 fixes:
+      </t-b>
+<pre><code class="language-text">archive, .git, .svn, .hg, build, out, target, bin, obj, __pycache__, node_modules</code></pre>
+      <t-b>
+        The module holds the list at module level and implements the build-time extension point of
+        &sect;3.5:
+      </t-b>
+<pre><code class="language-python">_SKIP_LIST: list[str] = [ ... the eleven defaults ... ]
+
+def _add_skip_directory(name: str) -&gt; None: ...</code></pre>
+      <t-b>
+        <code>_add_skip_directory</code> takes the name alone, as &sect;3.5 writes it, and returns
+        <code>None</code>. &sect;3.5 fixes the shape and leaves the spelling to each language, so the
+        name is snake_case here where &sect;3.5 writes <code>addSkipDirectory</code>. It ignores a
+        name the list already holds, comparing with the same platform rule
+        <code>python_textfinder_dirnav</code> applies to a skip-list entry, so a build that adds
+        <code>Build</code> on Windows does not lengthen a list that already holds
+        <code>build</code>.
+      </t-b>
+      <t-b>
+        The calls that extend the list are written into this module, beneath the list's definition,
+        and run when the module is imported - before <code>main</code> is called and therefore before
+        traversal begins. A <code>list</code> needs no interior-mutability type and no synchronization
+        primitive to be extended from a module-level function, so the <code>RefCell</code> and
+        <code>thread_local!</code> pair the Rust implementation requires has no counterpart.
+      </t-b>
+      <t-b>
+        <strong>Both names carry a leading underscore, which is the whole of Python's access
+        control.</strong> Nothing prevents another module from importing and calling
+        <code>_add_skip_directory</code>, where the C# implementation's <code>private</code> and the
+        C++ implementation's internal linkage prevent it outright. The specification records that as a
+        stated weakness of this implementation rather than a difference in design, and the rule it
+        rests on is that no library and no suite in this project calls either name.
+      </t-b>
+      <t-b>
+        <strong>The list is handed to the <code>Dirnav</code> as a <code>tuple</code>.</strong> That
+        library can read it and cannot modify it - a stronger guarantee than the C# implementation's
+        <code>IReadOnlyList&lt;string&gt;</code>, through which a caller holding the underlying list
+        can still change what the library sees. The two facts in this section run in opposite
+        directions, and the specification states both rather than picking the flattering one: Python
+        gives the weaker guarantee at the module boundary and the stronger one at the call.
+      </t-b>
+      <t-b>
+        Nothing extends the list once traversal has begun, and the binary reads no configuration file
+        and offers no runtime means of extending it. Invocation 8 of the demonstration shows the
+        default list doing its work: <code>__pycache__</code> sits beneath both roots and contributes
+        nothing to the counts.
+      </t-b>
+
+      <a id="codes"></a>
+      <h3>6. &nbsp;Exit Codes and Diagnostics</h3>
+      <t-b>
+        The three codes &sect;3.4 fixes map onto this binary's failure modes as follows. No other
+        value is returned from <code>main</code>.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:8rem;" />
+          <col style="width:48rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Code</th>
+          <th class="darkItem">Condition</th>
+        </tr>
+        <tr>
+          <td class="lightItem">0</td>
+          <td class="lightItem">All startup steps and traversal completed; or <code>/H true</code> printed help; or the command line was bare. Match count and unopenable root paths do not affect it.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">1</td>
+          <td class="lightItem">Parsing failed, or <code>/r</code> was a malformed expression. Both are usage diagnostics, in the shape &sect;5.2 binds.</td>
+        </tr>
+        <tr>
+          <td class="lightItem">2</td>
+          <td class="lightItem">Constructing the <code>StdoutSink</code> failed. Neither cause writes a usage line, since neither is a usage diagnostic. The text is <code>cannot initialize output</code>.</td>
+        </tr>
+      </table>
+      <t-b>
+        Only one exit-code-1 path writes to stdout: the malformed expression, whose option listing
+        Section 4 requires. A parse failure leaves stdout empty, as does the code-2 failure, which
+        occurs before the sink exists or because it does not.
+      </t-b>
+      <t-b>
+        <strong>An uncaught exception escaping <code>main</code> is not one of the three codes.</strong>
+        The interpreter would print a traceback to stderr and exit 1, which would be read as a usage
+        failure and would carry no usage line. Nothing in this binary is written to allow that:
+        <code>python_textfinder_dirnav</code> contains every <code>OSError</code> it meets and
+        <code>python_textfinder_output</code> contains every write failure, so the two exception types
+        that reach this module are the ones steps 2 and 6 name. The
+        <a target="_blank" href="Spec_Driven_Design_Python_Testing.html">integration suite</a> asserts
+        that no traceback reaches stderr on any of six command lines.
+      </t-b>
+      <t-b>
+        The one uncontained case is the <code>RecursionError</code> a tree deeper than the
+        interpreter's limit would raise, which the Dirnav specification leaves uncontained
+        deliberately and which would exit this way. It is named here rather than left as the one
+        exception to an otherwise unconditional claim.
+      </t-b>
+
+      <a id="stderr"></a>
+      <h3>7. &nbsp;Writing to stderr</h3>
+      <t-b>
+        Every stderr write in this binary goes to <code>sys.stderr.buffer</code> as UTF-8 with an
+        explicit <code>\n</code>, followed by a flush. <code>sys.stderr.write</code> is not used: it
+        writes through a text layer opened with <code>newline=None</code>, which translates to CRLF on
+        Windows.
+      </t-b>
+      <t-b>
+        &sect;3.4 leaves the stderr terminator to the platform and would permit CRLF here. Writing LF
+        costs one writer choice and makes this implementation's stderr identical on both platforms, so
+        it is fixed in the specification rather than left to the runtime. The integration suite asserts
+        it at the byte level, through a pipe, on Windows.
+      </t-b>
+      <t-b>
+        <strong>Every stderr write is wrapped against <code>OSError</code> and <code>ValueError</code>
+        and its failure discarded</strong>, for the reason the Output specification gives for the
+        sink's own notice: a process whose stderr is broken must still return the code Section 6
+        assigns, and an exception raised while reporting a usage error would replace that code with an
+        interpreter traceback and a 1 that means something else. A run that cannot say why it failed
+        still fails with the right number.
+      </t-b>
+      <t-b>
+        The encode uses <code>errors="replace"</code>. A reason line may reproduce a token the
+        interpreter decoded with <code>surrogateescape</code>, and a diagnostic that raised while
+        reporting a bad command line would be worse than one that renders a byte as <code>?</code>.
+      </t-b>
+      <t-b>
+        Nothing in this implementation writes through <code>sys.stdout</code>, so the interpreter's own
+        flush of that stream at shutdown has nothing to write and can fail at nothing. That is why a
+        broken pipe produces the sink's one <code>output failed</code> notice and not, in addition,
+        the interpreter's shutdown complaint about an unflushable stdout.
+      </t-b>
+      <t-b>
+        Nothing writes to stderr before stdout has been flushed. Step 1 predates the sink and so has no
+        buffer to flush; step 2 fails before one exists; step 6 flushes explicitly.
+      </t-b>
+
+      <a id="build"></a>
+      <h3>8. &nbsp;Build and Launch</h3>
+      <t-b>
+        There is no build step and no project file. Python compiles on import, so this component is
+        run as <code>python -m python_textfinder_entry</code> once the four <code>src/</code> folders
+        are on <code>PYTHONPATH</code>.
+      </t-b>
+      <t-b>
+        The launchers <code>Python_TextFinder.bat</code> and <code>Python_TextFinder</code> set that
+        path, forward their arguments, and return the interpreter's exit code unchanged.
+        <code>Python_TextFinder</code> is the name &sect;5.1 substitutes for
+        <code>&lt;executable&gt;</code>, and that substitution is fixed in
+        <code>python_textfinder_cmdline</code> rather than read from <code>sys.argv[0]</code>, which
+        under <code>python -m</code> holds a path.
+      </t-b>
+      <t-b>
+        The binary imports the three libraries and <code>os</code>, <code>re</code>, and
+        <code>sys</code> from the standard library. <code>os</code> is imported for
+        <code>os.name</code> alone, which Section 5 needs to compare a skip-list name by the platform
+        rule the Dirnav specification fixes; that rule is two lines and is written out here rather than
+        reached for through another package's private name. That import was missing from the
+        specification's own build list until turn 2, which corrected the document before writing the
+        code.
+      </t-b>
+      <t-b>
+        <strong>No locale is read.</strong> This implementation calls <code>locale.setlocale</code>
+        nowhere, opens no stream it did not configure, and performs no culture-sensitive comparison, so
+        no locale data can change what it does. The <code>InvariantGlobalization</code> switch the C#
+        implementation sets has nothing here to switch off.
+      </t-b>
+
+      <a id="source"></a>
+      <h3>9. &nbsp;Source</h3>
+      <t-b>
+        <code>entry.py</code> in full, at 87 lines. The nine steps of Section 2 are the body of
+        <code>main</code> in order, and the two module-level helpers above it are the skip list's
+        comparison and the extension point.
+      </t-b>
+      <h5 class="indent">Python_Spec_driven_TextFinder_Entry/src/python_textfinder_entry/entry.py</h5>
+<pre><code class="language-python"># entry.py - startup sequence, skip-list ownership, and exit codes
+
+import os
+import re
+import sys
+
+from python_textfinder_cmdline import (ParseFailure, help_text, options_text,
+                                       parse, usage_line)
+from python_textfinder_dirnav import Dirnav
+from python_textfinder_output import StdoutSink
+
+_WINDOWS = os.name == "nt"
+
+_SKIP_LIST: list[str] = [
+    "archive",
+    ".git",
+    ".svn",
+    ".hg",
+    "build",
+    "out",
+    "target",
+    "bin",
+    "obj",
+    "__pycache__",
+    "node_modules",
+]
+
+
+def _names_equal(left: str, right: str) -&gt; bool:
+    if _WINDOWS:
+        return left.lower() == right.lower()
+    return left == right
+
+
+def _add_skip_directory(name: str) -&gt; None:
+    for existing in _SKIP_LIST:
+        if _names_equal(existing, name):
+            return
+    _SKIP_LIST.append(name)
+
+
+def main(argv: list[str]) -&gt; int:
+    result = parse(argv)
+    if isinstance(result, ParseFailure):
+        _write_stderr(result.diagnostic)
+        return 1
+    commands = result
+
+    try:
+        sink = StdoutSink()
+    except (RuntimeError, OSError):
+        _write_stderr("cannot initialize output\n")
+        return 2
+
+    with sink:
+        if commands.help:
+            sink.write_text(help_text())
+            return 0
+
+        if len(argv) == 1:
+            sink.write_text(options_text(commands))
+            return 0
+
+        if commands.verbose:
+            sink.write_text(options_text(commands))
+
+        try:
+            dirnav = Dirnav(sink, tuple(_SKIP_LIST), commands)
+        except re.error:
+            if not commands.verbose:
+                sink.write_text(options_text(commands))
+            sink.flush()
+            _write_stderr("invalid regex for switch: /r\n" + usage_line())
+            return 1
+
+        for root in commands.root_paths:
+            dirnav.search(root)
+        dirnav.emit_run_summary()
+        return 0
+
+
+def _write_stderr(text: str) -&gt; None:
+    try:
+        sys.stderr.buffer.write(text.encode("utf-8", "replace"))
+        sys.stderr.buffer.flush()
+    except (OSError, ValueError):
+        pass
+</code></pre>
+      <t-b>
+        <code>_names_equal</code> is duplicated between this module and
+        <code>python_textfinder_dirnav</code>, and the duplication is deliberate. The rule is two
+        lines, and the alternative is this binary importing a private name from a library it is meant
+        to depend on only through its public interface. Both copies implement the one comparison
+        &sect;3.2 and &sect;5 fix, so a change to the rule is a change to the parent and then to two
+        files.
+      </t-b>
+      <t-b>
+        <code>tuple(_SKIP_LIST)</code> is built at the point of the call rather than held as a
+        constant, so the extension calls that ran at import are already in it and nothing after it can
+        be. That one expression is the whole of the handoff guarantee Section 5 describes.
+      </t-b>
+      <h5 class="indent">Python_Spec_driven_TextFinder_Entry/src/python_textfinder_entry/__main__.py</h5>
+<pre><code class="language-python"># __main__.py - converts main's returned value into the process exit code
+
+import sys
+
+from .entry import main
+
+sys.exit(main(sys.argv))
+</code></pre>
+      <t-b>
+        Three lines, and the placement of the one <code>sys.exit</code> is the point: it runs after
+        <code>main</code> has returned, so the <code>with</code> statement has already released the
+        sink and flushed the buffer. Every suite in this implementation calls the program as a
+        subprocess rather than calling <code>main</code> directly, but the split is what would let one
+        do either.
+      </t-b>
+
+      <a id="records"></a>
+      <h3>10. &nbsp;Prompt Records</h3>
+      <t-b>
+        This page carries none. Page_Structure.md &sect;8 assigns it
+        <code>Prompts_Spec_Python_TextFinder_Entry.md</code> and its <code>Fix</code> companion, and
+        neither was written: this thread produced one record covering every turn, and it sits on the
+        <a target="_blank" href="Spec_Driven_Design_Python_Process.html">Process page</a>.
+      </t-b>
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#binary">the binary</a></menu-elem>
+        <menu-elem class="secElem"><a href="#startup">startup sequence</a></menu-elem>
+        <menu-elem class="secElem"><a href="#construction">the with statement</a></menu-elem>
+        <menu-elem class="secElem"><a href="#regex">malformed regex</a></menu-elem>
+        <menu-elem class="secElem"><a href="#skiplist">skip list</a></menu-elem>
+        <menu-elem class="secElem"><a href="#codes">exit codes</a></menu-elem>
+        <menu-elem class="secElem"><a href="#stderr">writing to stderr</a></menu-elem>
+        <menu-elem class="secElem"><a href="#build">build and launch</a></menu-elem>
+        <menu-elem class="secElem"><a href="#source">source</a></menu-elem>
+        <menu-elem class="secElem"><a href="#records">records</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenPythonPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+  <script>
+    /* arrows at the top right of each pre block, to reach the right-hand content
+       without hunting for the scrollbar at the bottom of the block. They precede
+       the pre and are sticky, so they stay in view while the block scrolls past.
+       A block whose content fits needs no arrows, so they stay hidden until it
+       overflows, and are rechecked whenever its width changes. */
+    document.querySelectorAll('#github pre').forEach(pre => {
+      const wrap = document.createElement('div');
+      wrap.className = 'preScrollWrap';
+      pre.before(wrap);
+
+      const arrows = document.createElement('div');
+      arrows.className = 'preScroll';
+      arrows.innerHTML = '<button type="button" title="move text left">&#9664;</button>' +
+                         '<button type="button" title="move text right">&#9654;</button>';
+      wrap.append(arrows);
+      wrap.append(pre);
+
+      /* the 1px allowance keeps subpixel rounding from showing arrows that cannot move */
+      const showArrows = () => {
+        arrows.style.display = pre.scrollWidth - pre.clientWidth > 1 ? '' : 'none';
+      };
+      showArrows();
+      /* the splitter resizes the panel and prism rewrites the content, so one
+         measurement at load is not enough */
+      new ResizeObserver(showArrows).observe(pre);
+      window.addEventListener('resize', showArrows);
+
+      const pan = (dir, smooth) => pre.scrollBy({
+        left: dir * pre.clientWidth * 0.2, behavior: smooth ? 'smooth' : 'auto' });
+
+      /* a click shifts once; holding the button repeats the shift */
+      const hold = (button, dir) => {
+        let delay, repeat, repeated = false;
+        const stop = () => { clearTimeout(delay); clearInterval(repeat); };
+        button.addEventListener('pointerdown', () => {
+          repeated = false;
+          delay = setTimeout(() => {
+            repeated = true;
+            repeat = setInterval(() => pan(dir, false), 200);
+          }, 400);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(name =>
+          button.addEventListener(name, stop));
+        button.addEventListener('click', () => {
+          if (repeated) { repeated = false; return; }   /* the hold already moved it */
+          pan(dir, true);
+        });
+      };
+      hold(arrows.children[0], 1);
+      hold(arrows.children[1], -1);
+    });
+  </script>
+</body>
+</html>

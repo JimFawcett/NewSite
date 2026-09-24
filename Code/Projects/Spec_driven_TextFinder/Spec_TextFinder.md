@@ -179,7 +179,7 @@ The form in which the program receives its arguments — the type of the argumen
 | Switch | Argument (default)      | Meaning                                                                                                  |
 |--------|-------------------------|----------------------------------------------------------------------------------------------------------|
 | /P     | path (`.`)              | Root path for traversal. May be an absolute or a relative path. /P may be given more than once; each occurrence adds a root path, and the paths are traversed in the order given. |
-| /p     | `"ext, ext, ..."` (`""`)| Comma-separated list of file extensions to search, quoted. The extension of a file is its last dot-suffix, a leading dot on the name notwithstanding: `.gitignore` has extension `gitignore`, so a dot-file is searched like any other and is excluded only by /p or by the skip list. Each item is trimmed of surrounding whitespace — space (U+0020), horizontal tab (U+0009), line feed (U+000A), vertical tab (U+000B), form feed (U+000C), and carriage return (U+000D), fixed here so that two implementations trim the same six characters — and loses one leading dot if present, so `cpp` and `.cpp` are equivalent; empty items are discarded, so `"cpp,,rs"` and `"cpp, rs"` name the same two extensions. Extensions compare case-sensitively on POSIX and case-insensitively on Windows, as skip-list entries do. When the resulting list is empty, every file is searched, including files with no extension. When it is non-empty, files with no extension are not searched. |
+| /p     | `"ext, ext, ..."` (`""`)| Comma-separated list of file extensions to search, quoted. The extension of a file is its last dot-suffix, a leading dot on the name notwithstanding: `.gitignore` has extension `gitignore`, so a dot-file is searched like any other and is excluded only by /p or by the skip list. Each item is trimmed of surrounding whitespace — space (U+0020), horizontal tab (U+0009), line feed (U+000A), vertical tab (U+000B), form feed (U+000C), and carriage return (U+000D), fixed here so that two implementations trim the same six characters — then loses one leading dot if present, so `cpp` and `.cpp` are equivalent, and is then trimmed a second time. The second trim is what keeps whitespace out of the result: without it `". cpp"` normalizes to `" cpp"`, an extension no file can carry and one that puts a second space into the §5.3 listing line, which §5.3 otherwise keeps free of stray whitespace. Empty items are discarded, so `"cpp,,rs"` and `"cpp, rs"` name the same two extensions. Extensions compare case-sensitively on POSIX and case-insensitively on Windows, as skip-list entries do. When the resulting list is empty, every file is searched, including files with no extension. When it is non-empty, files with no extension are not searched. |
 | /r     | regex (`"."`)           | Regular expression evaluated against each line. §6.1 names the engine that compiles it and fixes the syntax every engine accepts alike; the expression is compiled once per invocation. It must not be empty — the default `.` is the way to match every line. |
 | /s     | `true` \| `false` (`true`)  | Recursive search. When `false`, the files directly within the root path are searched but no subdirectory is entered. |
 | /h     | `true` \| `false` (`true`)  | Suppress the file announcements of §3.4, which report only files that matched nothing, leaving the blocks of matching files and the error announcements. When `false`, each file that was searched without matching or was skipped is announced, so that every examined file appears in the output exactly once. Announcements go through the implementation's output component, not to stderr. |
@@ -193,6 +193,8 @@ Omitting a switch is equivalent to supplying its default value. Language-specifi
 ### 5.1 Help Text
 
 Every implementation prints exactly this text under /H, and its first line alone as the usage line that terminates a usage diagnostic. `<executable>` is the implementation's executable name — `Cpp_TextFinder` for the C++ implementation.
+
+Every line of it is terminated by the single LF (U+000A) §3.4 fixes for a block line, on every platform, and the text ends with one. The help text is written to stdout and §6 compares stdout byte for byte, so leaving its terminator to the platform would make the same implementation produce two different help texts and neither of them wrong. The usage line carries the same terminator into the usage diagnostic of §5.2, whose destination is stderr and whose terminators that section leaves to the implementation; an implementation that writes LF on stdout and something else on stderr is writing the same string two ways, which §5.2 permits and this document does not recommend.
 
 ```
 usage: <executable> [/P path] [/p "ext, ext"] [/r regex] [/s bool] [/h bool] [/v bool] [/H bool] [/n bool] [/L bool]
@@ -272,6 +274,20 @@ A command line of `-v true` alone therefore produces these nine lines. No line e
 
 The /v line reads `true` only in the listing /v itself asked for. The other two cases list an option set in which /v was never set, and the line reads `false` there — a bare command line therefore emits the nine lines above with `/v false` in place of `/v true`.
 
+### 5.4 Order of Resolution
+
+Several rules above describe what a command line produces, and more than one can apply to a single command line. Where two apply, the order below decides, and it is fixed here rather than left to each implementation: two implementations free to order them differently would disagree on the exit code and on every byte of both streams for the command lines that reach more than one rule, which is the one outcome §6 exists to prevent.
+
+1. **A command line that violates §4 is refused before anything is written.** Whatever else it carries, the diagnostic of §5.2 goes to stderr, stdout stays empty, and the process exits 1. Nothing below is reached.
+2. **/H is answered before the expression is compiled.** `/H true` with an expression the engine would reject prints the help text of §5.1 and exits 0. The invalid-regex row of §5.2 is not reached, so stdout carries help and nothing else and stderr stays empty.
+3. **/H is answered before the /v listing is written.** `/H true /v true` prints the help text alone. §5.3 has the /v listing precede "the output it explains and traversal follows," and /H traverses nothing, so there is no output for it to explain.
+4. **The bare command line of §3.1 competes with neither.** A command line bearing /H or /v is not bare, so its listing is reached only when no switch was given at all.
+5. **The expression is compiled after the /v listing is written.** This is what lets §5.2 require the listing ahead of the invalid-regex diagnostic and §5.3 require it not be repeated: by the time the engine rejects the pattern, /v has already written the listing or has not asked for one.
+
+Every rule above precedes traversal, so none of them emits the run summary of §3.6, which §3.6 already confines to a run that traverses.
+
+This section settles an order the four implementations happened to agree on before it was written. It changes no implementation's behavior; it removes the freedom to change it.
+
 ## 6. Non-Functional Requirements
 
 - Portability: each implementation must run on Windows and on POSIX systems (Linux, macOS).
@@ -330,6 +346,14 @@ Each implementation also provides a runner per kind. A runner announces each sui
 The dependency rule of §6 applies, so a suite uses the standard library and the packages that rule already permits; no third-party test framework is introduced. Assertion wording and assertion counts belong to each implementation. What the suites must agree on across implementations is the observable behavior §3 through §5 already fix.
 
 A demonstration's output moves as this project's own tree changes. A capture therefore states the date it was taken, and a stale capture is replaced by a fresh one rather than edited, since the same counts appear both in the captured text and in whatever prose surrounds it.
+
+**The shared fixture.** [Fixture/](Fixture/) holds one tree, one list of command lines, and the stdout and exit code each is required to produce. Every implementation's integration suite drives it, in addition to whatever cases that suite writes for itself.
+
+It exists because the consistency requirement above compares implementations with one another, and that is weaker than it looks in two ways. A difference tells a reader that two implementations disagree and nothing about which is wrong. And a misreading shared by two implementations is invisible to it — the likely case, since each implementation after the first is written from documents the earlier ones shaped. A committed artifact turns agreement among the four into agreement with something, and locates a disagreement in one implementation rather than in a pair.
+
+[Fixture/Fixture.md](Fixture/Fixture.md) fixes the tree's contents, the case list's format, and the comparison rule, and states the fixture's provenance. Three points of that rule belong here rather than there, being properties of this document: the comparison is over stdout and the exit code alone, as §6 already scopes its guarantee; stdout is compared as bytes, so the LF requirement of §3.4 is held by every case rather than by a test written for it; and a case whose output spans a directory is compared as a set of lines, since §3.2 leaves a directory's entry order to the platform, with the run summary additionally required to be the line emitted last.
+
+The fixture is captured output and not a source. Where a case contradicts this document, this document wins and the case is regenerated; Constitution.md rule 1 admits no code derived from it.
 
 ## 7. Non-Goals
 
