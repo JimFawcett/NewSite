@@ -166,6 +166,13 @@ fn only_one_leading_dot_is_stripped() {
 }
 
 #[test]
+fn an_item_is_trimmed_again_after_its_dot_is_stripped() {
+    assert_eq!(parsed(&["/p", ". cpp"]).extensions, vec!["cpp"]);
+    assert_eq!(parsed(&["/p", ".\trs, . h "]).extensions, vec!["rs", "h"]);
+    assert!(options_text(&parsed(&["/p", ". cpp"])).contains("\n/p cpp\n"));
+}
+
+#[test]
 fn the_six_named_characters_are_trimmed_and_no_others() {
     let commands = parsed(&["/p", " \t\n\u{000B}\u{000C}\rcpp \t\r, \u{00A0}rs"]);
     assert_eq!(commands.extensions, vec!["cpp", "\u{00A0}rs"]);

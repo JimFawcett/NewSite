@@ -112,6 +112,10 @@ internal static class UnitTests
             "items are split, trimmed, and stripped of one dot, and empties discarded");
         check.Equal(string.Join("|", Parsed("-p", "..cs").Extensions), ".cs",
             "only one leading dot is stripped");
+        check.Equal(string.Join("|", Parsed("-p", ". cs, .\ttxt ").Extensions), "cs|txt",
+            "an item is trimmed again after its dot is stripped");
+        check.That(CommandLine.OptionsText(Parsed("-p", ". cs")).Contains("\n/p cs\n"),
+            "the second trim keeps stray whitespace out of the §5.3 listing line");
         check.Equal(string.Join("|", Parsed("-p", ".cs, cs").Extensions), "cs|cs",
             "duplicates are retained");
         check.That(Parsed("-p", " , , ").Extensions.Count == 0, "an all-separator list is empty");

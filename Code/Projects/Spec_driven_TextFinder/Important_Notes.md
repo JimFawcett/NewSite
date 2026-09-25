@@ -63,13 +63,17 @@ The branch is left in place deliberately rather than removed: removing it would 
 
 ## N4 — §5's /p normalization gained a second trim
 
-**Status:** landed in [Spec_TextFinder.md](Spec_TextFinder.md); **implemented in Python only**. **Affects:** §5, and the Cmdline component of all four implementations. **Changed:** 2026-09-24.
+**Status:** **closed** — landed in [Spec_TextFinder.md](Spec_TextFinder.md) and implemented in all four. **Affects:** §5, and the Cmdline component of all four implementations. **Changed:** 2026-09-24. **Closed:** 2026-09-24.
 
 §5 previously normalized a `/p` item by trimming it and then stripping one leading dot. That order can leave whitespace inside the result: `". cpp"` normalized to `" cpp"`, an extension no file can carry, which then put a second space into the §5.3 listing line that §5.3 otherwise keeps free of stray whitespace.
 
 §5 now reads: trim, strip one leading dot if present, **trim again**. `". cpp"` normalizes to `"cpp"`.
 
-**Not yet done.** The C++, Rust, and C# Cmdline components implement the old two-step order and their component specifications describe it. Each needs the second trim and a line in its own `Spec_*_Cmdline.md`. Until then the four disagree on a command line holding a `/p` item with whitespace after its dot — malformed input, reached by no test in any thread, and the reason this was judged safe to change ahead of three implementations rather than deferred like N1 and N2.
+**Carried into the three remaining threads on 2026-09-24**, Rust first while reviewing that thread for idiom and code smells, then C++ and C# together. Each took the same three edits, specification ahead of code per [Constitution.md](Constitution.md) rule 1: §7 of its `Spec_*_Cmdline.md` gained the second trim in its normalization sequence and a paragraph saying why it is not redundant; its normalizer gained a second trim between the dot strip and the empties test, calling the same trim the first one calls so the six characters keep one definition; and its unit suite gained a case pairing a dot with whitespace, asserting both the normalized value and the §5.3 listing line.
+
+That test was the gap in every thread. Each suite already held a trim case and a dot case, and each missed this by one variable — one exercising whitespace with no dot, the other a dot with no whitespace — which is how three implementations reached a passing suite with the rule unimplemented.
+
+**Verified across all four.** `/p ". cs, .<tab>txt" /v true` now yields the listing line `/p cs, txt` from every one of the four binaries. The unit suites pass whole: Rust 90, C++ 100 over three suites, C# 118 over three suites.
 
 ---
 

@@ -109,6 +109,12 @@ void testExtensions(Checker& check) {
     const auto dotted = parseArgs({"/p", ".cpp, .h"});
     check.expect(dotted && joined(dotted->extensions) == "cpp|h", "one leading dot is stripped");
 
+    const auto spaced = parseArgs({"/p", ". cpp, .\th "});
+    check.expect(spaced && joined(spaced->extensions) == "cpp|h",
+                 "an item is trimmed again after its dot is stripped");
+    check.expect(spaced && optionsText(*spaced).find("\n/p cpp, h\n") != std::string::npos,
+                 "the second trim keeps stray whitespace out of the §5.3 listing line");
+
     const auto empties = parseArgs({"/p", "cpp,,rs"});
     check.expect(empties && joined(empties->extensions) == "cpp|rs", "empty items are discarded");
 

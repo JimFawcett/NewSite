@@ -183,6 +183,8 @@ fn normalize_extensions(argument: &str) -> Vec<String> {
         .split(',')
         .map(|item| item.trim_matches(is_trimmed))
         .map(|item| item.strip_prefix('.').unwrap_or(item))
+        // section 5: the strip can expose whitespace the first trim could not reach, as in ". cpp"
+        .map(|item| item.trim_matches(is_trimmed))
         .filter(|item| !item.is_empty())
         .map(String::from)
         .collect()

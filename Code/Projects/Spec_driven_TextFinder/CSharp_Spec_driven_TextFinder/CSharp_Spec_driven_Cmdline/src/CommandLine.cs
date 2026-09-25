@@ -223,7 +223,7 @@ public static class CommandLine
     private static string Diagnostic(string reason) => reason + "\n" + UsageLine();
 
     // §7: split on commas, trim the six named characters, strip one leading dot,
-    // discard empties, keep order and duplicates.
+    // trim again, discard empties, keep order and duplicates.
     private static List<string> NormalizeExtensions(string argument)
     {
         var items = new List<string>();
@@ -234,6 +234,9 @@ public static class CommandLine
 
             // §7: TrimStart('.') would strip every leading dot, where §5 strips one.
             if (item.Length > 0 && item[0] == '.') item = item[1..];
+
+            // §7: the strip can expose whitespace the first trim could not reach, as in ". cs"
+            item = item.Trim(Trimmed);
 
             if (item.Length > 0) items.Add(item);
         }

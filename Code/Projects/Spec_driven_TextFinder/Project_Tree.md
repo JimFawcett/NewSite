@@ -92,6 +92,7 @@ Spec_driven_TextFinder/
 ├── Rust_Spec_driven_TextFinder/
 │   ├── Rust_TextFinder_Structure.md
 │   ├── Prompts_Build_Rust_TextFinder.md
+│   ├── Prompts_maintainability_Rust_TextFinder.md
 │   ├── Cargo.toml
 │   ├── Cargo.lock
 │   ├── run_unit_tests.bat
@@ -241,6 +242,7 @@ Build output and editor settings are omitted: `build/`, `target/`, `bin/`, `obj/
 - `Prompts_Fix_Spec_Cpp_TextFinder.md` — refinements reaching across every C++ component and the project spec
 - `Prompts_Build_<Lang>_TextFinder.md` — record of turning one language's specifications into working code; the Python one also records the writing of those specifications, the two having happened in one session, so that thread has no separate `Prompts_Spec_*.md`
 - `Prompts_Cpp_Spec_driven_TextFinder_Tests.md` — record of building and running the C++ test suites
+- `Prompts_maintainability_Rust_TextFinder.md` — record of reviewing the finished Rust implementation for idiom and code smells; a review of code already written rather than a conversation that produced any
 - `Prompts_Final_Tweaks_TextFinder.md` — record of the switch-default, first-match, and demonstration changes
 - `Prompts_Pages.md` — record of generating the web pages Page_Structure.md defines
 

@@ -37,7 +37,8 @@ std::string trim(std::string_view text) {
     return std::string{text};
 }
 
-// §7: split on commas, trim, strip one leading dot, discard empties, keep order and duplicates.
+// §7: split on commas, trim, strip one leading dot, trim again, discard empties,
+// keep order and duplicates.
 std::vector<std::string> normalizeExtensions(std::string_view argument) {
     std::vector<std::string> items;
     for (std::size_t pos = 0; pos <= argument.size();) {
@@ -46,6 +47,9 @@ std::vector<std::string> normalizeExtensions(std::string_view argument) {
 
         std::string item = trim(argument.substr(pos, end - pos));
         if (!item.empty() && item.front() == '.') item.erase(0, 1);
+
+        // §7: the erase can expose whitespace the first trim could not reach, as in ". cpp"
+        item = trim(item);
         if (!item.empty()) items.push_back(std::move(item));
 
         if (comma == std::string_view::npos) break;

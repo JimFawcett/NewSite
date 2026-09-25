@@ -98,7 +98,9 @@ There is no error condition for a duplicated switch or an empty `/p` list: dupli
 
 ## 7. Extension-List Normalization
 
-The `/p` argument arrives as one token; the shell has already removed the quotes. Normalization implements the `/p` rules of Spec_TextFinder.md §5: split the token on commas, trim each item, strip one leading `.` if present, discard empty items, and preserve the order of the survivors. `strip_prefix('.')` removes the dot, and one call removes at most one.
+The `/p` argument arrives as one token; the shell has already removed the quotes. Normalization implements the `/p` rules of Spec_TextFinder.md §5: split the token on commas, trim each item, strip one leading `.` if present, trim it a second time, discard empty items, and preserve the order of the survivors. `strip_prefix('.')` removes the dot, and one call removes at most one.
+
+The second trim is not redundant, and §5 requires it for a reason that shows only when the dot and the whitespace are separated. `". cpp"` survives the first trim unchanged, the dot being the first character, and the strip then exposes the space: one trim alone yields `" cpp"`, an extension no file can carry, and one that puts a second space into the §5.3 listing line, which §5.3 otherwise keeps free of stray whitespace. Both trims test the same six characters. An item reduced to nothing by either trim is discarded, so the empties test comes last.
 
 Spec_TextFinder.md §5 fixes which characters are trimmed, naming six of them, so this document chooses none of them and no two implementations can trim a different set.
 
