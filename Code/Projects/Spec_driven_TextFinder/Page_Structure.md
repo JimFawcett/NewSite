@@ -331,6 +331,7 @@ Language-level records sit on the pages of that language's own thread, with `[la
 |-------------|------|
 | `Prompts_[lang]_TextFinder_Structure.md`, `Prompts_Fix_[lang]_TextFinder_Structure.md` | [lang]: Structure |
 | `Prompts_Fix_Spec_[lang]_TextFinder.md`, `Prompts_Build_[lang]_TextFinder.md` | [lang]: Process |
+| `Prompts_maintainability_[lang]_TextFinder.md` | [lang]: Process |
 | `Prompts_Spec_[lang]_TextFinder_Entry.md`, `Prompts_Fix_Spec_[lang]_TextFinder_Entry.md` | [lang]: Entry |
 | `Prompts_Spec_[lang]_TextFinder_Cmdline.md`, `Prompts_Fix_Spec_[lang]_TextFinder_Cmdline.md` | [lang]: Cmdline |
 | `Prompts_Spec_[lang]_TextFinder_Dirnav.md`, `Prompts_Fix_Spec_[lang]_TextFinder_Dirnav.md` | [lang]: Dirnav |
@@ -338,13 +339,15 @@ Language-level records sit on the pages of that language's own thread, with `[la
 | `Prompts_[lang]_Spec_driven_TextFinder_Tests.md` | [lang]: Testing |
 | any record of demonstration changes at the language level | [lang]: Demonstration |
 
-A language contributes 14 records at most, and a record its conversations never produced leaves its page without a block rather than requiring one. The last row is stated by role rather than by name because such a record sits inside a language's directory without carrying a `[lang]` token in its file name, and §0 bars this document from naming it. §9 rule 4 audits that row by level, not by name: a record in a language's directory that no earlier row claims belongs to that thread, and to its Demonstration page.
+A language contributes 15 records at most, and a record its conversations never produced leaves its page without a block rather than requiring one. The last row is stated by role rather than by name because such a record sits inside a language's directory without carrying a `[lang]` token in its file name, and §0 bars this document from naming it. §9 rule 4 audits that row by level, not by name: a record in a language's directory that no earlier row claims belongs to that thread, and to its Demonstration page.
+
+The maintainability row covers a record of reviewing a language's finished implementation — its idiom, its smells, and whatever defects the review turns up and fixes. Such a review ranges over every component of the thread at once, so no component page owns it, and it is process evidence of the same kind as an audit of the specifications: the Process page already carries those. A review that reaches into a sibling language, because the defect it found was never one thread's alone, still lands on the reviewed language's Process page whole, per the paragraph below.
 
 One consequence of deciding by level rather than by subject: a record that ranges wider than the page it lands on still lands there, whole. A language-level record covering both a project-spec change and a demonstration change goes to that language's Demonstration page in full, and the pages that discuss the other changes cite it rather than copy it, since §8's first paragraph gives every record exactly one home.
 
 Every record appears on exactly one page. The Introduction carries none.
 
-This changes the original rule, which put every `Prompts_*.md` from a directory level on one page and gave the Introduction five blocks and the Entry page six. Under the rule above no page carries more than two, which keeps a code page readable while the record stays one click away.
+This changes the original rule, which put every `Prompts_*.md` from a directory level on one page and gave the Introduction five blocks and the Entry page six. Under the rule above no page carries more than two, save a language's Process page, which carries three once that language has been reviewed. That keeps a code page readable while the record stays one click away.
 
 ## 9. Bringing an Existing Page Into This Structure
 

@@ -78,7 +78,9 @@ Enumerated the Rust subtree on disk and compared it against the listing, which t
 
 The Legend gained one line under Prompt records. Its generic `Prompts_*.md` entry reads "records of the spec-driven design conversations," which does not describe a review of code already written, and the file follows a convention of naming any record the generic line does not cover — as it does for `Prompts_Final_Tweaks_TextFinder.md` and `Prompts_Cpp_Spec_driven_TextFinder_Tests.md`.
 
-Nothing else in `Project_Tree.md` was touched, and the C++, C#, and Python subtrees were not audited. [Page_Structure.md](../Page_Structure.md) §8 assigns this record to the Rust thread's pages, a record produced inside a language's folder going to that language's thread; those eight pages do not exist yet, so nothing there is stale on its account.
+Nothing else in `Project_Tree.md` was touched, and the C++, C#, and Python subtrees were not audited. [Page_Structure.md](../Page_Structure.md) §8 assigns this record to the Rust thread's pages, a record produced inside a language's folder going to that language's thread.
+
+The reply added that those eight pages do not exist yet, and that was wrong. They were added on 2026-09-15, nine days before this session. The claim came from taking turn 21 of [Prompts_Build_Rust_TextFinder.md](Prompts_Build_Rust_TextFinder.md) at face value — true when that turn was written, overtaken later the same day — rather than looking. Turn 6 found it and updated the page.
 
 ---
 
@@ -102,7 +104,7 @@ The unit suite gained `an_item_is_trimmed_again_after_its_dot_is_stripped`, whic
 
 Verified three ways. The whole suite passes at 90 tests, up one from 89. `clippy` reports nothing at all on the crate, at default and with `--all-targets`. And the rebuilt binary under `/p ". cpp, .<tab>rs" /v true` now emits `/p cpp, rs`, where it emitted `/p  cpp` before; running the same five inputs through the Python parser gives `['cpp']`, `['rs', 'h']`, `['.cpp']`, `[]`, and `['cpp', 'rs', 'h']`, which is what Rust now returns for each.
 
-N4 was updated rather than closed: its status reads "implemented in Python and Rust," Rust moved out of the not-yet-done list into a paragraph recording what was done and when, and C++ and C# remain, still disagreeing with the other two on this input. [Spec_TextFinder.md](../Spec_TextFinder.md) needed no change, §5 having carried the rule correctly since the amendment. No web page was touched; the Rust thread has none, and a page follows verified code rather than preceding it.
+N4 was updated rather than closed: its status reads "implemented in Python and Rust," Rust moved out of the not-yet-done list into a paragraph recording what was done and when, and C++ and C# remain, still disagreeing with the other two on this input. [Spec_TextFinder.md](../Spec_TextFinder.md) needed no change, §5 having carried the rule correctly since the amendment. No web page was touched, a page following verified code rather than preceding it. The reply gave a second reason, that the Rust thread has no pages, which repeats the error Turn 3 records.
 
 ---
 
@@ -125,3 +127,25 @@ Everything was run rather than reasoned about. C++: 52, 39, and 9 in its three u
 Then the cross-check the whole entry exists for. `/p ". cs, .<tab>txt" /v true` run through all four binaries — C++, C#, Rust, and Python through `python -m python_textfinder_entry` — yields the listing line `/p cs, txt` from every one, where three of them would have written `/p  cs,  txt` that morning.
 
 N4 is now closed, its status reading so, its three remedy paragraphs replaced by one recording what each thread took and one recording the verification. Its observation that every suite already held a trim case and a dot case, and that each missed this by one variable, is kept — it is the reason three implementations carried the gap behind a passing suite, and worth more than the fix it explains.
+
+---
+
+## Turn 6
+
+### User
+
+> The file Prompts_maintainability_Rust_TextFinder.md is not shown in the first table of Spec_Driven_Design_Rust_Process.html
+
+### Assistant
+
+Two errors behind that, one in the page and one in this record.
+
+**The record's.** Turns 3 and 4 above each said the Rust thread has no web pages. It has had eight since 2026-09-15, nine days before this session, added in commit `72dd1aa7`. The claim came from reading turn 21 of [Prompts_Build_Rust_TextFinder.md](Prompts_Build_Rust_TextFinder.md), which says the eight pages do not exist — true when that turn was written and overtaken later the same day. Both turns are corrected above rather than left standing, the error being this session's own rather than history it inherited.
+
+**The page's.** [Page_Structure.md](../Page_Structure.md) §8 routes a language-level record to a page by its file name, and no row matched this one. Its catch-all — a record in a language's directory that no earlier row claims — sends unclaimed records to that language's Demonstration page, which is written for demonstration records and is plainly the wrong home for a code review. §8 settles that case itself: the tables are the authority, and where a reading of the rule disagrees with them the rule needs amending.
+
+So §8 gained a row, `Prompts_maintainability_[lang]_TextFinder.md` to `[lang]: Process`, with a paragraph saying why such a record has no component page to go to — a review ranges over every component at once, and is process evidence of the same kind as an audit of the specifications, which that page already carries. Two counts there moved with it: a language contributes 15 records at most rather than 14, and the claim that no page carries more than two now excepts a language's Process page, which carries three once that language has been reviewed. Renaming this file to fit an existing row was the alternative and was not taken; the name describes the record, and a row that describes the kind serves the next three languages too.
+
+[Spec_Driven_Design_Rust_Process.html](../../../Spec_Driven_Design_Rust_Process.html) then took four edits. §1's opening now says two records and names both. Its table reads 2 against Process, with the second record described in the same cell. §6's lead covers both, and the new record is embedded as a second `<details>` block, §8 requiring the body hold the file's entire contents. And §1 gained a paragraph on the §8 amendment itself, that being process evidence of exactly the kind the page exists to carry.
+
+Verified by unescaping the embedded block and comparing it to the file on disk — they match exactly — and by checking that every structural tag on the page balances and that no singular phrasing about "one record" survives.
