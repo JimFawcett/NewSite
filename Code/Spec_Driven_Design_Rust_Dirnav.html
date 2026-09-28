@@ -37,6 +37,20 @@
     #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
       font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
       color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+      #github .mdview { font-size: 0.95rem; border: 2px solid var(--dark); padding: 0.75rem 1rem; }
+    #github .mdview h2 { font-size: 1.4rem; margin: 0.25rem 0 0.75rem; }
+    #github .mdview h3 { font-size: 1.2rem; margin: 1.25rem 0 0.5rem; }
+    #github .mdview h4 { font-size: 1.05rem; margin: 1rem 0 0.4rem; }
+    #github .mdview h5 { font-size: 1rem; margin: 0.75rem 0 0.3rem; }
+    #github .mdview p, #github .mdview li { max-width: 90ch; margin: 0.5rem 0; }
+    #github .mdview ul, #github .mdview ol { margin-left: 1.75rem; }
+    #github .mdview li, #github .mdview li > p { margin: 0.25rem 0; }
+    #github .mdview code { font-size: 0.95rem; }
+    #github .mdview :not(pre) > code { background: var(--atten); padding: 0 0.25rem; }
+    #github .mdview blockquote { border-left: 3px solid var(--dark); margin: 0.5rem 0; padding: 0.1rem 0 0.1rem 0.75rem; }
+    #github .mdview table { table-layout: auto; width: max-content; max-width: 100%; border-collapse: collapse; }
+    #github .mdview th, #github .mdview td { border: 1px solid var(--dark); }
+    #github .mdview hr { margin: 1rem 0; }
   </style>
   <script>
     function loadInExplorer() {
@@ -134,6 +148,115 @@
           </ul>
         </t-b>
       </div>
+
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Spec_Rust_TextFinder_Dirnav.md</summary>
+<div class="mdview">
+<h2>Spec_Rust_TextFinder_Dirnav — Directory Navigation Library Specification</h2>
+<p>Specification for the <code>rust_textfinder_dirnav</code> library of the Rust TextFinder implementation. This document is the Rust binding of <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Spec_TextFinder.md" target="_blank">Spec_TextFinder.md</a> §3.2–§3.4, which remain the authority for traversal, matching, and output behavior; it inherits structural decisions from <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_TextFinder_Structure.md" target="_blank">Rust_TextFinder_Structure.md</a>. Its consumer is <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_Spec_driven_TextFinder_Entry/Spec_Rust_TextFinder_Entry.md" target="_blank">Spec_Rust_TextFinder_Entry.md</a>; it takes its commands from <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_Spec_driven_Cmdline/Spec_Rust_TextFinder_Cmdline.md" target="_blank">Spec_Rust_TextFinder_Cmdline.md</a>.</p>
+<h3>1. Purpose</h3>
+<p><code>rust_textfinder_dirnav</code> walks a directory tree, reads each selected file, evaluates the regular expression against each line, and formats every matching file into the block Spec_TextFinder.md §3.4 fixes, emitting each of its lines as it is produced. It is the only component that touches file contents, and it writes to no stream.</p>
+<h3>2. Scope</h3>
+<p>This spec covers only the library. Command-line parsing is specified in Spec_Rust_TextFinder_Cmdline.md, skip-list ownership and process-level concerns in Spec_Rust_TextFinder_Entry.md, and the destination of emitted strings in Spec_Rust_TextFinder_Output.md.</p>
+<h3>3. Responsibilities</h3>
+<p>The library:</p>
+<ul>
+<li>Is implemented as a Rust library crate targeting edition 2021, using idiomatic Rust constructs.</li>
+<li>Defines the <code>Output</code> trait and binds to a concrete implementation of it through a generic type parameter.</li>
+<li>Compiles the <code>/r</code> expression once at construction and reuses it for every line of every file across every root path.</li>
+<li>Implements the traversal, file-admission, matching, and announcement behavior of Spec_TextFinder.md §3.2–§3.4, emitting every block line and announcement through <code>Output</code>.</li>
+</ul>
+<h3>4. Public Interface</h3>
+<p>The crate root <code>lib.rs</code> declares package <code>rust_textfinder_dirnav</code> and exports the following:</p>
+<pre><code class="language-rust">use std::path::Path;                           // standard library
+use regex::Error;                              // the regex crate, per §9
+use rust_textfinder_cmdline::ProgramCommands;  // the sibling library, per §9
+
+pub trait Output {
+    fn output(&amp;mut self, text: &amp;str);
+}
+
+pub type SkipList = Vec&lt;String&gt;;
+
+pub struct Dirnav&lt;'a, O: Output&gt; { /* private */ }
+
+impl&lt;'a, O: Output&gt; Dirnav&lt;'a, O&gt; {
+    pub fn new(out: &amp;'a mut O, skips: &amp;'a SkipList, commands: &amp;'a ProgramCommands)
+        -&gt; Result&lt;Self, regex::Error&gt;;
+
+    pub fn search(&amp;mut self, root: &amp;Path);
+
+    pub fn emit_run_summary(&amp;mut self);
+}
+</code></pre>
+<p><code>new</code> compiles <code>commands.regex_text</code> with <code>regex::Regex::new</code> — the engine Spec_TextFinder.md §6.1 assigns to Rust — and returns <code>Err</code> with the crate's own error when it will not compile. <code>rust_textfinder_entry</code> maps that <code>Err</code> to the malformed-regex usage diagnostic of Spec_TextFinder.md §5.2. <code>rust_textfinder_cmdline</code> guarantees the text is non-empty, so <code>new</code> never sees an empty expression. The failure is a returned value rather than a panic: a malformed pattern is something the user typed, so it is an ordinary outcome of construction.</p>
+<p>All three arguments are borrowed for the lifetime <code>'a</code> and are owned by <code>rust_textfinder_entry</code>, which the borrow checker obliges to keep them alive for the lifetime of the <code>Dirnav</code> value. The skip list and the commands are shared borrows and cannot be modified through them; <code>out</code> is a unique borrow, since emitting a line mutates the sink.</p>
+<p><code>search</code> returns nothing: every failure it meets is announced through <code>Output</code> per §5, so the caller has nothing to report on its behalf. A single value is reused across every root path, so the compiled expression is built once per run. <code>search</code> carries no state from one call to the next but for the two run counts of §8.1, which accumulate across calls by design.</p>
+<p><code>emit_run_summary</code> writes the run summary Spec_TextFinder.md §3.6 requires and is called once, by <code>rust_textfinder_entry</code>, after the last <code>search</code> returns. It takes <code>&amp;mut self</code> because emitting mutates the sink, takes no other argument, and returns nothing: the counts are this value's own, and the sole reason the call sits with the caller is that only the caller knows which root was the last. No accessor is exposed for either count — the summary line is the whole of what they are for, and a test reads them by reading that line through its own <code>Output</code>.</p>
+<h3>5. Traversal Rules</h3>
+<ol>
+<li><strong>Root paths.</strong> A root path that resolves to a regular file is searched as that single file; one that resolves to a directory is traversed. A root that is a symbolic link, is neither a regular file nor a directory, or cannot be opened, is announced per Spec_TextFinder.md §3.4 and traversal of it stops there. The root's kind is taken from <code>std::fs::symlink_metadata</code>, not <code>std::fs::metadata</code>: the latter follows a symbolic link and would report the target's kind, hiding the very case §3.2 requires be announced.</li>
+<li><strong>Order and descent.</strong> Traversal follows the depth-first visit order of Spec_TextFinder.md §3.2. The recursion is written explicitly: one function iterates a directory and calls itself on each subdirectory it decides to enter, so that entries are handled as <code>std::fs::read_dir</code> yields them, without being collected or reordered. <code>read_dir</code> enumerates a single level only; its order is unspecified by the standard library and is whatever <code>readdir</code> or <code>FindFirstFileW</code> returns, which is the platform facility Spec_TextFinder.md §3.2 requires an implementation to enumerate through. Entries are neither sorted nor grouped, as §3.2 forbids. No directory-walking crate is used — <code>walkdir</code> among them — because such a crate owns the descent this library must own and may impose an order of its own.</li>
+<li><strong>Recursion.</strong> Subdirectories are descended only when <code>/s</code> is <code>true</code>. When <code>/s</code> is <code>false</code>, only the entries of the root path itself are considered.</li>
+<li><strong>Skip list.</strong> A skip-list entry is compared against the directory's basename by the rule §6 states for an extension — the same rule, applied by the same function, since Spec_TextFinder.md §3.2 and §5 fix one comparison for both. A directory matching an entry per Spec_TextFinder.md §3.2 is pruned silently — a pruned directory is not a failure and is not announced. The list is consulted for every directory met during traversal but never for a root path, which §3.2 exempts because the user named it explicitly: a root named <code>build</code> is traversed, and a <code>build</code> directory found beneath it is pruned. The list applies to directory names only, so a root path that is a regular file is searched whatever its name.</li>
+<li><strong>Symbolic links.</strong> A directory entry that is a symbolic link is passed over silently, whatever its target, since no attempt is made to open it. The kind of an entry comes from <code>std::fs::DirEntry::file_type</code>, which does not follow a link; <code>std::fs::metadata</code> is not called on a traversal entry, because it does follow one and would admit a link's target as though the link were a file.</li>
+<li><strong>Unrenderable names.</strong> An entry whose name is not valid UTF-8 is not entered and not searched, and draws the error announcement <code>cannot open &lt;path&gt;</code> per Spec_TextFinder.md §3.4, with the text §8 produces. The test runs on every entry immediately after the symbolic-link test of rule 5, and therefore before the skip-list test, before the extension filter of §6, and before any attempt to open. A name that cannot be rendered is announced whatever <code>/p</code> holds, since it never reaches selection — which is what §3.4 requires, that rule being written over every such file rather than over the selected ones. <code>OsStr::to_str</code> reports the condition by returning <code>None</code>, so nothing propagates and nothing is caught; traversal continues with the next entry.</li>
+<li><strong>Failed opens.</strong> Any file or directory that cannot be opened draws the error announcement <code>cannot open &lt;path&gt;</code>; a directory so announced is pruned, a file so announced is not searched. An error yielded while iterating a directory is treated the same way, so a directory that becomes unreadable part way through is announced rather than silently truncated. Error announcements are not gated on <code>/h</code>, per Spec_TextFinder.md §3.4.</li>
+</ol>
+<p>A symbolic link is tested before rule 6, so one whose name cannot be rendered is passed over silently like any other link rather than announced: rule 5 turns on the entry's kind, which costs no decoding, and §3.2 asks for silence there.</p>
+<p>Nothing in traversal panics. Every operation that can fail returns <code>io::Result</code>, and each failure resolves to an announcement or to pruning, never to <code>unwrap</code>.</p>
+<h3>6. File Selection</h3>
+<p>Selection follows the <code>/p</code> rules of Spec_TextFinder.md §5, which fix the extension definition, the empty-list and no-extension cases, and the platform-dependent comparison. The list arrives from <code>rust_textfinder_cmdline</code> already normalized to bare extensions.</p>
+<p><code>std::path::Path::extension</code> does not implement those rules: it returns <code>None</code> for <code>.gitignore</code>, whereas §5 gives that file the extension <code>gitignore</code>. The extension is therefore taken as the text after the last <code>.</code> in the file name, with no special case for a leading dot, and a name holding no <code>.</code> at all has no extension.</p>
+<p>The file name is read through <code>Path::file_name</code> and decoded with <code>OsStr::to_str</code>. That decoding cannot fail here: §5 rule 6 has already refused every entry whose name is not valid UTF-8, so selection sees a name and never a <code>None</code>. Selection therefore says nothing about such a file, and neither an empty nor a non-empty <code>/p</code> list changes what happens to it.</p>
+<p>Comparison is case-sensitive on POSIX and case-insensitive on Windows, per Spec_TextFinder.md §3.2 and §5. The Windows comparison uses <code>eq_ignore_ascii_case</code>, so it folds ASCII only; an extension holding a non-ASCII character compares case-sensitively on both platforms. §5 rule 4 applies the same comparison to skip-list entries.</p>
+<p>Selection applies uniformly: a root path that is a regular file is filtered by <code>/p</code> like any other file.</p>
+<h3>7. Content Decoding and Line Splitting</h3>
+<p>A selected file is put to the three admission tests of Spec_TextFinder.md §3.3. The size test is applied to the length <code>std::fs::Metadata::len</code> reports, so a file above the limit is never read into memory; the NUL and UTF-8 tests are applied to the bytes read. The limit is 10,485,760 bytes, the number §3.3 fixes.</p>
+<p><code>Dirnav::new</code> records whether the run satisfies §3.3's no-content case — <code>regex_text</code> equal to <code>.</code> with <code>line_numbers</code> and <code>matched_line</code> both <code>false</code>. When it does, a selected file that passes the size test and is not empty produces a block of its path line alone, and the file is never opened.</p>
+<p>No file announcement accompanies that block. <code>searched</code> reports a file that was read and matched nothing and <code>skipped</code> reports one a content test rejected, and in this case neither happened — every selected file matches — so the library emits neither, whatever <code>/h</code> says. A selected file of zero size produces no block and draws no announcement either. The size test still runs on filesystem metadata, so a file above the limit still draws the error announcement <code>too large</code>, and one whose metadata cannot be read still draws <code>cannot open</code>.</p>
+<p>A file that needs reading is read in full with <code>std::fs::read</code>, so one failing a later test is skipped entirely rather than searched in part. The NUL test asks whether the bytes hold a zero. The UTF-8 test is <code>std::str::from_utf8</code>, which rejects truncated sequences, overlong encodings, encoded surrogates, and scalar values above U+10FFFF — the four rejections §3.3 requires — so this implementation performs no validation of its own and the standard library is the authority for what valid UTF-8 means.</p>
+<p>A leading UTF-8 BOM is consumed and does not belong to the first line. It is stripped after the admission tests, so its three bytes count toward the size limit and toward the NUL scan like any others.</p>
+<p>Lines are then split per Spec_TextFinder.md §3.3: LF, CRLF, and bare CR each terminate a line, and a final unterminated run is a line. <code>str::lines</code> is not used: it splits on LF and strips a trailing CR, but it does not treat a bare CR as a terminator, so a classic Mac OS file would arrive as one line. Line numbers count every line, including those that do not match.</p>
+<h3>8. Matching and Emission</h3>
+<p>The compiled expression is evaluated against each line with <code>Regex::is_match</code>, which gives the anywhere-in-the-line match Spec_TextFinder.md §3.3 requires and asks the engine for nothing more — no match position, no matched substring, no capture group.</p>
+<p>The line is passed as <code>&amp;str</code>, so <code>.</code>, a character class, and a class escape each match one Unicode scalar value. Spec_TextFinder.md §6.1 records <code>std::regex</code> over <code>char</code> as the one engine of the four that matches a byte instead, so on a line holding a non-ASCII character this implementation agrees with the C# and Python implementations and the C++ one is the outlier.</p>
+<p>A matching file is emitted as the block Spec_TextFinder.md §3.4 fixes. The library writes the path line through <code>Output</code> at the first match, ahead of the detail line for that same match, and tracks per file whether it has done so — a file that never matches must produce no line at all, and a file that matches many must produce its path line once. When <code>line_numbers</code> and <code>matched_line</code> are both <code>false</code> the block has no detail lines, so the loop over a file's lines returns as soon as the path line is written. Otherwise the loop runs to the end of the file, writing one detail line — two spaces of indent, then the fields <code>/n</code> and <code>/L</code> select — as each matching line is evaluated. Nothing is accumulated for the file: <code>Output</code> receives each line as it is produced.</p>
+<p>Block form, indent, field separator, emission timing, and path rendering are fixed by Spec_TextFinder.md §3.4. <code>&lt;path&gt;</code> begins with the root path <code>search</code> was given, as §3.4 requires, and is built by joining that root's text with the entry names descended through, rather than by formatting a <code>PathBuf</code>. <code>Path::display</code> is not used for a block line: it renders the platform's own separator, which on Windows would emit <code>\</code> and make the same tree produce different output on two platforms.</p>
+<p>§3.4 requires <code>/</code> on every platform for the whole of <code>&lt;path&gt;</code>, the root's own text included, so a separator the user typed is normalized too: <code>-P src\sub</code> on Windows yields <code>src/sub/file.rs</code>, not <code>src\sub/file.rs</code>. Every <code>\</code> in a root path's text becomes <code>/</code> before the first entry name is appended. A root path of <code>.</code> contributes no leading <code>./</code>.</p>
+<p>An entry name that is not valid UTF-8 cannot be rendered as text. Spec_TextFinder.md §3.4 settles that case for every implementation, and §5 rule 6 applies it here: the file is not searched and draws the error announcement <code>cannot open</code>, naming it with U+FFFD substituted for each unit that will not render. This library performs that substitution with <code>OsStr::to_string_lossy</code>, which does exactly what §3.4 describes. That announcement is the one place a path reaching <code>Output</code> is not the path on disk; every name that survives rule 6 renders without substitution, so a block's path line is always the name itself.</p>
+<p>Announcements are emitted through the same <code>Output</code> in the forms and under the gating of Spec_TextFinder.md §3.4, and are emitted as the library goes. Neither waits on the completion of the directory holding the entry it names, and neither is accumulated for emission at the end of the run. An error announcement is emitted at the point the failure is met and is not gated on <code>/h</code>.</p>
+<p>A file announcement reports only a file that produced no block, so it never repeats a path the output already carries. <code>commands.suppress_on_no_match</code> — the <code>/h</code> field — decides whether one is emitted at all:</p>
+<ul>
+<li><code>true</code>, the default: none is. A file searched without matching, and a file a content test rejected, each contribute nothing to the output.</li>
+<li><code>false</code>: a file searched without matching draws <code>searched &lt;path&gt;</code> once its last line has been evaluated, which is the first moment the library knows it matched nothing; a file rejected by a content test draws <code>skipped &lt;path&gt;</code> at the point of rejection.</li>
+</ul>
+<p>The no-content case of §7 produces a block for every selected non-empty file and so draws no file announcement under either setting.</p>
+<h4>8.1 Run Summary</h4>
+<p>Spec_TextFinder.md §3.6 puts the two run counts in this library, for every implementation alike, and fixes the line they produce. Two <code>usize</code> fields hold them, both zero from <code>new</code>, and neither is reset by <code>search</code>, so they accumulate over every root the value is given.</p>
+<p>The file count is incremented where the <code>/p</code> test of §6 admits a file, at both of the two places that test is applied — the root-path arm of <code>search</code> and the file arm of <code>walk</code> — and ahead of the metadata call in each. Everything §3.6 excludes is therefore excluded by construction rather than by a second test: an entry refused by <code>/p</code>, a symbolic link, an entry beneath a pruned directory, an entry whose name is not valid UTF-8, and an entry that is neither a file nor a directory all fail or bypass that test, though the last two draw <code>cannot open</code> on the way past. A file admitted and then announced <code>too large</code> or <code>cannot open</code> is counted, the increment standing ahead of both.</p>
+<p>Putting the increment at the two call sites rather than inside <code>examine</code> is deliberate. <code>walk</code> announces <code>cannot open</code> and never calls <code>examine</code> when <code>entry.metadata()</code> fails, and that file passed <code>/p</code>, so an increment inside <code>examine</code> would miss it and this implementation would report one file fewer than the others over the same tree.</p>
+<p>The directory count is incremented at the head of <code>walk</code>, before <code>read_dir</code>, so a directory that cannot be enumerated is counted and announced alike. A root path that resolved to a directory reaches <code>walk</code> and is counted; a pruned directory and, under <code>/s false</code>, every subdirectory never reach it and are not.</p>
+<p><code>emit_run_summary</code> writes one line through <code>Output</code>, in the fixed form of Spec_TextFinder.md §3.6, with neither noun inflected:</p>
+<pre><code class="language-text">accessed &lt;files&gt; files, &lt;directories&gt; directories
+</code></pre>
+<p>It is not gated on <code>/h</code>, <code>/h</code> governing file announcements alone, and it names no path, so the rendering rules of §8 do not reach it. <code>rust_textfinder_entry</code> calls it only on a run that traversed, per §3.6 and Spec_Rust_TextFinder_Entry.md §4.</p>
+<h3>9. Build</h3>
+<p>Per <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_TextFinder_Structure.md" target="_blank">Rust_TextFinder_Structure.md</a>:</p>
+<ul>
+<li>Cargo library package <code>rust_textfinder_dirnav</code>.</li>
+<li>Depends on the standard library, on <code>rust_textfinder_cmdline</code> for <code>ProgramCommands</code>, and on the <code>regex</code> crate. It is the only package that declares <code>regex</code>. It does not depend on <code>rust_textfinder_output</code>, which supplies the generic argument at the point of use.</li>
+</ul>
+<h3>10. Non-Goals</h3>
+<ul>
+<li>The library does not parse the command line and does not read the program's arguments.</li>
+<li>The library does not own or extend the skip list, and does not implement the skip-list extension point.</li>
+<li>The library does not modify files, follow symbolic links, or report an exit code.</li>
+</ul>
+</div>
+        </details>
+      </indent-blocks>
 
       <a id="interface"></a>
       <h3>1. &nbsp;Public Interface</h3>

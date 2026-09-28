@@ -37,6 +37,20 @@
     #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
       font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
       color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+      #github .mdview { font-size: 0.95rem; border: 2px solid var(--dark); padding: 0.75rem 1rem; }
+    #github .mdview h2 { font-size: 1.4rem; margin: 0.25rem 0 0.75rem; }
+    #github .mdview h3 { font-size: 1.2rem; margin: 1.25rem 0 0.5rem; }
+    #github .mdview h4 { font-size: 1.05rem; margin: 1rem 0 0.4rem; }
+    #github .mdview h5 { font-size: 1rem; margin: 0.75rem 0 0.3rem; }
+    #github .mdview p, #github .mdview li { max-width: 90ch; margin: 0.5rem 0; }
+    #github .mdview ul, #github .mdview ol { margin-left: 1.75rem; }
+    #github .mdview li, #github .mdview li > p { margin: 0.25rem 0; }
+    #github .mdview code { font-size: 0.95rem; }
+    #github .mdview :not(pre) > code { background: var(--atten); padding: 0 0.25rem; }
+    #github .mdview blockquote { border-left: 3px solid var(--dark); margin: 0.5rem 0; padding: 0.1rem 0 0.1rem 0.75rem; }
+    #github .mdview table { table-layout: auto; width: max-content; max-width: 100%; border-collapse: collapse; }
+    #github .mdview th, #github .mdview td { border: 1px solid var(--dark); }
+    #github .mdview hr { margin: 1rem 0; }
   </style>
   <script>
     function loadInExplorer() {
@@ -129,6 +143,97 @@
           </ul>
         </t-b>
       </div>
+
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Spec_Python_TextFinder_Output.md</summary>
+<div class="mdview">
+<h2>Spec_Python_TextFinder_Output — Output Library Specification</h2>
+<p>Specification for the <code>python_textfinder_output</code> library of the Python TextFinder implementation. It is the output component that <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Spec_TextFinder.md" target="_blank">Spec_TextFinder.md</a> §3.4 routes block lines and announcements through, and it implements the <code>Output</code> protocol defined in <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder/Python_Spec_driven_Dirnav/Spec_Python_TextFinder_Dirnav.md" target="_blank">Spec_Python_TextFinder_Dirnav.md</a> §4. It inherits structural decisions from <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder/Python_TextFinder_Structure.md" target="_blank">Python_TextFinder_Structure.md</a> and is constructed by <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder/Python_Spec_driven_TextFinder_Entry/Spec_Python_TextFinder_Entry.md" target="_blank">Spec_Python_TextFinder_Entry.md</a>.</p>
+<h3>1. Purpose</h3>
+<p><code>python_textfinder_output</code> is the sink. It receives fully formed strings from <code>python_textfinder_dirnav</code>, writes each as one line to stdout, and absorbs any write failure so that neither the traversal nor the binary has to reason about it.</p>
+<h3>2. Scope</h3>
+<p>This spec covers only the library. What is emitted, in what form, and under what gating is fixed by Spec_TextFinder.md §3.4 and produced by <code>python_textfinder_dirnav</code>; this library chooses none of it.</p>
+<h3>3. Responsibilities</h3>
+<p>The library:</p>
+<ul>
+<li>Is a package importable as <code>python_textfinder_output</code>, written in idiomatic Python for CPython 3.10 or later, with annotations throughout.</li>
+<li>Implements <code>Output</code> and its one method.</li>
+<li>Owns the process's only writer over standard output, and accepts the binary's own already-terminated text as well as the traversal's lines, so that one object controls the order everything reaches the stream in.</li>
+<li>Buffers stdout and flushes it when the <code>with</code> statement holding it ends.</li>
+</ul>
+<h3>4. Public Interface</h3>
+<p>The package exports the following, defined in <code>stdout_sink.py</code> and re-exported from <code>__init__.py</code>:</p>
+<pre><code class="language-python">class StdoutSink(Output):
+    def __init__(self) -&gt; None: ...
+
+    def output(self, text: str) -&gt; None: ...
+    def write_text(self, text: str) -&gt; None: ...
+    def flush(self) -&gt; None: ...
+
+    def __enter__(self) -&gt; &quot;StdoutSink&quot;: ...
+    def __exit__(self, exc_type, exc_value, traceback) -&gt; None: ...
+</code></pre>
+<p>The class names <code>Output</code> as a base. <code>Output</code> is a <code>typing.Protocol</code>, so this is not required for the sink to satisfy it, and it is written for two reasons: it makes the dependency edge Python_TextFinder_Structure.md draws a real import rather than a convention, and it lets a type checker verify the sink against the protocol where the sink is defined rather than at the one call that passes it. Nothing else in this project derives from <code>StdoutSink</code>, and subclassing it would put the emission order §3.4 fixes in the hands of a type this specification does not describe; Python offers no <code>sealed</code>, so that is a rule stated here rather than one the language holds.</p>
+<p>The constructor takes no arguments and raises in two cases. It raises <code>RuntimeError</code> when a <code>StdoutSink</code> already exists, so that the process holds one sink and one only; §7 records why a second would corrupt the output. And it lets an <code>OSError</code> from the construction of its writer propagate, which is the failure of a process started with no usable standard output handle. <code>python_textfinder_entry</code> catches both and exits 2, the code Spec_TextFinder.md §3.4 fixes for a failure that is not about the command line, and the failure that section names as its example.</p>
+<p>The one-sink rule is held by a module-level <code>bool</code>, cleared by <code>__exit__</code>, so a sink released before another is created releases the right to make one. Module-level mutable state is a smell in general and is the right mechanism here: the thing being guarded is a process-wide resource, one process holds one standard output handle, and the flag is read and written on one thread before any other could exist. No lock is taken. The Rust implementation reaches the same conclusion through a <code>thread_local!</code> <code>Cell</code>, which it needs because a plain <code>static</code> there must be <code>Sync</code>; Python places no such bound on a module attribute and so needs no cell.</p>
+<p><code>flush</code> writes the buffer through to stdout. <code>python_textfinder_entry</code> calls it at §4 step 6, where a diagnostic on stderr must follow text already written to stdout; nothing else needs it, since §7 flushes when the <code>with</code> statement ends.</p>
+<p>The type takes no configuration. <code>python_textfinder_dirnav</code> formats every line in full before emitting it — a block's path line, a block's indented detail lines, and every announcement alike — so there is nothing left here to parameterize.</p>
+<p>Two methods write, and they differ only in what they add:</p>
+<ul>
+<li><code>output</code>, the protocol method, writes the string it is given followed by the single LF Spec_TextFinder.md §3.4 fixes. It is the method <code>python_textfinder_dirnav</code> reaches, and the protocol is the only thing that library knows about this one.</li>
+<li><code>write_text</code> writes the string verbatim, adding nothing. It exists for the help text of Spec_TextFinder.md §5.1 and the option listing of §5.3, which <code>python_textfinder_cmdline</code> returns already terminated. It is not part of the <code>Output</code> protocol, so <code>python_textfinder_dirnav</code> cannot reach it through the annotation it holds and cannot emit unterminated text.</li>
+</ul>
+<p>Once constructed, neither method raises and neither reports failure to a caller.</p>
+<h3>5. Destination and Line Termination</h3>
+<p>Output goes to stdout, the destination Spec_TextFinder.md §3.4 names.</p>
+<p>Spec_TextFinder.md §3.4 obliges an implementation to prevent its runtime translating the LF terminator to CRLF. <code>sys.stdout</code> is a <code>TextIOWrapper</code> opened with <code>newline=None</code>, which translates every <code>\n</code> written through it to <code>\r\n</code> on Windows, and <code>print</code> writes through it — so the interpreter's most obvious way to write a line is the one this specification forbids. <code>print</code> is not called anywhere in this implementation, and neither is <code>sys.stdout.write</code>.</p>
+<p>The sink therefore owns a <code>TextIOWrapper</code> it constructs over <code>sys.stdout.buffer</code>, with four properties fixed here:</p>
+<ul>
+<li><code>newline=&quot;\n&quot;</code>, so no translation is performed on any platform.</li>
+<li><code>encoding=&quot;utf-8&quot;</code>, so the bytes on stdout do not depend on the machine's locale. No byte-order mark is written: <code>TextIOWrapper</code> emits none, and the <code>utf-8-sig</code> codec, which would, is not named.</li>
+<li><code>errors=&quot;replace&quot;</code>, as a backstop described below.</li>
+<li><code>line_buffering=False</code> and <code>write_through=False</code>, per §7.</li>
+</ul>
+<p>Fixing the encoding on this library's own writer is what makes the output independent of the environment. <code>PYTHONIOENCODING</code> and <code>-X utf8</code> configure <code>sys.stdout</code>, and this program never writes through it, so neither can change what this program puts on stdout. On a Windows console, <code>sys.stdout.buffer</code> is a <code>_WindowsConsoleIO</code> that takes UTF-8 bytes and converts them to UTF-16 for the console, so writing UTF-8 through it is correct whatever the console code page.</p>
+<p>The <code>errors=&quot;replace&quot;</code> backstop is reached by one kind of text only: a <code>str</code> carrying a lone surrogate, which on POSIX is how the interpreter delivers a command-line argument it could not decode. Such text reaches this library through the option listing of §5.3, which echoes <code>/P</code> and <code>/r</code> verbatim. <code>errors=&quot;strict&quot;</code> is rejected because it would raise on that text and turn a user's undecodable argument into a lost run; <code>errors=&quot;surrogateescape&quot;</code> is rejected because it would put the original invalid bytes on stdout, so the output would no longer be valid UTF-8. <code>replace</code> substitutes <code>?</code> on encoding — not U+FFFD, which it substitutes only on decoding — and that is why the U+FFFD substitution Spec_TextFinder.md §3.4 requires for an unrenderable path is performed by <code>python_textfinder_dirnav</code> (Spec_Python_TextFinder_Dirnav.md §8) rather than left to this codec. No path reaches this library carrying a surrogate, so the backstop never applies to one.</p>
+<p><code>output</code> adds the terminator and nothing else — no prefix, no separator, no trailing content — because the string arrives fully formatted.</p>
+<h3>6. Error Handling</h3>
+<p>A write that fails — a closed pipe, a full disk — sets an internal failed state. On the first such failure the library flushes stdout and then writes the single line <code>output failed</code> to stderr. The flush comes first so that every line already buffered reaches the stream ahead of the notice explaining why the lines stop; it is best-effort, since whatever broke the write may break it too. Thereafter the library discards every string it is given and writes nothing more, to stdout or stderr.</p>
+<p>The failed state is permanent and one notice is written, not one per discarded line, so a broken pipe does not turn a long search into a long stderr transcript.</p>
+<p>Every write is wrapped against <code>OSError</code> and <code>ValueError</code>. The first covers the stream failures the interpreter raises, <code>BrokenPipeError</code> among them, and is caught as the base rather than as a list of its subclasses. The second is what a write to a stream already released raises. A bare <code>except:</code> is not taken, and neither is <code>except Exception:</code>: a <code>MemoryError</code> or an <code>AttributeError</code> from this library is a defect in it rather than a stream failure, and swallowing one would hide that defect behind a notice about output.</p>
+<p>The flush performed when the <code>with</code> statement ends (§7) obeys the same rule. A failure there sets the failed state and writes the one notice, if no earlier failure has already written it, because the final flush is the write most likely to be the first one that fails: it is the only one that must reach the stream, and on a short search it is the only one that reaches it at all. Nothing follows it, so nothing is left to discard.</p>
+<p><strong>The notice is written under the same guard as everything else.</strong> Writing <code>output failed</code> to stderr is itself a write that can fail, and on a command line that closed both streams it does — a pipeline whose reader exits breaks stdout, and the same redirection can break stderr. Left unguarded, the <code>OSError</code> raised while reporting the first failure would leave this library from inside its own <code>except</code> block, pass through <code>python_textfinder_dirnav</code>, whose handlers wrap filesystem calls and not emission, leave <code>main</code>, and reach the interpreter, which would print a traceback and exit 1 — a code Spec_TextFinder.md §3.4 assigns to an invalid command line. A broken pipe would then be indistinguishable from a usage error.</p>
+<p>The stderr write and its flush are therefore wrapped against the same two types, and a failure there is discarded. The failed state is already set by then, so the run continues in silence, which is the whole of what this section promises in the case where nothing can be said.</p>
+<p>The library never lets a failure reach <code>python_textfinder_dirnav</code>, which goes on traversing, and never returns a status. That statement is unconditional, and the paragraph above is what makes it so: before it, the one write in this library that was not wrapped was the one that ran only when a write had already failed.</p>
+<p>A failed write does not affect the exit code, which Spec_Python_TextFinder_Entry.md §6 reserves for command-line and startup failures. A run whose output went nowhere still exits 0: the exit code answers whether TextFinder could do what it was asked, not whether the reader received it.</p>
+<p>The <code>output failed</code> notice is written to <code>sys.stderr.buffer</code> as UTF-8 with an explicit <code>\n</code>, followed by a flush, so stderr carries LF here as it does everywhere else in this implementation and no text-layer translation applies.</p>
+<h3>7. Buffering and Release</h3>
+<p><code>line_buffering</code> is <code>False</code> and <code>write_through</code> is <code>False</code>, so the <code>TextIOWrapper</code> defers a write until its buffer fills, and the <code>BufferedWriter</code> beneath it defers again. With either set the writer would push every call through to the operating system, and a search emitting many lines would pay one system call per line for nothing.</p>
+<p>No flush is performed per line. The stream is flushed when the sink is released, and <code>python_textfinder_entry</code> reaches that release on every path out of <code>main</code> by holding the sink in a <code>with</code> statement. <code>flush</code> (§4) performs the same write on demand, for the one case that needs the buffer drained before the process ends.</p>
+<p><code>__exit__</code> flushes the writer and then calls <code>detach</code> on it. <code>close</code> is not called, and this is the one hazard of wrapping a stream the interpreter also owns: closing a <code>TextIOWrapper</code> closes the object beneath it, so <code>close</code> here would close <code>sys.stdout.buffer</code> and leave the interpreter's own shutdown flush of <code>sys.stdout</code> writing to a closed stream. <code>detach</code> severs the wrapper from the buffer without closing it, and it also disarms the wrapper's own finalizer, which would otherwise close the buffer whenever the wrapper was collected. The sink holds a reference to the wrapper for as long as the run lasts, so that collection cannot happen early.</p>
+<p>The <code>detach</code> call is wrapped against <code>OSError</code> and <code>ValueError</code> and its failure discarded, for a reason that is not obvious from its name: <code>detach</code> flushes the wrapper before severing it, so on a broken pipe it raises the failure the preceding flush already met. Without the guard that exception would leave <code>__exit__</code>, and an exception leaving a <code>with</code> statement's exit is an exception leaving <code>main</code> — the same outcome §6 describes for an unguarded notice, reached at the end of an otherwise successful run. The guard is what lets §6's rule that a failed write does not affect the exit code hold on the last write of the run as well as the first.</p>
+<p>The context-manager protocol is the whole of the mechanism, and Python leaves no better alternative. The language has no destructor that runs deterministically at scope exit: CPython's reference counting usually collects at the last reference, which is an implementation detail rather than a language rule, and the interpreter is free to leave a <code>__del__</code> unrun at shutdown. So the C++ implementation's reliance on a destructor and the Rust implementation's on <code>Drop</code> have no counterpart, as they have none in C#. <code>__enter__</code> and <code>__exit__</code> plus a <code>with</code> statement in the caller are what make the flush deterministic, and it is the caller's <code>with</code> that carries the guarantee rather than anything this type can enforce alone. This library therefore states the requirement and Spec_Python_TextFinder_Entry.md §4 discharges it.</p>
+<p><code>__exit__</code> is written to be safe to call twice, since a <code>with</code> statement on a sink already released by other means would otherwise fault. A second call flushes nothing and clears nothing. It returns <code>None</code>, so an exception raised inside the <code>with</code> block propagates: this type suppresses output failures, not defects in its caller.</p>
+<p>The deferral is why the process holds one sink and one only (§4). Two would wrap the same standard output stream with two independent buffers, and their contents would reach the stream in the order the buffers happened to fill rather than the order the lines were written — which would break the emission order Spec_TextFinder.md §3.4 fixes, silently and only under load. The same reasoning is why <code>print</code> is forbidden implementation-wide: it writes through <code>sys.stdout</code>, a third buffer over the same stream.</p>
+<p>One rule keeps the deferral from reordering the output: <strong>stdout is flushed before any write to stderr.</strong> This library applies the rule to its own <code>output failed</code> notice (§6), and <code>python_textfinder_entry</code> applies it to the diagnostic that follows the option listing on an invalid <code>/r</code> (Spec_Python_TextFinder_Entry.md §4 step 6).</p>
+<p>Because this object owns the only writer over standard output in the process, the binary's help text and option listing pass through <code>write_text</code> rather than through a writer of their own. They therefore share this buffer and reach the stream in the order written, and the ordering rule above is the only coordination needed.</p>
+<h3>8. Build</h3>
+<p>Per <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder/Python_TextFinder_Structure.md" target="_blank">Python_TextFinder_Structure.md</a>:</p>
+<ul>
+<li>Package <code>python_textfinder_output</code> under this folder's <code>src/</code>, importable once that folder is on <code>PYTHONPATH</code>.</li>
+<li>Imports <code>python_textfinder_dirnav</code> for the <code>Output</code> protocol, and <code>io</code> and <code>sys</code> from the standard library. Nothing imports this package except <code>python_textfinder_entry</code>, which passes the sink to <code>Dirnav</code>.</li>
+<li>Its unit suite sits under <code>test/</code> and is not part of the package, so importing the package does not import the suite.</li>
+</ul>
+<h3>9. Non-Goals</h3>
+<ul>
+<li>The library does not format block lines or announcements, does not know one from the other, does not indent a detail line, and does not apply <code>/h</code>, <code>/n</code>, or <code>/L</code>; all of that is settled before a string reaches it.</li>
+<li>The library does not read files, paths, or the command line.</li>
+<li>The library does not write usage diagnostics; those go to stderr from <code>python_textfinder_entry</code>.</li>
+</ul>
+</div>
+        </details>
+      </indent-blocks>
 
       <a id="sink"></a>
       <h3>1. &nbsp;The Sink</h3>

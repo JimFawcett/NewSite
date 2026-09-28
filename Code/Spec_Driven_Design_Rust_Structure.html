@@ -37,6 +37,20 @@
     #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
       font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
       color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+      #github .mdview { font-size: 0.95rem; border: 2px solid var(--dark); padding: 0.75rem 1rem; }
+    #github .mdview h2 { font-size: 1.4rem; margin: 0.25rem 0 0.75rem; }
+    #github .mdview h3 { font-size: 1.2rem; margin: 1.25rem 0 0.5rem; }
+    #github .mdview h4 { font-size: 1.05rem; margin: 1rem 0 0.4rem; }
+    #github .mdview h5 { font-size: 1rem; margin: 0.75rem 0 0.3rem; }
+    #github .mdview p, #github .mdview li { max-width: 90ch; margin: 0.5rem 0; }
+    #github .mdview ul, #github .mdview ol { margin-left: 1.75rem; }
+    #github .mdview li, #github .mdview li > p { margin: 0.25rem 0; }
+    #github .mdview code { font-size: 0.95rem; }
+    #github .mdview :not(pre) > code { background: var(--atten); padding: 0 0.25rem; }
+    #github .mdview blockquote { border-left: 3px solid var(--dark); margin: 0.5rem 0; padding: 0.1rem 0 0.1rem 0.75rem; }
+    #github .mdview table { table-layout: auto; width: max-content; max-width: 100%; border-collapse: collapse; }
+    #github .mdview th, #github .mdview td { border: 1px solid var(--dark); }
+    #github .mdview hr { margin: 1rem 0; }
   </style>
   <script>
     function loadInExplorer() {
@@ -309,46 +323,44 @@ target\debug\rust_textfinder.exe -H true</code></pre>
         the paths.
       </t-b>
       <h5 class="indent">Rust_TextFinder_Structure.md</h5>
-<pre><code class="language-markdown"># Rust_TextFinder — Project Structure
-
-The Rust_TextFinder project comprises three libraries and one binary, arranged as a single Cargo workspace. The binary depends on all three. The libraries themselves form a chain: `rust_textfinder_dirnav` depends on `rust_textfinder_cmdline` for the program-command struct, and `rust_textfinder_output` depends on `rust_textfinder_dirnav` for the `Output` trait. Nothing depends on `rust_textfinder_output` but the binary.
-
-## Libraries
-
-- **rust_textfinder_cmdline** — parses the command line into a `struct` of program commands that control the behavior of `rust_textfinder_dirnav`. Specified in [Spec_Rust_TextFinder_Cmdline.md](Rust_Spec_driven_Cmdline/Spec_Rust_TextFinder_Cmdline.md).
-- **rust_textfinder_dirnav** — directory navigation. Reads file contents, runs regex matching, and formats each matching file into the block Spec_TextFinder.md §3.4 fixes before emitting its lines. Compiles the regular expression once per run, not once per file. Defines the trait:
-  ```rust
-  pub trait Output {
-      fn output(&amp;mut self, text: &amp;str);
-  }
-  ```
-  `Dirnav` binds to a concrete `Output` through a generic type parameter, so the call is statically dispatched. Specified in [Spec_Rust_TextFinder_Dirnav.md](Rust_Spec_driven_Dirnav/Spec_Rust_TextFinder_Dirnav.md).
-- **rust_textfinder_output** — implements `Output::output` according to its specification, [Spec_Rust_TextFinder_Output.md](Rust_Spec_driven_Output/Spec_Rust_TextFinder_Output.md). Handles output errors internally.
-
-Each library's Cargo package name matches its component name above, and each is a library crate exporting the items its specification fixes.
-
-## Binary
-
-- **rust_textfinder_entry** — binary package name; produces the executable `rust_textfinder`. Depends on the three libraries above. Specified in [Spec_Rust_TextFinder_Entry.md](Rust_Spec_driven_TextFinder_Entry/Spec_Rust_TextFinder_Entry.md).
-- Owns the skip list and passes it to `rust_textfinder_dirnav` for use during traversal.
-- On execution, the binary command line is parsed into a program-command struct using `rust_textfinder_cmdline`.
-- A value of the concrete output type is created and bound to a `Dirnav` value through its generic parameter.
-- The `Dirnav` value is started at each of the specified (possibly default) root paths in turn and performs a DFS for regex matches on files in each directory tree.
-- Owns the process's one output value, which in turn owns the only handle to stdout. Every write to stdout, the binary's own help text and option listing included, passes through that value, so nothing else can interleave with the search output or reorder it.
-
-## Build
-
-- Language: Rust, edition 2021. Build system: Cargo. These apply to every package below, and each component's `Spec_*.md` names only its own package.
-- One workspace at the root of this folder with four members, one per component. Each library is a separate package rather than a module of one crate, so the dependency chain above is enforced by Cargo rather than by convention.
-- Dependencies: the `regex` crate, which Spec_TextFinder.md §6.1 assigns to Rust, is the only third-party dependency, and only `rust_textfinder_dirnav` declares it. Everything else comes from the standard library. Spec_TextFinder.md §6 permits a package from the language's supported ecosystem for regex access.
-- Toolchain minimum: rustc 1.70 with the matching Cargo. No nightly feature is used.
-
-## Notes
-
-- This forms a data pipeline architecture that emits an output immediately following evaluation of a regex match.
-- Identifiers follow Rust convention, so this implementation spells in snake_case what the C++ implementation spells in camelCase: `usage_line` for `usageLine`, `line_numbers` for `lineNumbers`. The switch letters, the emitted text, and the exit codes are fixed by Spec_TextFinder.md and are identical in both.
-- The `Output` trait with a generic parameter is the current design choice. A boxed trait object, `Box&lt;dyn Output&gt;`, is a viable alternative that trades static dispatch for a signature carrying no type parameter; it is not adopted here.
-- Spec_TextFinder.md §3.4 obliges an implementation to stop its runtime translating the LF terminator. Rust's standard output performs no such translation on any platform, so this implementation meets that requirement without configuring the stream. [Spec_Rust_TextFinder_Output.md](Rust_Spec_driven_Output/Spec_Rust_TextFinder_Output.md) §5 records what follows from that.</code></pre>
+<div class="mdview">
+<h2>Rust_TextFinder — Project Structure</h2>
+<p>The Rust_TextFinder project comprises three libraries and one binary, arranged as a single Cargo workspace. The binary depends on all three. The libraries themselves form a chain: <code>rust_textfinder_dirnav</code> depends on <code>rust_textfinder_cmdline</code> for the program-command struct, and <code>rust_textfinder_output</code> depends on <code>rust_textfinder_dirnav</code> for the <code>Output</code> trait. Nothing depends on <code>rust_textfinder_output</code> but the binary.</p>
+<h3>Libraries</h3>
+<ul>
+<li><strong>rust_textfinder_cmdline</strong> — parses the command line into a <code>struct</code> of program commands that control the behavior of <code>rust_textfinder_dirnav</code>. Specified in <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_Spec_driven_Cmdline/Spec_Rust_TextFinder_Cmdline.md" target="_blank">Spec_Rust_TextFinder_Cmdline.md</a>.</li>
+<li><strong>rust_textfinder_dirnav</strong> — directory navigation. Reads file contents, runs regex matching, and formats each matching file into the block Spec_TextFinder.md §3.4 fixes before emitting its lines. Compiles the regular expression once per run, not once per file. Defines the trait:<pre><code class="language-rust">pub trait Output {
+    fn output(&amp;mut self, text: &amp;str);
+}
+</code></pre>
+<code>Dirnav</code> binds to a concrete <code>Output</code> through a generic type parameter, so the call is statically dispatched. Specified in <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_Spec_driven_Dirnav/Spec_Rust_TextFinder_Dirnav.md" target="_blank">Spec_Rust_TextFinder_Dirnav.md</a>.</li>
+<li><strong>rust_textfinder_output</strong> — implements <code>Output::output</code> according to its specification, <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_Spec_driven_Output/Spec_Rust_TextFinder_Output.md" target="_blank">Spec_Rust_TextFinder_Output.md</a>. Handles output errors internally.</li>
+</ul>
+<p>Each library's Cargo package name matches its component name above, and each is a library crate exporting the items its specification fixes.</p>
+<h3>Binary</h3>
+<ul>
+<li><strong>rust_textfinder_entry</strong> — binary package name; produces the executable <code>rust_textfinder</code>. Depends on the three libraries above. Specified in <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_Spec_driven_TextFinder_Entry/Spec_Rust_TextFinder_Entry.md" target="_blank">Spec_Rust_TextFinder_Entry.md</a>.</li>
+<li>Owns the skip list and passes it to <code>rust_textfinder_dirnav</code> for use during traversal.</li>
+<li>On execution, the binary command line is parsed into a program-command struct using <code>rust_textfinder_cmdline</code>.</li>
+<li>A value of the concrete output type is created and bound to a <code>Dirnav</code> value through its generic parameter.</li>
+<li>The <code>Dirnav</code> value is started at each of the specified (possibly default) root paths in turn and performs a DFS for regex matches on files in each directory tree.</li>
+<li>Owns the process's one output value, which in turn owns the only handle to stdout. Every write to stdout, the binary's own help text and option listing included, passes through that value, so nothing else can interleave with the search output or reorder it.</li>
+</ul>
+<h3>Build</h3>
+<ul>
+<li>Language: Rust, edition 2021. Build system: Cargo. These apply to every package below, and each component's <code>Spec_*.md</code> names only its own package.</li>
+<li>One workspace at the root of this folder with four members, one per component. Each library is a separate package rather than a module of one crate, so the dependency chain above is enforced by Cargo rather than by convention.</li>
+<li>Dependencies: the <code>regex</code> crate, which Spec_TextFinder.md §6.1 assigns to Rust, is the only third-party dependency, and only <code>rust_textfinder_dirnav</code> declares it. Everything else comes from the standard library. Spec_TextFinder.md §6 permits a package from the language's supported ecosystem for regex access.</li>
+<li>Toolchain minimum: rustc 1.70 with the matching Cargo. No nightly feature is used.</li>
+</ul>
+<h3>Notes</h3>
+<ul>
+<li>This forms a data pipeline architecture that emits an output immediately following evaluation of a regex match.</li>
+<li>Identifiers follow Rust convention, so this implementation spells in snake_case what the C++ implementation spells in camelCase: <code>usage_line</code> for <code>usageLine</code>, <code>line_numbers</code> for <code>lineNumbers</code>. The switch letters, the emitted text, and the exit codes are fixed by Spec_TextFinder.md and are identical in both.</li>
+<li>The <code>Output</code> trait with a generic parameter is the current design choice. A boxed trait object, <code>Box&lt;dyn Output&gt;</code>, is a viable alternative that trades static dispatch for a signature carrying no type parameter; it is not adopted here.</li>
+<li>Spec_TextFinder.md §3.4 obliges an implementation to stop its runtime translating the LF terminator. Rust's standard output performs no such translation on any platform, so this implementation meets that requirement without configuring the stream. <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_Spec_driven_Output/Spec_Rust_TextFinder_Output.md" target="_blank">Spec_Rust_TextFinder_Output.md</a> §5 records what follows from that.</li>
+</ul>
+</div>
       <h5 class="indent">Cargo.toml (workspace root)</h5>
 <pre><code class="language-toml">[workspace]
 resolver = "2"

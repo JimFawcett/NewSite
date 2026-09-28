@@ -37,6 +37,20 @@
     #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
       font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
       color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+      #github .mdview { font-size: 0.95rem; border: 2px solid var(--dark); padding: 0.75rem 1rem; }
+    #github .mdview h2 { font-size: 1.4rem; margin: 0.25rem 0 0.75rem; }
+    #github .mdview h3 { font-size: 1.2rem; margin: 1.25rem 0 0.5rem; }
+    #github .mdview h4 { font-size: 1.05rem; margin: 1rem 0 0.4rem; }
+    #github .mdview h5 { font-size: 1rem; margin: 0.75rem 0 0.3rem; }
+    #github .mdview p, #github .mdview li { max-width: 90ch; margin: 0.5rem 0; }
+    #github .mdview ul, #github .mdview ol { margin-left: 1.75rem; }
+    #github .mdview li, #github .mdview li > p { margin: 0.25rem 0; }
+    #github .mdview code { font-size: 0.95rem; }
+    #github .mdview :not(pre) > code { background: var(--atten); padding: 0 0.25rem; }
+    #github .mdview blockquote { border-left: 3px solid var(--dark); margin: 0.5rem 0; padding: 0.1rem 0 0.1rem 0.75rem; }
+    #github .mdview table { table-layout: auto; width: max-content; max-width: 100%; border-collapse: collapse; }
+    #github .mdview th, #github .mdview td { border: 1px solid var(--dark); }
+    #github .mdview hr { margin: 1rem 0; }
   </style>
   <script>
     function loadInExplorer() {
@@ -131,6 +145,140 @@
           </ul>
         </t-b>
       </div>
+
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Spec_CSharp_TextFinder_Cmdline.md</summary>
+<div class="mdview">
+<h2>Spec_CSharp_TextFinder_Cmdline — Command-Line Library Specification</h2>
+<p>Specification for the <code>CSharp_TextFinder_Cmdline</code> library of the C# TextFinder implementation. This document is the C# binding of <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Spec_TextFinder.md" target="_blank">Spec_TextFinder.md</a> §4–§5, which remain the authority for switch syntax, meanings, and defaults; it inherits structural decisions from <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/CSharp_Spec_driven_TextFinder/CSharp_TextFinder_Structure.md" target="_blank">CSharp_TextFinder_Structure.md</a>. Its consumer is <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/CSharp_Spec_driven_TextFinder/CSharp_Spec_driven_TextFinder_Entry/Spec_CSharp_TextFinder_Entry.md" target="_blank">Spec_CSharp_TextFinder_Entry.md</a>.</p>
+<h3>1. Purpose</h3>
+<p><code>CSharp_TextFinder_Cmdline</code> converts the program's arguments into a program-command object that controls the behavior of <code>CSharp_TextFinder_Dirnav</code>. It is the single place in the C# implementation where switch letters, argument syntax, and defaults are known. It performs no traversal, no matching, no file I/O, and no stream writing.</p>
+<h3>2. Scope</h3>
+<p>This spec covers only the library. Consumption of the parsed result, exit codes, and which stream receives a diagnostic are specified in Spec_CSharp_TextFinder_Entry.md.</p>
+<h3>3. Responsibilities</h3>
+<p>The library:</p>
+<ul>
+<li>Is a .NET class library targeting <code>net8.0</code>, written in idiomatic C# with nullable reference types enabled.</li>
+<li>Exports a <code>ProgramCommands</code> class and a parse entry that converts an argument array into it, applying the syntax rules, defaults, and multiple-occurrence rules of Spec_TextFinder.md §4–§5.</li>
+<li>Reports every command-line error through a returned diagnostic string rather than an exception; it opens no stream and does not terminate the process.</li>
+<li>Renders the help text of Spec_TextFinder.md §5.1, its usage line, and the resolved-option listing as strings, for <code>CSharp_TextFinder_Entry</code> to write — help and options to stdout, the usage line to stderr within a diagnostic.</li>
+</ul>
+<h3>4. Public Interface</h3>
+<p>Namespace <code>CSharp_TextFinder_Cmdline</code> exports the following:</p>
+<pre><code class="language-csharp">public sealed class ProgramCommands
+{
+    public List&lt;string&gt; RootPaths { get; set; } = new() { &quot;.&quot; };  // /P
+    public List&lt;string&gt; Extensions { get; set; } = new();         // /p
+    public string RegexText { get; set; } = &quot;.&quot;;                  // /r
+    public bool Recurse { get; set; } = true;                     // /s
+    public bool SuppressOnNoMatch { get; set; } = true;           // /h
+    public bool Verbose { get; set; }                             // /v
+    public bool Help { get; set; }                                // /H
+    public bool LineNumbers { get; set; }                         // /n
+    public bool MatchedLine { get; set; }                         // /L
+}
+
+public static class CommandLine
+{
+    public static bool TryParse(string[] args,
+        [NotNullWhen(true)] out ProgramCommands? commands,
+        [NotNullWhen(false)] out string? diagnostic);
+
+    public static string UsageLine();
+    public static string HelpText();
+    public static string OptionsText(ProgramCommands commands);
+}
+</code></pre>
+<p>The property comments are the switch-to-property mapping, and the property initializers are the sole authority in code for the defaults of Spec_TextFinder.md §5. A newly constructed <code>ProgramCommands</code> equals the result of parsing an empty argument array. Spec_TextFinder.md §5 remains the authority overall, and a disagreement between the two is a defect in this library. The four <code>bool</code> properties whose default is <code>false</code> carry no initializer, since <code>default(bool)</code> is already <code>false</code>; writing <code>= false</code> on them would suggest the value was chosen where the others' initializers show it was.</p>
+<p><code>ProgramCommands</code> has no invariants: every property combination the parser can produce is valid. It is a reference type, so <code>Dirnav</code> holds a reference to the object <code>CSharp_TextFinder_Entry</code> owns and the garbage collector keeps it alive. No lifetime rule is stated here, because there is none to state.</p>
+<p><code>CommandLine</code> is a static class because C# has no free functions. The four members are static methods of one type rather than four types with one method each, since all four render or read the same option set.</p>
+<p><code>TryParse</code> follows the <code>Try</code> pattern rather than returning a result object or throwing. A malformed command line is something the user typed, so it is an ordinary outcome of parsing rather than an exceptional one, and the <code>Try</code> pattern is how C# expresses that without a result type in the base class library. The two <code>out</code> parameters are nullable and carry <code>NotNullWhen</code> attributes, so a caller compiling with nullable reference types enabled may use <code>commands</code> after a <code>true</code> return and <code>diagnostic</code> after a <code>false</code> return without a null check and without a null-forgiving operator. Exactly one of the two is non-null on return.</p>
+<p><code>RegexText</code> is the <code>/r</code> argument verbatim — compilation happens at <code>Dirnav</code> construction, per Spec_CSharp_TextFinder_Entry.md §4 step 6.</p>
+<h3>5. Parsing Rules</h3>
+<p><code>TryParse</code> scans <code>args</code> from index 0 left to right, alternating switch token and argument token. It stops at the first violation and produces that diagnostic; no partial result is returned. It touches no filesystem: root paths are not tested for existence, and extensions are not compared against any file.</p>
+<p>The scan begins at index 0 rather than index 1. <code>Main</code>'s <code>string[] args</code> holds the arguments alone, where a C or C++ <code>argv[0]</code> holds the executable name, so there is no program name to skip. Spec_TextFinder.md §4 leaves the form of the argument vector to this document, and this is the fact that follows for C#.</p>
+<ol>
+<li><strong>Switch tokens.</strong> A token in switch position is valid only when it is exactly two characters, the first <code>/</code> or <code>-</code>, the second one of the nine letters in Spec_TextFinder.md §5. A token with no introducer is <em>not a switch</em>; any other introducer-led token, including a bare <code>/</code> or <code>-</code>, is an <em>unrecognized switch</em>. Length is measured in UTF-16 code units, which is what <code>string.Length</code> counts; a two-character token holding an astral character measures 3 or more and is refused as unrecognized, which is the same outcome the rule reaches by its own terms.</li>
+<li><strong>Arguments.</strong> Each switch consumes the following token verbatim, including when that token begins with <code>/</code> or <code>-</code>, since there are no bare flags. A switch with no following token is <em>missing its argument</em>.</li>
+<li><strong>Conversion.</strong> Boolean switches (<code>/s</code>, <code>/h</code>, <code>/v</code>, <code>/H</code>, <code>/n</code>, <code>/L</code>) accept only <code>true</code> or <code>false</code>, compared with <code>StringComparison.OrdinalIgnoreCase</code>. <code>bool.TryParse</code> is not used: it trims surrounding whitespace and accepts values this specification does not, so a token this implementation must refuse would be accepted. <code>/r</code> and <code>/P</code> take the token verbatim, and each rejects an empty argument — <em>an empty root path</em> for <code>/P</code>, <em>an empty expression</em> for <code>/r</code>. <code>/p</code> is normalized per §7.</li>
+<li><strong>Accumulation.</strong> <code>/P</code> clears the default <code>{ &quot;.&quot; }</code> on its first occurrence and appends thereafter, preserving argument order. Every other switch overwrites any earlier value, silently discarding it. The first occurrence is tracked by a local flag rather than inferred from the list's contents, since <code>-P .</code> is indistinguishable by value from the default.</li>
+</ol>
+<p>Switch letters compare with <code>StringComparison.Ordinal</code> throughout. A culture-sensitive comparison is not used anywhere in this library: under a Turkish culture an ordinal-insensitive fold of <code>I</code> and <code>i</code> differs from the invariant one, and <code>/h</code> and <code>/H</code> are distinct switches whose distinction must not depend on the machine's locale.</p>
+<h3>6. Error Conditions</h3>
+<p>Every violation in §5 is a usage error. <code>TryParse</code> returns <code>false</code> and produces a usage diagnostic in the shape Spec_TextFinder.md §5.2 binds — a reason line, a newline, then <code>UsageLine()</code>. <code>CSharp_TextFinder_Entry</code> writes that string to stderr unaltered and exits with code 1 (Spec_CSharp_TextFinder_Entry.md §4 step 2).</p>
+<p>Spec_TextFinder.md §2 leaves the wording of stderr text to each language, and §5.2 supplies reason lines without binding them. This implementation adopts §5.2's six parse-time reason lines unchanged, and this section is where they are fixed for C#:</p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Reason line</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Token in switch position has no <code>/</code> or <code>-</code> introducer</td>
+<td><code>not a switch: &lt;token&gt;</code></td>
+</tr>
+<tr>
+<td>Introducer-led token that is not a switch defined in §5</td>
+<td><code>unrecognized switch: &lt;token&gt;</code></td>
+</tr>
+<tr>
+<td>Switch is the last token, with no argument token following</td>
+<td><code>missing argument for switch: &lt;switch&gt;</code></td>
+</tr>
+<tr>
+<td>Boolean switch given a value other than <code>true</code> or <code>false</code></td>
+<td><code>invalid boolean for &lt;switch&gt;: &lt;token&gt;</code></td>
+</tr>
+<tr>
+<td><code>/P</code> given an empty argument</td>
+<td><code>empty root path for switch: &lt;switch&gt;</code></td>
+</tr>
+<tr>
+<td><code>/r</code> given an empty argument</td>
+<td><code>empty expression for switch: &lt;switch&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>&lt;token&gt;</code> is the offending token and <code>&lt;switch&gt;</code> the switch, each reproduced exactly as typed, preserving the introducer. Adopting §5.2's wording rather than rewriting it costs nothing and leaves this implementation's stderr comparable with the other implementations', which Spec_TextFinder.md §6 no longer requires but does not forbid.</p>
+<p>The diagnostic's embedded terminators are LF, since they are written into the string rather than produced by a writer. <code>CSharp_TextFinder_Entry</code> writes the string with <code>Console.Error.Write</code>, which appends nothing, so this implementation's stderr carries LF on every platform. Spec_TextFinder.md §3.4 leaves the stderr terminator to the platform and asks for no such thing; getting it costs one method choice, so this implementation takes it.</p>
+<p>The seventh condition of §5.2, a malformed <code>/r</code>, is detected later: the <code>Dirnav</code> constructor compiles the expression and lets the framework's parse failure propagate, and <code>CSharp_TextFinder_Entry</code> composes that diagnostic, drawing its usage line from <code>UsageLine()</code>. Spec_CSharp_TextFinder_Entry.md §6 fixes its reason line, since the binary is what writes it.</p>
+<p>There is no error condition for a duplicated switch or an empty <code>/p</code> list: duplicates resolve by §5 rule 4, and an empty extension list means every file is searched.</p>
+<h3>7. Extension-List Normalization</h3>
+<p>The <code>/p</code> argument arrives as one token; the shell has already removed the quotes. Normalization implements the <code>/p</code> rules of Spec_TextFinder.md §5: split the token on commas, trim each item, strip one leading <code>.</code> if present, trim it a second time, discard empty items, and preserve the order of the survivors.</p>
+<p>The second trim is not redundant, and §5 requires it for a reason that shows only when the dot and the whitespace are separated. <code>&quot;. cs&quot;</code> survives the first trim unchanged, the dot being the first character, and the strip then exposes the space: one trim alone yields <code>&quot; cs&quot;</code>, an extension no file can carry, and one that puts a second space into the §5.3 listing line, which §5.3 otherwise keeps free of stray whitespace. An item reduced to nothing by either trim is discarded, so the empties test comes last.</p>
+<p>Spec_TextFinder.md §5 fixes which characters are trimmed, naming six of them, so this document chooses none of them and no two implementations can trim a different set. The six are held as a <code>char[]</code> and passed to <code>string.Trim(params char[])</code>, which trims exactly the characters given and no others. Both trims are that same call against that same array, so the six have one definition here.</p>
+<p>Two framework methods are rejected by name, each because it looks correct and implements a different rule:</p>
+<ul>
+<li><strong><code>string.Trim()</code></strong> with no argument trims every character <code>char.IsWhiteSpace</code> reports, a set that includes no-break space and the en and em spaces, so this implementation would accept an extension list another rejects.</li>
+<li><strong><code>string.TrimStart('.')</code></strong> removes every leading dot, where §5 removes one. <code>..cpp</code> must normalize to <code>.cpp</code> and not to <code>cpp</code>. The dot is therefore stripped with an explicit length-one test.</li>
+</ul>
+<p>Duplicates are retained — they are harmless to the membership test <code>CSharp_TextFinder_Dirnav</code> performs. Case folding is not applied here; the platform-dependent comparison fixed by Spec_TextFinder.md §5 is performed by <code>CSharp_TextFinder_Dirnav</code> when it matches a file name against the list.</p>
+<h3>8. Help Text and Option Listing</h3>
+<p><code>HelpText</code> returns the text fixed by Spec_TextFinder.md §5.1 with <code>&lt;executable&gt;</code> replaced by <code>CSharp_TextFinder</code>. <code>UsageLine</code> returns its first line — the line that terminates every usage diagnostic (§6), exposed so that <code>CSharp_TextFinder_Entry</code> can compose the malformed-regex diagnostic. <code>HelpText</code> is built from <code>UsageLine</code>, so the synopsis has one definition.</p>
+<p>The help body is held as a <code>string[]</code>, one element per line, joined with <code>&quot;\n&quot;</code>. A raw string literal would read better in the source and is not used: it carries the line terminators of the file it is written in, so an editor or a <code>.gitattributes</code> rule that rewrote this source to CRLF would change what the program prints. Spec_TextFinder.md §5.1 fixes the text and §3.4 fixes the terminator, so neither may depend on how this file is stored. Joining an array of lines makes the terminator a decision of this library rather than a property of its encoding, and the array's length is the line count a fixture can assert.</p>
+<p><code>OptionsText</code> returns the resolved option set, in the form Spec_TextFinder.md §5.3 fixes: one key/value pair per line, in §5 table order, <code>&lt;switch&gt; &lt;value&gt;</code> with a single separating space, one <code>/P</code> line per root path, the <code>/p</code> list joined by <code>, </code> and emitting <code>/p</code> alone when empty, <code>/r</code> verbatim, and booleans in lower case. §5.3 gives the nine lines a bare <code>-v true</code> produces, and this method reproduces them. It chooses none of that form and must not be read as the place the form is decided.</p>
+<p>Booleans render through a conditional expression yielding the literals <code>&quot;true&quot;</code> and <code>&quot;false&quot;</code>. <code>bool.ToString()</code> is not used: it returns <code>&quot;True&quot;</code> and <code>&quot;False&quot;</code>, which §5.3 forbids, and <code>ToString(CultureInfo.InvariantCulture)</code> returns the same. The two literals appear once each in this library.</p>
+<p>One method serves all three cases §5.3 calls for, since the text is the same in each and only the caller's next move differs: <code>/v true</code>, after which traversal follows; the bare command line of §3.1, after which the process exits 0; and the invalid-regex diagnostic of §5.2, where the listing precedes that diagnostic on stdout whatever <code>/v</code> says and the process then exits 1. The listing reflects whatever <code>commands</code> holds, so its <code>/v</code> line reads <code>false</code> in the latter two unless <code>/v</code> was itself typed.</p>
+<p>All three methods end their returned string with LF; none writes to a stream.</p>
+<h3>9. Build</h3>
+<p>Per <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/CSharp_Spec_driven_TextFinder/CSharp_TextFinder_Structure.md" target="_blank">CSharp_TextFinder_Structure.md</a>:</p>
+<ul>
+<li>.NET class library project <code>CSharp_TextFinder_Cmdline</code>, targeting <code>net8.0</code>.</li>
+<li>Depends on the base class library only. It references neither <code>CSharp_TextFinder_Dirnav</code>, nor <code>CSharp_TextFinder_Output</code>, nor any NuGet package.</li>
+<li>Its unit-test project sits under <code>test/</code> and is excluded from this project's compile items.</li>
+</ul>
+<h3>10. Non-Goals</h3>
+<ul>
+<li>The library does not compile the regular expression; it checks only that the argument is non-empty.</li>
+<li>The library does not access the filesystem or verify that a root path exists.</li>
+<li>The library does not read the program's arguments; <code>Main</code> receives them and passes the array in.</li>
+</ul>
+</div>
+        </details>
+      </indent-blocks>
 
       <a id="interface"></a>
       <h3>1. &nbsp;Public Interface</h3>

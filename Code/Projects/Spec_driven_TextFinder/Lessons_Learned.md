@@ -21,3 +21,21 @@ Started 2026-09-25 08:54 CDT.
       - I used Text_Tone.md to set the voice for generated text and provided a PageExample.html to define the page structure, styles, and javascript behaviors
       - Getting readable useful documentation took a lot of experimentation.
       - This documentation process is still evolving
+
+## Claude suggested lessons
+
+Drawn from the review of 2026-09-24 and the work that followed it. Each states what the project did rather than what practice recommends.
+
+1. Tests written clause by clause miss the interaction between clauses. The `/p` normalization defect survived in three implementations for nine days behind suites that passed whole. Every suite already held a trim case and a dot case, and each missed this one by a single variable: one exercised whitespace with no dot, the other a dot with no whitespace. The rule §5 actually wrote governs what happens when both are present.
+
+2. Deferred work needs its remedy written down, not just its decision. Important_Notes.md N4 recorded the §5 amendment, named the three threads that lagged it, and named the fix each one needed. Closing it across those three later took one read and no re-derivation. That is the difference between a known gap and a forgotten one.
+
+3. A component spec that restates a parent rule drifts when the parent changes; one that cites it cannot. All three lagging component specs restated §5's normalization sequence in their own words. The parent was amended, the three restatements went stale in place, and each implementation then correctly implemented its own stale spec.
+
+4. Four implementations are a test oracle, not just four deliverables. The divergence surfaced by running one input through Rust and Python and comparing. No single thread's suite could have found it, because each thread agreed with itself. The shared Fixture/ exists to make that comparison routine and is still wired into Python alone, so the oracle has to be run by hand.
+
+5. Linters check idiom; only reading the spec beside the code checks conformance. `clippy` at default and pedantic, and `rustfmt`, found real style issues and no behavioral ones. The one defect that mattered came from reading §5 next to `normalize_extensions`.
+
+6. A governing document should say what happens when reality does not fit it. Page_Structure.md §8 holds that its tables are the authority, and that a reading of the rule which disagrees with them obliges the rule to change. That clause is what let a new kind of record reach a correct home instead of being forced into a wrong row or misfiled in silence.
+
+7. Prompt records are history, not current state. Twice in one session Claude asserted something false by trusting a nine-day-old record — that the Rust web pages did not exist, and that a tracked gap was a fresh discovery. Both claims were true when written and overtaken the same day. The records earn their place under item 4, but they date, and a reader has to check the tree.

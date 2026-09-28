@@ -37,6 +37,20 @@
     #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
       font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
       color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+      #github .mdview { font-size: 0.95rem; border: 2px solid var(--dark); padding: 0.75rem 1rem; }
+    #github .mdview h2 { font-size: 1.4rem; margin: 0.25rem 0 0.75rem; }
+    #github .mdview h3 { font-size: 1.2rem; margin: 1.25rem 0 0.5rem; }
+    #github .mdview h4 { font-size: 1.05rem; margin: 1rem 0 0.4rem; }
+    #github .mdview h5 { font-size: 1rem; margin: 0.75rem 0 0.3rem; }
+    #github .mdview p, #github .mdview li { max-width: 90ch; margin: 0.5rem 0; }
+    #github .mdview ul, #github .mdview ol { margin-left: 1.75rem; }
+    #github .mdview li, #github .mdview li > p { margin: 0.25rem 0; }
+    #github .mdview code { font-size: 0.95rem; }
+    #github .mdview :not(pre) > code { background: var(--atten); padding: 0 0.25rem; }
+    #github .mdview blockquote { border-left: 3px solid var(--dark); margin: 0.5rem 0; padding: 0.1rem 0 0.1rem 0.75rem; }
+    #github .mdview table { table-layout: auto; width: max-content; max-width: 100%; border-collapse: collapse; }
+    #github .mdview th, #github .mdview td { border: 1px solid var(--dark); }
+    #github .mdview hr { margin: 1rem 0; }
   </style>
   <script>
     function loadInExplorer() {
@@ -426,227 +440,162 @@
       <indent-blocks>
         <details>
           <summary class="labelStyle darkItem">Prompts_Fix_Spec_Cpp_TextFinder.md</summary>
-<pre><code class="language-markdown"># Prompts and Replies — Cross-Component Refinement
-
-This file records the prompts and replies that refined the C++ TextFinder spec set as a whole, once all four component specs existed. Work confined to a single component is recorded in that component's own `Prompts_*.md`; the turns below reach across [Spec_TextFinder.md](../Spec_TextFinder.md), [Cpp_TextFinder_Structure.md](Cpp_TextFinder_Structure.md), and all four of [Spec_Cpp_TextFinder_Entry.md](Cpp_Spec_driven_TextFinder_Entry/Spec_Cpp_TextFinder_Entry.md), [Spec_Cpp_TextFinder_Cmdline.md](Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md), [Spec_Cpp_TextFinder_Dirnav.md](Cpp_Spec_driven_Dirnav/Spec_Cpp_TextFinder_Dirnav.md), and [Spec_Cpp_TextFinder_Output.md](Cpp_Spec_driven_Output/Spec_Cpp_TextFinder_Output.md).
-
----
-
-## Turn 1
-
-### User
-
-&gt; make the filenames match the convention
-
-### Assistant
-
-Renamed the two structure prompt records with `git mv`, so history follows: `Prompts_Cpp_Structure.md` to [Prompts_Cpp_TextFinder_Structure.md](Prompts_Cpp_TextFinder_Structure.md), and `Prompts_Fix_Cpp_Structure.md` to [Prompts_Fix_Cpp_TextFinder_Structure.md](Prompts_Fix_Cpp_TextFinder_Structure.md). Updated their self-references, the cross-link between them, and [Project_Tree.md](../Project_Tree.md).
-
-Three occurrences of the old names were left as history: two verbatim user prompts inside the records themselves, and the note in the Cmdline refinement record that these files had been left unrenamed at the time. The `[Cpp_Structure.md](Cpp_TextFinder_Structure.md)` links inside both files were also left as they were — label historical, target current — following the convention set when that document was renamed.
-
----
-
-## Turn 2
-
-### User
-
-&gt; thinking carefully, identify any inconsistencies and parts that need fixing. Wait for my authorization before making changes
-
-### Assistant
-
-Read all five specs and the structure document, and listed fifteen items in six groups, without editing.
-
-**Contradictions:**
-
-1. Parent §3.4 contradicted itself in consecutive sentences — "under the default /h `true` no file announcement appears and the output holds match records alone," then "`too large` and `cannot open` are emitted whatever /h says." Both are file announcements.
-2. Parent §3.3 said TextFinder reads the file in full and then admits it if it passes three tests, the first being size; Dirnav §7 checked size from the filesystem so an oversized file is never read.
-3. Cpp_TextFinder_Structure.md still said the parsed commands control `Cpp_TextFinder_Output`, which by then took no configuration.
-4. Entry §3 gave the `Cpp_TextFinder_Dirnav` constructor two arguments; §4 step 6 and Dirnav §4 gave it three.
-
-**Will not compile:** 5. Entry §4 steps 2, 3, and 6 called `Cpp_TextFinder_Cmdline::helpText()` and its siblings. A module name is not a namespace, and Cmdline exports at global scope.
-
-**Ordering defect:** 6. Entry wrote the `/v` listing to stdout at step 3, but `Cpp_TextFinder_Output` did not configure stdout until step 4, so on Windows the listing would carry CRLF and every record after it LF.
-
-**Parent candidate:** 7. The LF terminator rule lived only in the Output spec, binding C++ alone; C#'s `Console.WriteLine` uses `Environment.NewLine` and would emit CRLF on Windows, failing the §6 comparison.
-
-**Stale cross-references:** 8. Cmdline §4 cited "(§7)" for the usage diagnostic after renumbering had made it §6. 9. Cmdline §7 said Dirnav decides how extensions compare, though parent §5 now fixed it.
-
-**Gaps:** 10. Parent §3.5 required each language spec to fix `addSkipDirectory`'s signature; Entry gave none. 11. "Only the root path itself is searched" left `/s false` ambiguous about files directly inside a root directory.
-
-**Minor:** 12. The structure document said "started at the specified path," singular, predating `/P` accumulation. 13. It recorded no inter-library dependencies. 14. Cmdline §3 said Entry writes its rendered strings to stdout, though `usageLine()` goes to stderr. 15. Cmdline §10 claimed no validation of the regular expression, though §5 rule 3 rejects an empty one.
-
----
-
-## Turn 3
-
-### User
-
-Provided decisions on all fifteen items:
-
-&gt; 1. treat "too large" and "cannot open" as error announcements not file announcements.  Make any name changes appropriate to this new definition
-&gt; 2. change text to implement test then read
-&gt; 3. fix
-&gt; 4. fix
-&gt; 5. fix compile errors
-&gt; 6. swap steps
-&gt; 7. move to parent
-&gt; 8. fix
-&gt; 9. fix
-&gt; 10. fix
-&gt; 11. say so
-&gt; 12. make plural
-&gt; 13. fix
-&gt; 14. fix
-&gt; 15. reject is correct
-
-### Assistant
-
-Applied all fifteen.
-
-Parent §3.4 now distinguishes **file announcements** — `searched` and `skipped`, gated on `/h` — from **error announcements** — `too large` and `cannot open`, emitted whatever `/h` says — in separate tables, which retires the self-contradiction: under the default the output holds match records and error announcements. The new names propagated to the `/h` row, the §5.1 help text, Dirnav §5 rule 6 and §8, and Entry's diagnostics section. Parent §3.4 also gained the terminator rule moved out of the Output spec: a single LF for every record and announcement on every platform, with implementations obliged to stop their runtime translating it.
-
-Parent §3.3 became test-then-read: the filesystem-reported size is checked first and a file above the limit is never read, with the read-in-full justification attaching only to the NUL and UTF-8 tests. Parent §3.2 and the `/s` row now say that files directly within the root are searched when `/s` is `false`.
-
-Entry lost the module qualification from three calls, swapped steps so `Cpp_TextFinder_Output` is constructed at step 3 and the `/v` listing written at step 4 — with the reason recorded, since the order otherwise looks arbitrary — listed all three `Cpp_TextFinder_Dirnav` constructor arguments in §3, and fixed `addSkipDirectory` as `void addSkipDirectory(const std::string&amp; name);` holding a `SkipList`.
-
-Cpp_TextFinder_Structure.md gained the import chain — Dirnav imports Cmdline, Output imports Dirnav, nothing imports Output but the binary — dropped the claim that commands control Output, and made the root path plural. Cmdline had its `(§7)` corrected to `(§6)`, its extension-comparison wording pointed at parent §5, and its help-rendering bullet split between stdout and stderr. Output derived its Windows binary-mode requirement from the new parent rule rather than asserting it locally, which is what makes it bind a future C# port.
-
-Item 15 was left alone per the decision.
-
----
-
-## Turn 4
-
-### User
-
-&gt; is there any text that can be removed without significantly affecting specification quality
-
-### Assistant
-
-Reported first a defect found while reading: Output §4 still cited Entry "§4 step 4" for construction, stale since the previous turn's swap made it step 3.
-
-On trimming, noted the return was much lower than the earlier pass — roughly 25 to 30 lines of 576, against 45 before — and that several candidates trade explanation for brevity in documents meant to teach. Grouped what remained: two whole sections that duplicate elsewhere (Entry §6 Multi-Path Handling, parent §8 Development Order); Non-Goals bloat in four specs; Purpose-against-Responsibilities overlap in the Output and Dirnav specs; five rationale tails; and parent §2's four folder bullets, three of them naming directories that do not exist.
-
-Recommended keeping parent §4's examples, §3.3's NUL rationale, §3.4's terminator warning, Dirnav's `path::extension()` and `directory_iterator` warnings, and the deliberate §5.1 and §5.2 redundancy.
-
----
-
-## Turn 5
-
-### User
-
-&gt; fix and implement all of these
-
-### Assistant
-
-Applied every cut and the stale reference. The five specs went from 576 to 514 lines.
-
-Entry §6 Multi-Path Handling was deleted, every claim in it appearing already in §3, §4 step 7, or Dirnav §4; Entry renumbered to eight sections, and the Output spec's citation of Entry §7 followed it to §6. Parent §8 Development Order was deleted, its ordering already carried by §2.
-
-Non-Goals were trimmed in all four specs — Entry from five bullets to two, Output's first two merged, Cmdline's stdout bullet dropped and its regex bullet corrected to "does not compile the regular expression; it checks only that the argument is non-empty," which settles item 15 of the previous review, and the parent's three folded to two. The five rationale tails were cut, and parent §2 compressed from four bullets to two sentences.
-
----
-
-## Turn 6
-
-### User
-
-&gt; create Prompts_Fix_Spec_Cpp_TextFinder.md containing all of the prompts and replies not already captured in an md file
-
-### Assistant
-
-Created this file, [Prompts_Fix_Spec_Cpp_TextFinder.md](Prompts_Fix_Spec_Cpp_TextFinder.md), covering the filename renames, the fifteen-item cross-document review and its decisions, and the second text reduction — the turns that reach across components and so belong to no single component's record. Added it to [Project_Tree.md](../Project_Tree.md). User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.</code></pre>
+<div class="mdview">
+<h2>Prompts and Replies — Cross-Component Refinement</h2>
+<p>This file records the prompts and replies that refined the C++ TextFinder spec set as a whole, once all four component specs existed. Work confined to a single component is recorded in that component's own <code>Prompts_*.md</code>; the turns below reach across <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Spec_TextFinder.md" target="_blank">Spec_TextFinder.md</a>, <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_TextFinder_Structure.md" target="_blank">Cpp_TextFinder_Structure.md</a>, and all four of <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder_Entry/Spec_Cpp_TextFinder_Entry.md" target="_blank">Spec_Cpp_TextFinder_Entry.md</a>, <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md" target="_blank">Spec_Cpp_TextFinder_Cmdline.md</a>, <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Spec_Cpp_TextFinder_Dirnav.md" target="_blank">Spec_Cpp_TextFinder_Dirnav.md</a>, and <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/Spec_Cpp_TextFinder_Output.md" target="_blank">Spec_Cpp_TextFinder_Output.md</a>.</p>
+<hr>
+<h3>Turn 1</h3>
+<h4>User</h4>
+<blockquote>
+<p>make the filenames match the convention</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Renamed the two structure prompt records with <code>git mv</code>, so history follows: <code>Prompts_Cpp_Structure.md</code> to <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Prompts_Cpp_TextFinder_Structure.md" target="_blank">Prompts_Cpp_TextFinder_Structure.md</a>, and <code>Prompts_Fix_Cpp_Structure.md</code> to <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Prompts_Fix_Cpp_TextFinder_Structure.md" target="_blank">Prompts_Fix_Cpp_TextFinder_Structure.md</a>. Updated their self-references, the cross-link between them, and <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Project_Tree.md" target="_blank">Project_Tree.md</a>.</p>
+<p>Three occurrences of the old names were left as history: two verbatim user prompts inside the records themselves, and the note in the Cmdline refinement record that these files had been left unrenamed at the time. The <code>[Cpp_Structure.md](Cpp_TextFinder_Structure.md)</code> links inside both files were also left as they were — label historical, target current — following the convention set when that document was renamed.</p>
+<hr>
+<h3>Turn 2</h3>
+<h4>User</h4>
+<blockquote>
+<p>thinking carefully, identify any inconsistencies and parts that need fixing. Wait for my authorization before making changes</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Read all five specs and the structure document, and listed fifteen items in six groups, without editing.</p>
+<p><strong>Contradictions:</strong></p>
+<ol>
+<li>Parent §3.4 contradicted itself in consecutive sentences — &quot;under the default /h <code>true</code> no file announcement appears and the output holds match records alone,&quot; then &quot;<code>too large</code> and <code>cannot open</code> are emitted whatever /h says.&quot; Both are file announcements.</li>
+<li>Parent §3.3 said TextFinder reads the file in full and then admits it if it passes three tests, the first being size; Dirnav §7 checked size from the filesystem so an oversized file is never read.</li>
+<li>Cpp_TextFinder_Structure.md still said the parsed commands control <code>Cpp_TextFinder_Output</code>, which by then took no configuration.</li>
+<li>Entry §3 gave the <code>Cpp_TextFinder_Dirnav</code> constructor two arguments; §4 step 6 and Dirnav §4 gave it three.</li>
+</ol>
+<p><strong>Will not compile:</strong> 5. Entry §4 steps 2, 3, and 6 called <code>Cpp_TextFinder_Cmdline::helpText()</code> and its siblings. A module name is not a namespace, and Cmdline exports at global scope.</p>
+<p><strong>Ordering defect:</strong> 6. Entry wrote the <code>/v</code> listing to stdout at step 3, but <code>Cpp_TextFinder_Output</code> did not configure stdout until step 4, so on Windows the listing would carry CRLF and every record after it LF.</p>
+<p><strong>Parent candidate:</strong> 7. The LF terminator rule lived only in the Output spec, binding C++ alone; C#'s <code>Console.WriteLine</code> uses <code>Environment.NewLine</code> and would emit CRLF on Windows, failing the §6 comparison.</p>
+<p><strong>Stale cross-references:</strong> 8. Cmdline §4 cited &quot;(§7)&quot; for the usage diagnostic after renumbering had made it §6. 9. Cmdline §7 said Dirnav decides how extensions compare, though parent §5 now fixed it.</p>
+<p><strong>Gaps:</strong> 10. Parent §3.5 required each language spec to fix <code>addSkipDirectory</code>'s signature; Entry gave none. 11. &quot;Only the root path itself is searched&quot; left <code>/s false</code> ambiguous about files directly inside a root directory.</p>
+<p><strong>Minor:</strong> 12. The structure document said &quot;started at the specified path,&quot; singular, predating <code>/P</code> accumulation. 13. It recorded no inter-library dependencies. 14. Cmdline §3 said Entry writes its rendered strings to stdout, though <code>usageLine()</code> goes to stderr. 15. Cmdline §10 claimed no validation of the regular expression, though §5 rule 3 rejects an empty one.</p>
+<hr>
+<h3>Turn 3</h3>
+<h4>User</h4>
+<p>Provided decisions on all fifteen items:</p>
+<blockquote>
+<ol>
+<li>treat &quot;too large&quot; and &quot;cannot open&quot; as error announcements not file announcements.  Make any name changes appropriate to this new definition</li>
+<li>change text to implement test then read</li>
+<li>fix</li>
+<li>fix</li>
+<li>fix compile errors</li>
+<li>swap steps</li>
+<li>move to parent</li>
+<li>fix</li>
+<li>fix</li>
+<li>fix</li>
+<li>say so</li>
+<li>make plural</li>
+<li>fix</li>
+<li>fix</li>
+<li>reject is correct</li>
+</ol>
+</blockquote>
+<h4>Assistant</h4>
+<p>Applied all fifteen.</p>
+<p>Parent §3.4 now distinguishes <strong>file announcements</strong> — <code>searched</code> and <code>skipped</code>, gated on <code>/h</code> — from <strong>error announcements</strong> — <code>too large</code> and <code>cannot open</code>, emitted whatever <code>/h</code> says — in separate tables, which retires the self-contradiction: under the default the output holds match records and error announcements. The new names propagated to the <code>/h</code> row, the §5.1 help text, Dirnav §5 rule 6 and §8, and Entry's diagnostics section. Parent §3.4 also gained the terminator rule moved out of the Output spec: a single LF for every record and announcement on every platform, with implementations obliged to stop their runtime translating it.</p>
+<p>Parent §3.3 became test-then-read: the filesystem-reported size is checked first and a file above the limit is never read, with the read-in-full justification attaching only to the NUL and UTF-8 tests. Parent §3.2 and the <code>/s</code> row now say that files directly within the root are searched when <code>/s</code> is <code>false</code>.</p>
+<p>Entry lost the module qualification from three calls, swapped steps so <code>Cpp_TextFinder_Output</code> is constructed at step 3 and the <code>/v</code> listing written at step 4 — with the reason recorded, since the order otherwise looks arbitrary — listed all three <code>Cpp_TextFinder_Dirnav</code> constructor arguments in §3, and fixed <code>addSkipDirectory</code> as <code>void addSkipDirectory(const std::string&amp; name);</code> holding a <code>SkipList</code>.</p>
+<p>Cpp_TextFinder_Structure.md gained the import chain — Dirnav imports Cmdline, Output imports Dirnav, nothing imports Output but the binary — dropped the claim that commands control Output, and made the root path plural. Cmdline had its <code>(§7)</code> corrected to <code>(§6)</code>, its extension-comparison wording pointed at parent §5, and its help-rendering bullet split between stdout and stderr. Output derived its Windows binary-mode requirement from the new parent rule rather than asserting it locally, which is what makes it bind a future C# port.</p>
+<p>Item 15 was left alone per the decision.</p>
+<hr>
+<h3>Turn 4</h3>
+<h4>User</h4>
+<blockquote>
+<p>is there any text that can be removed without significantly affecting specification quality</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Reported first a defect found while reading: Output §4 still cited Entry &quot;§4 step 4&quot; for construction, stale since the previous turn's swap made it step 3.</p>
+<p>On trimming, noted the return was much lower than the earlier pass — roughly 25 to 30 lines of 576, against 45 before — and that several candidates trade explanation for brevity in documents meant to teach. Grouped what remained: two whole sections that duplicate elsewhere (Entry §6 Multi-Path Handling, parent §8 Development Order); Non-Goals bloat in four specs; Purpose-against-Responsibilities overlap in the Output and Dirnav specs; five rationale tails; and parent §2's four folder bullets, three of them naming directories that do not exist.</p>
+<p>Recommended keeping parent §4's examples, §3.3's NUL rationale, §3.4's terminator warning, Dirnav's <code>path::extension()</code> and <code>directory_iterator</code> warnings, and the deliberate §5.1 and §5.2 redundancy.</p>
+<hr>
+<h3>Turn 5</h3>
+<h4>User</h4>
+<blockquote>
+<p>fix and implement all of these</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Applied every cut and the stale reference. The five specs went from 576 to 514 lines.</p>
+<p>Entry §6 Multi-Path Handling was deleted, every claim in it appearing already in §3, §4 step 7, or Dirnav §4; Entry renumbered to eight sections, and the Output spec's citation of Entry §7 followed it to §6. Parent §8 Development Order was deleted, its ordering already carried by §2.</p>
+<p>Non-Goals were trimmed in all four specs — Entry from five bullets to two, Output's first two merged, Cmdline's stdout bullet dropped and its regex bullet corrected to &quot;does not compile the regular expression; it checks only that the argument is non-empty,&quot; which settles item 15 of the previous review, and the parent's three folded to two. The five rationale tails were cut, and parent §2 compressed from four bullets to two sentences.</p>
+<hr>
+<h3>Turn 6</h3>
+<h4>User</h4>
+<blockquote>
+<p>create Prompts_Fix_Spec_Cpp_TextFinder.md containing all of the prompts and replies not already captured in an md file</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Created this file, <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Prompts_Fix_Spec_Cpp_TextFinder.md" target="_blank">Prompts_Fix_Spec_Cpp_TextFinder.md</a>, covering the filename renames, the fifteen-item cross-document review and its decisions, and the second text reduction — the turns that reach across components and so belong to no single component's record. Added it to <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Project_Tree.md" target="_blank">Project_Tree.md</a>. User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.</p>
+</div>
         </details>
       </indent-blocks>
       <indent-blocks>
         <details>
           <summary class="labelStyle darkItem">Prompts_Build_Cpp_TextFinder.md</summary>
-<pre><code class="language-markdown"># Prompts and Replies — Building Cpp_TextFinder
-
-This file records the prompts and replies that turned the C++ specifications into working code. The specifications themselves, and the conversations that shaped them, are recorded in the `Prompts_*.md` files beside each `Spec_*.md`.
-
----
-
-## Turn 1
-
-### User
-
-&gt; create code and build according to all the specs in Spec_driven_TextFinder.  Place src in /src in each of the child folders under Cpp_Spec_driven_TextFinder
-
-### Assistant
-
-**Toolchain.** Checked what was available before writing anything, since the specs mandate `import std;`: CMake 4.0.2, Visual Studio 18 Community with MSVC 19.50.35717, and the Ninja that ships with Visual Studio. No GCC or Clang on the path. Both floors in Cpp_TextFinder_Structure.md — CMake 3.28+ and MSVC 19.36+ — were comfortably met.
-
-CMake still gates `import std;` behind `CMAKE_EXPERIMENTAL_CXX_IMPORT_STD`, whose required value is a version-specific UUID that CMake does not print and does not keep in its `.cmake` modules. Extracted the GUID-shaped strings from `cmake.exe` and used `a9e1cf81-9932-4810-974b-6eccaf14e457`, which the configure step accepted.
-
-**Files.** Four sources, one per component, each under its own `src/`:
-
-- [Cpp_TextFinder_Cmdline.ixx](Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline.ixx) — `ProgramCommands`, `parse`, `usageLine`, `helpText`, `optionsText`.
-- [Cpp_TextFinder_Dirnav.ixx](Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav.ixx) — the `Output` base class, `SkipList`, and the `Cpp_TextFinder_Dirnav&lt;Out&gt;` class template.
-- [Cpp_TextFinder_Output.ixx](Cpp_Spec_driven_Output/src/Cpp_TextFinder_Output.ixx) — the stdout sink, with `&lt;io.h&gt;` and `&lt;fcntl.h&gt;` in the global module fragment for the Windows binary-mode call.
-- [main.cpp](Cpp_Spec_driven_TextFinder_Entry/src/main.cpp) — a conventional translation unit importing the three modules.
-
-Five `CMakeLists.txt`: a top-level one setting C++23, `CMAKE_CXX_MODULE_STD`, and the experimental opt-in, plus one per component declaring its target and `FILE_SET CXX_MODULES`.
-
-**The one real problem.** Configure succeeded and every translation unit compiled, but the link failed with five unresolved externals — `displayPath`, `baseName`, `sameName`, `validUtf8`, and `splitLines`. The helpers had been put in an anonymous namespace inside the Dirnav module interface, which gives them internal linkage; the class template that calls them is instantiated in `main.cpp`'s translation unit, which therefore could not resolve them. Rewrote them as non-exported `inline` functions at module scope: module linkage keeps them invisible to importers, and `inline` lets the instantiating translation unit emit them. The rebuild linked clean, and the source carries a comment recording why.
-
-**Verification.** Built a sample tree and confirmed against the specs: `build/` pruned by the skip list; paths rendered in generic form with no leading `./`; a file holding a NUL byte skipped; `.gitignore` carrying extension `gitignore` per Spec_TextFinder.md §5; `/s false` searching a root's own files but entering no subdirectory; all four `/n` and `/L` record forms; `/h` gating the file announcements while `cannot open` still appeared; multiple `/P` traversed in argv order; `/H` help matching §5.1; and the `/v` listing in §5 order with `" .cpp , , txt "` normalized to `cpp, txt`.
-
-All seven usage diagnostics of §5.2 reproduced byte for byte with exit code 1, and an unopenable root produced its error announcement and exit 0. A hexdump of the output showed zero CR bytes, confirming the Windows binary-mode requirement of §3.4.
-
-One incidental note: a shell hook read the `/P` switch as a filesystem path and blocked the command, so the tests were run with the `-P` introducer, which §4 makes equivalent.
-
-Updated [Project_Tree.md](../Project_Tree.md) with the new `src/` folders and `CMakeLists.txt` files, and flagged two things: the `build/` directory was untracked and not ignored, and the IDE reported errors in the `.ixx` files that come from IntelliSense not parsing modules rather than from the compiler.
-
----
-
-## Turn 2
-
-### User
-
-&gt; add build to .gitignore
-
-### Assistant
-
-The repository root `.gitignore` held only `.vscode/`. Rather than add a bare `build/` there, which would ignore every directory of that name across the whole site repository, created a `.gitignore` in this folder containing `build/` — scoped to the C++ project and inside the boundary the Constitution's second rule draws. Confirmed with `git check-ignore` that the Ninja tree was covered, and offered to move it to the root as a scoped path entry instead.
-
----
-
-## Turn 3
-
-### User
-
-&gt; move it to root
-
-### Assistant
-
-Added `Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/build/` to the repository root `.gitignore` and deleted the local file. Used the full scoped path rather than a bare `build/`, keeping the rest of the site repository unaffected. `git check-ignore` confirmed the rule now resolves from the root file.
-
----
-
-## Turn 4
-
-### User
-
-&gt; clean the /build directory
-
-### Assistant
-
-Ran `cmake --build build --target clean`, which removed 38 build products — the executable, three static libraries, the object files, and the compiled module interfaces. The directory went from 67 files and 37.5 MB to 29 files and 0.3 MB.
-
-What remains is CMake's configuration state, so `cmake --build build` rebuilds without reconfiguring. Noted that three artifacts left behind come from compiler detection and predate the project's own targets, and asked whether the intent had been to remove the directory outright rather than clean it.
-
----
-
-## Turn 5
-
-### User
-
-&gt; create Prompts_Build_Cpp_TextFinder containing all of the prompts and replies beginning with "create code and build ..." up to now
-
-### Assistant
-
-Created this file, [Prompts_Build_Cpp_TextFinder.md](Prompts_Build_Cpp_TextFinder.md), and added it to [Project_Tree.md](../Project_Tree.md). User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.</code></pre>
+<div class="mdview">
+<h2>Prompts and Replies — Building Cpp_TextFinder</h2>
+<p>This file records the prompts and replies that turned the C++ specifications into working code. The specifications themselves, and the conversations that shaped them, are recorded in the <code>Prompts_*.md</code> files beside each <code>Spec_*.md</code>.</p>
+<hr>
+<h3>Turn 1</h3>
+<h4>User</h4>
+<blockquote>
+<p>create code and build according to all the specs in Spec_driven_TextFinder.  Place src in /src in each of the child folders under Cpp_Spec_driven_TextFinder</p>
+</blockquote>
+<h4>Assistant</h4>
+<p><strong>Toolchain.</strong> Checked what was available before writing anything, since the specs mandate <code>import std;</code>: CMake 4.0.2, Visual Studio 18 Community with MSVC 19.50.35717, and the Ninja that ships with Visual Studio. No GCC or Clang on the path. Both floors in Cpp_TextFinder_Structure.md — CMake 3.28+ and MSVC 19.36+ — were comfortably met.</p>
+<p>CMake still gates <code>import std;</code> behind <code>CMAKE_EXPERIMENTAL_CXX_IMPORT_STD</code>, whose required value is a version-specific UUID that CMake does not print and does not keep in its <code>.cmake</code> modules. Extracted the GUID-shaped strings from <code>cmake.exe</code> and used <code>a9e1cf81-9932-4810-974b-6eccaf14e457</code>, which the configure step accepted.</p>
+<p><strong>Files.</strong> Four sources, one per component, each under its own <code>src/</code>:</p>
+<ul>
+<li><a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline.ixx" target="_blank">Cpp_TextFinder_Cmdline.ixx</a> — <code>ProgramCommands</code>, <code>parse</code>, <code>usageLine</code>, <code>helpText</code>, <code>optionsText</code>.</li>
+<li><a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav.ixx" target="_blank">Cpp_TextFinder_Dirnav.ixx</a> — the <code>Output</code> base class, <code>SkipList</code>, and the <code>Cpp_TextFinder_Dirnav&lt;Out&gt;</code> class template.</li>
+<li><a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/src/Cpp_TextFinder_Output.ixx" target="_blank">Cpp_TextFinder_Output.ixx</a> — the stdout sink, with <code>&lt;io.h&gt;</code> and <code>&lt;fcntl.h&gt;</code> in the global module fragment for the Windows binary-mode call.</li>
+<li><a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder_Entry/src/main.cpp" target="_blank">main.cpp</a> — a conventional translation unit importing the three modules.</li>
+</ul>
+<p>Five <code>CMakeLists.txt</code>: a top-level one setting C++23, <code>CMAKE_CXX_MODULE_STD</code>, and the experimental opt-in, plus one per component declaring its target and <code>FILE_SET CXX_MODULES</code>.</p>
+<p><strong>The one real problem.</strong> Configure succeeded and every translation unit compiled, but the link failed with five unresolved externals — <code>displayPath</code>, <code>baseName</code>, <code>sameName</code>, <code>validUtf8</code>, and <code>splitLines</code>. The helpers had been put in an anonymous namespace inside the Dirnav module interface, which gives them internal linkage; the class template that calls them is instantiated in <code>main.cpp</code>'s translation unit, which therefore could not resolve them. Rewrote them as non-exported <code>inline</code> functions at module scope: module linkage keeps them invisible to importers, and <code>inline</code> lets the instantiating translation unit emit them. The rebuild linked clean, and the source carries a comment recording why.</p>
+<p><strong>Verification.</strong> Built a sample tree and confirmed against the specs: <code>build/</code> pruned by the skip list; paths rendered in generic form with no leading <code>./</code>; a file holding a NUL byte skipped; <code>.gitignore</code> carrying extension <code>gitignore</code> per Spec_TextFinder.md §5; <code>/s false</code> searching a root's own files but entering no subdirectory; all four <code>/n</code> and <code>/L</code> record forms; <code>/h</code> gating the file announcements while <code>cannot open</code> still appeared; multiple <code>/P</code> traversed in argv order; <code>/H</code> help matching §5.1; and the <code>/v</code> listing in §5 order with <code>&quot; .cpp , , txt &quot;</code> normalized to <code>cpp, txt</code>.</p>
+<p>All seven usage diagnostics of §5.2 reproduced byte for byte with exit code 1, and an unopenable root produced its error announcement and exit 0. A hexdump of the output showed zero CR bytes, confirming the Windows binary-mode requirement of §3.4.</p>
+<p>One incidental note: a shell hook read the <code>/P</code> switch as a filesystem path and blocked the command, so the tests were run with the <code>-P</code> introducer, which §4 makes equivalent.</p>
+<p>Updated <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Project_Tree.md" target="_blank">Project_Tree.md</a> with the new <code>src/</code> folders and <code>CMakeLists.txt</code> files, and flagged two things: the <code>build/</code> directory was untracked and not ignored, and the IDE reported errors in the <code>.ixx</code> files that come from IntelliSense not parsing modules rather than from the compiler.</p>
+<hr>
+<h3>Turn 2</h3>
+<h4>User</h4>
+<blockquote>
+<p>add build to .gitignore</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>The repository root <code>.gitignore</code> held only <code>.vscode/</code>. Rather than add a bare <code>build/</code> there, which would ignore every directory of that name across the whole site repository, created a <code>.gitignore</code> in this folder containing <code>build/</code> — scoped to the C++ project and inside the boundary the Constitution's second rule draws. Confirmed with <code>git check-ignore</code> that the Ninja tree was covered, and offered to move it to the root as a scoped path entry instead.</p>
+<hr>
+<h3>Turn 3</h3>
+<h4>User</h4>
+<blockquote>
+<p>move it to root</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Added <code>Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/build/</code> to the repository root <code>.gitignore</code> and deleted the local file. Used the full scoped path rather than a bare <code>build/</code>, keeping the rest of the site repository unaffected. <code>git check-ignore</code> confirmed the rule now resolves from the root file.</p>
+<hr>
+<h3>Turn 4</h3>
+<h4>User</h4>
+<blockquote>
+<p>clean the /build directory</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Ran <code>cmake --build build --target clean</code>, which removed 38 build products — the executable, three static libraries, the object files, and the compiled module interfaces. The directory went from 67 files and 37.5 MB to 29 files and 0.3 MB.</p>
+<p>What remains is CMake's configuration state, so <code>cmake --build build</code> rebuilds without reconfiguring. Noted that three artifacts left behind come from compiler detection and predate the project's own targets, and asked whether the intent had been to remove the directory outright rather than clean it.</p>
+<hr>
+<h3>Turn 5</h3>
+<h4>User</h4>
+<blockquote>
+<p>create Prompts_Build_Cpp_TextFinder containing all of the prompts and replies beginning with &quot;create code and build ...&quot; up to now</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Created this file, <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Prompts_Build_Cpp_TextFinder.md" target="_blank">Prompts_Build_Cpp_TextFinder.md</a>, and added it to <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Project_Tree.md" target="_blank">Project_Tree.md</a>. User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.</p>
+</div>
         </details>
       </indent-blocks>
 

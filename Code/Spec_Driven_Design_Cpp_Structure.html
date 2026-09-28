@@ -37,6 +37,20 @@
     #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
       font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
       color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+      #github .mdview { font-size: 0.95rem; border: 2px solid var(--dark); padding: 0.75rem 1rem; }
+    #github .mdview h2 { font-size: 1.4rem; margin: 0.25rem 0 0.75rem; }
+    #github .mdview h3 { font-size: 1.2rem; margin: 1.25rem 0 0.5rem; }
+    #github .mdview h4 { font-size: 1.05rem; margin: 1rem 0 0.4rem; }
+    #github .mdview h5 { font-size: 1rem; margin: 0.75rem 0 0.3rem; }
+    #github .mdview p, #github .mdview li { max-width: 90ch; margin: 0.5rem 0; }
+    #github .mdview ul, #github .mdview ol { margin-left: 1.75rem; }
+    #github .mdview li, #github .mdview li > p { margin: 0.25rem 0; }
+    #github .mdview code { font-size: 0.95rem; }
+    #github .mdview :not(pre) > code { background: var(--atten); padding: 0 0.25rem; }
+    #github .mdview blockquote { border-left: 3px solid var(--dark); margin: 0.5rem 0; padding: 0.1rem 0 0.1rem 0.75rem; }
+    #github .mdview table { table-layout: auto; width: max-content; max-width: 100%; border-collapse: collapse; }
+    #github .mdview th, #github .mdview td { border: 1px solid var(--dark); }
+    #github .mdview hr { margin: 1rem 0; }
   </style>
   <script>
     function loadInExplorer() {
@@ -310,44 +324,42 @@ build\Cpp_Spec_driven_TextFinder_Entry\Cpp_TextFinder.exe -H true</code></pre>
         level rather than in a component directory.
       </t-b>
       <h5 class="indent">Cpp_TextFinder_Structure.md</h5>
-<pre><code class="language-markdown"># Cpp_TextFinder — Project Structure
-
-The Cpp_TextFinder project comprises three libraries and one binary. The binary imports all three. The libraries themselves form a chain: `Cpp_TextFinder_Dirnav` imports `Cpp_TextFinder_Cmdline` for the program-command struct, and `Cpp_TextFinder_Output` imports `Cpp_TextFinder_Dirnav` for the `Output` base class. Nothing imports `Cpp_TextFinder_Output` but the binary.
-
-## Libraries
-
-- **Cpp_TextFinder_Cmdline** — parses the command line into a `struct` of program commands that control the behavior of `Cpp_TextFinder_Dirnav`. Specified in [Spec_Cpp_TextFinder_Cmdline.md](Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md).
-- **Cpp_TextFinder_Dirnav** — directory navigation. Reads file contents, runs regex matching, and formats matches into a string with fields joined by ` - ` (space-hyphen-space, per Spec_TextFinder.md §3.4) before emitting them. Creates the regex state machine once per run, not once per file. Defines the abstract base class:
-  ```cpp
-  class Output {
-  public:
-      virtual ~Output() = default;
-      virtual void output(const std::string&amp; text) = 0;
-  };
-  ```
-  `Cpp_TextFinder_Dirnav` binds to a concrete `Output` via a template parameter. Specified in [Spec_Cpp_TextFinder_Dirnav.md](Cpp_Spec_driven_Dirnav/Spec_Cpp_TextFinder_Dirnav.md).
-- **Cpp_TextFinder_Output** — implements `Output::output(...)` according to its specification, [Spec_Cpp_TextFinder_Output.md](Cpp_Spec_driven_Output/Spec_Cpp_TextFinder_Output.md). Handles output errors internally.
-
-Each library's CMake target name matches its component name above.
-
-## Binary
-
-- **Cpp_TextFinder_Entry** — binary project name; produces the executable `Cpp_TextFinder`. Imports the three libraries above. Specified in [Spec_Cpp_TextFinder_Entry.md](Cpp_Spec_driven_TextFinder_Entry/Spec_Cpp_TextFinder_Entry.md).
-- Owns the skip list and passes it to `Cpp_TextFinder_Dirnav` for use during traversal.
-- On execution, the binary command line is parsed into a program-command struct using `Cpp_TextFinder_Cmdline`.
-- An instance of `Cpp_TextFinder_Output` is created and bound to a `Cpp_TextFinder_Dirnav` instance via a template parameter.
-- The `Cpp_TextFinder_Dirnav` instance is started at each of the specified (possibly default) root paths in turn and performs a DFS for regex matches on files in each directory tree.
-
-## Build
-
-- Language: C++23. Build system: CMake. These apply to every target below, and each component's `Spec_*.md` names only its own target.
-- C++ Modules used for `Cpp_TextFinder_Cmdline`, `Cpp_TextFinder_Dirnav`, and `Cpp_TextFinder_Output`, and for the standard library (`import std;`). `Cpp_TextFinder_Entry` remains a conventional translation unit.
-- Toolchain minimums for C++ Modules with `import std;`: GCC 14+, Clang 17+, or MSVC 19.36+ (Visual Studio 2022 17.6+). CMake 3.28+ recommended for module support.
-
-## Notes
-
-- This forms a data pipeline architecture that emits an output immediately following evaluation of a regex match.
-- The abstract base class `Output` is the current design choice. A type-erased wrapper (a value-type holding a small polymorphic model) is a viable alternative that decouples callers from inheritance; it is not adopted here.</code></pre>
+<div class="mdview">
+<h2>Cpp_TextFinder — Project Structure</h2>
+<p>The Cpp_TextFinder project comprises three libraries and one binary. The binary imports all three. The libraries themselves form a chain: <code>Cpp_TextFinder_Dirnav</code> imports <code>Cpp_TextFinder_Cmdline</code> for the program-command struct, and <code>Cpp_TextFinder_Output</code> imports <code>Cpp_TextFinder_Dirnav</code> for the <code>Output</code> base class. Nothing imports <code>Cpp_TextFinder_Output</code> but the binary.</p>
+<h3>Libraries</h3>
+<ul>
+<li><strong>Cpp_TextFinder_Cmdline</strong> — parses the command line into a <code>struct</code> of program commands that control the behavior of <code>Cpp_TextFinder_Dirnav</code>. Specified in <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md" target="_blank">Spec_Cpp_TextFinder_Cmdline.md</a>.</li>
+<li><strong>Cpp_TextFinder_Dirnav</strong> — directory navigation. Reads file contents, runs regex matching, and formats matches into a string with fields joined by <code>-</code> (space-hyphen-space, per Spec_TextFinder.md §3.4) before emitting them. Creates the regex state machine once per run, not once per file. Defines the abstract base class:<pre><code class="language-cpp">class Output {
+public:
+    virtual ~Output() = default;
+    virtual void output(const std::string&amp; text) = 0;
+};
+</code></pre>
+<code>Cpp_TextFinder_Dirnav</code> binds to a concrete <code>Output</code> via a template parameter. Specified in <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Spec_Cpp_TextFinder_Dirnav.md" target="_blank">Spec_Cpp_TextFinder_Dirnav.md</a>.</li>
+<li><strong>Cpp_TextFinder_Output</strong> — implements <code>Output::output(...)</code> according to its specification, <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/Spec_Cpp_TextFinder_Output.md" target="_blank">Spec_Cpp_TextFinder_Output.md</a>. Handles output errors internally.</li>
+</ul>
+<p>Each library's CMake target name matches its component name above.</p>
+<h3>Binary</h3>
+<ul>
+<li><strong>Cpp_TextFinder_Entry</strong> — binary project name; produces the executable <code>Cpp_TextFinder</code>. Imports the three libraries above. Specified in <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder_Entry/Spec_Cpp_TextFinder_Entry.md" target="_blank">Spec_Cpp_TextFinder_Entry.md</a>.</li>
+<li>Owns the skip list and passes it to <code>Cpp_TextFinder_Dirnav</code> for use during traversal.</li>
+<li>On execution, the binary command line is parsed into a program-command struct using <code>Cpp_TextFinder_Cmdline</code>.</li>
+<li>An instance of <code>Cpp_TextFinder_Output</code> is created and bound to a <code>Cpp_TextFinder_Dirnav</code> instance via a template parameter.</li>
+<li>The <code>Cpp_TextFinder_Dirnav</code> instance is started at each of the specified (possibly default) root paths in turn and performs a DFS for regex matches on files in each directory tree.</li>
+</ul>
+<h3>Build</h3>
+<ul>
+<li>Language: C++23. Build system: CMake. These apply to every target below, and each component's <code>Spec_*.md</code> names only its own target.</li>
+<li>C++ Modules used for <code>Cpp_TextFinder_Cmdline</code>, <code>Cpp_TextFinder_Dirnav</code>, and <code>Cpp_TextFinder_Output</code>, and for the standard library (<code>import std;</code>). <code>Cpp_TextFinder_Entry</code> remains a conventional translation unit.</li>
+<li>Toolchain minimums for C++ Modules with <code>import std;</code>: GCC 14+, Clang 17+, or MSVC 19.36+ (Visual Studio 2022 17.6+). CMake 3.28+ recommended for module support.</li>
+</ul>
+<h3>Notes</h3>
+<ul>
+<li>This forms a data pipeline architecture that emits an output immediately following evaluation of a regex match.</li>
+<li>The abstract base class <code>Output</code> is the current design choice. A type-erased wrapper (a value-type holding a small polymorphic model) is a viable alternative that decouples callers from inheritance; it is not adopted here.</li>
+</ul>
+</div>
       <h5 class="indent">CMakeLists.txt (top level)</h5>
 <pre><code class="language-cmake">cmake_minimum_required(VERSION 3.28)
 
@@ -451,232 +463,189 @@ add_test(NAME Cmdline_UnitTest COMMAND Cpp_TextFinder_Cmdline_TestDriver)</code>
       <indent-blocks>
         <details>
           <summary class="labelStyle darkItem">Prompts_Cpp_TextFinder_Structure.md</summary>
-<pre><code class="language-markdown"># Prompts and Replies — Cpp_Structure Development
-
-This file records the prompts and replies exchanged while drafting [Cpp_Structure.md](Cpp_TextFinder_Structure.md).
-
----
-
-## Turn 1
-
-### User
-
-&gt; create a subdirectory "Cpp_Spec_driven_TextFinder
-
-### Assistant
-
-Created the [Cpp_Spec_driven_TextFinder/](.) subdirectory under `Spec_driven_TextFinder/`.
-
----
-
-## Turn 2
-
-### User
-
-&gt; In that directory create a file Cpp_Structure.md that defines the structure of the Cpp_TextFinder project as containing libraries: Cpp_Cmdline, Cpp_Dirnav, and Cpp_Output.  It also contains binary project Cpp_TextFinder_Entry
-
-### Assistant
-
-Created [Cpp_Structure.md](Cpp_TextFinder_Structure.md) with two sections:
-
-- **Libraries** — `Cpp_Cmdline`, `Cpp_Dirnav`, `Cpp_Output` listed with brief placeholder descriptions (command-line parsing, directory navigation, output formatting).
-- **Binary** — `Cpp_TextFinder_Entry` as the entry point that links the three libraries.
-
----
-
-## Turn 3
-
-### User
-
-&gt; The binary imports the three libraries.  The Cpp_Cmdline library parses the command line into commands that control how the Cpp_Dirnav and Cpp_Output libraries behave. The Cpp_Dirnav library defines an abstract type "Output" that defines a function void output(std::String&amp; match_str).  The Cpp_Output library implements the function according to its specification, Spec_Cpp_Output.md.
-
-### Assistant
-
-Rewrote [Cpp_Structure.md](Cpp_TextFinder_Structure.md) with fuller library responsibilities:
-
-- `Cpp_Cmdline` — parses the command line into commands that control `Cpp_Dirnav` and `Cpp_Output`.
-- `Cpp_Dirnav` — defines an abstract type `Output` with a single function `void output(std::String&amp; match_str);` (fenced C++ block).
-- `Cpp_Output` — implements `Output::output(...)` per its spec [Spec_Cpp_Output.md](Spec_Cpp_Output.md).
-- Binary now stated to import the three libraries.
-
-Flagged that the user's wording `std::String` (capital S) differs from the standard C++ `std::string`. Preserved verbatim pending confirmation.
-
----
-
-## Turn 4
-
-### User
-
-&gt; Add to the Binary section at its end the list items: "On execution the binary command line is parsed into program commands using Cpp_Cmdline.  An instance of Cpp_Output is created and bound to a Cpp_Dirnav instance using the output function.
-
-### Assistant
-
-Appended two bullet items to the Binary section describing runtime behavior: command-line parsing via `Cpp_Cmdline`, and instantiation of `Cpp_Output` bound to a `Cpp_Dirnav` instance via the `output` function.
-
----
-
-## Turn 5
-
-### User
-
-&gt; add a final note: This builds a data pipeline architecture that emits an output immediately following evaluation of a regex match
-
-### Assistant
-
-Added a `## Note` section at the end of [Cpp_Structure.md](Cpp_TextFinder_Structure.md) stating that the design forms a data pipeline that emits output immediately after each regex match evaluation.
-
----
-
-## Turn 6
-
-### User
-
-&gt; add one more element to the Binary section list: The Cpp_Dirnav instance is started at specified (possibly default) path and does a DFS for regex matches on directory tree files
-
-### Assistant
-
-Added a third runtime bullet to the Binary section: the `Cpp_Dirnav` instance starts at the specified (possibly default) path and performs a depth-first search for regex matches over files in the directory tree.
-
----
-
-## Turn 7
-
-### User
-
-&gt; create Prompts_Cpp_Structure.md that includes the prompts and replies concerning the Cpp_Structure.md file
-
-### Assistant
-
-Created this file, [Prompts_Cpp_TextFinder_Structure.md](Prompts_Cpp_TextFinder_Structure.md), summarizing each prompt and reply that shaped [Cpp_Structure.md](Cpp_TextFinder_Structure.md). User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.</code></pre>
+<div class="mdview">
+<h2>Prompts and Replies — Cpp_Structure Development</h2>
+<p>This file records the prompts and replies exchanged while drafting <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_TextFinder_Structure.md" target="_blank">Cpp_Structure.md</a>.</p>
+<hr>
+<h3>Turn 1</h3>
+<h4>User</h4>
+<blockquote>
+<p>create a subdirectory &quot;Cpp_Spec_driven_TextFinder</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Created the <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder" target="_blank">Cpp_Spec_driven_TextFinder/</a> subdirectory under <code>Spec_driven_TextFinder/</code>.</p>
+<hr>
+<h3>Turn 2</h3>
+<h4>User</h4>
+<blockquote>
+<p>In that directory create a file Cpp_Structure.md that defines the structure of the Cpp_TextFinder project as containing libraries: Cpp_Cmdline, Cpp_Dirnav, and Cpp_Output.  It also contains binary project Cpp_TextFinder_Entry</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Created <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_TextFinder_Structure.md" target="_blank">Cpp_Structure.md</a> with two sections:</p>
+<ul>
+<li><strong>Libraries</strong> — <code>Cpp_Cmdline</code>, <code>Cpp_Dirnav</code>, <code>Cpp_Output</code> listed with brief placeholder descriptions (command-line parsing, directory navigation, output formatting).</li>
+<li><strong>Binary</strong> — <code>Cpp_TextFinder_Entry</code> as the entry point that links the three libraries.</li>
+</ul>
+<hr>
+<h3>Turn 3</h3>
+<h4>User</h4>
+<blockquote>
+<p>The binary imports the three libraries.  The Cpp_Cmdline library parses the command line into commands that control how the Cpp_Dirnav and Cpp_Output libraries behave. The Cpp_Dirnav library defines an abstract type &quot;Output&quot; that defines a function void output(std::String&amp; match_str).  The Cpp_Output library implements the function according to its specification, Spec_Cpp_Output.md.</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Rewrote <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_TextFinder_Structure.md" target="_blank">Cpp_Structure.md</a> with fuller library responsibilities:</p>
+<ul>
+<li><code>Cpp_Cmdline</code> — parses the command line into commands that control <code>Cpp_Dirnav</code> and <code>Cpp_Output</code>.</li>
+<li><code>Cpp_Dirnav</code> — defines an abstract type <code>Output</code> with a single function <code>void output(std::String&amp; match_str);</code> (fenced C++ block).</li>
+<li><code>Cpp_Output</code> — implements <code>Output::output(...)</code> per its spec <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Spec_Cpp_Output.md" target="_blank">Spec_Cpp_Output.md</a>.</li>
+<li>Binary now stated to import the three libraries.</li>
+</ul>
+<p>Flagged that the user's wording <code>std::String</code> (capital S) differs from the standard C++ <code>std::string</code>. Preserved verbatim pending confirmation.</p>
+<hr>
+<h3>Turn 4</h3>
+<h4>User</h4>
+<blockquote>
+<p>Add to the Binary section at its end the list items: &quot;On execution the binary command line is parsed into program commands using Cpp_Cmdline.  An instance of Cpp_Output is created and bound to a Cpp_Dirnav instance using the output function.</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Appended two bullet items to the Binary section describing runtime behavior: command-line parsing via <code>Cpp_Cmdline</code>, and instantiation of <code>Cpp_Output</code> bound to a <code>Cpp_Dirnav</code> instance via the <code>output</code> function.</p>
+<hr>
+<h3>Turn 5</h3>
+<h4>User</h4>
+<blockquote>
+<p>add a final note: This builds a data pipeline architecture that emits an output immediately following evaluation of a regex match</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Added a <code>## Note</code> section at the end of <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_TextFinder_Structure.md" target="_blank">Cpp_Structure.md</a> stating that the design forms a data pipeline that emits output immediately after each regex match evaluation.</p>
+<hr>
+<h3>Turn 6</h3>
+<h4>User</h4>
+<blockquote>
+<p>add one more element to the Binary section list: The Cpp_Dirnav instance is started at specified (possibly default) path and does a DFS for regex matches on directory tree files</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Added a third runtime bullet to the Binary section: the <code>Cpp_Dirnav</code> instance starts at the specified (possibly default) path and performs a depth-first search for regex matches over files in the directory tree.</p>
+<hr>
+<h3>Turn 7</h3>
+<h4>User</h4>
+<blockquote>
+<p>create Prompts_Cpp_Structure.md that includes the prompts and replies concerning the Cpp_Structure.md file</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Created this file, <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Prompts_Cpp_TextFinder_Structure.md" target="_blank">Prompts_Cpp_TextFinder_Structure.md</a>, summarizing each prompt and reply that shaped <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_TextFinder_Structure.md" target="_blank">Cpp_Structure.md</a>. User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.</p>
+</div>
         </details>
       </indent-blocks>
       <indent-blocks>
         <details>
           <summary class="labelStyle darkItem">Prompts_Fix_Cpp_TextFinder_Structure.md</summary>
-<pre><code class="language-markdown"># Prompts and Replies — Cpp_Structure Refinement
-
-This file records the prompts and replies exchanged while refining [Cpp_Structure.md](Cpp_TextFinder_Structure.md) after its initial draft. Turns 1–7 (initial creation and early edits) are recorded in [Prompts_Cpp_TextFinder_Structure.md](Prompts_Cpp_TextFinder_Structure.md).
-
----
-
-## Turn 1
-
-### User
-
-&gt; are there any ambiguities or improvements needed for Cpp_Structure.md
-
-### Assistant
-
-Reviewed [Cpp_Structure.md](Cpp_TextFinder_Structure.md) and listed twelve items across four groups, without editing. Awaited user decisions.
-
-**Interface signature:**
-
-1. `std::String` (capital S) — non-standard; should be `std::string`.
-2. Parameter `std::String&amp;` is non-const; suggested `const std::string&amp;`.
-3. What does `match_str` contain — the fully formatted `path:line:text`, or just the matched text?
-4. Return type `void` — no path for output-error signaling. Intentional?
-5. "Abstract type `Output`" is ambiguous — abstract base class, `concept`, or type-erased wrapper?
-
-**Binding mechanism:**
-
-6. "Bound to a `Cpp_Dirnav` instance using the `output` function" — how? Constructor argument, setter, template parameter?
-
-**Responsibility gaps:**
-
-7. Ownership of regex matching — Cpp_Dirnav or a separate matcher?
-8. File I/O ownership — silent.
-9. Skip list, extension filter, recursion toggle — ownership silent.
-10. Shape of the "commands" produced by `Cpp_Cmdline` — silent.
-
-**Naming / scope:**
-
-11. `Cpp_TextFinder_Entry` — project name, executable name, or both?
-12. Build system, header layout, static-vs-shared libs — silent.
-
----
-
-## Turn 2
-
-### User
-
-Provided decisions on all twelve items:
-
-&gt; 1. fix case
-&gt; 2. make const
-&gt; 3. formatting is applied by Cpp_Dirnav
-&gt; 4. error handling will be handled by Cpp_Output for this design
-&gt; 5. use abstract base class with virtual function for this design.  Should add note in doc file that type erased wrapper is an alternative
-&gt; 6. use template parameter
-&gt; 7. Cpp_Dirnav owns matching.  It should create the regex state machine only once per run, not for each file.
-&gt; 8. Cpp_Dirnav reads file contents
-&gt; 9. Cpp_TextFinder_Entry owns the skip list. Cpp_Dirnav uses to navigate
-&gt; 10. use struct
-&gt; 11. binary project name.  Use Cpp_TextFinder for executable name
-&gt; 12. I want to use C++23 with CMake using C++ Modules for each of the non-entry parts and for the std::library
-
-### Assistant
-
-Rewrote [Cpp_Structure.md](Cpp_TextFinder_Structure.md) applying all twelve decisions:
-
-- Fixed `std::String` to `std::string`; parameter is now `const std::string&amp;`.
-- Cpp_Dirnav now stated to format matches into grep-style `path:line:text` before emitting.
-- Cpp_Output stated to handle output errors internally.
-- Replaced "abstract type" with an abstract base class declaration (virtual destructor, pure virtual `output`).
-- Cpp_Dirnav binds to a concrete `Output` via a template parameter.
-- Cpp_Dirnav creates the regex state machine once per run and reads file contents.
-- Cpp_Cmdline emits a `struct` of program commands.
-- Cpp_TextFinder_Entry owns the skip list and passes it to Cpp_Dirnav.
-- `Cpp_TextFinder_Entry` is the project name; produced executable is `Cpp_TextFinder`.
-- New **Build** section: C++23, CMake, C++ Modules for `Cpp_Cmdline`, `Cpp_Dirnav`, `Cpp_Output`, and the standard library (`import std;`); `Cpp_TextFinder_Entry` remains a conventional translation unit.
-- New **Notes** entry recording that a type-erased wrapper is an alternative to the ABC and is not adopted here.
-
-Flagged that the Constitution restricted code generation to `Spec*.md` files, but the rewritten `Cpp_Structure.md` now contains an interface declaration. Offered three ways to reconcile: treat structure as honorary spec, rename the file, or move the class into a Spec file.
-
----
-
-## Turn 3
-
-### User
-
-&gt; all the specification parts belong in Spec*.md files but the interface declaration is definately part of the project's structure. My thought was to have the Spec*.md read Cpp_Structure.  But I am concerned that this may make the token count larger than needed.
-
-### Assistant
-
-Proposed three options ranked by token cost:
-
-- **Option A** — amend the Constitution: change "must derive from `Spec*.md` files" to "must derive from `Spec*.md` and `*Structure.md` files." One-line edit; no duplication; no cross-references.
-- **Option B** — move interfaces into Spec files (e.g., a new `Spec_Cpp_Dirnav.md` for the `Output` ABC); `Cpp_Structure.md` retains only project layout.
-- **Option C** — Spec files add a boilerplate line referencing `Cpp_Structure.md` for interface definitions.
-
-Recommended Option A as the smallest, cleanest change.
-
----
-
-## Turn 4
-
-### User
-
-&gt; use Option A
-
-### Assistant
-
-Amended [Constitution.md](../Constitution.md):
-
-- Rule 1 now cites both `Spec*.md` and `*Structure.md` files as authoritative code-derivation sources, extended to any subdirectory (so `Cpp_Structure.md` and future `Spec_Cpp_Output.md` both qualify).
-- Rule 1 now reads "change the spec or structure first" rather than "change the spec first."
-- Ambiguity Note updated to cover both file kinds.
-
----
-
-## Turn 5
-
-### User
-
-&gt; create Prompts_Fix_Cpp_Structure.md with all the prompts and replies not already recorded
-
-### Assistant
-
-Created this file, [Prompts_Fix_Cpp_TextFinder_Structure.md](Prompts_Fix_Cpp_TextFinder_Structure.md), summarizing the review, twelve decisions, the token-scope discussion, and the Constitution amendment that followed. User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.</code></pre>
+<div class="mdview">
+<h2>Prompts and Replies — Cpp_Structure Refinement</h2>
+<p>This file records the prompts and replies exchanged while refining <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_TextFinder_Structure.md" target="_blank">Cpp_Structure.md</a> after its initial draft. Turns 1–7 (initial creation and early edits) are recorded in <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Prompts_Cpp_TextFinder_Structure.md" target="_blank">Prompts_Cpp_TextFinder_Structure.md</a>.</p>
+<hr>
+<h3>Turn 1</h3>
+<h4>User</h4>
+<blockquote>
+<p>are there any ambiguities or improvements needed for Cpp_Structure.md</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Reviewed <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_TextFinder_Structure.md" target="_blank">Cpp_Structure.md</a> and listed twelve items across four groups, without editing. Awaited user decisions.</p>
+<p><strong>Interface signature:</strong></p>
+<ol>
+<li><code>std::String</code> (capital S) — non-standard; should be <code>std::string</code>.</li>
+<li>Parameter <code>std::String&amp;</code> is non-const; suggested <code>const std::string&amp;</code>.</li>
+<li>What does <code>match_str</code> contain — the fully formatted <code>path:line:text</code>, or just the matched text?</li>
+<li>Return type <code>void</code> — no path for output-error signaling. Intentional?</li>
+<li>&quot;Abstract type <code>Output</code>&quot; is ambiguous — abstract base class, <code>concept</code>, or type-erased wrapper?</li>
+</ol>
+<p><strong>Binding mechanism:</strong></p>
+<ol start="6">
+<li>&quot;Bound to a <code>Cpp_Dirnav</code> instance using the <code>output</code> function&quot; — how? Constructor argument, setter, template parameter?</li>
+</ol>
+<p><strong>Responsibility gaps:</strong></p>
+<ol start="7">
+<li>Ownership of regex matching — Cpp_Dirnav or a separate matcher?</li>
+<li>File I/O ownership — silent.</li>
+<li>Skip list, extension filter, recursion toggle — ownership silent.</li>
+<li>Shape of the &quot;commands&quot; produced by <code>Cpp_Cmdline</code> — silent.</li>
+</ol>
+<p><strong>Naming / scope:</strong></p>
+<ol start="11">
+<li><code>Cpp_TextFinder_Entry</code> — project name, executable name, or both?</li>
+<li>Build system, header layout, static-vs-shared libs — silent.</li>
+</ol>
+<hr>
+<h3>Turn 2</h3>
+<h4>User</h4>
+<p>Provided decisions on all twelve items:</p>
+<blockquote>
+<ol>
+<li>fix case</li>
+<li>make const</li>
+<li>formatting is applied by Cpp_Dirnav</li>
+<li>error handling will be handled by Cpp_Output for this design</li>
+<li>use abstract base class with virtual function for this design.  Should add note in doc file that type erased wrapper is an alternative</li>
+<li>use template parameter</li>
+<li>Cpp_Dirnav owns matching.  It should create the regex state machine only once per run, not for each file.</li>
+<li>Cpp_Dirnav reads file contents</li>
+<li>Cpp_TextFinder_Entry owns the skip list. Cpp_Dirnav uses to navigate</li>
+<li>use struct</li>
+<li>binary project name.  Use Cpp_TextFinder for executable name</li>
+<li>I want to use C++23 with CMake using C++ Modules for each of the non-entry parts and for the std::library</li>
+</ol>
+</blockquote>
+<h4>Assistant</h4>
+<p>Rewrote <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Cpp_TextFinder_Structure.md" target="_blank">Cpp_Structure.md</a> applying all twelve decisions:</p>
+<ul>
+<li>Fixed <code>std::String</code> to <code>std::string</code>; parameter is now <code>const std::string&amp;</code>.</li>
+<li>Cpp_Dirnav now stated to format matches into grep-style <code>path:line:text</code> before emitting.</li>
+<li>Cpp_Output stated to handle output errors internally.</li>
+<li>Replaced &quot;abstract type&quot; with an abstract base class declaration (virtual destructor, pure virtual <code>output</code>).</li>
+<li>Cpp_Dirnav binds to a concrete <code>Output</code> via a template parameter.</li>
+<li>Cpp_Dirnav creates the regex state machine once per run and reads file contents.</li>
+<li>Cpp_Cmdline emits a <code>struct</code> of program commands.</li>
+<li>Cpp_TextFinder_Entry owns the skip list and passes it to Cpp_Dirnav.</li>
+<li><code>Cpp_TextFinder_Entry</code> is the project name; produced executable is <code>Cpp_TextFinder</code>.</li>
+<li>New <strong>Build</strong> section: C++23, CMake, C++ Modules for <code>Cpp_Cmdline</code>, <code>Cpp_Dirnav</code>, <code>Cpp_Output</code>, and the standard library (<code>import std;</code>); <code>Cpp_TextFinder_Entry</code> remains a conventional translation unit.</li>
+<li>New <strong>Notes</strong> entry recording that a type-erased wrapper is an alternative to the ABC and is not adopted here.</li>
+</ul>
+<p>Flagged that the Constitution restricted code generation to <code>Spec*.md</code> files, but the rewritten <code>Cpp_Structure.md</code> now contains an interface declaration. Offered three ways to reconcile: treat structure as honorary spec, rename the file, or move the class into a Spec file.</p>
+<hr>
+<h3>Turn 3</h3>
+<h4>User</h4>
+<blockquote>
+<p>all the specification parts belong in Spec*.md files but the interface declaration is definately part of the project's structure. My thought was to have the Spec*.md read Cpp_Structure.  But I am concerned that this may make the token count larger than needed.</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Proposed three options ranked by token cost:</p>
+<ul>
+<li><strong>Option A</strong> — amend the Constitution: change &quot;must derive from <code>Spec*.md</code> files&quot; to &quot;must derive from <code>Spec*.md</code> and <code>*Structure.md</code> files.&quot; One-line edit; no duplication; no cross-references.</li>
+<li><strong>Option B</strong> — move interfaces into Spec files (e.g., a new <code>Spec_Cpp_Dirnav.md</code> for the <code>Output</code> ABC); <code>Cpp_Structure.md</code> retains only project layout.</li>
+<li><strong>Option C</strong> — Spec files add a boilerplate line referencing <code>Cpp_Structure.md</code> for interface definitions.</li>
+</ul>
+<p>Recommended Option A as the smallest, cleanest change.</p>
+<hr>
+<h3>Turn 4</h3>
+<h4>User</h4>
+<blockquote>
+<p>use Option A</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Amended <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Constitution.md" target="_blank">Constitution.md</a>:</p>
+<ul>
+<li>Rule 1 now cites both <code>Spec*.md</code> and <code>*Structure.md</code> files as authoritative code-derivation sources, extended to any subdirectory (so <code>Cpp_Structure.md</code> and future <code>Spec_Cpp_Output.md</code> both qualify).</li>
+<li>Rule 1 now reads &quot;change the spec or structure first&quot; rather than &quot;change the spec first.&quot;</li>
+<li>Ambiguity Note updated to cover both file kinds.</li>
+</ul>
+<hr>
+<h3>Turn 5</h3>
+<h4>User</h4>
+<blockquote>
+<p>create Prompts_Fix_Cpp_Structure.md with all the prompts and replies not already recorded</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Created this file, <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Prompts_Fix_Cpp_TextFinder_Structure.md" target="_blank">Prompts_Fix_Cpp_TextFinder_Structure.md</a>, summarizing the review, twelve decisions, the token-scope discussion, and the Constitution amendment that followed. User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.</p>
+</div>
         </details>
       </indent-blocks>
 

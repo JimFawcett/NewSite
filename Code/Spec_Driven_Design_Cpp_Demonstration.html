@@ -37,6 +37,20 @@
     #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
       font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
       color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+      #github .mdview { font-size: 0.95rem; border: 2px solid var(--dark); padding: 0.75rem 1rem; }
+    #github .mdview h2 { font-size: 1.4rem; margin: 0.25rem 0 0.75rem; }
+    #github .mdview h3 { font-size: 1.2rem; margin: 1.25rem 0 0.5rem; }
+    #github .mdview h4 { font-size: 1.05rem; margin: 1rem 0 0.4rem; }
+    #github .mdview h5 { font-size: 1rem; margin: 0.75rem 0 0.3rem; }
+    #github .mdview p, #github .mdview li { max-width: 90ch; margin: 0.5rem 0; }
+    #github .mdview ul, #github .mdview ol { margin-left: 1.75rem; }
+    #github .mdview li, #github .mdview li > p { margin: 0.25rem 0; }
+    #github .mdview code { font-size: 0.95rem; }
+    #github .mdview :not(pre) > code { background: var(--atten); padding: 0 0.25rem; }
+    #github .mdview blockquote { border-left: 3px solid var(--dark); margin: 0.5rem 0; padding: 0.1rem 0 0.1rem 0.75rem; }
+    #github .mdview table { table-layout: auto; width: max-content; max-width: 100%; border-collapse: collapse; }
+    #github .mdview th, #github .mdview td { border: 1px solid var(--dark); }
+    #github .mdview hr { margin: 1rem 0; }
   </style>
   <script>
     function loadInExplorer() {
@@ -1082,97 +1096,66 @@ exit /b 0</code></pre>
       <indent-blocks>
         <details>
           <summary class="labelStyle darkItem">Prompts_Final_Tweaks_TextFinder.md</summary>
-<pre><code class="language-markdown"># Prompts and Replies — Final Tweaks
-
-Recorded 2026-09-10. Earlier work is in [Prompts_Build_Cpp_TextFinder.md](Prompts_Build_Cpp_TextFinder.md) and [Prompts_Cpp_Spec_driven_TextFinder_Tests.md](Prompts_Cpp_Spec_driven_TextFinder_Tests.md). The turns below changed [Spec_TextFinder.md](../Spec_TextFinder.md) as well as the C++ specifications, sources, and tests, and added a demonstration.
-
----
-
-## Turn 1
-
-### User
-
-&gt; change the specified default values of /n and /L to false.  If /r has default value "." which matches everything, do not read file before signalling match.
-
-### Assistant
-
-Took both as specification changes first, then code, then tests.
-
-**Defaults.** `/n` and `/L` now default to `false` in the parent §5 table, the §5.1 help text, and §3.4's description of the fields, in the Cmdline specification's `ProgramCommands`, and in the code. A bare command line now emits paths alone.
-
-**Reporting without reading.** Parent §3.3 gained the case: when the expression is the default `.` and `/n` and `/L` are both `false`, a record carries only the path and one match settles it, so every selected file of non-zero size is reported without being opened. `Cpp_TextFinder_Dirnav` computes the condition once at construction. The size test still applies, reading only filesystem metadata, so `too large` survives and a huge file is still never opened; empty files are excluded, having no line to match.
-
-Flagged three consequences, written into §3.3 rather than left implicit: a binary file is reported, since without content the NUL and UTF-8 tests cannot run and §7's "does not search binary files" softens to "does not search, but does list"; a file whose lines are all empty is reported, which `.` would not in fact have matched; and no `skipped` announcement arises in this mode. Offered two ways to narrow the shortcut and awaited a decision.
-
-Tests updated for the new defaults and three added. All passed: 48, 22, 8, 41 — 119 in total.
-
----
-
-## Turn 2
-
-### User
-
-&gt; leave as-is
-
-### Assistant
-
-Left the behavior as built, noting that the three consequences are documented in §3.3, so they are specified rather than incidental.
-
----
-
-## Turn 3
-
-### User
-
-&gt; create a new demonstration (works just like integration test but more specific). The demo files are placed in same folder as integration tests.  The demo root is the project directory, /p has values "md,ixx,cpp". Then, run demo, showing output.
-
-### Assistant
-
-Created [Cpp_TextFinder_Demo.ixx](src/Cpp_TextFinder_Demo.ixx) and [Cpp_TextFinder_Demo_Driver.cpp](src/Cpp_TextFinder_Demo_Driver.cpp) beside the integration test, built the same way: a module exporting one entry point, a driver, and CMake definitions supplying the executable path through `$&lt;TARGET_FILE:Cpp_TextFinder&gt;` and the demonstration root through `get_filename_component` on the parent directory, so the root is `Spec_driven_TextFinder` itself. Every case runs with `-p "md, ixx, cpp"`.
-
-Six cases: the bare expression listing files without reading them; `^export module` with `/n` and `/L` showing that the `.md` specifications and the `.ixx` sources agree on every module name; `Spec_TextFinder\.md` as paths only; the same search under `/s false`; `/h false` with `/v true` showing the option listing ahead of announcements and records; and a malformed expression refused before traversal. Output is capped at fourteen lines a case with the true count printed beneath.
-
-Running it exposed something the tests had not: cases three and four repeated the same path many times — 90 and 17 lines. That is §3.4 working as written, a record per matching *line*, but with `/n` and `/L` newly defaulting to `false` the common invocation now produces duplicate paths. Flagged it as a §3.4 change needing authorization rather than making it.
-
----
-
-## Turn 4
-
-### User
-
-&gt; make the fix to show only one match for each matched file, e.g., exit after first match with both n and L using default values.
-
-### Assistant
-
-Rewrote parent §3.4: with either field present a record is emitted for every matching line; with both at their defaults a record carries the path alone, which tells no two matches in one file apart, so a single record is emitted per matching file and evaluation of that file stops at its first match. The Dirnav specification records the same in §8.
-
-In code, `Cpp_TextFinder_Dirnav` computes `pathOnly_` at construction and the line loop returns after emitting when it holds; `contentNotNeeded_` is now derived from it.
-
-Three tests added — a Dirnav pair proving a four-line file with three matches yields one record but three when `/n` is on, and an integration check that a two-match file emits its path once. All passed: 48, 24, 8, 42 — 122 in total.
-
-Re-ran the demonstration: case three fell from 90 lines to 26 and case four from 17 to 4, each file named once. Case five still shows several records for one file, correctly, because `-n true` is set there.
-
----
-
-## Turn 5
-
-### User
-
-&gt; show the output generated
-
-### Assistant
-
-Reproduced the whole demonstration inline, since command output reaches the assistant but not reliably the user's terminal, and noted that the `... N more` lines are the demonstration's own display cap rather than anything TextFinder did.
-
-```
-Cpp_TextFinder demonstration
+<div class="mdview">
+<h2>Prompts and Replies — Final Tweaks</h2>
+<p>Recorded 2026-09-10. Earlier work is in <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Prompts_Build_Cpp_TextFinder.md" target="_blank">Prompts_Build_Cpp_TextFinder.md</a> and <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Prompts_Cpp_Spec_driven_TextFinder_Tests.md" target="_blank">Prompts_Cpp_Spec_driven_TextFinder_Tests.md</a>. The turns below changed <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Spec_TextFinder.md" target="_blank">Spec_TextFinder.md</a> as well as the C++ specifications, sources, and tests, and added a demonstration.</p>
+<hr>
+<h3>Turn 1</h3>
+<h4>User</h4>
+<blockquote>
+<p>change the specified default values of /n and /L to false.  If /r has default value &quot;.&quot; which matches everything, do not read file before signalling match.</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Took both as specification changes first, then code, then tests.</p>
+<p><strong>Defaults.</strong> <code>/n</code> and <code>/L</code> now default to <code>false</code> in the parent §5 table, the §5.1 help text, and §3.4's description of the fields, in the Cmdline specification's <code>ProgramCommands</code>, and in the code. A bare command line now emits paths alone.</p>
+<p><strong>Reporting without reading.</strong> Parent §3.3 gained the case: when the expression is the default <code>.</code> and <code>/n</code> and <code>/L</code> are both <code>false</code>, a record carries only the path and one match settles it, so every selected file of non-zero size is reported without being opened. <code>Cpp_TextFinder_Dirnav</code> computes the condition once at construction. The size test still applies, reading only filesystem metadata, so <code>too large</code> survives and a huge file is still never opened; empty files are excluded, having no line to match.</p>
+<p>Flagged three consequences, written into §3.3 rather than left implicit: a binary file is reported, since without content the NUL and UTF-8 tests cannot run and §7's &quot;does not search binary files&quot; softens to &quot;does not search, but does list&quot;; a file whose lines are all empty is reported, which <code>.</code> would not in fact have matched; and no <code>skipped</code> announcement arises in this mode. Offered two ways to narrow the shortcut and awaited a decision.</p>
+<p>Tests updated for the new defaults and three added. All passed: 48, 22, 8, 41 — 119 in total.</p>
+<hr>
+<h3>Turn 2</h3>
+<h4>User</h4>
+<blockquote>
+<p>leave as-is</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Left the behavior as built, noting that the three consequences are documented in §3.3, so they are specified rather than incidental.</p>
+<hr>
+<h3>Turn 3</h3>
+<h4>User</h4>
+<blockquote>
+<p>create a new demonstration (works just like integration test but more specific). The demo files are placed in same folder as integration tests.  The demo root is the project directory, /p has values &quot;md,ixx,cpp&quot;. Then, run demo, showing output.</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Created <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/src/Cpp_TextFinder_Demo.ixx" target="_blank">Cpp_TextFinder_Demo.ixx</a> and <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/src/Cpp_TextFinder_Demo_Driver.cpp" target="_blank">Cpp_TextFinder_Demo_Driver.cpp</a> beside the integration test, built the same way: a module exporting one entry point, a driver, and CMake definitions supplying the executable path through <code>$&lt;TARGET_FILE:Cpp_TextFinder&gt;</code> and the demonstration root through <code>get_filename_component</code> on the parent directory, so the root is <code>Spec_driven_TextFinder</code> itself. Every case runs with <code>-p &quot;md, ixx, cpp&quot;</code>.</p>
+<p>Six cases: the bare expression listing files without reading them; <code>^export module</code> with <code>/n</code> and <code>/L</code> showing that the <code>.md</code> specifications and the <code>.ixx</code> sources agree on every module name; <code>Spec_TextFinder\.md</code> as paths only; the same search under <code>/s false</code>; <code>/h false</code> with <code>/v true</code> showing the option listing ahead of announcements and records; and a malformed expression refused before traversal. Output is capped at fourteen lines a case with the true count printed beneath.</p>
+<p>Running it exposed something the tests had not: cases three and four repeated the same path many times — 90 and 17 lines. That is §3.4 working as written, a record per matching <em>line</em>, but with <code>/n</code> and <code>/L</code> newly defaulting to <code>false</code> the common invocation now produces duplicate paths. Flagged it as a §3.4 change needing authorization rather than making it.</p>
+<hr>
+<h3>Turn 4</h3>
+<h4>User</h4>
+<blockquote>
+<p>make the fix to show only one match for each matched file, e.g., exit after first match with both n and L using default values.</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Rewrote parent §3.4: with either field present a record is emitted for every matching line; with both at their defaults a record carries the path alone, which tells no two matches in one file apart, so a single record is emitted per matching file and evaluation of that file stops at its first match. The Dirnav specification records the same in §8.</p>
+<p>In code, <code>Cpp_TextFinder_Dirnav</code> computes <code>pathOnly_</code> at construction and the line loop returns after emitting when it holds; <code>contentNotNeeded_</code> is now derived from it.</p>
+<p>Three tests added — a Dirnav pair proving a four-line file with three matches yields one record but three when <code>/n</code> is on, and an integration check that a two-match file emits its path once. All passed: 48, 24, 8, 42 — 122 in total.</p>
+<p>Re-ran the demonstration: case three fell from 90 lines to 26 and case four from 17 to 4, each file named once. Case five still shows several records for one file, correctly, because <code>-n true</code> is set there.</p>
+<hr>
+<h3>Turn 5</h3>
+<h4>User</h4>
+<blockquote>
+<p>show the output generated</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Reproduced the whole demonstration inline, since command output reaches the assistant but not reliably the user's terminal, and noted that the <code>... N more</code> lines are the demonstration's own display cap rather than anything TextFinder did.</p>
+<pre><code class="language-text">Cpp_TextFinder demonstration
   executable: .../Cpp_Spec_driven_TextFinder_Entry/Cpp_TextFinder.exe
   root:       .../Code/Projects/Spec_driven_TextFinder
-  extensions: "md, ixx, cpp"
+  extensions: &quot;md, ixx, cpp&quot;
 
 1. Bare expression. The default /r of . with no /n or /L needs no file content,
    so every selected file is listed from its path alone (Spec_TextFinder.md §3.3).
-  $ Cpp_TextFinder -P . -p "md, ixx, cpp"
+  $ Cpp_TextFinder -P . -p &quot;md, ixx, cpp&quot;
 
       Constitution.md
       Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Prompts_Fix_Spec_Cpp_TextFinder_Cmdline.md
@@ -1193,7 +1176,7 @@ Cpp_TextFinder demonstration
   39 line(s), exit 0
 
 2. Where each C++ module is declared, with line numbers and matched text.
-  $ Cpp_TextFinder -P . -p "md, ixx, cpp" -r "^export module" -n true -L true
+  $ Cpp_TextFinder -P . -p &quot;md, ixx, cpp&quot; -r &quot;^export module&quot; -n true -L true
 
       Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md - 27 - export module Cpp_TextFinder_Cmdline;
       Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline.ixx - 3 - export module Cpp_TextFinder_Cmdline;
@@ -1210,7 +1193,7 @@ Cpp_TextFinder demonstration
   11 line(s), exit 0
 
 3. Which documents cite the parent specification, paths only.
-  $ Cpp_TextFinder -P . -p "md, ixx, cpp" -r "Spec_TextFinder\.md"
+  $ Cpp_TextFinder -P . -p &quot;md, ixx, cpp&quot; -r &quot;Spec_TextFinder\.md&quot;
 
       Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Prompts_Fix_Spec_Cpp_TextFinder_Cmdline.md
       Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Prompts_Spec_Cpp_TextFinder_Cmdline.md
@@ -1231,7 +1214,7 @@ Cpp_TextFinder demonstration
   26 line(s), exit 0
 
 4. The same search one level deep, /s false entering no subdirectory.
-  $ Cpp_TextFinder -P . -p "md, ixx, cpp" -r "Spec_TextFinder\.md" -s false
+  $ Cpp_TextFinder -P . -p &quot;md, ixx, cpp&quot; -r &quot;Spec_TextFinder\.md&quot; -s false
 
       Project_Tree.md
       Prompts_Fix_Constitution.md
@@ -1241,7 +1224,7 @@ Cpp_TextFinder demonstration
   4 line(s), exit 0
 
 5. Announcements turned on with /h false, alongside the resolved option set from /v true.
-  $ Cpp_TextFinder -P . -p "md, ixx, cpp" -r "usageLine" -h false -v true -n true
+  $ Cpp_TextFinder -P . -p &quot;md, ixx, cpp&quot; -r &quot;usageLine&quot; -h false -v true -n true
 
       /P .
       /p md, ixx, cpp
@@ -1262,64 +1245,49 @@ Cpp_TextFinder demonstration
   73 line(s), exit 0
 
 6. A malformed expression, refused before traversal with the diagnostic of §5.2.
-  $ Cpp_TextFinder -P . -p "md, ixx, cpp" -r "export("
+  $ Cpp_TextFinder -P . -p &quot;md, ixx, cpp&quot; -r &quot;export(&quot;
 
       (no output)
       [stderr] invalid regex for switch: /r
-      [stderr] usage: Cpp_TextFinder [/P path] [/p "ext, ext"] [/r regex] [/s bool] [/h bool] [/v bool] [/H bool] [/n bool] [/L bool]
+      [stderr] usage: Cpp_TextFinder [/P path] [/p &quot;ext, ext&quot;] [/r regex] [/s bool] [/h bool] [/v bool] [/H bool] [/n bool] [/L bool]
 
   0 line(s), exit 1
 
 demonstration complete
-```
-
-This is the run as it stood at this turn. A later run differs in two ways that reflect the project, not the program: the header carries the date line added in Turn 6, and case three finds one more file, this record among them.
-
----
-
-## Turn 6
-
-### User
-
-&gt; In the demonstration, write the date as a new second line
-
-### Assistant
-
-Added the date as the second line of the header, labelled and aligned with the three lines beneath it so the header stays uniform:
-
-```
-Cpp_TextFinder demonstration
+</code></pre>
+<p>This is the run as it stood at this turn. A later run differs in two ways that reflect the project, not the program: the header carries the date line added in Turn 6, and case three finds one more file, this record among them.</p>
+<hr>
+<h3>Turn 6</h3>
+<h4>User</h4>
+<blockquote>
+<p>In the demonstration, write the date as a new second line</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Added the date as the second line of the header, labelled and aligned with the three lines beneath it so the header stays uniform:</p>
+<pre><code class="language-text">Cpp_TextFinder demonstration
   date:       2026-09-10
   executable: ...
   root:       ...
-  extensions: "md, ixx, cpp"
-```
-
-Took it from `std::chrono::current_zone()` rather than UTC, which would read as the previous day late in the evening.
-
----
-
-## Turn 7
-
-### User
-
-&gt; Create a batch file that executes the demo and place with the other batch files
-
-### Assistant
-
-Created [run_demo.bat](run_demo.bat) beside the two test scripts and added it to [Project_Tree.md](../Project_Tree.md). It follows their shape — `%~dp0` to locate the build directory, a `not built:` report if the driver is missing, the exit status announced, and the process exit code passed through — and carries the `pause` the user had added to the other two, a demonstration being the likeliest of the three to be launched by double-click. Two optional arguments pass through to override the executable and the root.
-
----
-
-## Turn 8
-
-### User
-
-&gt; create Prompts_Final_Tweaks_TextFinder.md containing all the prompts and replies from today
-
-### Assistant
-
-Created this file, [Prompts_Final_Tweaks_TextFinder.md](Prompts_Final_Tweaks_TextFinder.md), and added it to [Project_Tree.md](../Project_Tree.md). User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.</code></pre>
+  extensions: &quot;md, ixx, cpp&quot;
+</code></pre>
+<p>Took it from <code>std::chrono::current_zone()</code> rather than UTC, which would read as the previous day late in the evening.</p>
+<hr>
+<h3>Turn 7</h3>
+<h4>User</h4>
+<blockquote>
+<p>Create a batch file that executes the demo and place with the other batch files</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Created <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/run_demo.bat" target="_blank">run_demo.bat</a> beside the two test scripts and added it to <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Project_Tree.md" target="_blank">Project_Tree.md</a>. It follows their shape — <code>%~dp0</code> to locate the build directory, a <code>not built:</code> report if the driver is missing, the exit status announced, and the process exit code passed through — and carries the <code>pause</code> the user had added to the other two, a demonstration being the likeliest of the three to be launched by double-click. Two optional arguments pass through to override the executable and the root.</p>
+<hr>
+<h3>Turn 8</h3>
+<h4>User</h4>
+<blockquote>
+<p>create Prompts_Final_Tweaks_TextFinder.md containing all the prompts and replies from today</p>
+</blockquote>
+<h4>Assistant</h4>
+<p>Created this file, <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/Prompts_Final_Tweaks_TextFinder.md" target="_blank">Prompts_Final_Tweaks_TextFinder.md</a>, and added it to <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Project_Tree.md" target="_blank">Project_Tree.md</a>. User prompts are quoted verbatim. Assistant replies are summarized from the actual responses; tool calls are noted as effects rather than transcribed.</p>
+</div>
         </details>
       </indent-blocks>
 

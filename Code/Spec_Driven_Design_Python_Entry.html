@@ -37,6 +37,20 @@
     #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
       font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
       color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+      #github .mdview { font-size: 0.95rem; border: 2px solid var(--dark); padding: 0.75rem 1rem; }
+    #github .mdview h2 { font-size: 1.4rem; margin: 0.25rem 0 0.75rem; }
+    #github .mdview h3 { font-size: 1.2rem; margin: 1.25rem 0 0.5rem; }
+    #github .mdview h4 { font-size: 1.05rem; margin: 1rem 0 0.4rem; }
+    #github .mdview h5 { font-size: 1rem; margin: 0.75rem 0 0.3rem; }
+    #github .mdview p, #github .mdview li { max-width: 90ch; margin: 0.5rem 0; }
+    #github .mdview ul, #github .mdview ol { margin-left: 1.75rem; }
+    #github .mdview li, #github .mdview li > p { margin: 0.25rem 0; }
+    #github .mdview code { font-size: 0.95rem; }
+    #github .mdview :not(pre) > code { background: var(--atten); padding: 0 0.25rem; }
+    #github .mdview blockquote { border-left: 3px solid var(--dark); margin: 0.5rem 0; padding: 0.1rem 0 0.1rem 0.75rem; }
+    #github .mdview table { table-layout: auto; width: max-content; max-width: 100%; border-collapse: collapse; }
+    #github .mdview th, #github .mdview td { border: 1px solid var(--dark); }
+    #github .mdview hr { margin: 1rem 0; }
   </style>
   <script>
     function loadInExplorer() {
@@ -129,6 +143,118 @@
           </ul>
         </t-b>
       </div>
+
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Spec_Python_TextFinder_Entry.md</summary>
+<div class="mdview">
+<h2>Spec_Python_TextFinder_Entry — Binary Entry Point Specification</h2>
+<p>Specification for the <code>python_textfinder_entry</code> binary of the Python TextFinder implementation. This document refines <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Spec_TextFinder.md" target="_blank">Spec_TextFinder.md</a> and inherits structural decisions from <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder/Python_TextFinder_Structure.md" target="_blank">Python_TextFinder_Structure.md</a>.</p>
+<h3>1. Purpose</h3>
+<p><code>python_textfinder_entry</code> is the command-line entry point of the Python TextFinder. It parses the program's arguments, wires the three libraries together, and drives directory traversal. Matching and file I/O belong to <code>python_textfinder_dirnav</code> and <code>python_textfinder_output</code>; the binary performs neither.</p>
+<p>The binary does write process-level text of its own — help, the resolved option listing, and startup diagnostics — but it composes none of it. Each is a string <code>python_textfinder_cmdline</code> hands it, and the binary decides only when to write it and to which stream. Block lines and announcements it neither composes nor writes.</p>
+<h3>2. Scope</h3>
+<p>This spec covers only the binary. Switch behavior is defined in the parent <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Spec_TextFinder.md" target="_blank">Spec_TextFinder.md</a> §4–§5. Library behavior is specified in each library's own <code>Spec_*.md</code>.</p>
+<h3>3. Responsibilities</h3>
+<p>The binary:</p>
+<ul>
+<li>Imports <code>python_textfinder_cmdline</code>, <code>python_textfinder_dirnav</code>, and <code>python_textfinder_output</code>.</li>
+<li>Takes the program's arguments as the <code>list[str]</code> the interpreter builds in <code>sys.argv</code>. §8 states the one encoding consequence, which is that there is none of the kind the Rust implementation defines.</li>
+<li>Owns the skip list and implements the build-time extension point Spec_TextFinder.md §3.5 defines, not exposed at runtime.</li>
+<li>Passes the arguments to <code>python_textfinder_cmdline</code> to obtain a <code>ProgramCommands</code> in which every switch already carries its supplied value or its default — the <code>.</code> root included, so the option listing has a root path to name whether or not <code>/P</code> was typed.</li>
+<li>Obtains <code>usage_line()</code>, <code>help_text()</code>, and <code>options_text(commands)</code> from <code>python_textfinder_cmdline</code>, which owns all three and fixes their text against Spec_TextFinder.md §5.1, §5.2, and §5.3 respectively.</li>
+<li>Constructs the process's one <code>StdoutSink</code>, holds it in a <code>with</code> statement, and writes its own stdout text through it rather than through a writer of its own.</li>
+<li>Constructs a <code>Dirnav</code>, passing the sink, the finalized skip list, and the parsed commands.</li>
+<li>Drives traversal across every supplied root path using the single reused <code>Dirnav</code>, then asks it for the run summary of Spec_TextFinder.md §3.6 once the last root path is finished.</li>
+<li>Handles process-level concerns: the bare command line of Spec_TextFinder.md §3.1, <code>/H</code> help, the <code>/v</code> option listing, exit codes, and top-level diagnostics.</li>
+</ul>
+<h3>4. Startup Sequence</h3>
+<p><code>main(argv: list[str]) -&gt; int</code>, defined in <code>entry.py</code>, performs the following steps in order. <code>__main__.py</code> holds three lines — the import, the call, and <code>sys.exit(main(sys.argv))</code> — and nothing else, so that <code>main</code> is a function a suite can call with an argument list of its own.</p>
+<ol>
+<li>
+<p>Invoke <code>parse(argv)</code>. When it returns a <code>ParseFailure</code>, write that failure's <code>diagnostic</code> to stderr unaltered and return 1; otherwise it returned the <code>ProgramCommands</code> the steps below use. The test is <code>isinstance(result, ParseFailure)</code>, which is what narrows the union for a type checker — Spec_Python_TextFinder_Cmdline.md §4 fixes the return type and says why it is a union rather than a pair. A malformed <code>/r</code> is not detected here; step 6 reaches it.</p>
+<p>There is no argument-decoding step before this one. The interpreter decodes the command line and builds <code>sys.argv</code>, so the argument collection and decode that the Rust implementation performs, and the exit code it reserves for a failure there, have no counterpart. §8 records that as a stated property rather than an omission. The whole of <code>argv</code> is passed, element 0 included; Spec_Python_TextFinder_Cmdline.md §5 fixes that the parser skips it, so the offset is stated once and this binary does not slice the list.</p>
+</li>
+<li>
+<p>Construct the <code>StdoutSink</code>. On <code>RuntimeError</code> or <code>OSError</code> (Spec_Python_TextFinder_Output.md §4), write <code>cannot initialize output</code> to stderr and return 2 — the code Spec_TextFinder.md §3.4 fixes for a failure that is not about the command line. Every later write to stdout passes through this object, so it is constructed before any of them.</p>
+<p>The construction sits in a <code>try</code> block and the sink is then held by a <code>with</code> statement covering the rest of <code>main</code>. Writing <code>with StdoutSink() as sink:</code> would put the construction inside the statement, where an <code>except</code> clause covering the body would also cover the body's own failures; splitting the two is what lets the construction failure be handled alone and the flush still be guaranteed. This is the Python counterpart of the <code>std::optional</code> the C++ implementation uses for the same reason, and of the C# implementation's split between a <code>try</code> and a <code>using</code> statement.</p>
+</li>
+<li>
+<p>If the parsed commands indicate <code>/H true</code>, write <code>help_text()</code> through the sink with <code>write_text</code>, return 0, and do not proceed.</p>
+</li>
+<li>
+<p>If <code>argv</code> holds one element, write <code>options_text(commands)</code> through the sink, return 0, and do not proceed. This is the bare command line of Spec_TextFinder.md §3.1, and it succeeds: nothing was asked for and nothing failed. <code>commands</code> here is a newly constructed <code>ProgramCommands</code>, so the listing names every default and its <code>/v</code> line reads <code>false</code>, per Spec_TextFinder.md §5.3.</p>
+<p>The test is <code>len(argv) == 1</code> and not <code>len(argv) == 0</code>. <code>sys.argv</code> carries the program name in element 0 — the path of <code>__main__.py</code> under <code>python -m</code> — so a one-element list is the bare command line, as it is in C++ and Rust and is not in C#, whose <code>string[] args</code> holds the arguments alone. The binary reads the list's length for this test and nothing else; it inspects no element of it.</p>
+</li>
+<li>
+<p>If <code>/v true</code>, write <code>options_text(commands)</code> through the sink, in the form Spec_TextFinder.md §5.3 fixes, before traversal begins. Steps 4 and 5 are mutually exclusive: a command line bearing <code>/v</code> holds more than one element.</p>
+</li>
+<li>
+<p>Finalize the skip list: the defaults listed in §5 of this document with the extension calls compiled into the module applied. Then construct the <code>Dirnav</code>, passing the sink, that list as a <code>tuple</code>, and the parsed commands. Expression compilation occurs here, and the constructor raises <code>re.error</code> when the <code>/r</code> expression will not compile. On that exception:</p>
+<ol>
+<li>If step 5 did not already write it, write <code>options_text(commands)</code> through the sink now, so that the user sees the <code>/r</code> line carrying the expression that failed. Spec_TextFinder.md §5.2 requires this listing whatever <code>/v</code> says, and §5.3 requires it not be repeated when <code>/v</code> already produced it.</li>
+<li>Call <code>flush</code> on the sink, so that the listing reaches the stream ahead of the diagnostic that explains it. The sink buffers stdout without per-line flushing (Spec_Python_TextFinder_Output.md §7), so without this the two arrive out of order.</li>
+<li>Compose the usage diagnostic in the shape Spec_TextFinder.md §5.2 binds — the reason line <code>invalid regex for switch: /r</code>, a newline, then <code>usage_line()</code> — and write it to stderr. §6 fixes that reason line for this implementation. The binary composes it; neither <code>python_textfinder_cmdline</code> nor <code>python_textfinder_dirnav</code> does, the former supplying only <code>usage_line()</code> and the latter only the failure that triggers it. The message <code>re.error</code> carries is not written, for a reason that outlives §5.2's wording: that text is the interpreter's, so an interpreter upgrade would change this program's output without any document in this tree recording the change.</li>
+<li>Return 1, having traversed nothing.</li>
+</ol>
+<p><code>re.error</code> is caught by its own type rather than as <code>Exception</code> or as <code>ValueError</code>, which it derives from. A broader <code>except</code> would also swallow an argument defect in this binary's own call and report it as a malformed user pattern.</p>
+</li>
+<li>
+<p>For each root path in the parsed commands, in the order <code>/P</code> gave them, invoke <code>search</code> on the same <code>Dirnav</code>, then continue with the next root path. A root path that cannot be searched — unopenable, a symbolic link, neither a regular file nor a directory, or carrying a name that will not render — is announced by <code>python_textfinder_dirnav</code> itself, per Spec_TextFinder.md §3.4; the binary neither formats nor inspects that notice, and no root-path outcome affects the exit code.</p>
+</li>
+<li>
+<p>Call <code>emit_run_summary</code> on that same <code>Dirnav</code>, once, after the last root path returns. This writes the run summary Spec_TextFinder.md §3.6 requires. The binary supplies no count and composes no text — the counts are the library's, per Spec_Python_TextFinder_Dirnav.md §8.1 — and its whole part is knowing that step 7 is finished, which nothing inside the library can know. Every return above precedes step 7, so no run that skipped traversal reaches this step: <code>/H</code>, the bare command line, a parse failure, and a malformed <code>/r</code> each leave at their own step, which is what §3.6 requires of a summary.</p>
+</li>
+<li>
+<p>Return 0.</p>
+</li>
+</ol>
+<p>Every exit above is a <code>return</code> from <code>main</code>. <code>sys.exit</code> is not called inside <code>main</code> and <code>os._exit</code> is not called anywhere: the first would express a return value as an exception, which a suite calling <code>main</code> would then have to catch, and the second terminates the process immediately, with the sink's buffer unwritten. Only a return leaves the <code>with</code> statement and releases the sink, which flushes its stdout buffer (Spec_Python_TextFinder_Output.md §7). Steps 3, 4, and 6 each write to stdout and then leave. <code>sys.exit</code> appears once in this component, in <code>__main__.py</code>, where it converts <code>main</code>'s returned value into the process's exit code after the <code>with</code> statement has already ended.</p>
+<p>Nothing writes to stderr before stdout has been flushed. Step 1 predates the sink and so has no buffer to flush; step 2 fails before one exists; step 6 flushes explicitly. <code>python_textfinder_output</code> applies the same rule to its own runtime notice, per Spec_Python_TextFinder_Output.md §6.</p>
+<p>Every stderr write in this binary is wrapped against <code>OSError</code> and <code>ValueError</code> and its failure discarded, for the reason Spec_Python_TextFinder_Output.md §6 gives for the sink's own notice: a process whose stderr is broken must still return the code §6 of this document assigns, and an exception raised while reporting a usage error would replace that code with an interpreter traceback and a 1 that means something else. A run that cannot say why it failed still fails with the right number.</p>
+<p>Every stderr write in this binary goes to <code>sys.stderr.buffer</code> as UTF-8 with an explicit <code>\n</code>, followed by a flush. <code>sys.stderr.write</code> is not used: it writes through a text layer opened with <code>newline=None</code>, which translates to CRLF on Windows. Spec_TextFinder.md §3.4 leaves the stderr terminator to the platform and would permit CRLF here; writing LF costs one writer choice and makes this implementation's stderr identical on both platforms, so it is fixed here. The encode uses <code>errors=&quot;replace&quot;</code>, for the reason Spec_Python_TextFinder_Output.md §5 gives for the sink: a reason line may reproduce a token the interpreter decoded with <code>surrogateescape</code>, and a diagnostic that raised while reporting a bad command line would be worse than one that renders a byte as <code>?</code>.</p>
+<p>Nothing in this implementation writes through <code>sys.stdout</code>, so the interpreter's own flush of that stream at shutdown has nothing to write and can fail at nothing. That is why a broken pipe produces the sink's one <code>output failed</code> notice and not, in addition, the interpreter's shutdown complaint about an unflushable stdout.</p>
+<h3>5. Skip List</h3>
+<p><code>python_textfinder_entry</code> owns the process-wide skip list. It is initialized with the defaults specified in Spec_TextFinder.md §3.2:</p>
+<pre><code class="language-text">archive, .git, .svn, .hg, build, out, target, bin, obj, __pycache__, node_modules
+</code></pre>
+<p>The module holds the list at module level and implements the extension point of Spec_TextFinder.md §3.5:</p>
+<pre><code class="language-python">_SKIP_LIST: list[str] = [ ... the eleven defaults ... ]
+
+def _add_skip_directory(name: str) -&gt; None: ...
+</code></pre>
+<p><code>_add_skip_directory</code> takes the name alone, as §3.5 writes it, and returns <code>None</code>. §3.5 fixes the shape and leaves the spelling to each language, so the name is snake_case here where §3.5 writes <code>addSkipDirectory</code>. A <code>list</code> needs no interior-mutability type and no synchronization primitive to be extended from a module-level function, so the <code>RefCell</code> and <code>thread_local!</code> pair the Rust implementation requires has no counterpart: the list is built at import time and traversal runs on one thread.</p>
+<p>The calls that extend the list are written into this module, beneath the list's definition, and run when the module is imported — before <code>main</code> is called and therefore before traversal begins. Both names carry a leading underscore, which is the whole of Python's access control: nothing prevents another module from importing and calling <code>_add_skip_directory</code>, where the C# implementation's <code>private</code> and the C++ implementation's internal linkage prevent it outright. That is a stated weakness of this implementation rather than a difference in design, and the rule it rests on is that no library and no suite in this project calls either name.</p>
+<p><code>_add_skip_directory</code> ignores a name the list already holds, comparing with the same platform rule <code>python_textfinder_dirnav</code> applies to a skip-list entry, so a build that adds <code>Build</code> on Windows does not lengthen a list that already holds <code>build</code>.</p>
+<p>The list is handed to the <code>Dirnav</code> at step 6 as a <code>tuple</code>, which that library can read and cannot modify — a stronger guarantee than the C# implementation's <code>IReadOnlyList&lt;string&gt;</code>, which a caller holding the underlying list can still change behind it. Nothing extends the list once traversal has begun, and the binary reads no configuration file.</p>
+<h3>6. Exit Codes and Diagnostics</h3>
+<p>The three codes Spec_TextFinder.md §3.4 fixes map onto this binary's failure modes as follows. No other value is returned from <code>main</code>.</p>
+<ul>
+<li>Exit code 0: all startup steps and traversal completed; or <code>/H true</code> printed help; or the command line was bare and step 4 printed the option listing. Match count and unopenable root paths do not affect the exit code.</li>
+<li>Exit code 1: <code>python_textfinder_cmdline</code> parsing failed, or <code>/r</code> was a malformed expression. Both are usage diagnostics, in the shape Spec_TextFinder.md §5.2 binds. Spec_Python_TextFinder_Cmdline.md §6 fixes the six reason lines <code>parse</code> produces; this document fixes the seventh, <code>invalid regex for switch: /r</code>, since the binary is what writes it.</li>
+<li>Exit code 2: constructing the <code>StdoutSink</code> failed, either because one already exists or because standard output could not be opened. Neither writes a usage line, since neither is a usage diagnostic. The text is <code>cannot initialize output</code>, fixed here, as Spec_TextFinder.md §2 and §5.2 leave every stderr wording to the implementation.</li>
+<li>Block lines, file announcements, and error announcements are all emitted through the <code>StdoutSink</code> by <code>python_textfinder_dirnav</code>, in the forms and under the gating Spec_TextFinder.md §3.4 fixes. The binary formats none of them, including the error announcements about root paths it supplied. A test therefore compares that text against these documents rather than against the parent, and not against another implementation, which is free to word it differently.</li>
+<li>Only one exit-code-1 path writes to stdout: the malformed expression, whose option listing step 6 requires. A parse failure leaves stdout empty, as does the code-2 failure, which occurs before the sink exists or because it does not.</li>
+</ul>
+<p>An uncaught exception escaping <code>main</code> is not one of the three codes: the interpreter would print a traceback to stderr and exit 1, which would be read as a usage failure and would carry no usage line. Nothing in this binary is written to allow that. <code>python_textfinder_dirnav</code> contains every <code>OSError</code> it meets (Spec_Python_TextFinder_Dirnav.md §5) and <code>python_textfinder_output</code> contains every write failure (Spec_Python_TextFinder_Output.md §6), so the two exception types that reach this module are the ones steps 2 and 6 name. The one uncontained case that document states — a tree deep enough to exhaust the recursion limit — is left uncontained deliberately, and would exit this way.</p>
+<p>Exit code 2 is reachable in this implementation, and the one-sink rule of Spec_Python_TextFinder_Output.md §4 is what makes it so. This binary constructs exactly one sink, so its own code cannot provoke that exception; it handles the case because a constructor with a failure mode callers ignore is a constructor whose failure mode will eventually be reached.</p>
+<h3>7. Build</h3>
+<p>Per <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder/Python_TextFinder_Structure.md" target="_blank">Python_TextFinder_Structure.md</a>:</p>
+<ul>
+<li>Package <code>python_textfinder_entry</code> under this folder's <code>src/</code>, holding <code>entry.py</code> and <code>__main__.py</code>, importable once that folder is on <code>PYTHONPATH</code>. It is run as <code>python -m python_textfinder_entry</code>, which the launchers <code>Python_TextFinder.bat</code> and <code>Python_TextFinder</code> wrap after setting <code>PYTHONPATH</code> to the four <code>src/</code> folders; each forwards its arguments and returns the interpreter's exit code unchanged. <code>Python_TextFinder</code> is the name Spec_TextFinder.md §5.1 substitutes for <code>&lt;executable&gt;</code>, and that substitution is fixed in <code>python_textfinder_cmdline</code> rather than read from <code>sys.argv[0]</code>, which under <code>python -m</code> holds a path.</li>
+<li>Imports the three libraries and <code>os</code>, <code>re</code>, and <code>sys</code> from the standard library. It requires no distributed package. <code>os</code> is imported for <code>os.name</code> alone, which §5 needs to compare a skip-list name by the platform rule Spec_Python_TextFinder_Dirnav.md §6 fixes; that rule is two lines and is written out here rather than reached for through another package's private name.</li>
+<li>No locale is read. This implementation calls <code>locale.setlocale</code> nowhere, opens no stream it did not configure, and performs no culture-sensitive comparison, so no locale data can change what it does. The <code>InvariantGlobalization</code> switch the C# implementation sets has nothing here to switch off.</li>
+<li>There is no build step and no project file. Spec_TextFinder.md §6.2's requirement that a runner build what it is about to run is discharged by <code>python -m compileall</code>, which the runners invoke over the four <code>src/</code> folders before the first suite; Python_TextFinder_Structure.md fixes that.</li>
+</ul>
+<h3>8. Non-Goals</h3>
+<ul>
+<li>The binary does not maintain per-file state.</li>
+<li>The binary places no encoding limit on its arguments. The interpreter decodes the command line before <code>main</code> runs — on POSIX with the filesystem encoding and the <code>surrogateescape</code> error handler, on Windows from the wide API — so every command line the shell can express reaches the parser. Spec_TextFinder.md §4 leaves the argument type and its encoding to this document, and this is the fact that follows for Python: the undecodable-argument case the Rust implementation defines cannot arise here, and this implementation accepts root paths and expressions the C++ implementation cannot carry through its narrow <code>argv</code>. What follows instead is that an argument the interpreter could not decode carries lone surrogates into the option listing, and Spec_Python_TextFinder_Output.md §5 fixes what the sink writes for them; a root path carrying them draws <code>cannot open</code> per Spec_Python_TextFinder_Dirnav.md §5.</li>
+<li>The binary does not read a configuration file, and offers no runtime means of extending the skip list (§5).</li>
+</ul>
+</div>
+        </details>
+      </indent-blocks>
 
       <a id="binary"></a>
       <h3>1. &nbsp;The Binary</h3>

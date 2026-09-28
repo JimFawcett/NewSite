@@ -37,6 +37,20 @@
     #github .preScroll button { width: 1.5rem; margin-left: 0.15rem; padding: 0;
       font-size: 0.85rem; line-height: 1.2rem; cursor: pointer;
       color: var(--dark); background: var(--atten); border: 1px solid var(--dark); }
+      #github .mdview { font-size: 0.95rem; border: 2px solid var(--dark); padding: 0.75rem 1rem; }
+    #github .mdview h2 { font-size: 1.4rem; margin: 0.25rem 0 0.75rem; }
+    #github .mdview h3 { font-size: 1.2rem; margin: 1.25rem 0 0.5rem; }
+    #github .mdview h4 { font-size: 1.05rem; margin: 1rem 0 0.4rem; }
+    #github .mdview h5 { font-size: 1rem; margin: 0.75rem 0 0.3rem; }
+    #github .mdview p, #github .mdview li { max-width: 90ch; margin: 0.5rem 0; }
+    #github .mdview ul, #github .mdview ol { margin-left: 1.75rem; }
+    #github .mdview li, #github .mdview li > p { margin: 0.25rem 0; }
+    #github .mdview code { font-size: 0.95rem; }
+    #github .mdview :not(pre) > code { background: var(--atten); padding: 0 0.25rem; }
+    #github .mdview blockquote { border-left: 3px solid var(--dark); margin: 0.5rem 0; padding: 0.1rem 0 0.1rem 0.75rem; }
+    #github .mdview table { table-layout: auto; width: max-content; max-width: 100%; border-collapse: collapse; }
+    #github .mdview th, #github .mdview td { border: 1px solid var(--dark); }
+    #github .mdview hr { margin: 1rem 0; }
   </style>
   <script>
     function loadInExplorer() {
@@ -127,6 +141,113 @@
           </ul>
         </t-b>
       </div>
+
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Spec_CSharp_TextFinder_Entry.md</summary>
+<div class="mdview">
+<h2>Spec_CSharp_TextFinder_Entry — Binary Entry Point Specification</h2>
+<p>Specification for the <code>CSharp_TextFinder_Entry</code> binary of the C# TextFinder implementation. This document refines <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Spec_TextFinder.md" target="_blank">Spec_TextFinder.md</a> and inherits structural decisions from <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/CSharp_Spec_driven_TextFinder/CSharp_TextFinder_Structure.md" target="_blank">CSharp_TextFinder_Structure.md</a>.</p>
+<h3>1. Purpose</h3>
+<p><code>CSharp_TextFinder_Entry</code> is the command-line entry point of the C# TextFinder. It parses the program's arguments, wires the three libraries together, and drives directory traversal. Matching and file I/O belong to <code>CSharp_TextFinder_Dirnav</code> and <code>CSharp_TextFinder_Output</code>; the binary performs neither.</p>
+<p>The binary does write process-level text of its own — help, the resolved option listing, and startup diagnostics — but it composes none of it. Each is a string <code>CSharp_TextFinder_Cmdline</code> hands it, and the binary decides only when to write it and to which stream. Block lines and announcements it neither composes nor writes.</p>
+<h3>2. Scope</h3>
+<p>This spec covers only the binary. Switch behavior is defined in the parent <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Spec_TextFinder.md" target="_blank">Spec_TextFinder.md</a> §4–§5. Library behavior is specified in each library's own <code>Spec_*.md</code>.</p>
+<h3>3. Responsibilities</h3>
+<p>The binary:</p>
+<ul>
+<li>References <code>CSharp_TextFinder_Cmdline</code>, <code>CSharp_TextFinder_Dirnav</code>, and <code>CSharp_TextFinder_Output</code>.</li>
+<li>Takes the program's arguments as the <code>string[]</code> the runtime hands <code>Main</code>. §8 states the one encoding consequence, which is that there is none.</li>
+<li>Owns the skip list and implements the build-time extension point Spec_TextFinder.md §3.5 defines, not exposed at runtime.</li>
+<li>Passes the arguments to <code>CSharp_TextFinder_Cmdline</code> to obtain a <code>ProgramCommands</code> in which every switch already carries its supplied value or its default — the <code>.</code> root included, so the option listing has a root path to name whether or not <code>/P</code> was typed.</li>
+<li>Obtains <code>HelpText()</code>, <code>UsageLine()</code>, and <code>OptionsText(commands)</code> from <code>CSharp_TextFinder_Cmdline</code>, which owns all three and fixes their text against Spec_TextFinder.md §5.1, §5.2, and §5.3 respectively.</li>
+<li>Constructs the process's one <code>StdoutSink</code>, holds it in a <code>using</code> statement, and writes its own stdout text through it rather than through a writer of its own.</li>
+<li>Constructs a <code>Dirnav&lt;StdoutSink&gt;</code>, passing the sink, the finalized skip list, and the parsed commands.</li>
+<li>Drives traversal across every supplied root path using the single reused <code>Dirnav</code>, then asks it for the run summary of Spec_TextFinder.md §3.6 once the last root path is finished.</li>
+<li>Handles process-level concerns: the bare command line of Spec_TextFinder.md §3.1, <code>/H</code> help, the <code>/v</code> option listing, exit codes, and top-level diagnostics.</li>
+</ul>
+<h3>4. Startup Sequence</h3>
+<p><code>static int Main(string[] args)</code> performs the following steps in order.</p>
+<ol>
+<li>
+<p>Invoke <code>CommandLine.TryParse(args, out commands, out diagnostic)</code>. On <code>false</code>, write the returned diagnostic to stderr unaltered with <code>Console.Error.Write</code> and return 1. A malformed <code>/r</code> is not detected here; step 6 reaches it.</p>
+<p>There is no argument-decoding step before this one. The runtime decodes the command line and hands <code>Main</code> a <code>string[]</code>, so the argument collection and decode that the Rust implementation performs, and the exit code it reserves for a failure there, have no counterpart. §8 records that as a stated property rather than an omission.</p>
+</li>
+<li>
+<p>Construct the <code>StdoutSink</code>. On <code>InvalidOperationException</code> or <code>IOException</code> (Spec_CSharp_TextFinder_Output.md §4), write <code>cannot initialize output</code> to stderr and return 2 — the code Spec_TextFinder.md §3.4 fixes for a failure that is not about the command line. Every later write to stdout passes through this object, so it is constructed before any of them.</p>
+<p>The construction sits in a <code>try</code> block and the sink is then held by a <code>using</code> statement covering the rest of <code>Main</code>. A <code>using</code> declaration on the constructor call would put the construction inside the block it introduces, where a <code>catch</code> cannot reach it; splitting the two is what lets the failure be handled and the disposal still be guaranteed. This is the C# counterpart of the <code>std::optional</code> the C++ implementation uses for the same reason.</p>
+</li>
+<li>
+<p>If the parsed commands indicate <code>/H true</code>, write <code>HelpText()</code> through the sink with <code>WriteText</code>, return 0, and do not proceed.</p>
+</li>
+<li>
+<p>If <code>args</code> is empty, write <code>OptionsText(commands)</code> through the sink, return 0, and do not proceed. This is the bare command line of Spec_TextFinder.md §3.1, and it succeeds: nothing was asked for and nothing failed. <code>commands</code> here is a newly constructed <code>ProgramCommands</code>, so the listing names every default and its <code>/v</code> line reads <code>false</code>, per Spec_TextFinder.md §5.3.</p>
+<p>The test is <code>args.Length == 0</code> and not <code>args.Length == 1</code>. <code>Main</code>'s array holds the arguments alone, so an empty array is the bare command line; the C++ implementation tests <code>argc == 1</code> and the Rust implementation tests a length of 1 because their vectors carry the executable name. The binary reads the array's length for this test and nothing else; it inspects no element of it.</p>
+</li>
+<li>
+<p>If <code>/v true</code>, write <code>OptionsText(commands)</code> through the sink, in the form Spec_TextFinder.md §5.3 fixes, before traversal begins. Steps 4 and 5 are mutually exclusive: a command line bearing <code>/v</code> is not empty.</p>
+</li>
+<li>
+<p>Finalize the skip list: the defaults listed in §5 of this document with the extension calls compiled into the binary applied. Then construct the <code>Dirnav&lt;StdoutSink&gt;</code>, passing the sink, that list, and the parsed commands. Expression construction occurs here, and the constructor throws <code>RegexParseException</code> when the <code>/r</code> expression will not compile. On that exception:</p>
+<ol>
+<li>If step 5 did not already write it, write <code>OptionsText(commands)</code> through the sink now, so that the user sees the <code>/r</code> line carrying the expression that failed. Spec_TextFinder.md §5.2 requires this listing whatever <code>/v</code> says, and §5.3 requires it not be repeated when <code>/v</code> already produced it.</li>
+<li>Call <code>Flush</code> on the sink, so that the listing reaches the stream ahead of the diagnostic that explains it. The sink buffers stdout without per-line flushing (Spec_CSharp_TextFinder_Output.md §7), so without this the two arrive out of order.</li>
+<li>Compose the usage diagnostic in the shape Spec_TextFinder.md §5.2 binds — the reason line <code>invalid regex for switch: /r</code>, a newline, then <code>UsageLine()</code> — and write it to stderr. §6 fixes that reason line for this implementation. The binary composes it; neither <code>CSharp_TextFinder_Cmdline</code> nor <code>CSharp_TextFinder_Dirnav</code> does, the former supplying only <code>UsageLine()</code> and the latter only the failure that triggers it. The message the framework puts in <code>RegexParseException</code> is not written, for a reason that outlives §5.2's wording: that text is the framework's, so a runtime upgrade would change this program's output without any document in this tree recording the change.</li>
+<li>Return 1, having traversed nothing.</li>
+</ol>
+<p><code>RegexParseException</code> is caught by its own type rather than as <code>ArgumentException</code>, which it derives from. A broader <code>catch</code> would also swallow an argument defect in this binary's own call and report it as a malformed user pattern.</p>
+</li>
+<li>
+<p>For each root path in the parsed commands, in the order <code>/P</code> gave them, invoke <code>Search</code> on the same <code>Dirnav</code>, then continue with the next root path. A root path that cannot be searched — unopenable, a symbolic link, or neither a regular file nor a directory — is announced by <code>CSharp_TextFinder_Dirnav</code> itself, per Spec_TextFinder.md §3.4; the binary neither formats nor inspects that notice, and no root-path outcome affects the exit code.</p>
+</li>
+<li>
+<p>Call <code>EmitRunSummary</code> on that same <code>Dirnav</code>, once, after the last root path returns. This writes the run summary Spec_TextFinder.md §3.6 requires. The binary supplies no count and composes no text — the counts are the library's, per Spec_CSharp_TextFinder_Dirnav.md §8.1 — and its whole part is knowing that step 7 is finished, which nothing inside the library can know. Every return above precedes step 7, so no run that skipped traversal reaches this step: <code>/H</code>, the bare command line, a parse failure, and a malformed <code>/r</code> each leave at their own step, which is what §3.6 requires of a summary.</p>
+</li>
+<li>
+<p>Return 0.</p>
+</li>
+</ol>
+<p>Every exit above returns from <code>Main</code>, never calling <code>Environment.Exit</code>. The sink is held by a <code>using</code> statement, and only a return leaves that statement and disposes the sink, which flushes its stdout buffer (Spec_CSharp_TextFinder_Output.md §7). Steps 3, 4, and 6 each write to stdout and then leave, and <code>Environment.Exit</code> would terminate the process with the buffer unwritten.</p>
+<p>Nothing writes to stderr before stdout has been flushed. Step 1 predates the sink and so has no buffer to flush; step 2 fails before one exists; step 6 flushes explicitly. <code>CSharp_TextFinder_Output</code> applies the same rule to its own runtime notice, per Spec_CSharp_TextFinder_Output.md §6.</p>
+<p>Every stderr write in this binary uses <code>Console.Error.Write</code> with an explicit <code>\n</code> rather than <code>Console.Error.WriteLine</code>. <code>WriteLine</code> appends <code>Environment.NewLine</code>, which is CRLF on Windows. Spec_TextFinder.md §3.4 leaves the stderr terminator to the platform and would permit CRLF here; writing LF costs one method choice and makes this implementation's stderr identical on both platforms, so it is fixed here.</p>
+<h3>5. Skip List</h3>
+<p><code>CSharp_TextFinder_Entry</code> owns the process-wide skip list. It is initialized with the defaults specified in Spec_TextFinder.md §3.2:</p>
+<pre><code class="language-text">archive, .git, .svn, .hg, build, out, target, bin, obj, __pycache__, node_modules
+</code></pre>
+<p>The binary holds the list in a private static field and implements the extension point of Spec_TextFinder.md §3.5:</p>
+<pre><code class="language-csharp">private static readonly List&lt;string&gt; SkipList = new() { /* the eleven defaults */ };
+
+private static void AddSkipDirectory(string name);
+</code></pre>
+<p><code>AddSkipDirectory</code> takes the name alone, as §3.5 writes it, and returns <code>void</code>. §3.5 fixes the shape and leaves the spelling to each language, so the name is PascalCase here where §3.5 writes <code>addSkipDirectory</code>. A <code>List&lt;string&gt;</code> needs no interior-mutability type and no synchronization primitive to be extended from a static method, so the <code>RefCell</code> and <code>thread_local!</code> pair the Rust implementation requires has no counterpart: the list is built before traversal begins and traversal runs on one thread.</p>
+<p>Neither member is <code>public</code>, and both are declared in the binary's own class, so no library and no test can call them; the calls that extend the list are written into the binary's source and compiled with it. <code>AddSkipDirectory</code> ignores a name the list already holds, comparing with the same platform rule <code>CSharp_TextFinder_Dirnav</code> applies to a skip-list entry, so a build that adds <code>Build</code> on Windows does not lengthen a list that already holds <code>build</code>.</p>
+<p>The list is handed to the <code>Dirnav</code> at step 6 as an <code>IReadOnlyList&lt;string&gt;</code>, which that library consults but cannot modify through. Nothing extends the list once traversal has begun, and the binary reads no configuration file.</p>
+<h3>6. Exit Codes and Diagnostics</h3>
+<p>The three codes Spec_TextFinder.md §3.4 fixes map onto this binary's failure modes as follows. No other value is returned from <code>Main</code>.</p>
+<ul>
+<li>Exit code 0: all startup steps and traversal completed; or <code>/H true</code> printed help; or the command line was bare and step 4 printed the option listing. Match count and unopenable root paths do not affect the exit code.</li>
+<li>Exit code 1: <code>CSharp_TextFinder_Cmdline</code> parsing failed, or <code>/r</code> was a malformed expression. Both are usage diagnostics, in the shape Spec_TextFinder.md §5.2 binds. Spec_CSharp_TextFinder_Cmdline.md §6 fixes the six reason lines <code>TryParse</code> produces; this document fixes the seventh, <code>invalid regex for switch: /r</code>, since the binary is what writes it.</li>
+<li>Exit code 2: constructing the <code>StdoutSink</code> failed, either because one already exists or because standard output could not be opened. Neither writes a usage line, since neither is a usage diagnostic. The text is <code>cannot initialize output</code>, fixed here, as Spec_TextFinder.md §2 and §5.2 leave every stderr wording to the implementation.</li>
+<li>Block lines, file announcements, and error announcements are all emitted through the <code>StdoutSink</code> by <code>CSharp_TextFinder_Dirnav</code>, in the forms and under the gating Spec_TextFinder.md §3.4 fixes. The binary formats none of them, including the error announcements about root paths it supplied. A test therefore compares that text against these documents rather than against the parent, and not against another implementation, which is free to word it differently.</li>
+<li>Only one exit-code-1 path writes to stdout: the malformed expression, whose option listing step 6 requires. A parse failure leaves stdout empty, as does the code-2 failure, which occurs before the sink exists or because it does not.</li>
+</ul>
+<p>Exit code 2 is reachable in this implementation, and the one-sink rule of Spec_CSharp_TextFinder_Output.md §4 is what makes it so. This binary constructs exactly one sink, so its own code cannot provoke that exception; it handles the case because a constructor with a failure mode callers ignore is a constructor whose failure mode will eventually be reached.</p>
+<h3>7. Build</h3>
+<p>Per <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/CSharp_Spec_driven_TextFinder/CSharp_TextFinder_Structure.md" target="_blank">CSharp_TextFinder_Structure.md</a>:</p>
+<ul>
+<li>.NET console project <code>CSharp_TextFinder_Entry</code>, targeting <code>net8.0</code>, with <code>AssemblyName</code> set to <code>CSharp_TextFinder</code> so that the executable carries that name.</li>
+<li>References the three libraries. It references no NuGet package.</li>
+<li><code>InvariantGlobalization</code> is enabled. No comparison in this implementation is culture-sensitive, so loading globalization data would buy nothing, and enabling the switch makes a culture-sensitive comparison added later fail visibly rather than behave differently on two machines.</li>
+</ul>
+<h3>8. Non-Goals</h3>
+<ul>
+<li>The binary does not maintain per-file state.</li>
+<li>The binary places no encoding limit on its arguments. A <code>string</code> is UTF-16 and the runtime decodes the command line before <code>Main</code> runs, so every command line the shell can express reaches the parser. Spec_TextFinder.md §4 leaves the argument type and its encoding to this document, and this is the fact that follows for C#: the undecodable-argument case the Rust implementation defines cannot arise here, and this implementation accepts root paths and expressions the C++ implementation cannot carry through its narrow <code>argv</code>.</li>
+<li>The binary does not read a configuration file, and offers no runtime means of extending the skip list (§5).</li>
+</ul>
+</div>
+        </details>
+      </indent-blocks>
 
       <a id="owns"></a>
       <h3>1. &nbsp;What the Binary Owns</h3>
