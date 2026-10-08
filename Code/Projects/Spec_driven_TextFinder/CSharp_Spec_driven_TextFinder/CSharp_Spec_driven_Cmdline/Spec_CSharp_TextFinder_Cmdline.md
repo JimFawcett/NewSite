@@ -49,7 +49,7 @@ public static class CommandLine
 }
 ```
 
-The property comments are the switch-to-property mapping, and the property initializers are the sole authority in code for the defaults of Spec_TextFinder.md §5. A newly constructed `ProgramCommands` equals the result of parsing an empty argument array. Spec_TextFinder.md §5 remains the authority overall, and a disagreement between the two is a defect in this library. The four `bool` properties whose default is `false` carry no initializer, since `default(bool)` is already `false`; writing `= false` on them would suggest the value was chosen where the others' initializers show it was.
+The property comments are the switch-to-property mapping, and the property initializers are the sole authority in code for the defaults of Spec_TextFinder.md §5. A newly constructed `ProgramCommands` equals the result of parsing an empty argument array, and a disagreement between the two is a defect in this library. The four `bool` properties whose default is `false` carry no initializer, since `default(bool)` is already `false`; writing `= false` on them would suggest the value was chosen where the others' initializers show it was.
 
 `ProgramCommands` has no invariants: every property combination the parser can produce is valid. It is a reference type, so `Dirnav` holds a reference to the object `CSharp_TextFinder_Entry` owns and the garbage collector keeps it alive. No lifetime rule is stated here, because there is none to state.
 
@@ -76,18 +76,7 @@ Switch letters compare with `StringComparison.Ordinal` throughout. A culture-sen
 
 Every violation in §5 is a usage error. `TryParse` returns `false` and produces a usage diagnostic in the shape Spec_TextFinder.md §5.2 binds — a reason line, a newline, then `UsageLine()`. `CSharp_TextFinder_Entry` writes that string to stderr unaltered and exits with code 1 (Spec_CSharp_TextFinder_Entry.md §4 step 2).
 
-Spec_TextFinder.md §2 leaves the wording of stderr text to each language, and §5.2 supplies reason lines without binding them. This implementation adopts §5.2's six parse-time reason lines unchanged, and this section is where they are fixed for C#:
-
-| Condition                                                    | Reason line                             |
-|--------------------------------------------------------------|-----------------------------------------|
-| Token in switch position has no `/` or `-` introducer        | `not a switch: <token>`                 |
-| Introducer-led token that is not a switch defined in §5      | `unrecognized switch: <token>`          |
-| Switch is the last token, with no argument token following   | `missing argument for switch: <switch>` |
-| Boolean switch given a value other than `true` or `false`    | `invalid boolean for <switch>: <token>` |
-| `/P` given an empty argument                                 | `empty root path for switch: <switch>`  |
-| `/r` given an empty argument                                 | `empty expression for switch: <switch>` |
-
-`<token>` is the offending token and `<switch>` the switch, each reproduced exactly as typed, preserving the introducer. Adopting §5.2's wording rather than rewriting it costs nothing and leaves this implementation's stderr comparable with the other implementations', which Spec_TextFinder.md §6 no longer requires but does not forbid.
+Spec_TextFinder.md §2 leaves the wording of stderr text to each language, and §5.2 supplies reason lines without binding them. This implementation adopts §5.2's six parse-time reason lines verbatim, and that adoption is what fixes them for C#: the table in §5.2 is this library's own wording, and a suite compares against it on that basis. `<token>` is the offending token and `<switch>` the switch, each reproduced exactly as typed, preserving the introducer.
 
 The diagnostic's embedded terminators are LF, since they are written into the string rather than produced by a writer. `CSharp_TextFinder_Entry` writes the string with `Console.Error.Write`, which appends nothing, so this implementation's stderr carries LF on every platform. Spec_TextFinder.md §3.4 leaves the stderr terminator to the platform and asks for no such thing; getting it costs one method choice, so this implementation takes it.
 
@@ -99,7 +88,7 @@ There is no error condition for a duplicated switch or an empty `/p` list: dupli
 
 The `/p` argument arrives as one token; the shell has already removed the quotes. Normalization implements the `/p` rules of Spec_TextFinder.md §5: split the token on commas, trim each item, strip one leading `.` if present, trim it a second time, discard empty items, and preserve the order of the survivors.
 
-The second trim is not redundant, and §5 requires it for a reason that shows only when the dot and the whitespace are separated. `". cs"` survives the first trim unchanged, the dot being the first character, and the strip then exposes the space: one trim alone yields `" cs"`, an extension no file can carry, and one that puts a second space into the §5.3 listing line, which §5.3 otherwise keeps free of stray whitespace. An item reduced to nothing by either trim is discarded, so the empties test comes last.
+The second trim is not redundant; Spec_TextFinder.md §5 gives the reason and the worked example, and this library chooses neither. An item reduced to nothing by either trim is discarded, so the empties test comes last.
 
 Spec_TextFinder.md §5 fixes which characters are trimmed, naming six of them, so this document chooses none of them and no two implementations can trim a different set. The six are held as a `char[]` and passed to `string.Trim(params char[])`, which trims exactly the characters given and no others. Both trims are that same call against that same array, so the six have one definition here.
 
@@ -116,11 +105,11 @@ Duplicates are retained — they are harmless to the membership test `CSharp_Tex
 
 The help body is held as a `string[]`, one element per line, joined with `"\n"`. A raw string literal would read better in the source and is not used: it carries the line terminators of the file it is written in, so an editor or a `.gitattributes` rule that rewrote this source to CRLF would change what the program prints. Spec_TextFinder.md §5.1 fixes the text and §3.4 fixes the terminator, so neither may depend on how this file is stored. Joining an array of lines makes the terminator a decision of this library rather than a property of its encoding, and the array's length is the line count a fixture can assert.
 
-`OptionsText` returns the resolved option set, in the form Spec_TextFinder.md §5.3 fixes: one key/value pair per line, in §5 table order, `<switch> <value>` with a single separating space, one `/P` line per root path, the `/p` list joined by `, ` and emitting `/p` alone when empty, `/r` verbatim, and booleans in lower case. §5.3 gives the nine lines a bare `-v true` produces, and this method reproduces them. It chooses none of that form and must not be read as the place the form is decided.
+`OptionsText` returns the resolved option set in the form Spec_TextFinder.md §5.3 fixes, reproducing the nine lines §5.3 gives for a bare `-v true`. It chooses none of that form and must not be read as the place the form is decided.
 
 Booleans render through a conditional expression yielding the literals `"true"` and `"false"`. `bool.ToString()` is not used: it returns `"True"` and `"False"`, which §5.3 forbids, and `ToString(CultureInfo.InvariantCulture)` returns the same. The two literals appear once each in this library.
 
-One method serves all three cases §5.3 calls for, since the text is the same in each and only the caller's next move differs: `/v true`, after which traversal follows; the bare command line of §3.1, after which the process exits 0; and the invalid-regex diagnostic of §5.2, where the listing precedes that diagnostic on stdout whatever `/v` says and the process then exits 1. The listing reflects whatever `commands` holds, so its `/v` line reads `false` in the latter two unless `/v` was itself typed.
+One method serves all three cases §5.3 calls for, the text being the same in each and only the caller's next move differing. The listing reflects whatever `commands` holds, so its `/v` line reads `false` in the two cases `/v` did not itself ask for.
 
 All three methods end their returned string with LF; none writes to a stream.
 

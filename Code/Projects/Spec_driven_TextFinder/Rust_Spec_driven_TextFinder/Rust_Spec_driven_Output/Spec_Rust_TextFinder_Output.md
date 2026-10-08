@@ -53,7 +53,7 @@ impl Drop for StdoutSink {
 
 `flush` writes the buffer through to stdout. `rust_textfinder_entry` calls it at §4 step 8, where a diagnostic on stderr must follow text already written to stdout; nothing else needs it, since §7 flushes on `Drop`.
 
-The type takes no configuration. `rust_textfinder_dirnav` formats every line in full before emitting it — a block's path line, a block's indented detail lines, and every announcement alike — so there is nothing left here to parameterize.
+The type takes no configuration. `rust_textfinder_dirnav` formats every line in full before emitting it, so there is nothing left here to parameterize.
 
 Three methods write, and the first two differ only in what they add:
 
@@ -74,15 +74,11 @@ One failure mode remains, and it is about this library rather than about the str
 
 ## 6. Error Handling
 
-A write that fails — a closed pipe, a full disk — sets an internal failed state. On the first such failure the library flushes stdout and then writes the single line `output failed` to stderr. The flush comes first so that every line already buffered reaches the stream ahead of the notice explaining why the lines stop; it is best-effort, since whatever broke the write may break it too. Thereafter the library discards every string it is given and writes nothing more, to stdout or stderr.
-
-The failed state is permanent and one notice is written, not one per discarded line, so a broken pipe does not turn a long search into a long stderr transcript.
+A write that fails — a closed pipe, a full disk — sets an internal failed state. On the first such failure the library flushes stdout and then writes the single line `output failed` to stderr. The flush comes first so that every line already buffered reaches the stream ahead of the notice explaining why the lines stop; it is best-effort, since whatever broke the write may break it too. Thereafter the library discards every string it is given and writes nothing more, to stdout or stderr. The failed state is permanent and one notice is written, not one per discarded line, so a broken pipe does not turn a long search into a long stderr transcript.
 
 The flush performed when the value is dropped (§7) obeys the same rule. A failure there sets the failed state and writes the one notice, if no earlier failure has already written it, because the final flush is the write most likely to be the first one that fails: it is the only one that must reach the stream, and on a short search it is the only one that reaches it at all. Nothing follows it, so nothing is left to discard.
 
-All three methods swallow the `io::Result` their writes return. The library never panics, never returns a status, and never lets the failure reach `rust_textfinder_dirnav`, which goes on traversing. `unwrap` and `expect` appear nowhere in it.
-
-A failed write does not affect the exit code, which Spec_Rust_TextFinder_Entry.md §6 reserves for command-line failures. A run whose output went nowhere still exits 0: the exit code answers whether TextFinder could do what it was asked, not whether the reader received it.
+All three methods swallow the `io::Result` their writes return. The library never panics, never returns a status, and never lets the failure reach `rust_textfinder_dirnav`, which goes on traversing; `unwrap` and `expect` appear nowhere in it. A failed write does not affect the exit code, which Spec_Rust_TextFinder_Entry.md §6 reserves for command-line failures: a run whose output went nowhere still exits 0, the exit code answering whether TextFinder could do what it was asked rather than whether the reader received it.
 
 ## 7. Buffering and Flushing
 
@@ -92,9 +88,7 @@ No flush is performed per line. The stream is flushed when the value is dropped,
 
 This buffer is why the process holds one sink and one only (§4). Two would wrap the same stdout with two independent buffers, and their contents would reach the stream in the order the buffers happened to fill rather than the order the lines were written — which would break the emission order Spec_TextFinder.md §3.4 fixes, silently and only under load.
 
-One rule keeps the deferral from reordering the output: **stdout is flushed before any write to stderr.** This library applies the rule to its own `output failed` notice (§6), and `rust_textfinder_entry` applies it to the diagnostic that follows the option listing on an invalid `/r` (Spec_Rust_TextFinder_Entry.md §4 step 8).
-
-Because this value owns the only stdout handle in the process, the binary's help text and option listing pass through `write_text` rather than through a handle of their own. They therefore share this buffer and reach the stream in the order written, and the ordering rule above is the only coordination needed.
+One rule keeps the deferral from reordering the output: **stdout is flushed before any write to stderr.** This library applies the rule to its own `output failed` notice (§6), and `rust_textfinder_entry` applies it to the diagnostic that follows the option listing on an invalid `/r` (Spec_Rust_TextFinder_Entry.md §4 step 8). Because this value owns the only stdout handle in the process, the binary's help text and option listing pass through `write_text`, share this buffer, and reach the stream in the order written; that rule is the only coordination needed.
 
 ## 8. Build
 

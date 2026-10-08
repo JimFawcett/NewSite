@@ -32,17 +32,17 @@ The binary:
 
 1. Invoke `CommandLine.TryParse(args, out commands, out diagnostic)`. On `false`, write the returned diagnostic to stderr unaltered with `Console.Error.Write` and return 1. A malformed `/r` is not detected here; step 6 reaches it.
 
-   There is no argument-decoding step before this one. The runtime decodes the command line and hands `Main` a `string[]`, so the argument collection and decode that the Rust implementation performs, and the exit code it reserves for a failure there, have no counterpart. §8 records that as a stated property rather than an omission.
+   There is no argument-decoding step before this one: the runtime decodes the command line and hands `Main` a `string[]`, so the collection and decode the Rust implementation performs have no counterpart here, and §8 records that as a stated property rather than an omission.
 
 2. Construct the `StdoutSink`. On `InvalidOperationException` or `IOException` (Spec_CSharp_TextFinder_Output.md §4), write `cannot initialize output` to stderr and return 2 — the code Spec_TextFinder.md §3.4 fixes for a failure that is not about the command line. Every later write to stdout passes through this object, so it is constructed before any of them.
 
-   The construction sits in a `try` block and the sink is then held by a `using` statement covering the rest of `Main`. A `using` declaration on the constructor call would put the construction inside the block it introduces, where a `catch` cannot reach it; splitting the two is what lets the failure be handled and the disposal still be guaranteed. This is the C# counterpart of the `std::optional` the C++ implementation uses for the same reason.
+   The construction sits in a `try` block and the sink is then held by a `using` statement covering the rest of `Main`. A `using` declaration on the constructor call would put the construction inside the block it introduces, where a `catch` cannot reach it; splitting the two is what lets the failure be handled and the disposal still be guaranteed.
 
 3. If the parsed commands indicate `/H true`, write `HelpText()` through the sink with `WriteText`, return 0, and do not proceed.
 
 4. If `args` is empty, write `OptionsText(commands)` through the sink, return 0, and do not proceed. This is the bare command line of Spec_TextFinder.md §3.1, and it succeeds: nothing was asked for and nothing failed. `commands` here is a newly constructed `ProgramCommands`, so the listing names every default and its `/v` line reads `false`, per Spec_TextFinder.md §5.3.
 
-   The test is `args.Length == 0` and not `args.Length == 1`. `Main`'s array holds the arguments alone, so an empty array is the bare command line; the C++ implementation tests `argc == 1` and the Rust implementation tests a length of 1 because their vectors carry the executable name. The binary reads the array's length for this test and nothing else; it inspects no element of it.
+   The test is `args.Length == 0` and not `args.Length == 1`, since `Main`'s array holds the arguments alone where the C++ and Rust vectors carry the executable name. The binary reads the array's length for this test and nothing else; it inspects no element of it.
 
 5. If `/v true`, write `OptionsText(commands)` through the sink, in the form Spec_TextFinder.md §5.3 fixes, before traversal begins. Steps 4 and 5 are mutually exclusive: a command line bearing `/v` is not empty.
 
@@ -79,7 +79,7 @@ private static readonly List<string> SkipList = new() { /* the eleven defaults *
 private static void AddSkipDirectory(string name);
 ```
 
-`AddSkipDirectory` takes the name alone, as §3.5 writes it, and returns `void`. §3.5 fixes the shape and leaves the spelling to each language, so the name is PascalCase here where §3.5 writes `addSkipDirectory`. A `List<string>` needs no interior-mutability type and no synchronization primitive to be extended from a static method, so the `RefCell` and `thread_local!` pair the Rust implementation requires has no counterpart: the list is built before traversal begins and traversal runs on one thread.
+`AddSkipDirectory` takes the name alone, as §3.5 writes it, and returns `void`. §3.5 fixes the shape and leaves the spelling to each language, so the name is PascalCase here where §3.5 writes `addSkipDirectory`. A `List<string>` needs no interior-mutability type and no synchronization primitive to be extended from a static method: the list is built before traversal begins and traversal runs on one thread.
 
 Neither member is `public`, and both are declared in the binary's own class, so no library and no test can call them; the calls that extend the list are written into the binary's source and compiled with it. `AddSkipDirectory` ignores a name the list already holds, comparing with the same platform rule `CSharp_TextFinder_Dirnav` applies to a skip-list entry, so a build that adds `Build` on Windows does not lengthen a list that already holds `build`.
 
@@ -108,5 +108,5 @@ Per [CSharp_TextFinder_Structure.md](../CSharp_TextFinder_Structure.md):
 ## 8. Non-Goals
 
 - The binary does not maintain per-file state.
-- The binary places no encoding limit on its arguments. A `string` is UTF-16 and the runtime decodes the command line before `Main` runs, so every command line the shell can express reaches the parser. Spec_TextFinder.md §4 leaves the argument type and its encoding to this document, and this is the fact that follows for C#: the undecodable-argument case the Rust implementation defines cannot arise here, and this implementation accepts root paths and expressions the C++ implementation cannot carry through its narrow `argv`.
+- The binary places no encoding limit on its arguments. A `string` is UTF-16 and the runtime decodes the command line before `Main` runs, so every command line the shell can express reaches the parser. Spec_TextFinder.md §4 leaves the argument type and its encoding to this document, and this is the fact that follows for C#: no argument is undecodable, and this implementation accepts root paths and expressions the C++ narrow `argv` cannot carry.
 - The binary does not read a configuration file, and offers no runtime means of extending the skip list (§5).

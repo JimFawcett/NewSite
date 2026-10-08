@@ -65,18 +65,7 @@ The field comments are the switch-to-field mapping, and the initializers are the
 
 Every violation in §5 is a usage error. `parse` returns a usage diagnostic in the shape Spec_TextFinder.md §5.2 binds — a reason line, a newline, then `usageLine()`. `Cpp_TextFinder_Entry` writes the returned string to stderr unaltered and exits with code `1` (Spec_Cpp_TextFinder_Entry.md §4 step 1).
 
-Spec_TextFinder.md §2 leaves the wording of stderr text to each language, and §5.2 supplies reason lines without binding them. This implementation adopts §5.2's six parse-time reason lines unchanged, and this section is where they are fixed for C++:
-
-| Condition                                                    | Reason line                             |
-|--------------------------------------------------------------|-----------------------------------------|
-| Token in switch position has no `/` or `-` introducer        | `not a switch: <token>`                 |
-| Introducer-led token that is not a switch defined in §5      | `unrecognized switch: <token>`          |
-| Switch is the last token, with no argument token following   | `missing argument for switch: <switch>` |
-| Boolean switch given a value other than `true` or `false`    | `invalid boolean for <switch>: <token>` |
-| `/P` given an empty argument                                 | `empty root path for switch: <switch>`  |
-| `/r` given an empty argument                                 | `empty expression for switch: <switch>` |
-
-`<token>` is the offending token and `<switch>` the switch, each reproduced exactly as typed, preserving the introducer. The integration suite compares its expectations against this table, not against the parent, which no longer fixes the wording for anyone.
+Spec_TextFinder.md §2 leaves the wording of stderr text to each language, and §5.2 supplies reason lines without binding them. This implementation adopts §5.2's six parse-time reason lines verbatim, and that adoption is what fixes them for C++: the table in §5.2 is this library's own wording, and the integration suite compares its expectations against it on that basis rather than against a text the parent binds for anyone. `<token>` is the offending token and `<switch>` the switch, each reproduced exactly as typed, preserving the introducer.
 
 The seventh condition of §5.2, a malformed `/r`, is detected later: `Cpp_TextFinder_Dirnav` compiles the expression and lets the failure propagate, and `Cpp_TextFinder_Entry` composes that diagnostic, drawing its usage line from `usageLine()` below (§8). Spec_Cpp_TextFinder_Entry.md §6 fixes its reason line, since the binary is what writes it. Neither this library nor `Cpp_TextFinder_Dirnav` composes it — the one supplies a string, the other raises the failure, and the binary joins them.
 
@@ -86,7 +75,7 @@ There is no error condition for a duplicated switch or an empty `/p` list: dupli
 
 The `/p` argument arrives as one token; the shell has already removed the quotes. Normalization implements the `/p` rules of Spec_TextFinder.md §5: split the token on commas, trim each item, strip one leading `.` if present, trim it a second time, discard empty items, and preserve the order of the survivors. Spec_TextFinder.md §5 fixes which characters are trimmed, naming six of them, so this document chooses none of them. `std::isspace` in the C locale reports exactly those six and is what the implementation calls, through a cast to `unsigned char` — passing a negative `char` to it is undefined, and a path holding a byte above 0x7F produces one.
 
-The second trim is not redundant, and §5 requires it for a reason that shows only when the dot and the whitespace are separated. `". cpp"` survives the first trim unchanged, the dot being the first character, and the erase then exposes the space: one trim alone yields `" cpp"`, an extension no file can carry, and one that puts a second space into the §5.3 listing line, which §5.3 otherwise keeps free of stray whitespace. Both trims call the same `trim`, so the six characters have one definition here. An item reduced to nothing by either trim is discarded, so the empties test comes last.
+The second trim is not redundant; Spec_TextFinder.md §5 gives the reason and the worked example, and this library chooses neither. An item reduced to nothing by either trim is discarded, so the empties test comes last.
 
 Duplicates are retained — they are harmless to the membership test `Cpp_TextFinder_Dirnav` performs. Case folding is not applied here; the platform-dependent comparison fixed by Spec_TextFinder.md §5 is performed by `Cpp_TextFinder_Dirnav` when it matches a file name against the list.
 
@@ -94,9 +83,9 @@ Duplicates are retained — they are harmless to the membership test `Cpp_TextFi
 
 `helpText()` returns the text fixed by Spec_TextFinder.md §5.1 with `<executable>` replaced by `Cpp_TextFinder`. `usageLine()` returns its first line — the line that terminates every usage diagnostic (§6), exported so that `Cpp_TextFinder_Entry` can compose the malformed-regex diagnostic.
 
-`optionsText(commands)` returns the resolved option set, in the form Spec_TextFinder.md §5.3 fixes: one key/value pair per line, in §5 table order, `<switch> <value>` with a single separating space, one `/P` line per root path, the `/p` list joined by `, ` and emitting `/p` alone when empty, `/r` verbatim, and booleans in lower case. §5.3 gives the nine lines a bare `-v true` produces, and this function reproduces them. It chooses none of that form and must not be read as the place the form is decided.
+`optionsText(commands)` returns the resolved option set in the form Spec_TextFinder.md §5.3 fixes, reproducing the nine lines §5.3 gives for a bare `-v true`. It chooses none of that form and must not be read as the place the form is decided.
 
-One function serves all three cases §5.3 calls for, since the text is the same in each and only the caller's next move differs: `/v true`, after which traversal follows; the bare command line of §3.1, after which the process exits 0; and the invalid-regex diagnostic of §5.2, where the listing precedes that diagnostic on stdout whatever `/v` says and the process then exits 1. The listing reflects whatever `commands` holds, so its `/v` line reads `false` in the latter two unless `/v` was itself typed.
+One function serves all three cases §5.3 calls for, the text being the same in each and only the caller's next move differing. The listing reflects whatever `commands` holds, so its `/v` line reads `false` in the two cases `/v` did not itself ask for.
 
 All three functions end their returned string with a newline; none writes to a stream.
 

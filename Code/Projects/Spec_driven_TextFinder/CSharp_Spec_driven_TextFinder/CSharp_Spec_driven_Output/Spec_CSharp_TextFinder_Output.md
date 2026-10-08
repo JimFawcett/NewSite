@@ -39,11 +39,11 @@ The class is `sealed`. Nothing in this project derives from it, and a sink whose
 
 The constructor takes no arguments and throws in two cases. It throws `InvalidOperationException` when a `StdoutSink` already exists, so that the process holds one sink and one only; §7 records why a second would corrupt the output. And it lets an `IOException` from `Console.OpenStandardOutput` propagate, which is the failure of a process started with no usable standard output handle. `CSharp_TextFinder_Entry` catches both and exits 2, the code Spec_TextFinder.md §3.4 fixes for a failure that is not about the command line, and the failure that section names as its example.
 
-The one-sink rule is held by a private static `bool`, cleared by `Dispose`, so a sink disposed before another is created releases the right to make one. A static mutable field is a smell in general and is the right mechanism here: the thing being guarded is a process-wide resource, one process holds one standard output handle, and the field is read and written on one thread before any other could exist. No lock is taken. The Rust implementation reaches the same conclusion through a `thread_local!` `Cell`, which it needs because a plain `static` there must be `Sync`; C# places no such bound on a static field and so needs no cell.
+The one-sink rule is held by a private static `bool`, cleared by `Dispose`, so a sink disposed before another is created releases the right to make one. A static mutable field is a smell in general and is the right mechanism here: the thing being guarded is a process-wide resource, one process holds one standard output handle, and the field is read and written on one thread before any other could exist. No lock is taken.
 
 `Flush` writes the buffer through to stdout. `CSharp_TextFinder_Entry` calls it at §4 step 6, where a diagnostic on stderr must follow text already written to stdout; nothing else needs it, since §7 flushes on `Dispose`.
 
-The type takes no configuration. `CSharp_TextFinder_Dirnav` formats every line in full before emitting it — a block's path line, a block's indented detail lines, and every announcement alike — so there is nothing left here to parameterize.
+The type takes no configuration. `CSharp_TextFinder_Dirnav` formats every line in full before emitting it, so there is nothing left here to parameterize.
 
 Two methods write, and they differ only in what they add:
 
@@ -70,17 +70,13 @@ The sink therefore owns a `StreamWriter` over `Console.OpenStandardOutput()` wit
 
 ## 6. Error Handling
 
-A write that fails — a closed pipe, a full disk — sets an internal failed state. On the first such failure the library flushes stdout and then writes the single line `output failed` to stderr. The flush comes first so that every line already buffered reaches the stream ahead of the notice explaining why the lines stop; it is best-effort, since whatever broke the write may break it too. Thereafter the library discards every string it is given and writes nothing more, to stdout or stderr.
-
-The failed state is permanent and one notice is written, not one per discarded line, so a broken pipe does not turn a long search into a long stderr transcript.
+A write that fails — a closed pipe, a full disk — sets an internal failed state. On the first such failure the library flushes stdout and then writes the single line `output failed` to stderr. The flush comes first so that every line already buffered reaches the stream ahead of the notice explaining why the lines stop; it is best-effort, since whatever broke the write may break it too. Thereafter the library discards every string it is given and writes nothing more, to stdout or stderr. The failed state is permanent and one notice is written, not one per discarded line, so a broken pipe does not turn a long search into a long stderr transcript.
 
 Every write is wrapped against `IOException` and `ObjectDisposedException`, the two the framework's stream writes document. A broader `catch` is not taken: an `OutOfMemoryException` or a `NullReferenceException` from this library is a defect in it rather than a stream failure, and swallowing one would hide that defect behind a notice about output.
 
 The flush performed on `Dispose` (§7) obeys the same rule. A failure there sets the failed state and writes the one notice, if no earlier failure has already written it, because the final flush is the write most likely to be the first one that fails: it is the only one that must reach the stream, and on a short search it is the only one that reaches it at all. Nothing follows it, so nothing is left to discard.
 
-The library never lets a failure reach `CSharp_TextFinder_Dirnav`, which goes on traversing, and never returns a status.
-
-A failed write does not affect the exit code, which Spec_CSharp_TextFinder_Entry.md §6 reserves for command-line and startup failures. A run whose output went nowhere still exits 0: the exit code answers whether TextFinder could do what it was asked, not whether the reader received it.
+The library never lets a failure reach `CSharp_TextFinder_Dirnav`, which goes on traversing, and never returns a status. A failed write does not affect the exit code, which Spec_CSharp_TextFinder_Entry.md §6 reserves for command-line and startup failures: a run whose output went nowhere still exits 0, the exit code answering whether TextFinder could do what it was asked rather than whether the reader received it.
 
 The `output failed` notice is written with `Console.Error.Write` and an explicit `\n`, so stderr carries LF here as it does everywhere else in this implementation.
 
@@ -90,15 +86,13 @@ The `output failed` notice is written with `Console.Error.Write` and an explicit
 
 No flush is performed per line. The stream is flushed when the sink is disposed, and `CSharp_TextFinder_Entry` reaches that disposal on every path out of `Main` by holding the sink in a `using` statement. `Flush` (§4) performs the same write on demand, for the one case that needs the buffer drained before the process ends.
 
-Disposal is the whole of the mechanism, and C# leaves no alternative. The language has no destructor that runs at scope exit, so the C++ implementation's reliance on one and the Rust implementation's on `Drop` have no counterpart: a sink that flushed from a finalizer would flush at a time the runtime chooses, and the runtime is free to run no finalizer at all before the process exits. `IDisposable` plus a `using` statement in the caller is what makes the flush deterministic, and it is the caller's `using` that carries the guarantee rather than anything this type can enforce alone. This library therefore states the requirement and Spec_CSharp_TextFinder_Entry.md §4 discharges it.
+Disposal is the whole of the mechanism, and C# leaves no alternative. The language has no destructor that runs at scope exit, so the C++ destructor and the Rust `Drop` have no counterpart: a sink that flushed from a finalizer would flush at a time the runtime chooses, and the runtime is free to run no finalizer at all before the process exits. `IDisposable` plus a `using` statement in the caller is what makes the flush deterministic, so this library states the requirement and Spec_CSharp_TextFinder_Entry.md §4 discharges it.
 
 `Dispose` is written to be safe to call twice, since a `using` statement on a sink already disposed by other means would otherwise fault. A second call flushes nothing and clears nothing.
 
 The deferral is why the process holds one sink and one only (§4). Two would wrap the same standard output stream with two independent buffers, and their contents would reach the stream in the order the buffers happened to fill rather than the order the lines were written — which would break the emission order Spec_TextFinder.md §3.4 fixes, silently and only under load.
 
-One rule keeps the deferral from reordering the output: **stdout is flushed before any write to stderr.** This library applies the rule to its own `output failed` notice (§6), and `CSharp_TextFinder_Entry` applies it to the diagnostic that follows the option listing on an invalid `/r` (Spec_CSharp_TextFinder_Entry.md §4 step 6).
-
-Because this object owns the only writer over standard output in the process, the binary's help text and option listing pass through `WriteText` rather than through a writer of their own. They therefore share this buffer and reach the stream in the order written, and the ordering rule above is the only coordination needed.
+One rule keeps the deferral from reordering the output: **stdout is flushed before any write to stderr.** This library applies the rule to its own `output failed` notice (§6), and `CSharp_TextFinder_Entry` applies it to the diagnostic that follows the option listing on an invalid `/r` (Spec_CSharp_TextFinder_Entry.md §4 step 6). Because this object owns the only writer over standard output in the process, the binary's help text and option listing pass through `WriteText`, share this buffer, and reach the stream in the order written; that rule is the only coordination needed.
 
 ## 8. Build
 
