@@ -1,0 +1,232 @@
+# Cpp_TextFinder — Demonstration Output, 2026-10-09
+
+```
+
+Cpp_TextFinder demonstration
+  date:       2026-10-09
+  executable: C:/github/JimFawcett/NewSite/Code/Projects/Spec_driven_TextFinder/Cpp_Spec_driven_TextFinder/build/Cpp_Spec_driven_TextFinder_Entry/Cpp_TextFinder.exe
+  root:       C:/github/JimFawcett/NewSite/Code/Projects/Spec_driven_TextFinder
+  extensions: "md, ixx, cpp"
+
+1. No switch at all. The command line names no work, so Cpp_TextFinder lists the
+   options a real invocation would start from and exits 0 (Spec_TextFinder.md §3.1).
+  $ Cpp_TextFinder
+
+      /P .
+      /p
+      /r .
+      /s true
+      /h true
+      /v false
+      /H false
+      /n false
+      /L false
+
+  9 line(s), exit 0
+
+2. Default expression. The default /r of . with no /n or /L needs no file content,
+   so each selected file is reported by its path line alone (Spec_TextFinder.md §3.3).
+  $ Cpp_TextFinder -P . -p "md, ixx, cpp"
+
+      Constitution.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Prompts_Fix_Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Prompts_Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline_TestDriver.cpp
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline_UnitTest.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Prompts_Fix_Spec_Cpp_TextFinder_Dirnav.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Prompts_Spec_Cpp_TextFinder_Dirnav.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Spec_Cpp_TextFinder_Dirnav.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav_TestDriver.cpp
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav_UnitTest.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/Prompts_Fix_Spec_Cpp_TextFinder_Output.md
+      ... 62 more
+      accessed 75 files, 58 directories
+
+  76 line(s), exit 0
+
+3. The two-level block of §3.4: a path written once, then an indented detail line
+   per match carrying the line number and the line's text.
+  $ Cpp_TextFinder -P . -p "md, ixx, cpp" -r "too large" -n true -L true
+
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Prompts_Fix_Spec_Cpp_TextFinder_Dirnav.md
+        73 - [Spec_TextFinder.md](../../Spec_TextFinder.md) gained: symlink and non-file/non-directory root handling in §3.2; the three admission tests in §3.3 — 10 MB, no NUL byte, valid UTF-8 — with whole-file reading justified by "skipped entirely rather than searched in part"; path rendering and a four-row announcement table in §3.4 (`searched`, `skipped`, `too large`, `cannot open`) with the `/h` gating; the dotfile rule, extension case-sensitivity, the non-empty-regex requirement, and the new `/h` meaning across the `/p`, `/r`, and `/h` rows of §5; an empty-`/r` row in §5.2; and the NUL test named in §7.
+        80 - - **`too large` and `cannot open` ignore `/h`; `searched` and `skipped` obey it.** Item 6 suppressed announcements but item 3 wanted failures visible; silencing a 10 MB skip under the default would hide requested work that did not happen.
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Spec_Cpp_TextFinder_Dirnav.md
+        108 - The file count is incremented in the one place a file is examined: immediately after the `/p` test of §6 admits it and before its size is taken. Everything §3.6 excludes is therefore excluded by construction rather than by a second test — an entry refused by `/p`, a symbolic link, an entry beneath a pruned directory, an entry whose name will not render, and an entry that is neither a regular file nor a directory all fail or bypass that test and never reach the increment, though the last two draw `cannot open` on the way past. A file admitted and then announced `too large` or `cannot open` is counted, the increment standing ahead of both.
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav.ixx
+        264 -         if (size > sizeLimit) { emit("too large " + displayPath(file)); return; }
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav_UnitTest.ixx
+        315 -     check.equal(relative(search(root / "big.txt", commands), root), "too large big.txt",
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/Prompts_Fix_Spec_Cpp_TextFinder_Output.md
+        33 - 1. Parent §3.4 contradicted itself in consecutive sentences — "under the default /h `true` no file announcement appears and the output holds match records alone," then "`too large` and `cannot open` are emitted whatever /h says." Both are file announcements.
+        58 - > 1. treat "too large" and "cannot open" as error announcements not file announcements.  Make any name changes appropriate to this new definition
+        78 - Parent §3.4 now distinguishes **file announcements** — `searched` and `skipped`, gated on `/h` — from **error announcements** — `too large` and `cannot open`, emitted whatever `/h` says — in separate tables, which retires the self-contradiction: under the default the output holds match records and error announcements. The new names propagated to the `/h` row, the §5.1 help text, Dirnav §5 rule 6 and §8, and Entry's diagnostics section. Parent §3.4 also gained the terminator rule moved out of the Output spec: a single LF for every record and announcement on every platform, with implementations obliged to stop their runtime translating it.
+      Cpp_Spec_driven_TextFinder/Demo_9-24-2026.md
+      ... 73 more
+      accessed 75 files, 58 directories
+
+  87 line(s), exit 0
+
+4. The same search with /L false, leaving the line number alone on each detail line.
+  $ Cpp_TextFinder -P . -p "md, ixx, cpp" -r "too large" -n true
+
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Prompts_Fix_Spec_Cpp_TextFinder_Dirnav.md
+        73
+        80
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Spec_Cpp_TextFinder_Dirnav.md
+        108
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav.ixx
+        264
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav_UnitTest.ixx
+        315
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/Prompts_Fix_Spec_Cpp_TextFinder_Output.md
+        33
+        58
+        78
+      Cpp_Spec_driven_TextFinder/Demo_9-24-2026.md
+      ... 73 more
+      accessed 75 files, 58 directories
+
+  87 line(s), exit 0
+
+5. Which documents cite the parent specification. Neither /n nor /L, so every block
+   is its path line and no path is written twice.
+  $ Cpp_TextFinder -P . -p "md, ixx, cpp" -r "Spec_TextFinder\.md"
+
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Prompts_Fix_Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Prompts_Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline_UnitTest.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Prompts_Fix_Spec_Cpp_TextFinder_Dirnav.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Prompts_Spec_Cpp_TextFinder_Dirnav.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/Spec_Cpp_TextFinder_Dirnav.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Dirnav/src/Cpp_TextFinder_Dirnav_UnitTest.ixx
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/Prompts_Fix_Spec_Cpp_TextFinder_Output.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/Prompts_Spec_Cpp_TextFinder_Output.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/Spec_Cpp_TextFinder_Output.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/src/Cpp_TextFinder_Output.ixx
+      ... 46 more
+      accessed 75 files, 58 directories
+
+  60 line(s), exit 0
+
+6. The same search one level deep, /s false entering no subdirectory.
+  $ Cpp_TextFinder -P . -p "md, ixx, cpp" -r "Spec_TextFinder\.md" -s false
+
+      Important_Notes.md
+      Page_Structure.md
+      Project_Tree.md
+      Prompts_Fix_Constitution.md
+      Prompts_Fix_Specifications_2.md
+      Prompts_Fix_Spec_TextFinder.md
+      Prompts_Page_Structure.md
+      Prompts_Spec_TextFinder.md
+      README.md
+      render_markdown_skill.md
+      Text_Tone.md
+      accessed 17 files, 1 directories
+
+  12 line(s), exit 0
+
+7. /h false adds a line for each file that matched nothing - the files case 5 left
+   silent - alongside the resolved option set from /v true.
+  $ Cpp_TextFinder -P . -p "md, ixx, cpp" -r "Spec_TextFinder\.md" -h false -v true
+
+      /P .
+      /p md, ixx, cpp
+      /r Spec_TextFinder\.md
+      /s true
+      /h false
+      /v true
+      /H false
+      /n false
+      /L false
+      searched Constitution.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Prompts_Fix_Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Prompts_Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/Spec_Cpp_TextFinder_Cmdline.md
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline.ixx
+      ... 71 more
+      accessed 75 files, 58 directories
+
+  85 line(s), exit 0
+
+8. Two roots, traversed in the order /P gave them. Each path begins with the root
+   whose subtree holds it, and the skip list prunes build/ beneath both.
+  $ Cpp_TextFinder -P Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline -P Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output -p "ixx, cpp" -r "^export " -n true -L true
+
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline.ixx
+        3 - export module Cpp_TextFinder_Cmdline;
+        9 - export struct ProgramCommands {
+        21 - export std::expected<ProgramCommands, std::string> parse(int argc, char* argv[]);
+        22 - export std::string usageLine();
+        23 - export std::string helpText();
+        24 - export std::string optionsText(const ProgramCommands& commands);
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Cmdline/src/Cpp_TextFinder_Cmdline_UnitTest.ixx
+        3 - export module Cpp_TextFinder_Cmdline_UnitTest;
+        8 - export int runCmdlineUnitTests(std::ostream& log);
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/src/Cpp_TextFinder_Output.ixx
+        10 - export module Cpp_TextFinder_Output;
+        15 - export class Cpp_TextFinder_Output : public Output {
+      Cpp_Spec_driven_TextFinder/Cpp_Spec_driven_Output/src/Cpp_TextFinder_Output_UnitTest.ixx
+      ... 3 more
+      accessed 6 files, 4 directories
+
+  17 line(s), exit 0
+
+9. A root path that cannot be opened is announced and the run still exits 0, while
+   an error announcement ignores /h true.
+  $ Cpp_TextFinder -P no_such_directory -P Cpp_Spec_driven_TextFinder/Cpp_TextFinder_Structure.md -r import
+
+      cannot open no_such_directory
+      Cpp_Spec_driven_TextFinder/Cpp_TextFinder_Structure.md
+      accessed 1 files, 0 directories
+
+  3 line(s), exit 0
+
+10. A malformed expression. §5.2 puts the option listing on stdout first, so the /r
+    line shows what failed, then the diagnostic on stderr, and the exit code is 1.
+  $ Cpp_TextFinder -P . -p "md, ixx, cpp" -r "export("
+
+      /P .
+      /p md, ixx, cpp
+      /r export(
+      /s true
+      /h true
+      /v false
+      /H false
+      /n false
+      /L false
+      [stderr] invalid regex for switch: /r
+      [stderr] usage: Cpp_TextFinder [/P path] [/p "ext, ext"] [/r regex] [/s bool] [/h bool] [/v bool] [/H bool] [/n bool] [/L bool]
+
+  9 line(s), exit 1
+
+11. The help text of §5.1, written to stdout under /H, traversing nothing.
+  $ Cpp_TextFinder /H true
+
+      usage: Cpp_TextFinder [/P path] [/p "ext, ext"] [/r regex] [/s bool] [/h bool] [/v bool] [/H bool] [/n bool] [/L bool]
+      
+        /P  path (.)             root path for traversal; repeat to add more root paths
+        /p  "ext, ext" ()        comma-separated bare extensions to search; empty searches every file
+        /r  regex (.)            regular expression evaluated against each line
+        /s  true|false (true)    recurse into subdirectories
+        /h  true|false (true)    hide files that matched nothing; errors always appear
+        /v  true|false (false)   list the resolved option set before traversal
+        /H  true|false (false)   print this help and exit
+        /n  true|false (false)   add a detail line per match, carrying the line number
+        /L  true|false (false)   add a detail line per match, carrying the line text
+      
+      A matching file prints its path on one line; /n and /L add indented detail
+      lines beneath it. A path is never printed twice. A search ends with a line
+      ... 8 more
+
+  22 line(s), exit 0
+
+demonstration complete
+```
