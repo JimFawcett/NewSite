@@ -78,6 +78,11 @@
       opacity: 0.4;
       cursor: not-allowed;
     }
+    #sections-wrap #sections-dropdown,
+    #pages-wrap #pages-dropdown {
+      top: 100%;          /* no dead gap: the pointer stays inside the wrap on its way down */
+      padding-top: 0.7em;
+    }
   </style>
 </head>
 <body>
@@ -105,9 +110,12 @@
     <a href="../Learn/Learn_intro.html">Other Tutorials</a>
     <a href="../Site/Explore.html?src=SiteHome.html">Site Home</a>
   </div>
+  <div id="lang-nav">
+    <a id="fs-btn" href="#">Full Screen</a>
+  </div>
 </nav>
 
-<main>
+<main id="content">
 
   <section>
     <h2 id="analogy">1. Human vs LLM Analogy</h2>
@@ -117,7 +125,7 @@
     </t-b>
     <tm-b>
       Training human brains lasts over a life-time.  Training LLM models is an enormously expensive 
-      one time process.  The models cannot be used until that is complete:
+      <strong>one time process</strong>.  The models cannot be used until that is complete:
       <a href="https://www.nytimes.com/interactive/2026/10/15/upshot/ai-data-center-math.html?campaign_id=29&amp;emc=edit_up_20261015&amp;instance_id=183592&amp;nl=the-upshot&amp;regi_id=130594082&amp;segment_id=228155&amp;user_id=22b9d514f9f409c2aecfcf88a749951b">What Are Data Centers Doing? A Mind-Boggling Amount of Math. - The New York Times</a>
     </tm-b>
     <tm-b>
@@ -154,6 +162,7 @@
     const sectionsBtn = document.getElementById('sections-btn');
     const sectionsDropdown = document.getElementById('sections-dropdown');
     { const a = document.createElement('a'); a.href = '#'; a.textContent = 'Top'; sectionsDropdown.appendChild(a); }
+    { const a = document.createElement('a'); a.href = '#content'; a.textContent = 'Content'; sectionsDropdown.appendChild(a); }
     document.querySelectorAll('main h2').forEach(h2 => {
       if (!h2.id) {
         h2.id = h2.textContent.trim().toLowerCase()
@@ -186,6 +195,18 @@
       e.stopPropagation();
     });
     pagesDropdown.addEventListener('mouseleave', () => pagesDropdown.classList.remove('open'));
+    const sectionsWrap = document.getElementById('sections-wrap');
+    const pagesWrap = document.getElementById('pages-wrap');
+    sectionsWrap.addEventListener('mouseenter', () => {
+      pagesDropdown.classList.remove('open');
+      sectionsDropdown.classList.add('open');
+    });
+    sectionsWrap.addEventListener('mouseleave', () => sectionsDropdown.classList.remove('open'));
+    pagesWrap.addEventListener('mouseenter', () => {
+      sectionsDropdown.classList.remove('open');
+      pagesDropdown.classList.add('open');
+    });
+    pagesWrap.addEventListener('mouseleave', () => pagesDropdown.classList.remove('open'));
 
     const cur = location.href.split('/').pop().split('?')[0];
     const idx = presentationPages.findIndex(p => p.url === cur);
@@ -202,6 +223,16 @@
     [prevBtn, nextBtn].forEach(b => b.addEventListener('click', e => {
       if (b.classList.contains('disabled')) e.preventDefault();
     }));
+
+    const fsBtn = document.getElementById('fs-btn');
+    fsBtn.addEventListener('click', e => {
+      e.preventDefault();
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    });
+    document.addEventListener('fullscreenchange', () => {
+      fsBtn.textContent = document.fullscreenElement ? 'Exit Full Screen' : 'Full Screen';
+    });
   </script>
 </body>
 </html>
