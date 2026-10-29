@@ -10,5 +10,6 @@ const presentationPages = [
   { name: 'LLM AI Deficits', url: 'LLM_AI_Deficits.html' },
   { name: 'Data Centers',    url: 'Data_Centers.html' },
   { name: 'Economics',       url: 'Economics.html' },
-  { name: 'How does AI work', url: 'How_Does_AI_Work.html' }
+  { name: 'How does AI work', url: 'How_Does_AI_Work.html' },
+  { name: 'The End',         url: 'The_End.html' }
 ];
