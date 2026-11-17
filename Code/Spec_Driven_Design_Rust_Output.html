@@ -188,7 +188,7 @@ impl Drop for StdoutSink {
 <p><code>new</code> takes no arguments and yields <code>Some</code> the first time it is called and <code>None</code> every time after, so that the process holds one sink and one only. §7 records why a second would corrupt the output. The flag lives in a <code>thread_local!</code> <code>Cell</code> for the reason Spec_Rust_TextFinder_Entry.md §5 gives for the skip list: interior mutability without <code>unsafe</code> and without a synchronization primitive, on a value only one thread reaches. <code>Drop</code> clears the flag, so a sink dropped before another is created releases the right to make one.</p>
 <p><code>None</code> is the only way construction fails. <code>rust_textfinder_entry</code> builds exactly one sink, so its own code cannot provoke it; it handles the case all the same, per Spec_Rust_TextFinder_Entry.md §4 step 3, because a constructor with a failure mode that callers ignore is a constructor whose failure mode will eventually be reached. <code>Default</code> is not implemented: <code>Default::default</code> must return <code>Self</code>, and this type cannot promise one.</p>
 <p><code>flush</code> writes the buffer through to stdout. <code>rust_textfinder_entry</code> calls it at §4 step 8, where a diagnostic on stderr must follow text already written to stdout; nothing else needs it, since §7 flushes on <code>Drop</code>.</p>
-<p>The type takes no configuration. <code>rust_textfinder_dirnav</code> formats every line in full before emitting it — a block's path line, a block's indented detail lines, and every announcement alike — so there is nothing left here to parameterize.</p>
+<p>The type takes no configuration. <code>rust_textfinder_dirnav</code> formats every line in full before emitting it, so there is nothing left here to parameterize.</p>
 <p>Three methods write, and the first two differ only in what they add:</p>
 <ul>
 <li><code>output</code>, the trait method, writes the string it is given followed by the single LF Spec_TextFinder.md §3.4 fixes. It is the method <code>rust_textfinder_dirnav</code> reaches, and the trait is the only thing that library knows about this one.</li>
@@ -201,17 +201,14 @@ impl Drop for StdoutSink {
 <p>One failure mode remains, and it is about this library rather than about the stream: a second <code>StdoutSink</code> while one already exists (§4). That is the failure Spec_TextFinder.md §3.4's exit code 2 names, so the code has a path in this implementation after all, and Spec_Rust_TextFinder_Entry.md §6 records the two ways it is reached.</p>
 <p><code>output</code> adds the terminator and nothing else — no prefix, no separator, no trailing content — because the string arrives fully formatted.</p>
 <h3>6. Error Handling</h3>
-<p>A write that fails — a closed pipe, a full disk — sets an internal failed state. On the first such failure the library flushes stdout and then writes the single line <code>output failed</code> to stderr. The flush comes first so that every line already buffered reaches the stream ahead of the notice explaining why the lines stop; it is best-effort, since whatever broke the write may break it too. Thereafter the library discards every string it is given and writes nothing more, to stdout or stderr.</p>
-<p>The failed state is permanent and one notice is written, not one per discarded line, so a broken pipe does not turn a long search into a long stderr transcript.</p>
+<p>A write that fails — a closed pipe, a full disk — sets an internal failed state. On the first such failure the library flushes stdout and then writes the single line <code>output failed</code> to stderr. The flush comes first so that every line already buffered reaches the stream ahead of the notice explaining why the lines stop; it is best-effort, since whatever broke the write may break it too. Thereafter the library discards every string it is given and writes nothing more, to stdout or stderr. The failed state is permanent and one notice is written, not one per discarded line, so a broken pipe does not turn a long search into a long stderr transcript.</p>
 <p>The flush performed when the value is dropped (§7) obeys the same rule. A failure there sets the failed state and writes the one notice, if no earlier failure has already written it, because the final flush is the write most likely to be the first one that fails: it is the only one that must reach the stream, and on a short search it is the only one that reaches it at all. Nothing follows it, so nothing is left to discard.</p>
-<p>All three methods swallow the <code>io::Result</code> their writes return. The library never panics, never returns a status, and never lets the failure reach <code>rust_textfinder_dirnav</code>, which goes on traversing. <code>unwrap</code> and <code>expect</code> appear nowhere in it.</p>
-<p>A failed write does not affect the exit code, which Spec_Rust_TextFinder_Entry.md §6 reserves for command-line failures. A run whose output went nowhere still exits 0: the exit code answers whether TextFinder could do what it was asked, not whether the reader received it.</p>
+<p>All three methods swallow the <code>io::Result</code> their writes return. The library never panics, never returns a status, and never lets the failure reach <code>rust_textfinder_dirnav</code>, which goes on traversing; <code>unwrap</code> and <code>expect</code> appear nowhere in it. A failed write does not affect the exit code, which Spec_Rust_TextFinder_Entry.md §6 reserves for command-line failures: a run whose output went nowhere still exits 0, the exit code answering whether TextFinder could do what it was asked rather than whether the reader received it.</p>
 <h3>7. Buffering and Flushing</h3>
 <p><code>std::io::stdout</code> returns a handle that flushes on every newline, and every line this library writes ends in one, so writing through it directly would flush once per emitted line and that cost would dominate a search that emits many. The sink therefore holds a <code>std::io::BufWriter</code> wrapping that handle, which defers the write until its buffer fills.</p>
 <p>No flush is performed per line. The stream is flushed when the value is dropped, and <code>rust_textfinder_entry</code> reaches that drop on every path out of the program, since each of its exits returns from <code>main</code> rather than calling <code>std::process::exit</code> (Spec_Rust_TextFinder_Entry.md §4). <code>Drop</code> is implemented explicitly rather than left to <code>BufWriter</code>'s own, which discards a failing flush without notice; §6 fixes what this one does with it instead. <code>flush</code> (§4) performs the same write on demand, for the one case that needs the buffer drained before the process ends.</p>
 <p>This buffer is why the process holds one sink and one only (§4). Two would wrap the same stdout with two independent buffers, and their contents would reach the stream in the order the buffers happened to fill rather than the order the lines were written — which would break the emission order Spec_TextFinder.md §3.4 fixes, silently and only under load.</p>
-<p>One rule keeps the deferral from reordering the output: <strong>stdout is flushed before any write to stderr.</strong> This library applies the rule to its own <code>output failed</code> notice (§6), and <code>rust_textfinder_entry</code> applies it to the diagnostic that follows the option listing on an invalid <code>/r</code> (Spec_Rust_TextFinder_Entry.md §4 step 8).</p>
-<p>Because this value owns the only stdout handle in the process, the binary's help text and option listing pass through <code>write_text</code> rather than through a handle of their own. They therefore share this buffer and reach the stream in the order written, and the ordering rule above is the only coordination needed.</p>
+<p>One rule keeps the deferral from reordering the output: <strong>stdout is flushed before any write to stderr.</strong> This library applies the rule to its own <code>output failed</code> notice (§6), and <code>rust_textfinder_entry</code> applies it to the diagnostic that follows the option listing on an invalid <code>/r</code> (Spec_Rust_TextFinder_Entry.md §4 step 8). Because this value owns the only stdout handle in the process, the binary's help text and option listing pass through <code>write_text</code>, share this buffer, and reach the stream in the order written; that rule is the only coordination needed.</p>
 <h3>8. Build</h3>
 <p>Per <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_TextFinder_Structure.md" target="_blank">Rust_TextFinder_Structure.md</a>:</p>
 <ul>
@@ -224,6 +221,30 @@ impl Drop for StdoutSink {
 <li>The library does not read files, paths, or the command line.</li>
 <li>The library does not write usage diagnostics; those go to stderr from <code>rust_textfinder_entry</code>.</li>
 </ul>
+</div>
+        </details>
+      </indent-blocks>
+
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Page_Tree_Rust_Output.md</summary>
+<div class="mdview">
+<h2>Page Tree — Spec-Driven Rust: Output</h2>
+<p><code>Spec_Driven_Design_Rust_Output.html</code> cites 7 files. The tree below places each one under <code>Spec_driven_TextFinder/</code>, the highest directory holding a cited file. A directory holding none of them does not appear.</p>
+<pre><code class="language-text">Spec_driven_TextFinder/
+├── Page_Structure.md
+├── Spec_TextFinder.md
+└── Rust_Spec_driven_TextFinder/
+    ├── Rust_TextFinder_Structure.md
+    ├── Rust_Spec_driven_Dirnav/
+    │   └── Spec_Rust_TextFinder_Dirnav.md
+    ├── Rust_Spec_driven_Output/
+    │   ├── Spec_Rust_TextFinder_Output.md
+    │   └── src/
+    │       └── lib.rs
+    └── Rust_Spec_driven_TextFinder_Entry/
+        └── Spec_Rust_TextFinder_Entry.md
+</code></pre>
 </div>
         </details>
       </indent-blocks>

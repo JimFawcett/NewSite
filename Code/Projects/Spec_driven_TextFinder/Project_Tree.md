@@ -14,6 +14,7 @@ Spec_driven_TextFinder/
 ├── Text_Tone.md
 ├── Prompts_Text_Tone.md
 ├── Prompts_Pages.md
+├── Page_Tree_*.md
 ├── Project_Tree.md
 ├── README.md
 ├── archive/
@@ -232,6 +233,7 @@ Build output and editor settings are omitted: `build/`, `target/`, `bin/`, `obj/
 - `Important_Notes.md` — open questions and deferred decisions: a case no document settles, a rule one implementation has outrun, or a change landed in `Spec_TextFinder.md` and not yet in every implementation. Not a specification, and nothing in it authorizes code
 - `Fixture/` — the shared conformance artifact of Spec_TextFinder.md §6.2: one tree, one list of command lines, and the stdout and exit code each must produce. Captured output, not a source; Constitution.md rule 1 admits no code derived from it. `.gitattributes` sets `* -text` so git never normalizes the CRLF and bare-CR files
 - `README.md` — what TextFinder is, for a reader arriving at the folder
+- `Page_Tree_*.md` — one per page of §6 of Page_Structure.md, 42 in all, named for the page it belongs to. Each names every file its page cites and places it in the tree; a directory holding no cited file does not appear. The page renders its own in a `<details>` block ahead of its Section 1, so the file is the source and the block is the view
 - `Project_Tree.md` — this document
 - `archive/` — superseded documents, kept for reference; not enumerated here, and pruned by the skip list
 

@@ -196,7 +196,7 @@ pub fn usage_line() -&gt; String;
 pub fn help_text() -&gt; String;
 pub fn options_text(commands: &amp;ProgramCommands) -&gt; String;
 </code></pre>
-<p>The field comments are the switch-to-field mapping, and the <code>Default</code> implementation is the sole authority in code for the defaults of Spec_TextFinder.md §5; <code>ProgramCommands::default()</code> equals the result of parsing an empty command line. Spec_TextFinder.md §5 remains the authority overall, and a disagreement between the two is a defect in this crate.</p>
+<p>The field comments are the switch-to-field mapping, and the <code>Default</code> implementation is the sole authority in code for the defaults of Spec_TextFinder.md §5; <code>ProgramCommands::default()</code> equals the result of parsing an empty command line, and a disagreement between the two is a defect in this crate.</p>
 <p><code>ProgramCommands</code> derives <code>Clone</code> and <code>Debug</code> and has no invariants: every field combination the parser can produce is valid. <code>Dirnav</code> borrows the value <code>rust_textfinder_entry</code> owns rather than cloning it, so that value must outlive the <code>Dirnav</code> it was passed to, which the borrow checker enforces rather than leaving to convention.</p>
 <p><code>parse</code> returns the resolved commands on success and a usage diagnostic (§6) on failure; it writes nothing. <code>regex_text</code> is the <code>/r</code> argument verbatim — compilation happens at <code>Dirnav</code> construction, per Spec_Rust_TextFinder_Entry.md §4 step 8.</p>
 <h3>5. Parsing Rules</h3>
@@ -210,54 +210,19 @@ pub fn options_text(commands: &amp;ProgramCommands) -&gt; String;
 </ol>
 <h3>6. Error Conditions</h3>
 <p>Every violation in §5 is a usage error. <code>parse</code> returns a usage diagnostic in the shape Spec_TextFinder.md §5.2 binds — a reason line, a newline, then <code>usage_line()</code>. <code>rust_textfinder_entry</code> writes the returned string to stderr unaltered and exits with code <code>1</code> (Spec_Rust_TextFinder_Entry.md §4 step 2).</p>
-<p>Spec_TextFinder.md §2 leaves the wording of stderr text to each language, and §5.2 supplies reason lines without binding them. This implementation adopts §5.2's six parse-time reason lines unchanged, and this section is where they are fixed for Rust:</p>
-<table>
-<thead>
-<tr>
-<th>Condition</th>
-<th>Reason line</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Token in switch position has no <code>/</code> or <code>-</code> introducer</td>
-<td><code>not a switch: &lt;token&gt;</code></td>
-</tr>
-<tr>
-<td>Introducer-led token that is not a switch defined in §5</td>
-<td><code>unrecognized switch: &lt;token&gt;</code></td>
-</tr>
-<tr>
-<td>Switch is the last token, with no argument token following</td>
-<td><code>missing argument for switch: &lt;switch&gt;</code></td>
-</tr>
-<tr>
-<td>Boolean switch given a value other than <code>true</code> or <code>false</code></td>
-<td><code>invalid boolean for &lt;switch&gt;: &lt;token&gt;</code></td>
-</tr>
-<tr>
-<td><code>/P</code> given an empty argument</td>
-<td><code>empty root path for switch: &lt;switch&gt;</code></td>
-</tr>
-<tr>
-<td><code>/r</code> given an empty argument</td>
-<td><code>empty expression for switch: &lt;switch&gt;</code></td>
-</tr>
-</tbody>
-</table>
-<p><code>&lt;token&gt;</code> is the offending token and <code>&lt;switch&gt;</code> the switch, each reproduced exactly as typed, preserving the introducer. Adopting §5.2's wording rather than rewriting it costs nothing and leaves this implementation's stderr comparable with the C++ one, which Spec_TextFinder.md §6 no longer requires but does not forbid.</p>
+<p>Spec_TextFinder.md §2 leaves the wording of stderr text to each language, and §5.2 supplies reason lines without binding them. This implementation adopts §5.2's six parse-time reason lines verbatim, and that adoption is what fixes them for Rust: the table in §5.2 is this library's own wording, and a suite compares against it on that basis. <code>&lt;token&gt;</code> is the offending token and <code>&lt;switch&gt;</code> the switch, each reproduced exactly as typed, preserving the introducer.</p>
 <p>The seventh condition of §5.2, a malformed <code>/r</code>, is detected later: <code>Dirnav::new</code> compiles the expression and returns its failure, and <code>rust_textfinder_entry</code> composes that diagnostic, drawing its usage line from <code>usage_line()</code> below (§8). Spec_Rust_TextFinder_Entry.md §6 fixes its reason line, since the binary is what writes it. Neither this library nor <code>rust_textfinder_dirnav</code> composes it — the one supplies a string, the other reports the failure, and the binary joins them.</p>
 <p>There is no error condition for a duplicated switch or an empty <code>/p</code> list: duplicates resolve by §5 rule 4, and an empty extension list means every file is searched.</p>
 <h3>7. Extension-List Normalization</h3>
 <p>The <code>/p</code> argument arrives as one token; the shell has already removed the quotes. Normalization implements the <code>/p</code> rules of Spec_TextFinder.md §5: split the token on commas, trim each item, strip one leading <code>.</code> if present, trim it a second time, discard empty items, and preserve the order of the survivors. <code>strip_prefix('.')</code> removes the dot, and one call removes at most one.</p>
-<p>The second trim is not redundant, and §5 requires it for a reason that shows only when the dot and the whitespace are separated. <code>&quot;. cpp&quot;</code> survives the first trim unchanged, the dot being the first character, and the strip then exposes the space: one trim alone yields <code>&quot; cpp&quot;</code>, an extension no file can carry, and one that puts a second space into the §5.3 listing line, which §5.3 otherwise keeps free of stray whitespace. Both trims test the same six characters. An item reduced to nothing by either trim is discarded, so the empties test comes last.</p>
+<p>The second trim is not redundant; Spec_TextFinder.md §5 gives the reason and the worked example, and this library chooses neither. An item reduced to nothing by either trim is discarded, so the empties test comes last.</p>
 <p>Spec_TextFinder.md §5 fixes which characters are trimmed, naming six of them, so this document chooses none of them and no two implementations can trim a different set.</p>
 <p><code>str::trim</code> does not implement that rule and is not used: it trims every character Unicode calls whitespace, a set that includes no-break space and the en and em spaces, and this implementation would then accept an extension list another rejects. <code>char::is_ascii_whitespace</code> does not implement it either — it omits vertical tab, which §5 names. The test is against the six characters §5 lists and nothing else.</p>
 <p>Duplicates are retained — they are harmless to the membership test <code>rust_textfinder_dirnav</code> performs. Case folding is not applied here; the platform-dependent comparison fixed by Spec_TextFinder.md §5 is performed by <code>rust_textfinder_dirnav</code> when it matches a file name against the list.</p>
 <h3>8. Help Text and Option Listing</h3>
 <p><code>help_text</code> returns the text fixed by Spec_TextFinder.md §5.1 with <code>&lt;executable&gt;</code> replaced by <code>rust_textfinder</code>. <code>usage_line</code> returns its first line — the line that terminates every usage diagnostic (§6), exported so that <code>rust_textfinder_entry</code> can compose the malformed-regex diagnostic. <code>help_text</code> is built from <code>usage_line</code>, so the synopsis has one definition.</p>
-<p><code>options_text</code> returns the resolved option set, in the form Spec_TextFinder.md §5.3 fixes: one key/value pair per line, in §5 table order, <code>&lt;switch&gt; &lt;value&gt;</code> with a single separating space, one <code>/P</code> line per root path, the <code>/p</code> list joined by <code>, </code> and emitting <code>/p</code> alone when empty, <code>/r</code> verbatim, and booleans in lower case. §5.3 gives the nine lines a bare <code>-v true</code> produces, and this function reproduces them. It chooses none of that form and must not be read as the place the form is decided.</p>
-<p>One function serves all three cases §5.3 calls for, since the text is the same in each and only the caller's next move differs: <code>/v true</code>, after which traversal follows; the bare command line of §3.1, after which the process exits 0; and the invalid-regex diagnostic of §5.2, where the listing precedes that diagnostic on stdout whatever <code>/v</code> says and the process then exits 1. The listing reflects whatever <code>commands</code> holds, so its <code>/v</code> line reads <code>false</code> in the latter two unless <code>/v</code> was itself typed.</p>
+<p><code>options_text</code> returns the resolved option set in the form Spec_TextFinder.md §5.3 fixes, reproducing the nine lines §5.3 gives for a bare <code>-v true</code>. It chooses none of that form and must not be read as the place the form is decided.</p>
+<p>One function serves all three cases §5.3 calls for, the text being the same in each and only the caller's next move differing. The listing reflects whatever <code>commands</code> holds, so its <code>/v</code> line reads <code>false</code> in the two cases <code>/v</code> did not itself ask for.</p>
 <p>All three functions end their returned string with a newline; none writes to a stream.</p>
 <h3>9. Build</h3>
 <p>Per <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Rust_Spec_driven_TextFinder/Rust_TextFinder_Structure.md" target="_blank">Rust_TextFinder_Structure.md</a>:</p>
@@ -271,6 +236,28 @@ pub fn options_text(commands: &amp;ProgramCommands) -&gt; String;
 <li>The library does not access the filesystem or verify that a root path exists.</li>
 <li>The library does not collect the program's arguments and does not decide what an undecodable argument means; the binary settles both before calling <code>parse</code>.</li>
 </ul>
+</div>
+        </details>
+      </indent-blocks>
+
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Page_Tree_Rust_Cmdline.md</summary>
+<div class="mdview">
+<h2>Page Tree — Spec-Driven Rust: Cmdline</h2>
+<p><code>Spec_Driven_Design_Rust_Cmdline.html</code> cites 6 files. The tree below places each one under <code>Spec_driven_TextFinder/</code>, the highest directory holding a cited file. A directory holding none of them does not appear.</p>
+<pre><code class="language-text">Spec_driven_TextFinder/
+├── Page_Structure.md
+├── Spec_TextFinder.md
+└── Rust_Spec_driven_TextFinder/
+    ├── Rust_TextFinder_Structure.md
+    ├── Rust_Spec_driven_Cmdline/
+    │   ├── Spec_Rust_TextFinder_Cmdline.md
+    │   └── src/
+    │       └── lib.rs
+    └── Rust_Spec_driven_TextFinder_Entry/
+        └── Spec_Rust_TextFinder_Entry.md
+</code></pre>
 </div>
         </details>
       </indent-blocks>

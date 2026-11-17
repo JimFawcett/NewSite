@@ -171,18 +171,18 @@
 <ol>
 <li>
 <p>Invoke <code>CommandLine.TryParse(args, out commands, out diagnostic)</code>. On <code>false</code>, write the returned diagnostic to stderr unaltered with <code>Console.Error.Write</code> and return 1. A malformed <code>/r</code> is not detected here; step 6 reaches it.</p>
-<p>There is no argument-decoding step before this one. The runtime decodes the command line and hands <code>Main</code> a <code>string[]</code>, so the argument collection and decode that the Rust implementation performs, and the exit code it reserves for a failure there, have no counterpart. §8 records that as a stated property rather than an omission.</p>
+<p>There is no argument-decoding step before this one: the runtime decodes the command line and hands <code>Main</code> a <code>string[]</code>, so the collection and decode the Rust implementation performs have no counterpart here, and §8 records that as a stated property rather than an omission.</p>
 </li>
 <li>
 <p>Construct the <code>StdoutSink</code>. On <code>InvalidOperationException</code> or <code>IOException</code> (Spec_CSharp_TextFinder_Output.md §4), write <code>cannot initialize output</code> to stderr and return 2 — the code Spec_TextFinder.md §3.4 fixes for a failure that is not about the command line. Every later write to stdout passes through this object, so it is constructed before any of them.</p>
-<p>The construction sits in a <code>try</code> block and the sink is then held by a <code>using</code> statement covering the rest of <code>Main</code>. A <code>using</code> declaration on the constructor call would put the construction inside the block it introduces, where a <code>catch</code> cannot reach it; splitting the two is what lets the failure be handled and the disposal still be guaranteed. This is the C# counterpart of the <code>std::optional</code> the C++ implementation uses for the same reason.</p>
+<p>The construction sits in a <code>try</code> block and the sink is then held by a <code>using</code> statement covering the rest of <code>Main</code>. A <code>using</code> declaration on the constructor call would put the construction inside the block it introduces, where a <code>catch</code> cannot reach it; splitting the two is what lets the failure be handled and the disposal still be guaranteed.</p>
 </li>
 <li>
 <p>If the parsed commands indicate <code>/H true</code>, write <code>HelpText()</code> through the sink with <code>WriteText</code>, return 0, and do not proceed.</p>
 </li>
 <li>
 <p>If <code>args</code> is empty, write <code>OptionsText(commands)</code> through the sink, return 0, and do not proceed. This is the bare command line of Spec_TextFinder.md §3.1, and it succeeds: nothing was asked for and nothing failed. <code>commands</code> here is a newly constructed <code>ProgramCommands</code>, so the listing names every default and its <code>/v</code> line reads <code>false</code>, per Spec_TextFinder.md §5.3.</p>
-<p>The test is <code>args.Length == 0</code> and not <code>args.Length == 1</code>. <code>Main</code>'s array holds the arguments alone, so an empty array is the bare command line; the C++ implementation tests <code>argc == 1</code> and the Rust implementation tests a length of 1 because their vectors carry the executable name. The binary reads the array's length for this test and nothing else; it inspects no element of it.</p>
+<p>The test is <code>args.Length == 0</code> and not <code>args.Length == 1</code>, since <code>Main</code>'s array holds the arguments alone where the C++ and Rust vectors carry the executable name. The binary reads the array's length for this test and nothing else; it inspects no element of it.</p>
 </li>
 <li>
 <p>If <code>/v true</code>, write <code>OptionsText(commands)</code> through the sink, in the form Spec_TextFinder.md §5.3 fixes, before traversal begins. Steps 4 and 5 are mutually exclusive: a command line bearing <code>/v</code> is not empty.</p>
@@ -219,7 +219,7 @@
 
 private static void AddSkipDirectory(string name);
 </code></pre>
-<p><code>AddSkipDirectory</code> takes the name alone, as §3.5 writes it, and returns <code>void</code>. §3.5 fixes the shape and leaves the spelling to each language, so the name is PascalCase here where §3.5 writes <code>addSkipDirectory</code>. A <code>List&lt;string&gt;</code> needs no interior-mutability type and no synchronization primitive to be extended from a static method, so the <code>RefCell</code> and <code>thread_local!</code> pair the Rust implementation requires has no counterpart: the list is built before traversal begins and traversal runs on one thread.</p>
+<p><code>AddSkipDirectory</code> takes the name alone, as §3.5 writes it, and returns <code>void</code>. §3.5 fixes the shape and leaves the spelling to each language, so the name is PascalCase here where §3.5 writes <code>addSkipDirectory</code>. A <code>List&lt;string&gt;</code> needs no interior-mutability type and no synchronization primitive to be extended from a static method: the list is built before traversal begins and traversal runs on one thread.</p>
 <p>Neither member is <code>public</code>, and both are declared in the binary's own class, so no library and no test can call them; the calls that extend the list are written into the binary's source and compiled with it. <code>AddSkipDirectory</code> ignores a name the list already holds, comparing with the same platform rule <code>CSharp_TextFinder_Dirnav</code> applies to a skip-list entry, so a build that adds <code>Build</code> on Windows does not lengthen a list that already holds <code>build</code>.</p>
 <p>The list is handed to the <code>Dirnav</code> at step 6 as an <code>IReadOnlyList&lt;string&gt;</code>, which that library consults but cannot modify through. Nothing extends the list once traversal has begun, and the binary reads no configuration file.</p>
 <h3>6. Exit Codes and Diagnostics</h3>
@@ -242,9 +242,35 @@ private static void AddSkipDirectory(string name);
 <h3>8. Non-Goals</h3>
 <ul>
 <li>The binary does not maintain per-file state.</li>
-<li>The binary places no encoding limit on its arguments. A <code>string</code> is UTF-16 and the runtime decodes the command line before <code>Main</code> runs, so every command line the shell can express reaches the parser. Spec_TextFinder.md §4 leaves the argument type and its encoding to this document, and this is the fact that follows for C#: the undecodable-argument case the Rust implementation defines cannot arise here, and this implementation accepts root paths and expressions the C++ implementation cannot carry through its narrow <code>argv</code>.</li>
+<li>The binary places no encoding limit on its arguments. A <code>string</code> is UTF-16 and the runtime decodes the command line before <code>Main</code> runs, so every command line the shell can express reaches the parser. Spec_TextFinder.md §4 leaves the argument type and its encoding to this document, and this is the fact that follows for C#: no argument is undecodable, and this implementation accepts root paths and expressions the C++ narrow <code>argv</code> cannot carry.</li>
 <li>The binary does not read a configuration file, and offers no runtime means of extending the skip list (§5).</li>
 </ul>
+</div>
+        </details>
+      </indent-blocks>
+
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Page_Tree_CSharp_Entry.md</summary>
+<div class="mdview">
+<h2>Page Tree — Spec-Driven C#: Entry</h2>
+<p><code>Spec_Driven_Design_CSharp_Entry.html</code> cites 8 files. The tree below places each one under <code>Spec_driven_TextFinder/</code>, the highest directory holding a cited file. A directory holding none of them does not appear.</p>
+<pre><code class="language-text">Spec_driven_TextFinder/
+├── Page_Structure.md
+├── Spec_TextFinder.md
+└── CSharp_Spec_driven_TextFinder/
+    ├── CSharp_TextFinder_Structure.md
+    ├── CSharp_Spec_driven_Cmdline/
+    │   └── Spec_CSharp_TextFinder_Cmdline.md
+    ├── CSharp_Spec_driven_Dirnav/
+    │   └── Spec_CSharp_TextFinder_Dirnav.md
+    ├── CSharp_Spec_driven_Output/
+    │   └── Spec_CSharp_TextFinder_Output.md
+    └── CSharp_Spec_driven_TextFinder_Entry/
+        ├── Spec_CSharp_TextFinder_Entry.md
+        └── src/
+            └── Program.cs
+</code></pre>
 </div>
         </details>
       </indent-blocks>

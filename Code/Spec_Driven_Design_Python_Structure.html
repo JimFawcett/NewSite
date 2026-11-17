@@ -169,17 +169,16 @@
 <li>On execution, <code>main(argv)</code> parses the command line into a <code>ProgramCommands</code> object using <code>python_textfinder_cmdline</code>.</li>
 <li>A <code>StdoutSink</code> is created and passed to a <code>Dirnav</code> as its output.</li>
 <li>The <code>Dirnav</code> object is started at each of the specified (possibly default) root paths in turn and performs a DFS for regex matches on files in each directory tree.</li>
-<li>Owns the process's one output object, which in turn owns the only writer over standard output. Every write to standard output, the binary's own help text and option listing included, passes through that object, so nothing else can interleave with the search output or reorder it.</li>
-<li>Holds that object in a <code>with</code> statement, so it is flushed on every path out of <code>main</code>.</li>
+<li>Owns the process's one output object, which in turn owns the only writer over standard output. Every write to standard output, the binary's own help text and option listing included, passes through that object, so nothing else can interleave with the search output or reorder it, and it is held in a <code>with</code> statement so it is flushed on every path out of <code>main</code>.</li>
 </ul>
 <h3>Build</h3>
 <ul>
 <li>Language: Python. Interpreter minimum: CPython 3.10. Build system: none — Python compiles on import, so this implementation has no build step and no build definition. These apply to every package below, and each component's <code>Spec_*.md</code> names only its own package.</li>
-<li>Four packages under one folder, one per component, each in its own component folder under <code>src/</code>. Each library is a separate package rather than a module of one package, so the dependency chain above is visible as an import graph. Python enforces no such chain: any package on <code>sys.path</code> may import any other, and the chain is a rule these specifications state rather than one a tool holds. That is a stated difference from the C++, Rust, and C# implementations, where the build refuses a dependency the structure does not declare.</li>
+<li>Four packages under one folder, one per component, each in its own component folder under <code>src/</code>. Each library is a separate package rather than a module of one package, so the dependency chain above is visible as an import graph. Python enforces no such chain: any package on <code>sys.path</code> may import any other, and the chain is a rule these specifications state rather than one a tool holds — a stated difference from the three siblings, where the build refuses a dependency the structure does not declare.</li>
 <li>Each component has its own folder holding its <code>Spec_*.md</code>, its package under <code>src/</code>, and — for the three libraries — its unit suite under <code>test/</code>, which Spec_TextFinder.md §6.2 asks to live beside the code it tests. The integration suite and the demonstration drive the assembled program, so both sit at the root of this folder rather than in a component folder, as do the three runners and the two launchers.</li>
 <li>Imports resolve through <code>PYTHONPATH</code>, which carries the four <code>src/</code> folders. The launchers and the runners set it; a reader invoking the interpreter directly sets it too. An editable install through <code>pip</code> is the alternative and is not adopted: it needs a virtual environment and a packaging file this project otherwise has no use for, and it puts the four packages on <code>sys.path</code> for every interpreter run, so a second checkout would shadow the first in a way nothing in the second checkout records.</li>
 <li>Dependencies: none beyond the standard library. <code>re</code>, which Spec_TextFinder.md §6.1 assigns to Python, ships with the interpreter, so this implementation declares no package requirement at all and needs no virtual environment to run.</li>
-<li>The launchers <code>Python_TextFinder.bat</code> and <code>Python_TextFinder</code> set <code>PYTHONPATH</code>, invoke <code>python -m python_textfinder_entry</code>, forward their arguments, and return the interpreter's exit code unchanged. <code>Python_TextFinder</code> is the name Spec_TextFinder.md §5.1 substitutes for <code>&lt;executable&gt;</code> in the help text, and that text is fixed rather than derived from <code>sys.argv[0]</code>, which carries the path of <code>__main__.py</code> under <code>python -m</code> and would otherwise put an interpreter path in the usage line.</li>
+<li>The launchers <code>Python_TextFinder.bat</code> and <code>Python_TextFinder</code> set <code>PYTHONPATH</code>, invoke <code>python -m python_textfinder_entry</code>, forward their arguments, and return the interpreter's exit code unchanged. <code>Python_TextFinder</code> is the name Spec_TextFinder.md §5.1 substitutes for <code>&lt;executable&gt;</code> in the help text, and that text is fixed rather than derived from <code>sys.argv[0]</code>, which carries the path of <code>__main__.py</code> under <code>python -m</code>.</li>
 <li>No third-party test framework, per Spec_TextFinder.md §6.2 and the dependency rule of §6. <code>unittest</code> is in the standard library, so the suites use it and <code>pytest</code> is rejected by name as third-party. Each suite is a script that runs its cases through <code>unittest</code> and exits with the number that failed, and the runners invoke those scripts.</li>
 <li>Spec_TextFinder.md §6.2 has a runner build what it is about to run. There is no build here, so each runner does the two things a build would have done for it: it puts the four <code>src/</code> folders on <code>PYTHONPATH</code>, and it runs <code>python -m compileall -q</code> over them, which surfaces a syntax error in any source file before the first suite starts. A <code>compileall</code> failure counts every suite the runner would have run as failed and the runner stops there. §6.2's never-built rule still applies: a suite whose script is absent is a failure rather than a pass by absence.</li>
 <li>Annotations are written throughout and are not checked at run time. Running a type checker is not part of running this program, and no checker is required to run it; the annotations are documentation that a checker can also read.</li>
@@ -187,18 +186,76 @@
 <h3>Notes</h3>
 <ul>
 <li>This forms a data pipeline architecture that emits an output immediately following evaluation of a regex match.</li>
-<li>Identifiers follow Python convention, so this implementation spells in snake_case what the C++ implementation spells in camelCase and the C# implementation in PascalCase: <code>usage_line</code> for <code>usageLine</code> and <code>UsageLine</code>, <code>line_numbers</code> for <code>lineNumbers</code> and <code>LineNumbers</code>. The switch letters, the emitted text, and the exit codes are fixed by Spec_TextFinder.md and are identical in all four.</li>
+<li>Identifiers follow Python convention, so this implementation spells in snake_case what the C++ implementation spells in camelCase and the C# implementation in PascalCase. The switch letters, the emitted text, and the exit codes are fixed by Spec_TextFinder.md and are identical in all four.</li>
 <li><code>ProgramCommands</code> is a dataclass whose field defaults carry the defaults of Spec_TextFinder.md §5, so a newly constructed instance equals the result of parsing an empty command line.</li>
-<li>The <code>Output</code> protocol is the current design choice, and it buys less here than its counterparts do in the siblings. A C++ template instantiation and a Rust monomorphization devirtualize the call; a C# generic over a reference type does not but still bounds the type at compile time. A Python annotation bounds nothing at run time and changes no dispatch — every call is an attribute lookup either way. What the protocol buys is a bound a type checker can hold and a name this document can point at. An <code>abc.ABC</code> base class is the alternative and is not adopted: it would make the bound nominal, so a test recorder would have to import <code>python_textfinder_dirnav</code> to subclass it, where a protocol lets a test pass any object carrying the one method.</li>
-<li><code>StdoutSink</code> nonetheless names <code>Output</code> as a base class, which a protocol permits. That makes the dependency edge above a real import rather than a convention, and lets a checker verify the sink against the protocol at the point the sink is defined. Structural typing still holds for everything that does not subclass it.</li>
-<li>Spec_TextFinder.md §3.4 obliges an implementation to prevent its runtime translating the LF terminator to CRLF. <code>sys.stdout</code> is a text stream opened with <code>newline=None</code>, which translates <code>\n</code> to <code>\r\n</code> on Windows, and <code>print</code> writes through it, so the interpreter's most obvious way to write a line is the one this specification forbids. <code>python_textfinder_output</code> owns a <code>TextIOWrapper</code> over <code>sys.stdout.buffer</code> with <code>newline=&quot;\n&quot;</code>, and <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder/Python_Spec_driven_Output/Spec_Python_TextFinder_Output.md" target="_blank">Spec_Python_TextFinder_Output.md</a> records what follows from that. <code>print</code> is not used anywhere in this implementation.</li>
-<li>Python has no destructor that runs deterministically at scope exit. CPython's reference counting usually collects an object at the last reference, and that is an implementation detail rather than a language rule, so the sink implements the context-manager protocol and the binary holds it in a <code>with</code> statement. A flush from <code>__del__</code> is not relied on for the same reason the C# implementation does not rely on a finalizer.</li>
-<li><code>sys.argv</code> holds the program name in element 0, as C++'s <code>argv[0]</code> and Rust's first <code>args_os()</code> element do, where C#'s <code>string[] args</code> holds the arguments alone. The bare command line of Spec_TextFinder.md §3.1 is therefore a one-element list here, and the parser scans from index 1. Each component spec states its own offset rather than inheriting a sibling's.</li>
-<li>A <code>str</code> is a sequence of Unicode scalar values, and the interpreter decodes the command line before <code>main</code> sees it — on POSIX with the filesystem encoding and the <code>surrogateescape</code> error handler, so an argument that is not valid UTF-8 arrives carrying lone surrogates rather than failing to arrive. The undecodable-argument exit code the Rust implementation defines therefore has no counterpart here. What follows instead is that such an argument can reach the output, and <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder/Python_Spec_driven_Output/Spec_Python_TextFinder_Output.md" target="_blank">Spec_Python_TextFinder_Output.md</a> §5 fixes what the sink does with it.</li>
-<li>The same <code>surrogateescape</code> decoding means a filename that is not valid UTF-8 arrives as text and can be opened, where the C# runtime substitutes U+FFFD and loses the ability to open it. Spec_TextFinder.md §3.4 nonetheless requires such a file be announced rather than searched, so <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder/Python_Spec_driven_Dirnav/Spec_Python_TextFinder_Dirnav.md" target="_blank">Spec_Python_TextFinder_Dirnav.md</a> §5 runs an explicit name test where the C# implementation needs none. The specification wins over what the language makes easy.</li>
-<li><code>Dirnav</code> holds references to the sink, the skip list, and the parsed commands, and the interpreter keeps them alive as long as it does. The lifetime rule the C++ implementation states in prose and the Rust implementation enforces with a borrow checker therefore has nothing to enforce here, as it has nothing to enforce in C#.</li>
-<li>The skip list is a module-level list in the entry package, reachable without a lock and without an interior-mutability type. The <code>thread_local!</code> and <code>RefCell</code> pair the Rust implementation needs has no counterpart: the list is built at import time, before traversal begins, and traversal runs on one thread. It is handed to <code>Dirnav</code> as a <code>tuple</code>, which cannot be modified at all — stronger than the C# implementation's <code>IReadOnlyList&lt;string&gt;</code>, which a caller holding the underlying list can still change.</li>
+<li>The <code>Output</code> protocol is the current design choice, and it buys less here than its counterparts do in the siblings: a Python annotation bounds nothing at run time and changes no dispatch, where a C++ template instantiation and a Rust monomorphization devirtualize the call. What it buys is a bound a type checker can hold and a name this document can point at. An <code>abc.ABC</code> base class is the alternative and is not adopted: it would make the bound nominal, so a test recorder would have to import <code>python_textfinder_dirnav</code> to subclass it, where a protocol lets a test pass any object carrying the one method. <code>StdoutSink</code> nonetheless names <code>Output</code> as a base, which makes the dependency edge above a real import and lets a checker verify the sink where it is defined; structural typing still holds for everything that does not subclass it.</li>
+<li>Spec_TextFinder.md §3.4 obliges an implementation to prevent its runtime translating the LF terminator to CRLF. <code>sys.stdout</code> is a text stream opened with <code>newline=None</code>, which translates <code>\n</code> to <code>\r\n</code> on Windows, and <code>print</code> writes through it, so the interpreter's most obvious way to write a line is the one this specification forbids. <code>python_textfinder_output</code> owns a <code>TextIOWrapper</code> over <code>sys.stdout.buffer</code> with <code>newline=&quot;\n&quot;</code>, and its specification records what follows. <strong><code>print</code> is not used anywhere in this implementation.</strong></li>
+<li>Python has no destructor that runs deterministically at scope exit. CPython's reference counting usually collects an object at the last reference, and that is an implementation detail rather than a language rule, so the sink implements the context-manager protocol and the binary holds it in a <code>with</code> statement. A flush from <code>__del__</code> is not relied on.</li>
+<li><code>sys.argv</code> holds the program name in element 0, as C++'s <code>argv[0]</code> and Rust's first <code>args_os()</code> element do, where C#'s <code>string[] args</code> holds the arguments alone. The bare command line of Spec_TextFinder.md §3.1 is therefore a one-element list here, and the parser scans from index 1.</li>
+<li>A <code>str</code> is a sequence of Unicode scalar values, and the interpreter decodes the command line and every filename with the filesystem encoding and the <code>surrogateescape</code> error handler. Two consequences follow, each settled in a component spec. An argument that is not valid UTF-8 arrives carrying lone surrogates rather than failing to arrive, so the undecodable-argument exit code the Rust implementation defines has no counterpart here and <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder/Python_Spec_driven_Output/Spec_Python_TextFinder_Output.md" target="_blank">Spec_Python_TextFinder_Output.md</a> §5 fixes what the sink does with such text. And a filename that is not valid UTF-8 arrives as text and can be opened, where the C# runtime substitutes U+FFFD and loses that ability — §3.4 nonetheless requires such a file be announced rather than searched, so <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder/Python_Spec_driven_Dirnav/Spec_Python_TextFinder_Dirnav.md" target="_blank">Spec_Python_TextFinder_Dirnav.md</a> §5 runs an explicit name test where C# needs none. The specification wins over what the language makes easy.</li>
 </ul>
+</div>
+        </details>
+      </indent-blocks>
+
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Page_Tree_Python_Structure.md</summary>
+<div class="mdview">
+<h2>Page Tree — Spec-Driven Python: Structure</h2>
+<p><code>Spec_Driven_Design_Python_Structure.html</code> cites 32 files. The tree below places each one under <code>Spec_driven_TextFinder/</code>, the highest directory holding a cited file. A directory holding none of them does not appear.</p>
+<pre><code class="language-text">Spec_driven_TextFinder/
+├── Constitution.md
+├── Page_Structure.md
+├── Project_Tree.md
+├── Spec_TextFinder.md
+└── Python_Spec_driven_TextFinder/
+    ├── Demo_9-24-2026.md
+    ├── Prompts_Build_Python_TextFinder.md
+    ├── Python_TextFinder
+    ├── Python_TextFinder_Structure.md
+    ├── Python_TextFinder.bat
+    ├── run_demo.bat
+    ├── run_integration_tests.bat
+    ├── run_unit_tests.bat
+    ├── demo/
+    │   └── demo.py
+    ├── Python_Spec_driven_Cmdline/
+    │   ├── Spec_Python_TextFinder_Cmdline.md
+    │   ├── src/
+    │   │   └── python_textfinder_cmdline/
+    │   │       ├── __init__.py
+    │   │       ├── command_line.py
+    │   │       └── program_commands.py
+    │   └── test/
+    │       └── unit_tests.py
+    ├── Python_Spec_driven_Dirnav/
+    │   ├── Spec_Python_TextFinder_Dirnav.md
+    │   ├── src/
+    │   │   └── python_textfinder_dirnav/
+    │   │       ├── __init__.py
+    │   │       ├── dirnav.py
+    │   │       └── output.py
+    │   └── test/
+    │       └── unit_tests.py
+    ├── Python_Spec_driven_Output/
+    │   ├── Spec_Python_TextFinder_Output.md
+    │   ├── src/
+    │   │   └── python_textfinder_output/
+    │   │       ├── __init__.py
+    │   │       └── stdout_sink.py
+    │   └── test/
+    │       └── unit_tests.py
+    ├── Python_Spec_driven_TextFinder_Entry/
+    │   ├── Spec_Python_TextFinder_Entry.md
+    │   └── src/
+    │       └── python_textfinder_entry/
+    │           ├── __init__.py
+    │           ├── __main__.py
+    │           └── entry.py
+    └── test/
+        └── integration_tests.py
+</code></pre>
 </div>
         </details>
       </indent-blocks>

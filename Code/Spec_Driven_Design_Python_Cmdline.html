@@ -189,12 +189,12 @@ def usage_line() -&gt; str: ...
 def help_text() -&gt; str: ...
 def options_text(commands: ProgramCommands) -&gt; str: ...
 </code></pre>
-<p>The field comments are the switch-to-attribute mapping, and the field defaults are the sole authority in code for the defaults of Spec_TextFinder.md §5. A newly constructed <code>ProgramCommands</code> equals the result of parsing a bare argument list. Spec_TextFinder.md §5 remains the authority overall, and a disagreement between the two is a defect in this library. The four <code>bool</code> fields whose default is <code>False</code> carry that default explicitly, where the C# implementation omits it: a dataclass field with no default is a required constructor argument, so omitting it would change the type rather than restate a language default.</p>
+<p>The field comments are the switch-to-attribute mapping, and the field defaults are the sole authority in code for the defaults of Spec_TextFinder.md §5. A newly constructed <code>ProgramCommands</code> equals the result of parsing a bare argument list, and a disagreement between the two is a defect in this library. The four <code>bool</code> fields whose default is <code>False</code> carry that default explicitly: a dataclass field with no default is a required constructor argument, so omitting it would change the type rather than restate a language default.</p>
 <p>The two <code>list</code> fields use <code>default_factory</code>, never a bare default value. A mutable default on a dataclass field is a <code>ValueError</code> at class-definition time, which is the language refusing the one bug this pattern would otherwise plant — every <code>ProgramCommands</code> sharing one list.</p>
 <p><code>ProgramCommands</code> has no invariants: every attribute combination the parser can produce is valid. It is an ordinary mutable object, so <code>Dirnav</code> holds a reference to the object <code>python_textfinder_entry</code> owns and the interpreter keeps it alive. No lifetime rule is stated here, because there is none to state. The dataclass is not frozen: the parser builds one instance and fills it as it scans, which a frozen type would turn into nine keyword arguments assembled from nine locals.</p>
-<p>The four functions are module-level functions rather than methods of a class. Python has free functions, so a class whose members were all static would add a name without adding a meaning; the module is already the namespace that groups the four. This is the one place where the C# implementation's structure does not carry over, and the reason is that the C# structure exists to work around the absence of free functions.</p>
-<p><code>parse</code> returns either the commands or a <code>ParseFailure</code>, rather than raising. A malformed command line is something the user typed, so it is an ordinary outcome of parsing rather than an exceptional one, and the standard library has no result type to return instead.</p>
-<p>The return is a union of two types rather than a pair of optionals, and the difference is the whole reason <code>ParseFailure</code> exists. A <code>tuple[ProgramCommands | None, str | None]</code> cannot be narrowed: testing one element for <code>None</code> tells a type checker nothing about the other, because tuple elements are not correlated in the type system, so a caller reading the diagnostic after testing the commands is reading a <code>str | None</code> where a <code>str</code> is wanted and must either assert or ignore the checker. C# gets this from <code>NotNullWhen</code>, and Python has no attribute that does the same for a tuple return. A union does narrow, under any checker and with no annotation beyond the return type:</p>
+<p>The four functions are module-level functions rather than methods of a class. Python has free functions, so a class whose members were all static would add a name without adding a meaning; the module is already the namespace that groups the four. The C# implementation's static class exists to work around the absence of free functions and does not carry over.</p>
+<p><code>parse</code> returns either the commands or a <code>ParseFailure</code>, rather than raising. A malformed command line is something the user typed, so it is an ordinary outcome of parsing, and the standard library has no result type to return instead.</p>
+<p>The return is a union of two types rather than a pair of optionals, and the difference is the whole reason <code>ParseFailure</code> exists. A <code>tuple[ProgramCommands | None, str | None]</code> cannot be narrowed: tuple elements are not correlated in the type system, so testing one for <code>None</code> tells a checker nothing about the other, and a caller reading the diagnostic after testing the commands must either assert or ignore the checker. C# gets this from <code>NotNullWhen</code>; Python has no attribute that does the same for a tuple return. A union does narrow, under any checker and with no annotation beyond the return type:</p>
 <pre><code class="language-python">result = parse(argv)
 if isinstance(result, ParseFailure):
     ...                    # result is ParseFailure; result.diagnostic is a str
@@ -208,50 +208,15 @@ if isinstance(result, ParseFailure):
 <p><code>parse</code> scans <code>argv</code> from index 1 left to right, alternating switch token and argument token. It stops at the first violation and produces that diagnostic; no partial result is returned. It touches no filesystem: root paths are not tested for existence, and extensions are not compared against any file.</p>
 <p>The scan begins at index 1 rather than index 0. <code>sys.argv[0]</code> holds the program name — the path of <code>__main__.py</code> under <code>python -m</code>, the launcher's path under a direct invocation — so there is a name to skip, as there is in C++ and Rust and is not in C#. Spec_TextFinder.md §4 leaves the form of the argument vector to this document, and this is the fact that follows for Python. <code>parse</code> takes the whole list including element 0 and skips it itself, rather than taking a pre-sliced list, so that the offset is stated in one place and the caller has no chance to get it wrong.</p>
 <ol>
-<li><strong>Switch tokens.</strong> A token in switch position is valid only when it is exactly two characters, the first <code>/</code> or <code>-</code>, the second one of the nine letters in Spec_TextFinder.md §5. A token with no introducer is <em>not a switch</em>; any other introducer-led token, including a bare <code>/</code> or <code>-</code>, is an <em>unrecognized switch</em>. Length is measured in Unicode scalar values, which is what <code>len</code> counts on a <code>str</code>; a two-character token holding an astral character measures 2 and passes the length test, unlike in C# where it measures 3 and fails it, and is then refused as unrecognized because its second character is not one of the nine letters. The two implementations reach the same outcome by different routes, and neither route is observable.</li>
+<li><strong>Switch tokens.</strong> A token in switch position is valid only when it is exactly two characters, the first <code>/</code> or <code>-</code>, the second one of the nine letters in Spec_TextFinder.md §5. A token with no introducer is <em>not a switch</em>; any other introducer-led token, including a bare <code>/</code> or <code>-</code>, is an <em>unrecognized switch</em>. Length is measured in Unicode scalar values, which is what <code>len</code> counts on a <code>str</code>; a two-character token holding an astral character therefore passes the length test and is refused as unrecognized, where C# measures it as 3 and refuses it on length. Neither route is observable.</li>
 <li><strong>Arguments.</strong> Each switch consumes the following token verbatim, including when that token begins with <code>/</code> or <code>-</code>, since there are no bare flags. A switch with no following token is <em>missing its argument</em>.</li>
 <li><strong>Conversion.</strong> Boolean switches (<code>/s</code>, <code>/h</code>, <code>/v</code>, <code>/H</code>, <code>/n</code>, <code>/L</code>) accept only <code>true</code> or <code>false</code>, compared after <code>str.lower()</code> against those two literals. <code>bool(token)</code> is rejected by name: every non-empty string is truthy, so it would accept <code>/s maybe</code> as <code>true</code>. <code>distutils.util.strtobool</code> is rejected too: it accepts <code>y</code>, <code>n</code>, <code>1</code>, and <code>0</code>, which §4 does not define, and the module it lives in was removed from the standard library in 3.12. <code>/r</code> and <code>/P</code> take the token verbatim, and each rejects an empty argument — <em>an empty root path</em> for <code>/P</code>, <em>an empty expression</em> for <code>/r</code>. <code>/p</code> is normalized per §7.</li>
 <li><strong>Accumulation.</strong> <code>/P</code> clears the default <code>[&quot;.&quot;]</code> on its first occurrence and appends thereafter, preserving argument order. Every other switch overwrites any earlier value, silently discarding it. The first occurrence is tracked by a local flag rather than inferred from the list's contents, since <code>-P .</code> is indistinguishable by value from the default.</li>
 </ol>
-<p>Switch letters compare by equality of <code>str</code>, which is a comparison of scalar values and carries no locale. The Turkish-locale hazard the C# implementation guards against, where <code>/h</code> and <code>/H</code> could fold together under a culture-sensitive comparison, does not arise in Python: <code>str</code> comparison and <code>str.lower</code> are defined by the Unicode database rather than by the machine's locale, and nothing in this library reads a locale. That is a property of the language recorded here rather than a decision taken here.</p>
+<p>Switch letters compare by equality of <code>str</code>, a comparison of scalar values carrying no locale, so the Turkish-locale hazard the C# implementation guards against — <code>/h</code> and <code>/H</code> folding together — does not arise here. That is a property of the language rather than a decision taken here.</p>
 <h3>6. Error Conditions</h3>
 <p>Every violation in §5 is a usage error. <code>parse</code> returns a <code>ParseFailure</code> whose <code>diagnostic</code> is in the shape Spec_TextFinder.md §5.2 binds — a reason line, a newline, then <code>usage_line()</code>. <code>python_textfinder_entry</code> writes that string to stderr unaltered and exits with code 1 (Spec_Python_TextFinder_Entry.md §4 step 1).</p>
-<p>Spec_TextFinder.md §2 leaves the wording of stderr text to each language, and §5.2 supplies reason lines without binding them. This implementation adopts §5.2's six parse-time reason lines unchanged, and this section is where they are fixed for Python:</p>
-<table>
-<thead>
-<tr>
-<th>Condition</th>
-<th>Reason line</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Token in switch position has no <code>/</code> or <code>-</code> introducer</td>
-<td><code>not a switch: &lt;token&gt;</code></td>
-</tr>
-<tr>
-<td>Introducer-led token that is not a switch defined in §5</td>
-<td><code>unrecognized switch: &lt;token&gt;</code></td>
-</tr>
-<tr>
-<td>Switch is the last token, with no argument token following</td>
-<td><code>missing argument for switch: &lt;switch&gt;</code></td>
-</tr>
-<tr>
-<td>Boolean switch given a value other than <code>true</code> or <code>false</code></td>
-<td><code>invalid boolean for &lt;switch&gt;: &lt;token&gt;</code></td>
-</tr>
-<tr>
-<td><code>/P</code> given an empty argument</td>
-<td><code>empty root path for switch: &lt;switch&gt;</code></td>
-</tr>
-<tr>
-<td><code>/r</code> given an empty argument</td>
-<td><code>empty expression for switch: &lt;switch&gt;</code></td>
-</tr>
-</tbody>
-</table>
-<p><code>&lt;token&gt;</code> is the offending token and <code>&lt;switch&gt;</code> the switch, each reproduced exactly as typed, preserving the introducer. Adopting §5.2's wording rather than rewriting it costs nothing and leaves this implementation's stderr comparable with the other implementations', which Spec_TextFinder.md §6 no longer requires but does not forbid.</p>
+<p>Spec_TextFinder.md §2 leaves the wording of stderr text to each language, and §5.2 supplies reason lines without binding them. This implementation adopts §5.2's six parse-time reason lines verbatim, and that adoption is what fixes them for Python: the table in §5.2 is this library's own wording, and a suite compares against it on that basis. <code>&lt;token&gt;</code> is the offending token and <code>&lt;switch&gt;</code> the switch, each reproduced exactly as typed, preserving the introducer.</p>
 <p>The diagnostic's embedded terminators are LF, since they are written into the string rather than produced by a writer. <code>python_textfinder_entry</code> writes the string through <code>sys.stderr.buffer</code>, which translates nothing, so this implementation's stderr carries LF on every platform. Spec_TextFinder.md §3.4 leaves the stderr terminator to the platform and asks for no such thing; getting it costs one writer choice, so this implementation takes it.</p>
 <p>A token reproduced in a reason line may carry lone surrogates, on a POSIX system where the interpreter decoded an undecodable argument with <code>surrogateescape</code>. This library performs no substitution on it: §5.2 requires the token be reproduced exactly as typed, and Spec_Python_TextFinder_Entry.md §4 fixes what the stderr writer does with a scalar value it cannot encode.</p>
 <p>The seventh condition of §5.2, a malformed <code>/r</code>, is detected later: the <code>Dirnav</code> constructor compiles the expression and lets <code>re.error</code> propagate, and <code>python_textfinder_entry</code> composes that diagnostic, drawing its usage line from <code>usage_line()</code>. Spec_Python_TextFinder_Entry.md §6 fixes its reason line, since the binary is what writes it.</p>
@@ -263,15 +228,15 @@ if isinstance(result, ParseFailure):
 <p>Two standard methods are rejected by name, each because it looks correct and implements a different rule:</p>
 <ul>
 <li><strong><code>str.strip()</code></strong> with no argument trims every character <code>str.isspace</code> reports, a set that includes no-break space, the en and em spaces, and the line and paragraph separators, so this implementation would accept an extension list another rejects.</li>
-<li><strong><code>str.lstrip(&quot;.&quot;)</code></strong> removes every leading dot, where §5 removes one. <code>..cpp</code> must normalize to <code>.cpp</code> and not to <code>cpp</code>. The dot is therefore stripped with <code>str.removeprefix(&quot;.&quot;)</code>, which removes one occurrence and is the reason this library needs 3.9 or later. Python_TextFinder_Structure.md fixes the floor one version higher, at 3.10, for a reason this library also relies on: PEP 604 made <code>X | Y</code> a type expression evaluated at run time, which is what <code>ProgramCommands | ParseFailure</code> in §4's return annotation is.</li>
+<li><strong><code>str.lstrip(&quot;.&quot;)</code></strong> removes every leading dot, where §5 removes one. <code>..cpp</code> must normalize to <code>.cpp</code> and not to <code>cpp</code>. The dot is therefore stripped with <code>str.removeprefix(&quot;.&quot;)</code>, which removes one occurrence.</li>
 </ul>
 <p>Duplicates are retained — they are harmless to the membership test <code>python_textfinder_dirnav</code> performs. Case folding is not applied here; the platform-dependent comparison fixed by Spec_TextFinder.md §5 is performed by <code>python_textfinder_dirnav</code> when it matches a file name against the list.</p>
 <h3>8. Help Text and Option Listing</h3>
 <p><code>help_text</code> returns the text fixed by Spec_TextFinder.md §5.1 with <code>&lt;executable&gt;</code> replaced by <code>Python_TextFinder</code>, the launcher name Python_TextFinder_Structure.md fixes. It is not derived from <code>sys.argv[0]</code>, which under <code>python -m</code> holds the path of <code>__main__.py</code> and would put an interpreter path in the usage line; this library does not read <code>sys.argv</code> at all. <code>usage_line</code> returns the first line of that text — the line that terminates every usage diagnostic (§6), exposed so that <code>python_textfinder_entry</code> can compose the malformed-regex diagnostic. <code>help_text</code> is built from <code>usage_line</code>, so the synopsis has one definition.</p>
 <p>The help body is held as a <code>list[str]</code>, one element per line, joined with <code>&quot;\n&quot;</code>. A triple-quoted string literal would read better in the source and is not used: it carries the line terminators of the file it is written in, so an editor or a <code>.gitattributes</code> rule that rewrote this source to CRLF would change what the program prints. Spec_TextFinder.md §5.1 fixes the text and §3.4 fixes the terminator, so neither may depend on how this file is stored. Joining a list of lines makes the terminator a decision of this library rather than a property of its encoding, and the list's length is the line count a fixture can assert. <code>textwrap.dedent</code> over a triple-quoted literal is rejected for the same reason: it fixes the indentation and leaves the terminators alone.</p>
-<p><code>options_text</code> returns the resolved option set, in the form Spec_TextFinder.md §5.3 fixes: one key/value pair per line, in §5 table order, <code>&lt;switch&gt; &lt;value&gt;</code> with a single separating space, one <code>/P</code> line per root path, the <code>/p</code> list joined by <code>&quot;, &quot;</code> and emitting <code>/p</code> alone when empty, <code>/r</code> verbatim, and booleans in lower case. §5.3 gives the nine lines a bare <code>-v true</code> produces, and this function reproduces them. It chooses none of that form and must not be read as the place the form is decided.</p>
+<p><code>options_text</code> returns the resolved option set in the form Spec_TextFinder.md §5.3 fixes, reproducing the nine lines §5.3 gives for a bare <code>-v true</code>. It chooses none of that form and must not be read as the place the form is decided.</p>
 <p>Booleans render through a conditional expression yielding the literals <code>&quot;true&quot;</code> and <code>&quot;false&quot;</code>. <code>str(value)</code> is not used: it returns <code>&quot;True&quot;</code> and <code>&quot;False&quot;</code>, which §5.3 forbids. <code>format(value)</code> and an f-string interpolation of the <code>bool</code> return the same two strings and are rejected with it. The two literals appear once each in this library.</p>
-<p>One function serves all three cases §5.3 calls for, since the text is the same in each and only the caller's next move differs: <code>/v true</code>, after which traversal follows; the bare command line of §3.1, after which the process exits 0; and the invalid-regex diagnostic of §5.2, where the listing precedes that diagnostic on stdout whatever <code>/v</code> says and the process then exits 1. The listing reflects whatever <code>commands</code> holds, so its <code>/v</code> line reads <code>false</code> in the latter two unless <code>/v</code> was itself typed.</p>
+<p>One function serves all three cases §5.3 calls for, the text being the same in each and only the caller's next move differing. The listing reflects whatever <code>commands</code> holds, so its <code>/v</code> line reads <code>false</code> in the two cases <code>/v</code> did not itself ask for.</p>
 <p>All three functions end their returned string with LF; none writes to a stream.</p>
 <h3>9. Build</h3>
 <p>Per <a href="https://github.com/JimFawcett/NewSite/blob/main/Code/Projects/Spec_driven_TextFinder/Python_Spec_driven_TextFinder/Python_TextFinder_Structure.md" target="_blank">Python_TextFinder_Structure.md</a>:</p>
@@ -286,6 +251,37 @@ if isinstance(result, ParseFailure):
 <li>The library does not access the filesystem or verify that a root path exists.</li>
 <li>The library does not read <code>sys.argv</code>; <code>main</code> receives it and passes the list in.</li>
 </ul>
+</div>
+        </details>
+      </indent-blocks>
+
+      <indent-blocks>
+        <details>
+          <summary class="labelStyle darkItem">Page_Tree_Python_Cmdline.md</summary>
+<div class="mdview">
+<h2>Page Tree — Spec-Driven Python: Cmdline</h2>
+<p><code>Spec_Driven_Design_Python_Cmdline.html</code> cites 12 files. The tree below places each one under <code>Spec_driven_TextFinder/</code>, the highest directory holding a cited file. A directory holding none of them does not appear.</p>
+<pre><code class="language-text">Spec_driven_TextFinder/
+├── Constitution.md
+├── Important_Notes.md
+├── Page_Structure.md
+├── Spec_TextFinder.md
+└── Python_Spec_driven_TextFinder/
+    ├── Python_TextFinder
+    ├── Python_TextFinder_Structure.md
+    ├── Python_Spec_driven_Cmdline/
+    │   ├── Spec_Python_TextFinder_Cmdline.md
+    │   └── src/
+    │       └── python_textfinder_cmdline/
+    │           ├── __init__.py
+    │           ├── command_line.py
+    │           └── program_commands.py
+    └── Python_Spec_driven_TextFinder_Entry/
+        ├── Spec_Python_TextFinder_Entry.md
+        └── src/
+            └── python_textfinder_entry/
+                └── __main__.py
+</code></pre>
 </div>
         </details>
       </indent-blocks>
