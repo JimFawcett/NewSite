@@ -99,6 +99,7 @@ function togglePages() {
     setCookie('pages', 'false', 1);
   } else {
     setCookie('pages', 'true', 1);
+    hideSections();   // the two lists overlap, so only one shows at a time
   }
 }
 /*---------------------------------------------------------
@@ -138,6 +139,9 @@ function showElement(id) {
   // elem.classList.add('visible');
   // showButton(id);
   setCookie(id, 'true', 1);
+  if(id === 'pages') {
+    hideSections();   // the two lists overlap, so only one shows at a time
+  }
 }
 function hideElement(id) {
   console.info('in hideElement: id = ' + id);

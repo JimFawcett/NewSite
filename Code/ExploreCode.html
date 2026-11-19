@@ -45,6 +45,26 @@
       const panel = document.getElementById('pgframe');
       panel.src = url;
     }
+    /* a page reached from the left panel opens with its pages list showing, so
+       the thread it belongs to is visible without a second click. The cookies
+       carry the request across the explorer reload the _self links cause; the
+       message carries it for the rpanel links, and is posted on the frame's
+       load event, which fires after the page has restored its own menus. */
+    let pendingShowPages = false;
+    function openNavLink(anchor) {
+      setbg(anchor);
+      setCookie('pages', 'true', 1);
+      setCookie('sections', 'false', 1);
+      pendingShowPages = true;
+    }
+    function showPagesWhenLoaded() {
+      document.getElementById('pgframe').addEventListener('load', () => {
+        if(pendingShowPages) {
+          pendingShowPages = false;
+          postMsg(makeMsg('show-pages'));
+        }
+      });
+    }
     function load() {
       loadInDataManager();
       processQueryString();
@@ -54,6 +74,7 @@
       setPersistantElements();
       panel.setPanel();
       showPanel();  // left panel
+      showPagesWhenLoaded();
     }
     window.addEventListener('pageshow', (event) => {
       initBlogs();
@@ -182,17 +203,17 @@
     <div id="lpanel" class="visible">
       <div id="nav">
         <div style="height:1.25rem;"></div>
-        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="CodeHome.html">Code Home</a></clkwrap>
-        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="ProjectStory_Prologue.html">Project Story</a></clkwrap>
-        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="ComparisonStory.html">Compare</a></clkwrap>
-        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="AIBites_Introduction.html">AI Bites</a></clkwrap>
-        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="AIWorkflows_Introduction.html">AI Workflows</a></clkwrap>
-        <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="Spec_Driven_Design_Introduction.html">Spec Driven</a></clkwrap>
+        <clkwrap><a class="clickable" onclick="openNavLink(this)" target="rpanel" href="CodeHome.html">Code Home</a></clkwrap>
+        <clkwrap><a class="clickable" onclick="openNavLink(this)" target="rpanel" href="ProjectStory_Prologue.html">Project Story</a></clkwrap>
+        <clkwrap><a class="clickable" onclick="openNavLink(this)" target="rpanel" href="ComparisonStory.html">Compare</a></clkwrap>
+        <clkwrap><a class="clickable" onclick="openNavLink(this)" target="rpanel" href="AIBites_Introduction.html">AI Bites</a></clkwrap>
+        <clkwrap><a class="clickable" onclick="openNavLink(this)" target="rpanel" href="AIWorkflows_Introduction.html">AI Workflows</a></clkwrap>
+        <clkwrap><a class="clickable" onclick="openNavLink(this)" target="rpanel" href="Spec_Driven_Design_Introduction.html">Spec Driven</a></clkwrap>
         <!-- <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="ImpCodeStory_Prologue.html">Imperative Story</a></clkwrap>
         <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="DecCodeStory_Prologue.html">Declarative Story</a></clkwrap> -->
         <!-- <a class="clickable" target="_self" href="CppStory_Prologue.html">Story</a> -->
-        <clkwrap><a class="clickable" onclick="setbg(this)" target="_self" href="ExploreReposCode.html?src=RepoCode_Summary.html">Repositories</a></clkwrap>
-        <clkwrap><a class="clickable" onclick="setbg(this)" target="_self" href="ExploreCode.html?src=CodeGlossary.html">Glossary</a></clkwrap>
+        <clkwrap><a class="clickable" onclick="openNavLink(this)" target="_self" href="ExploreReposCode.html?src=RepoCode_Summary.html">Repositories</a></clkwrap>
+        <clkwrap><a class="clickable" onclick="openNavLink(this)" target="_self" href="ExploreCode.html?src=CodeGlossary.html">Glossary</a></clkwrap>
         <!-- <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="CodeChanges.html">Status</a></clkwrap> -->
         <!-- <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="CppBites_References.html">References</a></clkwrap>
         <clkwrap><a class="clickable" onclick="setbg(this)" target="rpanel" href="CppBites_Glossary.html">Glossary</a></clkwrap> -->

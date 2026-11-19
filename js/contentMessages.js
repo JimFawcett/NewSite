@@ -124,6 +124,20 @@ function contentMessageHandler(event) {
       break;
     }
 
+    /* the explorer asks for this after loading a page from its left panel.
+       Unlike 'pages' it does not toggle, so it lands the same way whatever
+       state the page restored, and a page in no thread builds no list. */
+    case 'show-pages': {
+      const pages    = document.getElementById('pages');
+      const sections = document.getElementById('sections');
+      if (!pages || !sections || pages.children.length === 0) break;
+      pages.classList.remove('hidden');
+      setCookie('pages', true, 10);
+      sections.classList.add('hidden');
+      setCookie('sections', false, 10);
+      break;
+    }
+
     // Content (child) message handler — only the 'clear' case shown
     case 'clear': {
       closeMenus?.();

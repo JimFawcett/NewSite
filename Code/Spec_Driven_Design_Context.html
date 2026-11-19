@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  Spec_Driven_Design_Context.html - reference page, not part of any thread
+-->
+<head>
+  <title>Spec-Driven Design: Context</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+    /* this page belongs to no thread, so its page menu holds only itself */
+    function buildPages() {
+      const pgs = document.getElementById('pages');
+      if(isDefined(pgs)) {
+        pgs.innerHTML =
+        "<div class='darkItem listheader' onclick='togglePages()'>Spec-Driven: Reference</div>\
+        <div class='menuBody'>\
+          <a href='Spec_Driven_Design_Context.html'>Context</a>\
+          </div>\
+        <div style='height:0.5em;'></div>";
+      }
+    }
+  </script>
+  <style>
+    .synopsis {
+      border: 2px dashed var(--dark);
+      margin: 2rem 0rem;
+      padding: 0.25rem 1rem;
+    }
+    div.synopsis ul {
+      margin: 0rem 0rem;
+    }
+    div.synopsis ul li {
+      margin: 0.1rem 2rem;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    Spec_Driven_Design_Context.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 11/17/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Design: Context</h2>
+        <h4 class="indent" id="subtitle">what an LLM forgets between requests, and how much of this process that explains</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Python_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Python</a>
+      </div>
+    </header>
+
+    <div class="indent">
+      <div class="synopsis">
+        <strong>Synopsis:</strong><br>
+        <t-b>
+          This page belongs to no thread. It explains the one fact about language models that
+          shapes the rest of the page set, and it ends by saying how much of the process that
+          fact actually accounts for.
+          <ul>
+            <li>A model keeps nothing between requests, so the whole conversation travels on every call.</li>
+            <li>Context accumulates, costs more as it grows, and is eventually discarded.</li>
+            <li>The documents in the project tree exist outside the context and outlive it.</li>
+            <li>About half the process follows from that. The other half is ordinary design.</li>
+          </ul>
+        </t-b>
+        <t-b>
+          Read it before the Process thread if the behavior of an LLM session is unfamiliar, and
+          skip it if it is not. Nothing in the threads depends on having read this page first.
+        </t-b>
+      </div>
+
+      <a id="stateless"></a>
+      <h3>1. &nbsp;The Model Holds Nothing Between Requests</h3>
+      <t-b>
+        A language model does not remember the previous turn, the file it just read, or the
+        correction it just accepted. Every request sends the entire conversation again - the
+        system prompt, each earlier user turn, each earlier model response, and the full text of
+        every file the tools opened along the way. The model is stateless; the transcript carries
+        the state, and the transcript travels on every call.
+      </t-b>
+      <t-b>
+        A provider does not run one copy of a model. It runs a fleet - the set of all servers
+        currently loaded with the same model weights, each one holding an identical copy in
+        accelerator memory and each one able to answer any request addressed to that model. A
+        request arrives at a front end that picks a member of the fleet and forwards the work
+        there; the next request in the same conversation may well go somewhere else. Fleet size
+        tracks demand, so machines join and leave while conversations are in flight.
+      </t-b>
+      <t-b>
+        Statelessness is a serving decision, not a limitation of the model. A request lands on
+        whichever member of the fleet has capacity, because no member holds anything the request
+        needs. Machines drain, restart, or fail without losing a conversation, and the provider
+        runs its accelerators near saturation instead of reserving memory for sessions idling
+        while a reader thinks about the last answer. Pinning a conversation to one machine would
+        bind that machine's memory to someone who may never send another turn.
+      </t-b>
+      <t-b>
+        Providers do keep computed prefixes around, opportunistically and briefly, which is what
+        prompt caching means. That is a cache rather than session state. A hit saves the work of
+        reprocessing a prefix the model has seen before; a miss costs recomputation, not
+        correctness, because the request already carries everything the model needs. Nothing in a
+        conversation depends on the cache being there.
+      </t-b>
+
+      <a id="request"></a>
+      <h3>2. &nbsp;What Travels on Every Request</h3>
+      <t-b>
+        A conversation that feels incremental to the reader is not incremental on the wire. Turn
+        twenty resends turns one through nineteen. What arrives at the model looks like this:
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:20rem;" />
+          <col style="width:36rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Part of the request</th>
+          <th class="darkItem">How it behaves as the conversation runs</th>
+        </tr>
+        <tr>
+          <td class="lightItem">System prompt and tool definitions</td>
+          <td class="lightItem">Fixed size, resent every time</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Project instructions the tool loads automatically</td>
+          <td class="lightItem">Fixed size, resent every time</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Prior user turns and model responses</td>
+          <td class="lightItem">One more pair per exchange, never removed</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Tool results - file reads, test output, directory listings</td>
+          <td class="lightItem">The dominant growth in a coding session, and the least visible</td>
+        </tr>
+        <tr>
+          <td class="lightItem">The current request</td>
+          <td class="lightItem">The only part the reader actually typed</td>
+        </tr>
+      </table>
+      <t-b>
+        The fourth row is the one that surprises people. Typed dialogue is small. A single read of
+        a specification puts the whole file in the window and leaves it there, and a run of the
+        test suite does the same with its output. A session that looks like a short conversation
+        can be carrying most of a project tree.
+      </t-b>
+
+      <a id="consequences"></a>
+      <h3>3. &nbsp;Three Consequences</h3>
+      <t-b>
+        <ol class="tight">
+          <li><strong>Cost and latency track conversation length, not request size.</strong> A
+            one-line request late in a session costs more to answer than the same line early in
+            one. Prompt caching blunts this and does not remove it.</li>
+          <li><strong>The window is finite, so a long session compacts.</strong> Earlier turns get
+            summarized and the originals are gone. A summary preserves the gist of a decision, not
+            its wording, and specifications live or die on wording.</li>
+          <li><strong>Everything still in the window competes for attention.</strong> A stale
+            requirement from turn three argues with the corrected one from turn thirty. Both are
+            present, both look like instructions, and nothing marks the first as superseded.</li>
+        </ol>
+      </t-b>
+      <t-b>
+        The third consequence is the one that costs correctness rather than money. The first two
+        announce themselves - a slow response, a compaction notice. A model acting on a
+        requirement the reader retracted twenty turns ago produces working code that satisfies the
+        wrong specification, and nothing in the session reports it.
+      </t-b>
+
+      <a id="documents"></a>
+      <h3>4. &nbsp;What the Document Set Does About It</h3>
+      <t-b>
+        Context accumulates and then it is discarded - by compaction, by <code>/clear</code>, by
+        closing the session, by starting work on another machine. A requirement that exists only in
+        the conversation survives none of those. The <code>Spec*.md</code> and
+        <code>*Structure.md</code> files live in the project tree, outside the context, and get
+        read back into a fresh one on demand. Constitution.md's rule that all code derives from
+        those files is, read this way, a rule about durability: it puts every binding decision
+        somewhere the next conversation can find it.
+      </t-b>
+      <t-b>
+        Partitioning one specification into a language-agnostic parent plus per-language children
+        follows the same reasoning. Generating the Rust implementation loads the constitution, the
+        parent specification, and the Rust documents, and carries none of the C++, C#, or Python
+        detail into the window. The parts of the project that cannot affect the work do not compete
+        for attention with the parts that can.
+      </t-b>
+      <t-b>
+        <code>Prompts_*.md</code> files are records rather than inputs for a related reason. A
+        conversation is evidence of how a document reached its content, not an authority competing
+        with it. Replaying a prompt record into a new session would reintroduce exactly the
+        superseded turns that compaction removes, which is the third consequence above, deliberately
+        reproduced.
+      </t-b>
+
+      <a id="limits"></a>
+      <h3>5. &nbsp;What Context Explains, and What It Does Not</h3>
+      <t-b>
+        It would be easy to read the preceding sections as saying that spec-driven design is a
+        workaround for a model limitation. It is worth being precise about how much of the process
+        actually follows from the finite window, because a practice that survives an unlimited one
+        is a practice worth keeping.
+      </t-b>
+      <table>
+        <colgroup>
+          <col style="width:18rem;" />
+          <col style="width:19rem;" />
+          <col style="width:19rem;" />
+        </colgroup>
+        <tr>
+          <th class="darkItem">Practice</th>
+          <th class="darkItem">What context contributes</th>
+          <th class="darkItem">With an unlimited window</th>
+        </tr>
+        <tr>
+          <td class="lightItem">All code derives from the specification documents</td>
+          <td class="lightItem">The transcript is lost; the tree is not</td>
+          <td class="lightItem">Holds. Review, source control, and the next reader all need a document</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Parent specification plus per-language children</td>
+          <td class="lightItem">Loads only the documents one language needs</td>
+          <td class="lightItem">Holds in part. The split is also interface against implementation, which is ordinary design</td>
+        </tr>
+        <tr>
+          <td class="lightItem">Component specifications under each structure document</td>
+          <td class="lightItem">Keeps a generation request to the components it touches</td>
+          <td class="lightItem">Holds in part. A component is also the unit a reviewer reads</td>
+        </tr>
+        <tr>
+          <td class="lightItem">An ambiguity is a question, not a gap to fill</td>
+          <td class="lightItem">A guess made in conversation leaves no trace in the tree</td>
+          <td class="lightItem">Holds. A guess is wrong as often with a large window as with a small one</td>
+        </tr>
+        <tr>
+          <td class="lightItem"><code>Prompts_*.md</code> are records, never inputs</td>
+          <td class="lightItem">Replaying them reintroduces corrected requirements</td>
+          <td class="lightItem">Holds. Evidence of a decision is not authority over it</td>
+        </tr>
+      </table>
+      <t-b>
+        So the window explains why these practices are enforced rather than merely recommended, and
+        it explains the partitioning in detail. It does not explain the practices themselves. Every
+        row above is something a careful team would want from a project worked on by four people
+        over two years, with or without a model involved. Statelessness forces the question
+        <em>where does this decision live</em> on the first day instead of the first handover, and
+        it makes the cost of answering badly immediate rather than deferred.
+      </t-b>
+      <t-b>
+        The threads take it from here. The
+        <a target="_blank" href="Spec_Driven_Design_Introduction.html">Process introduction</a>
+        lays out the goals, the six threads, and the documents in the order their authority runs;
+        <a target="_blank" href="Spec_Driven_Design_Process_Constitution.html">the Constitution</a>
+        states the two rules the whole tree obeys.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#stateless">stateless</a></menu-elem>
+        <menu-elem class="secElem"><a href="#request">request</a></menu-elem>
+        <menu-elem class="secElem"><a href="#consequences">consequences</a></menu-elem>
+        <menu-elem class="secElem"><a href="#documents">documents</a></menu-elem>
+        <menu-elem class="secElem"><a href="#limits">limits</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 0, 10);
+  </script>
+</body>
+</html>

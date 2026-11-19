@@ -93,6 +93,7 @@ function togglePages() {
     setCookie('pages', 'false', 1);
   } else {
     setCookie('pages', 'true', 1);
+    hideSections();   // the two lists overlap, so only one shows at a time
   }
 }
 /*---------------------------------------------------------
@@ -127,6 +128,9 @@ function showElement(id) {
   console.info('in showElement: id = ' + id);
   showButton(id);
   setCookie(id, 'true', 1);
+  if(id === 'pages') {
+    hideSections();   // the two lists overlap, so only one shows at a time
+  }
 }
 function hideElement(id) {
   console.info('in hideElement: id = ' + id);
@@ -233,7 +237,12 @@ function align(ida, idp) {
 */
 function setPersistantElements() {
   setElements('sections');
-  setElements('pages');
+  /* a page in no thread builds no page list, and an empty #pages shows
+     as a bare border, so it stays hidden whatever the cookie says */
+  const pgs = document.getElementById('pages');
+  if(isDefined(pgs) && pgs.children.length > 0) {
+    setElements('pages');
+  }
   // setElements('compare');
   setElements('blogs');
   setElements('help');
