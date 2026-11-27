@@ -8,7 +8,7 @@ function buildPages() {
   const pgs = document.getElementById('pages');
   if(isDefined(pgs)) {
     pgs.innerHTML =
-    "<div class='darkItem listheader' onclick='togglePages()'>Spec-Driven: Context</div>\
+    "<div class='darkItem listheader' onclick='togglePages()'>Spec-Driven: References</div>\
     <div class='menuBody'>\
       <a href='Spec_Driven_Design_Context.html'>0. Context</a>\
       <a href='LLM_ChatBots.html'>1. Chat Bots</a>\

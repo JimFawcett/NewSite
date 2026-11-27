@@ -38,9 +38,9 @@ The project has two goals, each with a language-agnostic part and a language-spe
 | 2. Explain code structure and functionality | a. project level, language agnostic | Behavior | 5 |
 | 2. Explain code structure and functionality | b. per language | the language's own thread, pages 1 through 7 | 7 each |
 
-A **thread** is a set of pages a reader steps through in order. It is the unit the page menu and the Prev Page / Next Page controls operate on. Seven threads exist: Process, Behavior, one per value of `[lang]`, and Context. Each language thread carries both subgoal 1b and subgoal 2b, because the process that produced a language's specifications and the code those specifications fixed are read together.
+A **thread** is a set of pages a reader steps through in order. It is the unit the page menu and the Prev Page / Next Page controls operate on. Seven threads exist: Process, Behavior, one per value of `[lang]`, and References. Each language thread carries both subgoal 1b and subgoal 2b, because the process that produced a language's specifications and the code those specifications fixed are read together.
 
-The Context thread serves neither goal. It supplies the background a reader new to LLM tools needs before either: what a model keeps between requests, and the three ways a developer reaches one. §10 describes it. Where this document says "the six threads", it means the six that serve the two goals.
+The References thread serves neither goal. It supplies the background a reader new to LLM tools needs before either: what a model keeps between requests, and the three ways a developer reaches one. §10 describes it. Where this document says "the six threads", it means the six that serve the two goals.
 
 Goal 1a and goal 2a both draw on [Spec_TextFinder.md](Spec_TextFinder.md), from different angles. The Process thread treats it as an artifact: how it was written, what authority it holds, what cites it. The Behavior thread treats it as a design: what the program does at its boundaries. Neither thread restates the other, and each cites the sections it binds.
 
@@ -75,7 +75,7 @@ Each thread owns one JavaScript file under `Code/js/` that defines `buildPages()
 | Process | `SpecDrivenProcessPages.js` | Spec-Driven: Process |
 | Behavior | `SpecDrivenBehaviorPages.js` | Spec-Driven: Behavior |
 | one per language | `SpecDriven[lang]Pages.js` | Spec-Driven: [lang] |
-| Context | `SpecDrivenContextPages.js` | Spec-Driven: Context |
+| References | `SpecDrivenContextPages.js` | Spec-Driven: References |
 
 Every page of every thread sits in `Code/`, beside `ExploreCode.html`, which is what makes the two script paths below differ: `js/` reaches the track's own `Code/js/`, and `../js/` reaches the site-wide `js/`. §6 states the directory once as the rule.
 
@@ -100,12 +100,12 @@ The cookie key is shared across threads, which is what makes thread switching wo
 Every page carries the `repoLinks` header row PageExample.html defines, holding one entry per thread:
 
 ```
-Process | Behavior | then one entry per language, in the order §0 lists the values of [lang] | Context
+Process | Behavior | then one entry per language, in the order §0 lists the values of [lang] | References
 ```
 
 The link targets follow one rule: **cross to the same subject where it exists, and to the thread's first page where it does not.** From a part page in one language thread, each other language's entry points at `Spec_Driven_Design_[lang]_[part].html` for the same `[part]`, and the Behavior entry points at the Behavior page that fixes what every implementation of that part must do. From a Process page, every language entry points at that language's own Process page.
 
-No other thread shares a subject with the Context thread, so the rule resolves the same way in both directions. The Context entry on every page points at `Spec_Driven_Design_Context.html`, and every entry on a Context page points at its thread's first page.
+No other thread shares a subject with the References thread, so the rule resolves the same way in both directions. The References entry on every page points at `Spec_Driven_Design_Context.html`, and every entry on a References page points at its thread's first page.
 
 Crossing is by part name, not by index. A language whose implementation does not divide the same way links its non-matching parts to its thread's first page rather than to a mismatched part.
 
@@ -119,7 +119,7 @@ The entry for the reader's current thread stays enabled and points at that threa
 
 ### 2.5 Reaching the Set
 
-`Code/ExploreCode.html` carries one left-panel link, "Spec Driven", pointing at `Spec_Driven_Design_Introduction.html`. That page is the hub: it states both goals, names the six threads, and links to the first page of each. A sidenote above its first section points at the Context thread as background reading. It belongs to the Process thread as page 0, so a reader who arrives and presses Next Page walks the process from the beginning.
+`Code/ExploreCode.html` carries one left-panel link, "Spec Driven", pointing at `Spec_Driven_Design_Introduction.html`. That page is the hub: it states both goals, names the six threads, and links to the first page of each. A sidenote above its first section points at the References thread as background reading. It belongs to the Process thread as page 0, so a reader who arrives and presses Next Page walks the process from the beginning.
 
 ### 2.6 The Page Shell
 
@@ -131,7 +131,7 @@ Three page-level styles recur and belong in the page's own `<style>` block: `pre
 
 Language-agnostic, goal 1a. How the specifications came to be, and what authority each holds. Pages are numbered from 0, as every page position in this document is, so the number heading each page below is the index it passes to `setCookie` per §2.3.
 
-**0. Introduction.** `Spec_Driven_Design_Introduction.html`. The hub. What spec-driven design means here: the specifications are the source the code derives from, not a description written after the fact. States both goals, names the six threads and what each covers, links to the first page of each, and points at the Context thread for readers new to LLM tools. Carries no prompt records, so it reads as a map rather than an archive.
+**0. Introduction.** `Spec_Driven_Design_Introduction.html`. The hub. What spec-driven design means here: the specifications are the source the code derives from, not a description written after the fact. States both goals, names the six threads and what each covers, links to the first page of each, and points at the References thread for readers new to LLM tools. Carries no prompt records, so it reads as a map rather than an archive.
 
 **1. The Constitution.** `Spec_Driven_Design_Process_Constitution.html`. The two rules of [Constitution.md](Constitution.md) and what each bounds: code derives only from `Spec*.md` and `*Structure.md`, and nothing outside the project tree is modified without an explicit request. Covers what the rules deliberately permit, general language knowledge among them, and why an ambiguous specification is a question rather than a gap to fill.
 
@@ -217,7 +217,7 @@ Eight positions, identical in every language thread, per §5. Positions run 10 t
 | 6 | `Spec_Driven_Design_[lang]_Testing.html` | 2b |
 | 7 | `Spec_Driven_Design_[lang]_Demonstration.html` | 2b |
 
-### Context thread
+### References thread
 
 Positions follow the Python thread. The Goal column reads "none" because §1 places this thread outside both goals.
 
@@ -361,7 +361,7 @@ The maintainability row covers a record of reviewing a language's finished imple
 
 One consequence of deciding by level rather than by subject: a record that ranges wider than the page it lands on still lands there, whole. A language-level record covering both a project-spec change and a demonstration change goes to that language's Demonstration page in full, and the pages that discuss the other changes cite it rather than copy it, since §8's first paragraph gives every record exactly one home.
 
-Every record appears on exactly one page. The Introduction carries none, and neither does any page of the Context thread: that thread adapts material written outside this project, so the level rule never assigns it a record.
+Every record appears on exactly one page. The Introduction carries none, and neither does any page of the References thread: that thread adapts material written outside this project, so the level rule never assigns it a record.
 
 This changes the original rule, which put every `Prompts_*.md` from a directory level on one page and gave the Introduction five blocks and the Entry page six. Under the rule above no page carries more than two, save a language's Process page, which carries three once that language has been reviewed. That keeps a code page readable while the record stays one click away.
 
@@ -376,7 +376,7 @@ A page written before this document, or written for one thread and moved to anot
 
 Where a page covers two subjects this structure separates, the split follows §3 through §5: the material moves to the page that owns the subject, and the citation moves with it. A page whose content is redistributed rather than moved is rewritten, not trimmed, since prose written for one thread states its subject in terms of that thread's neighbors.
 
-## 10. Thread: Context
+## 10. Thread: References
 
 Background, outside both goals of §1. What a language model keeps between requests, and the three ways a developer reaches one: a browser chat bot, a command line interface, and an agent. The thread explains why the document set takes the form §3 describes. A reader new to LLM tools reads it before the Process thread; a reader who knows them skips it, since nothing in the other six threads depends on it. Pages are numbered from 0, as in §3.
 
