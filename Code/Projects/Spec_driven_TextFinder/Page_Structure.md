@@ -40,7 +40,7 @@ The project has two goals, each with a language-agnostic part and a language-spe
 
 A **thread** is a set of pages a reader steps through in order. It is the unit the page menu and the Prev Page / Next Page controls operate on. Seven threads exist: Process, Behavior, one per value of `[lang]`, and References. Each language thread carries both subgoal 1b and subgoal 2b, because the process that produced a language's specifications and the code those specifications fixed are read together.
 
-The References thread serves neither goal. It supplies the background a reader new to LLM tools needs before either: what a model keeps between requests, and the three ways a developer reaches one. §10 describes it. Where this document says "the six threads", it means the six that serve the two goals.
+The References thread serves neither goal. It supplies the background a reader new to LLM tools needs before either: what a model keeps between requests, the three ways a developer reaches one, and where each file of the project sits. §10 describes it. Where this document says "the six threads", it means the six that serve the two goals.
 
 Goal 1a and goal 2a both draw on [Spec_TextFinder.md](Spec_TextFinder.md), from different angles. The Process thread treats it as an artifact: how it was written, what authority it holds, what cites it. The Behavior thread treats it as a design: what the program does at its boundaries. Neither thread restates the other, and each cites the sections it binds.
 
@@ -178,9 +178,9 @@ Each part page puts its source last, per Text_Tone.md §5.
 
 ## 6. Page Inventory
 
-46 pages across seven threads, every one of them in `Code/`, beside `ExploreCode.html`. No page sits in a subdirectory of its own, which is what lets `[part]` alone distinguish two pages of one thread.
+47 pages across seven threads, every one of them in `Code/`, beside `ExploreCode.html`. No page sits in a subdirectory of its own, which is what lets `[part]` alone distinguish two pages of one thread.
 
-Every position in this document is numbered from 0. The Index column is the value that page passes to `setCookie('#pages', N, 10)` per §2.3; the Position column is the page's place among all 46, counted the same way. The numbers heading the pages of §3, §4, and §10 are their Index values.
+Every position in this document is numbered from 0. The Index column is the value that page passes to `setCookie('#pages', N, 10)` per §2.3; the Position column is the page's place among all 47, counted the same way. The numbers heading the pages of §3, §4, and §10 are their Index values.
 
 ### Process thread
 
@@ -227,6 +227,7 @@ Positions follow the Python thread. The Goal column reads "none" because §1 pla
 | 43 | 1 | `LLM_ChatBots.html` | none |
 | 44 | 2 | `LLM_CLI.html` | none |
 | 45 | 3 | `LLM_Agents.html` | none |
+| 46 | 4 | `Spec_Driven_Design_Project_Tree.html` | none |
 
 A page exists once it is written, not once its implementation builds. A language thread is created whole: all eight pages at once, at the indices above, each carrying its subject as far as the specifications fix it. Where a page needs a result only a running implementation can supply, it states that the result is pending and says so in place — a Demonstration page reserves its eleven blocks per §7.3, and a Testing page names the suites without their output. Pending content is therefore a condition of a page, never a missing page.
 
@@ -361,7 +362,7 @@ The maintainability row covers a record of reviewing a language's finished imple
 
 One consequence of deciding by level rather than by subject: a record that ranges wider than the page it lands on still lands there, whole. A language-level record covering both a project-spec change and a demonstration change goes to that language's Demonstration page in full, and the pages that discuss the other changes cite it rather than copy it, since §8's first paragraph gives every record exactly one home.
 
-Every record appears on exactly one page. The Introduction carries none, and neither does any page of the References thread: that thread adapts material written outside this project, so the level rule never assigns it a record.
+Every record appears on exactly one page. The Introduction carries none, and neither does any page of the References thread: its pages 0 through 3 adapt material written outside this project, and its page 4 renders Project_Tree.md, which no prompt record produced, so the level rule never assigns the thread a record.
 
 This changes the original rule, which put every `Prompts_*.md` from a directory level on one page and gave the Introduction five blocks and the Entry page six. Under the rule above no page carries more than two, save a language's Process page, which carries three once that language has been reviewed. That keeps a code page readable while the record stays one click away.
 
@@ -378,7 +379,7 @@ Where a page covers two subjects this structure separates, the split follows §3
 
 ## 10. Thread: References
 
-Background, outside both goals of §1. What a language model keeps between requests, and the three ways a developer reaches one: a browser chat bot, a command line interface, and an agent. The thread explains why the document set takes the form §3 describes. A reader new to LLM tools reads it before the Process thread; a reader who knows them skips it, since nothing in the other six threads depends on it. Pages are numbered from 0, as in §3.
+Background, outside both goals of §1. What a language model keeps between requests, the three ways a developer reaches one - a browser chat bot, a command line interface, and an agent - and a map of the project tree. The thread explains why the document set takes the form §3 describes. A reader new to LLM tools reads it before the Process thread; a reader who knows them skips it, since nothing in the other six threads depends on it. Pages are numbered from 0, as in §3.
 
 **0. Context.** `Spec_Driven_Design_Context.html`. A model holds nothing between requests, so every request carries the whole conversation. Covers what travels on each request, the three consequences that follow, what the document set does about them, and how much of the process the finite window accounts for. Ends by pointing at the Process thread.
 
@@ -389,3 +390,5 @@ Background, outside both goals of §1. What a language model keeps between reque
 **3. Agents.** `LLM_Agents.html`. An LLM running autonomously from an initial prompt toward a stopping goal: its planner, tool orchestrator, memory, and controller, what an agent does well and badly, and why its inference of meaning from a request is the gap the Constitution closes.
 
 Pages 1 through 3 adapt the takeaway pages of AI Presentation 2026. They carry an `LLM_` prefix rather than the `Spec_Driven_Design_` prefix every other page carries, and they load their figures from `AI Presentation 2026/` at the site root rather than from a copy in `Code/`. Each page draws a figure, its notes, and its takeaways from its source page, and adds one link back to page 0 or to the Constitution that ties it into this page set.
+
+**4. Project Tree.** `Spec_Driven_Design_Project_Tree.html`. The project tree as [Project_Tree.md](Project_Tree.md) records it, with that document's legend. A short section states how the tree is organized: shared documents at the root, one directory per language, and four component directories beneath each, every one placing its specification beside its source. The page renders Project_Tree.md visibly, under an `<h5>` label rather than in a collapsed `<details>` block, since the tree is the page's subject rather than a record behind it, and the render-md-details skill regenerates it whenever the document changes.

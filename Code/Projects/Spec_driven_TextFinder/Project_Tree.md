@@ -7,8 +7,10 @@ Spec_driven_TextFinder/
 ├── Prompts_Fix_Constitution.md
 ├── Important_Notes.md
 ├── Spec_TextFinder.md
+├── Spec_TextFinder.docx
 ├── Prompts_Spec_TextFinder.md
 ├── Prompts_Fix_Spec_TextFinder.md
+├── Prompts_Fix_Specifications_2.md
 ├── Page_Structure.md
 ├── Prompts_Page_Structure.md
 ├── Text_Tone.md
@@ -17,6 +19,11 @@ Spec_driven_TextFinder/
 ├── Page_Tree_*.md
 ├── Project_Tree.md
 ├── README.md
+├── Lessons_Learned.md
+├── render_markdown_skill.md
+├── Spec_Driven_TextFinder_Overview.pptx
+├── Spec_Driven_TextFinder_Cpp.pptx
+├── CLAUDE.md
 ├── archive/
 ├── Fixture/
 │   ├── Fixture.md
@@ -51,6 +58,7 @@ Spec_driven_TextFinder/
 │   ├── run_integration_tests.bat
 │   ├── run_demo.bat
 │   ├── Demo_9-24-2026.md
+│   ├── Cpp_TextFinder_Demonstration.md
 │   ├── src/
 │   │   ├── Cpp_TextFinder_IntegrationTest.ixx
 │   │   ├── Cpp_TextFinder_IntegrationTest_Driver.cpp
@@ -228,13 +236,19 @@ Build output and editor settings are omitted: `build/`, `target/`, `bin/`, `obj/
 - `Constitution.md` — governing rules for this project (`Spec_driven_TextFinder/` and its children)
 - `Spec_*.md` — behavioral specifications; authoritative source for code
 - `*Structure.md` — project/component structure; authoritative source for code
-- `Page_Structure.md` — the set of `Code/Spec_Driven_Design_*.html` pages, what each covers, and how a reader moves among them
+- `Spec_TextFinder.docx` — a Word copy of `Spec_TextFinder.md`. The Markdown is the authority, and Constitution.md rule 1 derives no code from the copy
+- `Page_Structure.md` — the set of Spec-Driven pages in `Code/` (the `Spec_Driven_Design_*.html` pages and the three `LLM_*.html` pages of the References thread), what each covers, and how a reader moves among them
 - `Text_Tone.md` — the rules governing the prose those pages carry
 - `Important_Notes.md` — open questions and deferred decisions: a case no document settles, a rule one implementation has outrun, or a change landed in `Spec_TextFinder.md` and not yet in every implementation. Not a specification, and nothing in it authorizes code
 - `Fixture/` — the shared conformance artifact of Spec_TextFinder.md §6.2: one tree, one list of command lines, and the stdout and exit code each must produce. Captured output, not a source; Constitution.md rule 1 admits no code derived from it. `.gitattributes` sets `* -text` so git never normalizes the CRLF and bare-CR files
 - `README.md` — what TextFinder is, for a reader arriving at the folder
-- `Page_Tree_*.md` — one per page of §6 of Page_Structure.md, 42 in all, named for the page it belongs to. Each names every file its page cites and places it in the tree; a directory holding no cited file does not appear. The page renders its own in a `<details>` block ahead of its Section 1, so the file is the source and the block is the view
-- `Project_Tree.md` — this document
+- `Page_Tree_*.md` — one per page of the six threads that serve the two goals of Page_Structure.md §1, 42 in all, named for the page it belongs to; the References thread has none. Each names every file its page cites and places it in the tree; a directory holding no cited file does not appear. The page renders its own in a `<details>` block ahead of its Section 1, so the file is the source and the block is the view
+- `Project_Tree.md` — this document; `Code/Spec_Driven_Design_Project_Tree.html` renders it
+- `Lessons_Learned.md` — what the project taught about spec-driven design with Claude Code, in two lists: the author's own, and lessons Claude drew from the review of 2026-09-24 and the work that followed it
+- `render_markdown_skill.md` — reader documentation for the render-md-details skill, which renders the project's Markdown documents into the Spec-Driven pages. The skill's `SKILL.md`, under `.claude/skills/render-md-details/` at the repository root, is the operational contract and wins where the two disagree
+- `Spec_Driven_TextFinder_Overview.pptx` — a 26-slide deck summarizing the two goals and the Process and Behavior threads
+- `Spec_Driven_TextFinder_Cpp.pptx` — a 28-slide deck summarizing the C++ thread
+- `CLAUDE.md` — instructions Claude Code loads in every session working in this folder: re-read a file immediately before editing it, and keep the hand edits made between turns
 - `archive/` — superseded documents, kept for reference; not enumerated here, and pruned by the skip list
 
 ### Prompt records
@@ -242,6 +256,7 @@ Build output and editor settings are omitted: `build/`, `target/`, `bin/`, `obj/
 - `Prompts_*.md` — records of the spec-driven design conversations; not inputs to code
 - `Prompts_Fix_*.md` — records of subsequent refinement conversations for the same artifact
 - `Prompts_Fix_Spec_Cpp_TextFinder.md` — refinements reaching across every C++ component and the project spec
+- `Prompts_Fix_Specifications_2.md` — record of a second specification pass on 2026-10-08: moving platform and character-type requirements to the documents that own them, then compressing the whole corpus
 - `Prompts_Build_<Lang>_TextFinder.md` — record of turning one language's specifications into working code; the Python one also records the writing of those specifications, the two having happened in one session, so that thread has no separate `Prompts_Spec_*.md`
 - `Prompts_Cpp_Spec_driven_TextFinder_Tests.md` — record of building and running the C++ test suites
 - `Prompts_maintainability_Rust_TextFinder.md` — record of reviewing the finished Rust implementation for idiom and code smells; a review of code already written rather than a conversation that produced any
@@ -263,6 +278,7 @@ Page_Structure.md §8 assigns each record to exactly one page: a record produced
 - `*_UnitTest.ixx` — tests for that component, exporting one entry point; `*_TestDriver.cpp` runs it
 - `Cpp_TextFinder_IntegrationTest.ixx` — drives the built executable end to end, covering the Entry binary
 - `Cpp_TextFinder_Demo.ixx` — runs the executable against this project's own tree and shows the output
+- `Cpp_TextFinder_Demonstration.md` — a later capture of that output, dated 2026-10-09; `Demo_9-24-2026.md` holds the first
 - `CMakeLists.txt` — build definition; the top-level one configures the whole project
 
 ### Rust
