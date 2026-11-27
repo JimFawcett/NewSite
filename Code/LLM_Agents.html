@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  LLM_Agents.html - Context thread, page 3
+-->
+<head>
+  <title>Spec-Driven Design: Agents</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .synopsis {
+      border: 2px dashed var(--dark);
+      margin: 2rem 0rem;
+      padding: 0.25rem 1rem;
+    }
+    div.synopsis ul {
+      margin: 0rem 0rem;
+    }
+    div.synopsis ul li {
+      margin: 0.1rem 2rem;
+    }
+    span.figcap {
+      display: inline-block;
+      font-weight: bold;
+      background-color: #ddd;
+      width: 100%;
+      padding: 5px 0px;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    LLM_Agents.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 11/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Design: Agents</h2>
+        <h4 class="indent" id="subtitle">an LLM working autonomously toward a goal the user sets</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Python_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Python</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Context.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">References</a>
+      </div>
+    </header>
+
+    <div class="indent">
+      <div class="synopsis">
+        <strong>Synopsis:</strong><br>
+        <t-b>
+          This page describes LLM agents: what they consist of, and what they do well and badly.
+          <ul>
+            <li>An agent runs autonomously from an initial prompt and a stopping goal the user sets.</li>
+            <li>When it runs well, it gets a lot done without the user's immediate attention.</li>
+            <li>When it does not, it creates junk output and deletes good content, so developers test agents in a sandbox first.</li>
+            <li>Bad actors can use swarms of agents for attacks and misinformation.</li>
+          </ul>
+        </t-b>
+      </div>
+
+      <a id="architecture"></a>
+      <h3>1. &nbsp;Agent Architecture</h3>
+      <t-b>
+        Agents appear often in the news. Understanding the concept matters because agents play a
+        large role in both the benefits and the liabilities of LLM AIs.
+      </t-b>
+      <t-b>
+        In Fig 1, the user hands the agent a goal and gets results back. Inside the agent, four
+        parts cooperate:
+        <ul class="tight">
+          <li>A planner breaks the goal into steps.</li>
+          <li>A tool orchestrator selects and uses tools.</li>
+          <li>Memory keeps context and history.</li>
+          <li>A controller iterates until the agent meets the goal.</li>
+        </ul>
+      </t-b>
+      <t-b>
+        The agent prompts the LLM for reasoning and plans, and it reads files, searches the web,
+        and calls applications and databases for data.
+      </t-b>
+      <t-b>
+        The memory in Fig 1 belongs to the agent, not the model. The model keeps nothing between
+        requests, so the agent carries context and history forward and resends them on every call,
+        per <a target="_blank" href="Spec_Driven_Design_Context.html">Context</a> Section 1.
+        Click the image to enlarge it and the caption to shrink it.
+      </t-b>
+      <photosizer-block src="../AI%20Presentation%202026/LLM%20AI%20Agent%20Architecture%20Diagram.png" width="500" class="photoSizerBlock" style="margin-top:0;">
+        <span class="figcap">Fig 1. Agent Architecture</span>
+      </photosizer-block>
+
+      <a id="takeaways"></a>
+      <h3>2. &nbsp;Takeaways</h3>
+      <t-b>
+        <ol class="tight" type="1">
+          <li>
+            Agents run <strong>autonomously</strong> from an initial prompt and a stopping goal the
+            user sets.
+          </li>
+          <li>
+            The <strong>good news</strong>: when an agent runs well, it gets a lot done without the
+            user's immediate attention.
+          </li>
+          <li>
+            The <strong>bad news</strong>: when an agent does not operate as the user intends, it
+            can create a lot of junk output and delete good content. That is sometimes difficult to
+            prevent, because the agent infers much of what it does from the meaning of the request.
+            Developers therefore test in a sandbox until everything works, then deploy to working
+            repositories.
+          </li>
+          <li>
+            The <strong>really bad news</strong>: bad actors can create swarms of agents to attack
+            banking security and civilian infrastructure control, and to post misinformation on
+            social media.
+          </li>
+        </ol>
+      </t-b>
+      <t-b>
+        Item 3 is the gap the Spec-Driven process closes. An agent that infers meaning from an
+        ambiguous request fills the gap with a guess;
+        <a target="_blank" href="Spec_Driven_Design_Process_Constitution.html">the Constitution</a>
+        treats an ambiguous specification as a question instead.
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#architecture">architecture</a></menu-elem>
+        <menu-elem class="secElem"><a href="#takeaways">takeaways</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenContextPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 3, 10);
+  </script>
+</body>
+</html>

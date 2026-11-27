@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html id="top" lang="en">
+<!--
+  LLM_CLI.html - Context thread, page 2
+-->
+<head>
+  <title>Spec-Driven Design: LLM CLI</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="../images/favicon.ico" />
+  <link rel="stylesheet" href="../css/reset.css" />
+  <link rel="stylesheet" href="../css/ContentMenus.css" />
+  <link rel="stylesheet" href="../css/Content.css" />
+  <link rel="stylesheet" href="../css/StylesPhoto.css" />
+  <link rel="stylesheet" href="../css/StylesSizerComp.css" />
+  <link rel="stylesheet" href="../css/StylesWebComponents.css" />
+  <script src="../js/ScriptsWebComponents.js"></script>
+  <script src="../js/Content.js"></script>
+  <script src="../js/ContentMenus.js"></script>
+  <link rel="stylesheet" href="../css/FigureSizer.css" />
+  <link rel="stylesheet" href="../css/link-nav.css" />
+  <link rel="stylesheet" href="../css/content-links.css" />
+  <script src="../js/cookies.js"></script>
+  <script src="../js/contentElements.js"></script>
+  <script src="../js/contentMessages.js"></script>
+  <link rel="stylesheet" href="../css/prism.css" />
+  <script src="../js/prism.js"></script>
+  <link rel="stylesheet" href="../css/ThemeCode.css" />
+  <style>
+    #github ul.tight, #github ol.tight { margin-left: 1.5rem; }
+    #github pre { width: max-content; max-width: 100%; padding: 1rem 2rem; overflow-x: auto; }
+    #github details { border: 1px solid var(--atten); padding: 0.25rem 0.75rem; margin: 0.5rem 0; }
+    #github table { table-layout: fixed; }
+  </style>
+  <script>
+    function loadInExplorer() {
+      const loc = window.location;
+      if(loc === window.top.location) {
+        window.location = "ExploreCode.html?src=" + loc;
+      }
+    }
+    function load() {
+      loadInExplorer();
+      buildBottomMenu();
+      postFileName();
+      setPersistantElements();
+    }
+  </script>
+  <style>
+    .synopsis {
+      border: 2px dashed var(--dark);
+      margin: 2rem 0rem;
+      padding: 0.25rem 1rem;
+    }
+    div.synopsis ul {
+      margin: 0rem 0rem;
+    }
+    div.synopsis ul li {
+      margin: 0.1rem 2rem;
+    }
+    span.figcap {
+      display: inline-block;
+      font-weight: bold;
+      background-color: #ddd;
+      width: 100%;
+      padding: 5px 0px;
+    }
+  </style>
+</head>
+<body id="github" onload="load()">
+
+  <div id="about" class="hidden" onclick="toggleAbout()">
+    LLM_CLI.html<br />
+    copyright &copy; James Fawcett<br />
+    Revised: 11/26/2026
+  </div>
+
+  <content-block>
+    <header>
+      <a target="_blank" class="repoLink" style="margin:2.0em 1.0em; font-size:0.9em;"
+        href="https://github.com/JimFawcett/NewSite/tree/main/Code/Projects/Spec_driven_TextFinder">Spec-Driven</a>
+      <div id="pagetitle" class="header">
+        <h2 id="title">Spec-Driven Design: LLM CLI</h2>
+        <h4 class="indent" id="subtitle">working with an LLM from a terminal, with access to local files and tools</h4>
+      </div>
+      <div class="header" style="position:relative; padding:0.0em 0em 0.25em 0em; margin-top:0.05em; border:2px solid var(--dark);">
+        <a class="repoLinks" href="Spec_Driven_Design_Introduction.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Process</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Behavior_Overview.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Behavior</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Cpp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C++</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Rust_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Rust</a>
+        <a class="repoLinks" href="Spec_Driven_Design_CSharp_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">C#</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Python_Process.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">Python</a>
+        <a class="repoLinks" href="Spec_Driven_Design_Context.html" style="color:var(--atten); margin-top:0.25em; margin-left:1.5em;">References</a>
+      </div>
+    </header>
+
+    <div class="indent">
+      <div class="synopsis">
+        <strong>Synopsis:</strong><br>
+        <t-b>
+          This page describes the LLM command line interface, the tool the Spec-Driven project was
+          built with.
+          <ul>
+            <li>A CLI program on the user's machine talks to the LLM on one side and to local files and tools on the other.</li>
+            <li>Unlike a browser or mobile app, the CLI reads, edits, and deletes local files.</li>
+            <li>The output is only as good as the structure and ideas the user supplies.</li>
+          </ul>
+        </t-b>
+      </div>
+
+      <a id="architecture"></a>
+      <h3>1. &nbsp;CLI Architecture</h3>
+      <t-b>
+        The CLI gives the user another way to reach an LLM, without the security limits of a
+        browser or mobile app. The user downloads it from the provider: OpenAI for ChatGPT,
+        Anthropic for Claude.
+      </t-b>
+      <t-b>
+        In Fig 1, the user at a terminal exchanges requests and replies with the CLI program. That
+        program talks to the LLM on one side and to external files and tools - documents,
+        databases, the web, and local utilities - on the other.
+      </t-b>
+      <t-b>
+        The model still keeps nothing between requests. The CLI resends the conversation on every
+        call, and that conversation now includes the full text of every file the CLI read on the
+        user's behalf. <a target="_blank" href="Spec_Driven_Design_Context.html">Context</a>
+        Section 2 identifies those tool results as the dominant growth in a coding session.
+        Click the image to enlarge it and the caption to shrink it.
+      </t-b>
+      <photosizer-block src="../AI%20Presentation%202026/LLM%20Command-Line%20Workflow%20Infographic.png" width="500" class="photoSizerBlock" style="margin-top:0;">
+        <span class="figcap">Fig 1. CLI Architecture</span>
+      </photosizer-block>
+
+      <a id="takeaways"></a>
+      <h3>2. &nbsp;Takeaways</h3>
+      <t-b>
+        <ol class="tight" type="1">
+          <li>
+            The user's terminal replaces the browser or mobile app of the
+            <a href="LLM_ChatBots.html">Chat Bots</a> page.
+          </li>
+          <li>
+            The LLM CLI application handles interactions with the LLM in place of the browser
+            application.
+          </li>
+          <li>
+            <strong>Unlike a browser or mobile app, the CLI can read, edit, or delete files on the
+            local computer.</strong>
+          </li>
+          <li>
+            Authors have used CLIs to create presentations and to write books or assist in writing
+            them. That work obeys the law &ldquo;garbage in = garbage out&rdquo;, and the garbage
+            that comes out is known as AI Slop.
+          </li>
+          <li>
+            AI assistance works well when the user treats it as an assistant: the user supplies
+            most of the content structure and ideas, and edits the output carefully.
+          </li>
+          <li>
+            The Claude Code CLI assisted throughout the Spec-Driven project these pages document.
+          </li>
+        </ol>
+      </t-b>
+
+    </div>
+    <spacer-25></spacer-25>
+  </content-block>
+  <div style="height:15rem;"></div>
+
+  <a id="bottom"></a>
+  <div id="bottomMenu">
+    <div id="keys" class="hidden"></div>
+    <div id="sections" class="hidden">
+      <div class="darkItem listheader" onclick="toggleSections()">Sections</div>
+      <div class="menuBody">
+        <a href="#top">top</a>
+        <menu-elem class="secElem"><a href="#architecture">architecture</a></menu-elem>
+        <menu-elem class="secElem"><a href="#takeaways">takeaways</a></menu-elem>
+        <a href="#bottom">bottom</a>
+      </div>
+    </div>
+    <div id="pages" class="hidden"></div>
+    <div id="url" class="hidden">url</div>
+    <div id="goto" class="hidden">url</div>
+  </div>
+  <script src="js/SpecDrivenContextPages.js"></script>
+  <script>buildPages()</script>
+  <script>createSiteNavMenu('goto')</script>
+  <script src="../js/link-nav.js" defer></script>
+  <script>
+    setCookie('#pages', 2, 10);
+  </script>
+</body>
+</html>
